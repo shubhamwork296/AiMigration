@@ -1,0 +1,81 @@
+{
+  "from": "dotnet6",
+  "to": "dotnet8",
+  "packageChanges": [
+    {
+      "name": "Microsoft.EntityFrameworkCore",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.SqlServer",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Relational",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.Extensions.Http",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting",
+      "fromVersion": "6.*",
+      "toVersion": "8.0.0",
+      "action": "upgrade"
+    }
+  ],
+  "targetFrameworkChange": {
+    "from": "net6.0",
+    "to": "net8.0",
+    "files": ["*.csproj"]
+  },
+  "deprecatedApis": [
+    {
+      "old": "WebApplication.CreateBuilder(args)",
+      "new": "WebApplication.CreateBuilder(args)",
+      "reason": "Still valid in .NET 8; verify hosting configuration and package compatibility."
+    },
+    {
+      "old": "UseSystemd()",
+      "new": null,
+      "reason": "Usually no longer required when using modern hosting defaults."
+    },
+    {
+      "old": "UseWindowsService()",
+      "new": null,
+      "reason": "Review hosting behavior during migration; keep only when explicitly required."
+    },
+    {
+      "old": "Microsoft.AspNetCore.Mvc.NewtonsoftJson",
+      "new": "System.Text.Json or Microsoft.AspNetCore.Mvc.NewtonsoftJson 8.x",
+      "reason": "Prefer System.Text.Json unless Newtonsoft-specific behavior is required."
+    }
+  ],
+  "configChanges": [
+    {
+      "file": "appsettings.json",
+      "action": "none"
+    }
+  ]
+}

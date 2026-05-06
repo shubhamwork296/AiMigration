@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: ai-migration-agent
+Version: 0.1.0
+Summary: Adapter-based AI-assisted code migration agent
+Requires-Python: >=3.10
+Provides-Extra: ai
+Requires-Dist: openai>=1.99.0; extra == "ai"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"

@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\migration_agent",
+    "\\migration_agent\\adapters",
+    "\\migration_agent\\ai",
+    "\\migration_agent\\cli",
+    "\\migration_agent\\core",
+    "\\rollback"
+  ],
+  "SelectedNode": "\\migration_agent\\adapters\\dotnet.py",
+  "PreviewInSolutionExplorer": false
+}

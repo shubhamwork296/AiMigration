@@ -1,0 +1,18 @@
+{
+  "projectPath": "D:\\Projects\\AWC\\awc_seatpicker_job",
+  "from": {
+    "runtime": "dotnet",
+    "version": "6"
+  },
+  "to": {
+    "runtime": "dotnet",
+    "version": "8"
+  },
+  "outputPath": "./output",
+  "dryRun": false,
+  "autoApprove": true,
+  "maxRetries": 1,
+  "useAi": false,
+  "aiProvider": "codex",
+  "aiMode": "cli"
+}

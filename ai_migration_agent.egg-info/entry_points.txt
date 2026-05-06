@@ -1,0 +1,2 @@
+[console_scripts]
+migration-agent = migration_agent.__main__:main
