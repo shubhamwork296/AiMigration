@@ -18,24 +18,26 @@ def execute_changes(
     results: list[dict[str, Any]] = []
 
     for change in plan:
-        try:
-            touched: list[Path] = []
-            if change["type"] == "framework":
-                touched = replace_in_files(output_path, change["file"], change["find"], change["replace"])
-            elif change["type"] == "package":
-                touched = adapter.upgrade_package(output_path, change)
-
-            results.append(
-                {
-                    "change": change,
-                    "status": "done" if touched else "skipped",
-                    "files": [str(path.relative_to(output_path)) for path in touched],
-                }
-            )
-        except Exception as exc:
-            results.append({"change": change, "status": "failed", "error": str(exc), "files": []})
+        results.append(execute_single_change(change, output_path, adapter))
 
     return results
+
+
+def execute_single_change(change: dict[str, Any], output_path: Path, adapter: BaseAdapter) -> dict[str, Any]:
+    try:
+        touched: list[Path] = []
+        if change["type"] == "framework":
+            touched = replace_in_files(output_path, change["file"], change["find"], change["replace"])
+        elif change["type"] == "package":
+            touched = adapter.upgrade_package(output_path, change)
+
+        return {
+            "change": change,
+            "status": "done" if touched else "skipped",
+            "files": [str(path.relative_to(output_path)) for path in touched],
+        }
+    except Exception as exc:
+        return {"change": change, "status": "failed", "error": str(exc), "files": []}
 
 
 def copy_project(source: Path, destination: Path) -> None:

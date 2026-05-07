@@ -20,3 +20,6 @@ include = ["migration_agent*"]
 
 [tool.setuptools.package-data]
 migration_agent = ["rules/**/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

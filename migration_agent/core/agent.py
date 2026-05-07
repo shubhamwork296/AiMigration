@@ -7,7 +7,9 @@ from migration_agent.adapters import find_adapter
 from migration_agent.cli.args import MigrationConfig
 from migration_agent.core.analyser import analyse_project
 from migration_agent.core.executor import execute_changes
+from migration_agent.core.executor import execute_single_change
 from migration_agent.core.planner import build_migration_plan
+from migration_agent.core.planner import repair_package_downgrades_from_validation
 from migration_agent.core.reporter import generate_report
 from migration_agent.core.rollback import create_snapshot, restore_snapshot
 from migration_agent.core.validator import validate
@@ -49,8 +51,16 @@ async def run_migration(config: MigrationConfig) -> None:
     attempts = 0
     while not validation["passed"] and attempts < config.max_retries:
         attempts += 1
-        print(f"Validation failed after attempt {attempts}. No automatic retry transforms are configured yet.")
-        break
+        repairs = await repair_package_downgrades_from_validation(validation, analysis, plan, rules, config.ai)
+        if not repairs:
+            print(f"Validation failed after attempt {attempts}. No safe package downgrade repairs were found.")
+            break
+
+        print(f"Validation failed after attempt {attempts}. Applying {len(repairs)} package downgrade repair(s).")
+        plan.extend(repairs)
+        for repair in repairs:
+            results.append(execute_single_change(repair, config.output_path, adapter))
+        validation = validate(config.output_path, adapter)
 
     if not validation["passed"]:
         print("Build failed. Restoring output from snapshot.")

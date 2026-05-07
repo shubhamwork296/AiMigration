@@ -33,13 +33,13 @@
       "action": "upgrade"
     },
     {
-      "name": "Microsoft.Extensions.Logging",
+      "name": "Microsoft.Extensions.Hosting",
       "fromVersion": "6.*",
       "toVersion": "8.0.0",
       "action": "upgrade"
     },
     {
-      "name": "Microsoft.Extensions.Hosting",
+      "name": "Microsoft.Extensions.Logging",
       "fromVersion": "6.*",
       "toVersion": "8.0.0",
       "action": "upgrade"
