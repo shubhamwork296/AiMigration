@@ -1,5 +1,5 @@
 {
-  "projectPath": "D:\\Projects\\AWC\\awc_seatpicker_job",
+  "projectPath": "D:\\Projects\\YourDotnet6Project",
   "from": {
     "runtime": "dotnet",
     "version": "6"
@@ -8,11 +8,12 @@
     "runtime": "dotnet",
     "version": "8"
   },
-  "outputPath": "./output",
+  "outputPath": "D:\\Projects\\YourDotnet6Project-migrated",
   "dryRun": false,
   "autoApprove": true,
   "maxRetries": 1,
   "useAi": false,
-  "aiProvider": "codex",
-  "aiMode": "cli"
+  "aiCli": "none",
+  "commandTimeoutSeconds": 600,
+  "showTimingSummary": true
 }

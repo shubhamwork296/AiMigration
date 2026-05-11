@@ -1,0 +1,31 @@
+{
+  "from": "angular14",
+  "to": "angular15",
+  "sourceMajor": 14,
+  "targetMajor": 15,
+  "preferredOperation": "angular-cli-update",
+  "migrationCommand": ["npx", "--yes", "@angular/cli@15", "update", "@angular/core@15", "@angular/cli@15"],
+  "requiredPackageChanges": [
+    {"name": "@angular/core", "fromVersion": "14.x", "toVersion": "15.x", "manager": "npm", "ecosystem": "angular"},
+    {"name": "@angular/cli", "fromVersion": "14.x", "toVersion": "15.x", "manager": "npm", "ecosystem": "angular"}
+  ],
+  "validationCommands": ["install", "build", "test-if-present"],
+  "knownStructuralFiles": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "angular.json",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.spec.json",
+    "karma.conf.js",
+    "jest.config.js",
+    "eslint.config.js",
+    ".eslintrc.json",
+    "browserslist",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "optionalMigrations": []
+}

@@ -26,9 +26,9 @@ def execute_changes(
 def execute_single_change(change: dict[str, Any], output_path: Path, adapter: BaseAdapter) -> dict[str, Any]:
     try:
         touched: list[Path] = []
-        if change["type"] == "framework":
+        if change["type"] in {"framework", "runtime"}:
             touched = replace_in_files(output_path, change["file"], change["find"], change["replace"])
-        elif change["type"] == "package":
+        elif change["type"] in {"dependency", "package"}:
             touched = adapter.upgrade_package(output_path, change)
 
         return {

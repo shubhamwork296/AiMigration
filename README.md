@@ -44,7 +44,7 @@ The current business logic is mostly rule-based structural migration. It is not 
 What it actually does:
 
 - Reads `migrate.config.json`.
-- Detects the runtime adapter, currently `.NET`.
+- Selects the runtime adapter from the configured technology, currently `.NET` or Angular.
 - Loads migration rules from `migration_agent/rules/dotnet/6-to-8.json`.
 - Parses `.csproj` files to identify target frameworks and package references.
 - Collects structural project/config files for optional AI analysis.
@@ -131,7 +131,7 @@ flowchart TD
     C --> D[run_migration]
     D --> E[find_adapter]
     D --> F[load_rules]
-    E --> G[DotnetAdapter.detect]
+    E --> G[Selected runtime adapter]
     F --> H[Read rules JSON]
     D --> I[DotnetAdapter.parse_manifest]
     I --> J[DotnetAdapter._parse_csproj]
@@ -199,8 +199,8 @@ flowchart TD
 `migration_agent/adapters/__init__.py`
 
 - Registers available adapters in `ADAPTERS`.
-- `find_adapter()` loops through adapters and calls each adapter's `detect()` function.
-- Currently links runtime `"dotnet"` to `DotnetAdapter`.
+- `find_adapter()` selects the adapter registered for the configured runtime.
+- It does not infer technology from project files; the user-provided runtime decides the adapter.
 
 `migration_agent/adapters/base.py`
 

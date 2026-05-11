@@ -1,0 +1,31 @@
+{
+  "from": "angular16",
+  "to": "angular17",
+  "sourceMajor": 16,
+  "targetMajor": 17,
+  "preferredOperation": "angular-cli-update",
+  "migrationCommand": ["npx", "--yes", "@angular/cli@17", "update", "@angular/core@17", "@angular/cli@17"],
+  "requiredPackageChanges": [
+    {"name": "@angular/core", "fromVersion": "16.x", "toVersion": "17.x", "manager": "npm", "ecosystem": "angular"},
+    {"name": "@angular/cli", "fromVersion": "16.x", "toVersion": "17.x", "manager": "npm", "ecosystem": "angular"}
+  ],
+  "validationCommands": ["install", "build", "test-if-present"],
+  "knownStructuralFiles": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "angular.json",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.spec.json",
+    "karma.conf.js",
+    "jest.config.js",
+    "eslint.config.js",
+    ".eslintrc.json",
+    "browserslist",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "optionalMigrations": []
+}

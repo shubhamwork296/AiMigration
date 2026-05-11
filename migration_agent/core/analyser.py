@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from migration_agent.adapters.base import BaseAdapter
 from migration_agent.ai.provider import ask_ai
 from migration_agent.cli.args import MigrationConfig
 
@@ -15,8 +16,9 @@ async def analyse_project(
     config: MigrationConfig,
     rules: dict[str, Any],
     manifest: dict[str, Any],
+    adapter: BaseAdapter | None = None,
 ) -> dict[str, Any]:
-    files = collect_project_files(project_path, config.from_spec.runtime)
+    files = adapter.collect_project_files(project_path) if adapter else collect_project_files(project_path, config.from_spec.runtime)
     ai_analysis = await ask_ai(
         config.ai,
         system=_build_structural_prompt(),
@@ -118,14 +120,15 @@ def _rule_based_analysis(
 ) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
 
+    target_rule = rules.get("targetFrameworkChange")
     for project in manifest.get("projects", []):
-        if rules["targetFrameworkChange"]["from"] in project.get("targetFrameworks", []):
+        if target_rule and target_rule["from"] in project.get("targetFrameworks", []):
             findings.append(
                 {
                     "type": "targetFramework",
                     "file": project["path"],
-                    "old": rules["targetFrameworkChange"]["from"],
-                    "new": rules["targetFrameworkChange"]["to"],
+                    "old": target_rule["from"],
+                    "new": target_rule["to"],
                     "description": f"Update {project['path']} target framework.",
                 }
             )

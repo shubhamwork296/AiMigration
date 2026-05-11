@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 import re
-import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
 from migration_agent.adapters.base import BaseAdapter
+from migration_agent.core.commands import run_command
 
 
 class DotnetAdapter(BaseAdapter):
     runtime = "dotnet"
+    structural_patterns = [
+        "*.sln",
+        "*.csproj",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "global.json",
+        "NuGet.config",
+        "appsettings*.json",
+    ]
 
     def detect(self, project_path: Path) -> bool:
         return any(project_path.rglob("*.csproj")) or any(project_path.rglob("*.sln"))
@@ -35,24 +44,30 @@ class DotnetAdapter(BaseAdapter):
         return touched
 
     def run_build(self, project_path: Path) -> dict[str, Any]:
-        try:
-            completed = subprocess.run(
-                ["dotnet", "build", str(project_path), "--disable-build-servers"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-        except FileNotFoundError:
+        completed = run_command(["dotnet", "build", str(project_path), "--disable-build-servers"], project_path)
+        if completed["returncode"] == 127:
             return {
                 "success": False,
                 "output": "dotnet CLI was not found. Install the .NET SDK to run validation.",
             }
-        finally:
-            _shutdown_build_server(project_path)
 
-        output = "\n".join(part for part in [completed.stdout, completed.stderr] if part)
-        return {"success": completed.returncode == 0, "output": output}
+        _shutdown_build_server(project_path)
+
+        output = "\n".join(part for part in [completed["stdout"], completed["stderr"]] if part)
+        return {"success": completed["returncode"] == 0, "output": output}
+
+    def collect_project_files(self, project_path: Path) -> dict[str, str]:
+        collected: dict[str, str] = {}
+        for pattern in self.structural_patterns:
+            for file_path in sorted(project_path.rglob(pattern)):
+                if any(part in {"bin", "obj", ".git"} for part in file_path.parts):
+                    continue
+                try:
+                    text = file_path.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    continue
+                collected[str(file_path.relative_to(project_path))] = text[:20_000]
+        return collected
 
     def _parse_csproj(self, csproj: Path, root: Path) -> dict[str, Any]:
         text = csproj.read_text(encoding="utf-8")
@@ -108,13 +123,4 @@ def _replace_package_version(content: str, package_name: str, target_version: st
 
 
 def _shutdown_build_server(project_path: Path) -> None:
-    try:
-        subprocess.run(
-            ["dotnet", "build-server", "shutdown"],
-            cwd=project_path,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError:
-        pass
+    run_command(["dotnet", "build-server", "shutdown"], project_path)

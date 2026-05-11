@@ -1,0 +1,38 @@
+{
+  "from": "angular17",
+  "to": "angular18",
+  "sourceMajor": 17,
+  "targetMajor": 18,
+  "preferredOperation": "angular-cli-update",
+  "migrationCommand": ["npx", "--yes", "@angular/cli@18", "update", "@angular/core@18", "@angular/cli@18"],
+  "requiredPackageChanges": [
+    {"name": "@angular/core", "fromVersion": "17.x", "toVersion": "18.x", "manager": "npm", "ecosystem": "angular"},
+    {"name": "@angular/cli", "fromVersion": "17.x", "toVersion": "18.x", "manager": "npm", "ecosystem": "angular"}
+  ],
+  "validationCommands": ["install", "build", "test-if-present"],
+  "knownStructuralFiles": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "angular.json",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.spec.json",
+    "karma.conf.js",
+    "jest.config.js",
+    "eslint.config.js",
+    ".eslintrc.json",
+    "browserslist",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "optionalMigrations": [
+    {
+      "name": "use-application-builder",
+      "command": ["npx", "--yes", "@angular/cli@18", "update", "@angular/cli", "--name", "use-application-builder"],
+      "default": false,
+      "description": "Optional Angular 18 application builder migration."
+    }
+  ]
+}
