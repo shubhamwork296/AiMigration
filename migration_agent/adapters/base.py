@@ -48,6 +48,7 @@ class BaseAdapter(ABC):
         skip_preflight_dependency_compatibility: bool = False,
         preflight_remediation_mode: str = "suggest",
         allow_legacy_peer_deps_fallback: bool = True,
+        max_ai_remediation_retries: int = 3,
     ) -> dict[str, Any]:
         """Execute one adapter-native migration hop."""
         raise NotImplementedError(f"{self.runtime} does not support adapter-native migration hops.")

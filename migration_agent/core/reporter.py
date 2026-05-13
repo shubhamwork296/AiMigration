@@ -108,8 +108,17 @@ def generate_adapter_hop_report(
             "## Dependency Compatibility Remediations",
             *(_format_dependency_compatibility_remediations(hop_results)),
             "",
+            "## AI Remediation Changes",
+            *(_format_ai_remediation_changes(hop_results)),
+            "",
+            "## Manual Correction Required",
+            *(_format_manual_correction_required(hop_results, validation)),
+            "",
             "## Warnings",
             *(_format_dependency_warnings(hop_results)),
+            "",
+            "## Angular CLI Migrate-only Status",
+            *(_format_angular_cli_migrate_only_status(hop_results)),
             "",
             "## Preflight Dependency Compatibility Analysis",
             *(_format_preflight_dependency_analysis(hops, executed)),
@@ -304,6 +313,95 @@ def _format_dependency_compatibility_remediations(hop_results: list[dict[str, An
     return lines
 
 
+def _format_ai_remediation_changes(hop_results: list[dict[str, Any]]) -> list[str]:
+    changes = [change for result in hop_results for change in result.get("aiRemediationChanges", [])]
+    if not changes:
+        return ["- None"]
+    lines: list[str] = []
+    business_files = sorted({change["file"] for change in changes if change.get("businessFile")})
+    if business_files:
+        lines.append("These files are business/application source files and were changed by AI remediation.")
+        lines.append("Review recommended before accepting migration.")
+        lines.extend(f"- {file}" for file in business_files)
+        lines.append("")
+    for change in changes:
+        lines.extend(
+            [
+                f"### Attempt {change.get('attempt')}/{change.get('maxAttempts')}",
+                "",
+                "Failure:",
+                str(change.get("failure")),
+                "",
+                "Files changed:",
+                f"- {change.get('file')}",
+                "",
+                "Change:",
+                f"{change.get('oldCodeSummary')} -> {change.get('newCodeSummary')}",
+                "",
+                "Reason:",
+                str(change.get("reason")),
+                "",
+                "Confidence:",
+                str(change.get("confidence")),
+                "",
+                "Functional impact:",
+                str(change.get("functionalImpact")),
+                "",
+                "Why safe:",
+                str(change.get("whySafe")),
+                "",
+                "Validation:",
+                str(change.get("validationCommand")),
+                "",
+                "Result:",
+                str(change.get("validationResult")),
+                "",
+            ]
+        )
+    return lines
+
+
+def _format_manual_correction_required(hop_results: list[dict[str, Any]], validation: dict[str, Any]) -> list[str]:
+    requests = [request for result in hop_results for request in result.get("manualCorrectionRequests", [])]
+    if not requests:
+        return ["- None"]
+    lines: list[str] = []
+    for request in requests:
+        lines.extend(["### Manual correction required", "", "Reason:", str(request.get("reason")), ""])
+        for instruction in request.get("manualInstructions", []):
+            lines.extend(
+                [
+                    "File:",
+                    str(instruction.get("file")),
+                    "",
+                    "Line:",
+                    str(instruction.get("line")),
+                    "",
+                    "Error:",
+                    str(instruction.get("error")),
+                    "",
+                    "Current code:",
+                    str(instruction.get("currentCode", "")),
+                    "",
+                    "Possible change:",
+                    str(instruction.get("possibleChange", "")),
+                    "",
+                    "Risk:",
+                    str(instruction.get("risk")),
+                    "",
+                    "Human decision needed:",
+                    str(instruction.get("humanDecisionNeeded")),
+                    "",
+                ]
+            )
+        if validation.get("snapshotPath"):
+            lines.extend(["Snapshot path:", str(validation.get("snapshotPath")), ""])
+        if validation.get("outputPath"):
+            lines.extend(["Output folder path:", str(validation.get("outputPath")), ""])
+        lines.extend(["After manual correction, rerun:", "npm run build", ""])
+    return lines
+
+
 def _format_dependency_warnings(hop_results: list[dict[str, Any]]) -> list[str]:
     warnings = [
         warning
@@ -313,6 +411,26 @@ def _format_dependency_warnings(hop_results: list[dict[str, Any]]) -> list[str]:
     if not warnings:
         return ["- None"]
     return [f"- {warning}" for warning in warnings]
+
+
+def _format_angular_cli_migrate_only_status(hop_results: list[dict[str, Any]]) -> list[str]:
+    statuses = [result.get("angularCliMigrateOnlyStatus") for result in hop_results if result.get("angularCliMigrateOnlyStatus")]
+    if not statuses:
+        return ["- None"]
+    lines: list[str] = []
+    for status in statuses:
+        lines.extend(
+            [
+                f"- Status: {status.get('status')}",
+                f"- Reason: {status.get('reason')}",
+                f"- Intended CLI version: {status.get('intendedCliVersion')}",
+                f"- Escaped temporary CLI version: {status.get('escapedTemporaryCliVersion')}",
+                f"- Target Angular major: {status.get('targetAngularMajor')}",
+                f"- Node version: {status.get('nodeVersion')}",
+                f"- Action taken: {status.get('actionTaken')}",
+            ]
+        )
+    return lines
 
 
 def _format_manual_actions(hop_results: list[dict[str, Any]], validation: dict[str, Any]) -> list[str]:
@@ -415,7 +533,15 @@ def _format_failure(validation: dict[str, Any]) -> list[str]:
     if validation.get("passed"):
         return ["- None"]
     lines = [f"- Failed hop: {validation.get('failedHop', 'unknown')}"]
+    if validation.get("failureCommand"):
+        lines.append(f"- Command: {' '.join(validation.get('failureCommand', []))}")
+    if validation.get("suggestedCorrectedCommand"):
+        lines.append(f"- Suggested corrected command: {' '.join(validation.get('suggestedCorrectedCommand', []))}")
     if validation.get("errors"):
         lines.extend(["", "```text", str(validation["errors"]), "```"])
+    if validation.get("snapshotPath"):
+        lines.append(f"- Snapshot available at: {validation.get('snapshotPath')}")
+    if validation.get("outputPath"):
+        lines.append(f"- Output folder preserved at: {validation.get('outputPath')}")
     lines.extend(_format_rollback_error(validation))
     return lines

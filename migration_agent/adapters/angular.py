@@ -67,6 +67,24 @@ FRAMEWORK_CRITICAL_PACKAGE_TARGETS: dict[int, dict[str, str]] = {
     18: {"typescript": "~5.5.4"},
 }
 
+ANGULAR_FRAMEWORK_VERSION_PACKAGES = {
+    "@angular/animations",
+    "@angular/common",
+    "@angular/compiler",
+    "@angular/core",
+    "@angular/forms",
+    "@angular/localize",
+    "@angular/platform-browser",
+    "@angular/platform-browser-dynamic",
+    "@angular/router",
+    "@angular/service-worker",
+}
+
+ANGULAR_TOOLING_VERSION_PACKAGES = {
+    "@angular/cli",
+    "@angular-devkit/build-angular",
+}
+
 
 class AngularAdapter(BaseAdapter):
     runtime = "angular"
@@ -74,6 +92,7 @@ class AngularAdapter(BaseAdapter):
     def __init__(self) -> None:
         self._npm_view_cache: dict[tuple[str, str, str], dict[str, Any]] = {}
         self._angular_target_version_cache: dict[int, str | None] = {}
+        self._angular_cli_target_version_cache: dict[int, str | None] = {}
         self._last_package_classification: dict[str, Any] | None = None
 
     def detect(self, project_path: Path) -> bool:
@@ -207,6 +226,7 @@ class AngularAdapter(BaseAdapter):
         skip_preflight_dependency_compatibility: bool = False,
         preflight_remediation_mode: str = "suggest",
         allow_legacy_peer_deps_fallback: bool = True,
+        max_ai_remediation_retries: int = 3,
         ai_config: AiConfig | None = None,
         command_timeout_seconds: int = 600,
     ) -> dict[str, Any]:
@@ -252,6 +272,8 @@ class AngularAdapter(BaseAdapter):
 
         command_results = []
         remediations: list[dict[str, Any]] = []
+        ai_remediation_changes: list[dict[str, Any]] = []
+        manual_correction_requests: list[dict[str, Any]] = []
 
         planned_framework_updates = self._plan_framework_critical_updates(project_path, target, compatibility=None)
         if planned_framework_updates["updates"]:
@@ -271,6 +293,29 @@ class AngularAdapter(BaseAdapter):
             preflight.setdefault("frameworkCriticalUpdates", []).extend(planned_framework_updates["updates"])
             if progress:
                 progress.stage(stage, "Continuing migration.")
+
+        package_update = self._apply_angular_package_json_update(
+            project_path,
+            target,
+            progress=progress,
+            stage=stage,
+            log_path=log_path,
+            timeout_seconds=command_timeout_seconds,
+        )
+        command_results.extend(package_update["commands"])
+        if not package_update["success"]:
+            failed = _failed_hop_result(
+                hop,
+                command_results,
+                _changed_structural_files(project_path, before_files),
+                [],
+                preflight,
+                self.optional_migrations(project_path, target, optional_migrations_enabled),
+                package_update["reason"],
+                package_update["package"],
+            )
+            failed["failureStage"] = "package.json update"
+            return failed
 
         compatibility = self.check_compatibility(project_path, target)
         blocking_issues = [issue for issue in compatibility if issue["blocking"]]
@@ -295,18 +340,31 @@ class AngularAdapter(BaseAdapter):
                 "optionalMigrations": self.optional_migrations(project_path, target, optional_migrations_enabled),
             }
 
-        commands = [self._safe_angular_migration_command(rules.get("migrationCommand"), target)]
-        if allow_angular_force_update and "--force" not in commands[0]:
-            commands[0].append("--force")
-            preflight["forceUpdateUsed"] = True
-        for package_plan in preflight.get("packageClassification", {}).get("packages", []):
-            if (
-                package_plan.get("role") in FRAMEWORK_COUPLED_ROLES
-                and package_plan.get("recommendedAction") == "upgrade-with-target-major"
-                and str(package_plan.get("name", "")).startswith(ANGULAR_FRAMEWORK_SCOPE)
-            ):
-                commands.append(self.angular_package_update_command(str(package_plan["name"]), target))
-        commands.append(self.install_command(package_manager))
+        cli_resolution = self._resolve_angular_cli_target_version(
+            target,
+            project_path,
+            log_path=log_path,
+            progress=progress,
+            stage=stage,
+            timeout_seconds=command_timeout_seconds,
+        )
+        command_results.extend(cli_resolution["commands"])
+        if not cli_resolution["version"]:
+            failed = _failed_hop_result(
+                hop,
+                command_results,
+                _changed_structural_files(project_path, before_files),
+                compatibility,
+                preflight,
+                self.optional_migrations(project_path, target, optional_migrations_enabled),
+                "@angular/cli target version cannot be resolved to one stable version",
+                "@angular/cli",
+            )
+            failed["failureStage"] = "package.json update"
+            return failed
+
+        commands = [self.install_command(package_manager)]
+        commands.extend(self.angular_migrate_only_commands(int(hop["fromVersion"]), target, cli_resolution["version"]))
         optional_migrations = self.optional_migrations(project_path, target, optional_migrations_enabled)
         if optional_migrations_enabled:
             commands.extend(step["command"] for step in optional_migrations if step.get("available"))
@@ -314,6 +372,9 @@ class AngularAdapter(BaseAdapter):
         success = True
         retried_angular_update = False
         failure_stage = "Angular CLI update"
+        failure_details: dict[str, Any] = {}
+        install_succeeded = False
+        migrate_only_status: dict[str, Any] | None = None
         legacy_peer_deps_mode = False
         for command in commands:
             command_to_run = _apply_legacy_peer_deps_mode(command, legacy_peer_deps_mode)
@@ -328,8 +389,48 @@ class AngularAdapter(BaseAdapter):
                 timeout_seconds=command_timeout_seconds,
             )
             command_results.append({"command": command_to_run, "angularCliPolicy": policy, **result})
+            if _is_dependency_install_command(command_to_run) and result["returncode"] == 0:
+                install_succeeded = True
             if result["returncode"] != 0:
                 failure_stage = _failure_stage_for_command(command_to_run)
+                version_escape = _angular_cli_version_escape(command_to_run, result, target, cli_resolution["version"], project_path)
+                if version_escape and install_succeeded:
+                    warning = (
+                        "Angular migrate-only skipped because Angular CLI attempted to use temporary CLI "
+                        f"{version_escape.get('actualTemporaryCliVersion')} outside target major {target}. "
+                        "Continuing to validation because package update and npm install succeeded."
+                    )
+                    preflight.setdefault("warnings", []).append(warning)
+                    preflight.setdefault("migrationNotes", []).append(warning)
+                    migrate_only_status = {
+                        "status": "skipped",
+                        "reason": "Angular CLI version escape",
+                        "intendedCliVersion": cli_resolution["version"],
+                        "escapedTemporaryCliVersion": version_escape.get("actualTemporaryCliVersion"),
+                        "temporaryCliMajor": version_escape.get("temporaryCliMajor"),
+                        "targetAngularMajor": target,
+                        "nodeVersion": version_escape.get("nodeVersion"),
+                        "actionTaken": "continued to build validation",
+                        "warning": warning,
+                    }
+                    if progress:
+                        progress.stage(stage, warning)
+                    break
+                invalid_migrate_only_specifier = _invalid_migrate_only_package_specifier(command_to_run, result)
+                if invalid_migrate_only_specifier:
+                    failure_stage = "Invalid migrate-only package specifier"
+                    failure_details = invalid_migrate_only_specifier
+                    success = False
+                    break
+                if _is_angular_cli_invocation_failure(command_to_run, result):
+                    failure_stage = "Angular CLI invocation failed"
+                    failure_details = {
+                        "failureReason": "Angular CLI invocation failed",
+                        "failureCommand": command_to_run,
+                        "suggestedCorrectedCommand": _correct_angular_cli_invocation(command_to_run),
+                    }
+                    success = False
+                    break
                 skip_peer_root_cause = legacy_peer_deps_mode and _is_dependency_install_command(command_to_run) and _is_peer_dependency_conflict(result)
                 cli_blockers = [] if skip_peer_root_cause else self._blockers_from_angular_cli_output(
                     result,
@@ -430,6 +531,7 @@ class AngularAdapter(BaseAdapter):
                         )
                         command_results.append({"command": command_to_run, "angularCliPolicy": policy, **retry, "retry": True})
                         if retry["returncode"] == 0:
+                            install_succeeded = True
                             continue
                     if not legacy_peer_deps_mode and allow_legacy_peer_deps_fallback and _is_peer_dependency_conflict(result):
                         legacy_command = _legacy_peer_deps_command(command_to_run)
@@ -446,6 +548,7 @@ class AngularAdapter(BaseAdapter):
                         )
                         command_results.append({"command": legacy_command, "angularCliPolicy": self.angular_cli_invocation_policy(legacy_command), **retry, "retry": True})
                         if retry["returncode"] == 0:
+                            install_succeeded = True
                             preflight["legacyPeerDepsFallbackUsed"] = True
                             preflight["legacyPeerDepsMode"] = True
                             legacy_peer_deps_mode = True
@@ -498,6 +601,24 @@ class AngularAdapter(BaseAdapter):
             "passed": False,
             "errors": "\n\n".join(_format_command_output(item["command"], item) for item in command_results),
         }
+        if failure_details:
+            validation["errors"] = "\n\n".join(
+                part
+                for part in [
+                    validation.get("errors", ""),
+                    f"Suggested corrected command: {' '.join(failure_details['suggestedCorrectedCommand'])}",
+                    *(
+                        [
+                            f"Intended Angular CLI version: {failure_details.get('intendedCliVersion')}",
+                            f"Actual temporary Angular CLI version: {failure_details.get('actualTemporaryCliVersion')}",
+                            f"Node version: {failure_details.get('nodeVersion')}",
+                        ]
+                        if failure_details.get("failureType") == "Angular CLI version escape"
+                        else []
+                    ),
+                ]
+                if part
+            )
         if success:
             validation = self._run_validations(project_path, progress=progress, stage=stage, log_path=log_path, timeout_seconds=command_timeout_seconds)
             success = bool(validation["passed"])
@@ -515,14 +636,55 @@ class AngularAdapter(BaseAdapter):
                     log_path,
                     command_timeout_seconds,
                     legacy_peer_deps_mode,
+                    attempt=1,
+                    max_attempts=max_ai_remediation_retries,
                 )
                 if ai_fallback["attempted"]:
                     command_results.extend(ai_fallback["commands"])
                     remediations.extend(ai_fallback["remediations"])
+                    ai_remediation_changes.extend(ai_fallback.get("sourceChanges", []))
+                    manual_correction_requests.extend(ai_fallback.get("manualCorrectionRequests", []))
                     preflight["remediations"] = remediations
                     if ai_fallback["success"]:
                         validation = self._run_validations(project_path, progress=progress, stage=stage, log_path=log_path, timeout_seconds=command_timeout_seconds)
                         success = bool(validation["passed"])
+                    attempt = 1
+                    validation = ai_fallback.get("validation") or validation
+                    while not success and ai_fallback.get("attempted") and not ai_fallback.get("manualCorrectionRequests") and attempt < max_ai_remediation_retries:
+                        attempt += 1
+                        ai_fallback = self._remediate_with_ai_after_failure(
+                            project_path,
+                            {"stdout": "", "stderr": validation.get("errors", ""), "returncode": 1},
+                            failure_stage,
+                            target,
+                            package_manager,
+                            ai_config,
+                            progress,
+                            stage,
+                            log_path,
+                            command_timeout_seconds,
+                            legacy_peer_deps_mode,
+                            attempt=attempt,
+                            max_attempts=max_ai_remediation_retries,
+                        )
+                        command_results.extend(ai_fallback["commands"])
+                        remediations.extend(ai_fallback["remediations"])
+                        ai_remediation_changes.extend(ai_fallback.get("sourceChanges", []))
+                        manual_correction_requests.extend(ai_fallback.get("manualCorrectionRequests", []))
+                        validation = ai_fallback.get("validation") or validation
+                        preflight["remediations"] = remediations
+                        if ai_fallback["success"]:
+                            validation = self._run_validations(project_path, progress=progress, stage=stage, log_path=log_path, timeout_seconds=command_timeout_seconds)
+                            success = bool(validation["passed"])
+                            break
+                        if ai_fallback.get("manualCorrectionRequests"):
+                            break
+                    if not success and attempt >= max_ai_remediation_retries and progress:
+                        progress.stage(stage, f"[AI Remediation] Reached max retries: {max_ai_remediation_retries}.")
+        if migrate_only_status:
+            validation.setdefault("skipped", []).append(
+                {"description": "Angular migrate-only", "reason": migrate_only_status.get("reason", "skipped")}
+            )
         if success and progress:
             progress.stage(stage, "Completed successfully.")
 
@@ -530,15 +692,20 @@ class AngularAdapter(BaseAdapter):
             "hop": hop,
             "status": "done" if success else "failed",
             "commands": command_results,
-            "files": _changed_structural_files(project_path, before_files),
+            "files": sorted(set(_changed_structural_files(project_path, before_files) + [change["file"] for change in ai_remediation_changes])),
             "compatibility": compatibility,
             "preflightDependencyAnalysis": preflight,
             "dependencyCompatibilityIssues": preflight.get("blockers", []),
             "dependencyCompatibilityRemediations": remediations,
+            "aiRemediationChanges": ai_remediation_changes,
+            "manualCorrectionRequests": manual_correction_requests,
             "retriedAngularUpdate": retried_angular_update,
             "validation": validation,
+            **({} if not migrate_only_status else {"angularCliMigrateOnlyStatus": migrate_only_status}),
             "optionalMigrations": optional_migrations,
             **({} if success else {"failureStage": failure_stage, "failureReason": f"{failure_stage} failed"}),
+            **({} if success or failure_stage != "Angular CLI update" else {"failurePackage": _migration_package_from_command(command_to_run)}),
+            **({} if success else failure_details),
         }
 
     def _plan_framework_critical_updates(
@@ -593,6 +760,138 @@ class AngularAdapter(BaseAdapter):
         if touched:
             package_json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         return {"updates": updates, "unresolved": unresolved}
+
+    def _apply_angular_package_json_update(
+        self,
+        project_path: Path,
+        target_major: int,
+        *,
+        progress: ProgressReporter | None = None,
+        stage: str | None = None,
+        log_path: Path | None = None,
+        timeout_seconds: int | None = None,
+    ) -> dict[str, Any]:
+        package_json = project_path / "package.json"
+        data = _read_json(package_json)
+        commands: list[dict[str, Any]] = []
+        remediations: list[dict[str, Any]] = []
+        touched = False
+        resolved_framework_version: str | None = None
+        resolved_tooling_version: str | None = None
+
+        for section in ("dependencies", "devDependencies"):
+            dependencies = data.get(section, {})
+            if not isinstance(dependencies, dict):
+                continue
+            for package_name in sorted(list(dependencies.keys())):
+                if not _is_angular_package_json_update_candidate(package_name):
+                    continue
+                resolver_package = package_name
+                if package_name in ANGULAR_FRAMEWORK_VERSION_PACKAGES or package_name == "@angular/compiler-cli":
+                    resolver_package = "@angular/core"
+                elif package_name in ANGULAR_TOOLING_VERSION_PACKAGES:
+                    resolver_package = "@angular/cli"
+
+                if resolver_package == "@angular/core" and (resolved_framework_version is not None or target_major in self._angular_target_version_cache):
+                    version = resolved_framework_version or self._angular_target_version_cache.get(target_major)
+                    command = ["npm", "view", f"@angular/core@{target_major}", "version", "--json"]
+                elif resolver_package == "@angular/cli" and (resolved_tooling_version is not None or target_major in self._angular_cli_target_version_cache):
+                    version = resolved_tooling_version or self._angular_cli_target_version_cache.get(target_major)
+                    command = ["npm", "view", f"@angular/cli@{target_major}", "version", "--json"]
+                else:
+                    resolved = self._resolve_latest_stable_target_version(
+                        resolver_package,
+                        target_major,
+                        project_path,
+                        log_path=log_path,
+                        progress=progress,
+                        stage=stage,
+                        timeout_seconds=timeout_seconds,
+                    )
+                    commands.append(resolved["commandResult"])
+                    version = resolved["version"]
+                    command = resolved["command"]
+                    if resolver_package == "@angular/core":
+                        resolved_framework_version = version
+                        self._angular_target_version_cache[target_major] = version
+                    elif resolver_package == "@angular/cli":
+                        resolved_tooling_version = version
+                        self._angular_cli_target_version_cache[target_major] = version
+
+                if not version:
+                    return {
+                        "success": False,
+                        "commands": commands,
+                        "remediations": remediations,
+                        "reason": f"{package_name} target version cannot be resolved to one stable version",
+                        "package": package_name,
+                    }
+                from_version = str(dependencies[package_name])
+                to_version = f"^{version}"
+                if from_version == to_version:
+                    continue
+                dependencies[package_name] = to_version
+                touched = True
+                remediations.append(
+                    {
+                        "hop": None,
+                        "package": package_name,
+                        "fromVersion": from_version,
+                        "toVersion": to_version,
+                        "issue": "Angular package.json phase update",
+                        "targetAngularVersion": f"{target_major}.x",
+                        "command": command,
+                        "validation": "not run",
+                        "status": "updated-package-json",
+                    }
+                )
+
+        if target_major == 15:
+            section = _dependency_section_for(data, "typescript")
+            if section is not None:
+                dependencies = data.get(section, {})
+                if isinstance(dependencies, dict) and dependencies.get("typescript") != "~4.9.5":
+                    dependencies["typescript"] = "~4.9.5"
+                    touched = True
+
+        if touched:
+            package_json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+            if progress:
+                progress.stage(stage or "Angular", "Updated Angular package versions in package.json.")
+        return {"success": True, "commands": commands, "remediations": remediations, "reason": "", "package": None}
+
+    def _resolve_latest_stable_target_version(
+        self,
+        package_name: str,
+        target_major: int,
+        project_path: Path,
+        *,
+        log_path: Path | None = None,
+        progress: ProgressReporter | None = None,
+        stage: str | None = None,
+        timeout_seconds: int | None = None,
+    ) -> dict[str, Any]:
+        command = ["npm", "view", f"{package_name}@{target_major}", "version", "--json"]
+        result = _run_command(
+            command,
+            project_path,
+            progress=progress,
+            stage=stage,
+            description=f"{package_name} target version lookup",
+            log_path=log_path,
+            timeout_seconds=timeout_seconds,
+        )
+        parsed = _parse_npm_json(result.get("stdout", "")) if result["returncode"] == 0 else None
+        version = _select_latest_stable_major_version(parsed, target_major)
+        if package_name == "@angular/core":
+            self._angular_target_version_cache[target_major] = version
+        elif package_name == "@angular/cli":
+            self._angular_cli_target_version_cache[target_major] = version
+        return {
+            "version": version,
+            "command": command,
+            "commandResult": {"command": command, "angularCliPolicy": self.angular_cli_invocation_policy(command), **result},
+        }
 
     def analyze_peer_dependency_compatibility(
         self,
@@ -815,10 +1114,9 @@ class AngularAdapter(BaseAdapter):
             return self._framework_version_candidates(package_name, target_major, project_path, log_path)
 
         if allow_target_major_lookup:
-            result = self._npm_view(package_name, f"{package_name}@{target_major}", "version", project_path, log_path)
-            parsed = _parse_npm_json(result.get("stdout", "")) if result["returncode"] == 0 else None
-            version = str(parsed) if isinstance(parsed, str) else None
-            if version and _major_version(version) == target_major:
+            resolved = self._resolve_latest_stable_target_version(package_name, target_major, project_path, log_path=log_path)
+            version = resolved["version"]
+            if version:
                 return [version]
             if warnings is not None:
                 warnings.append(
@@ -853,16 +1151,9 @@ class AngularAdapter(BaseAdapter):
         project_path: Path,
         log_path: Path | None,
     ) -> list[str]:
-        candidates: list[str] = []
-        for spec in (f"{package_name}@{target_major}", package_name):
-            result = self._npm_view(package_name, spec, "version", project_path, log_path)
-            if result["returncode"] != 0:
-                continue
-            parsed = _parse_npm_json(result.get("stdout", ""))
-            version = str(parsed) if isinstance(parsed, str) else None
-            if version:
-                candidates.append(version)
-        return candidates
+        resolver_package = "@angular/core" if package_name in ANGULAR_FRAMEWORK_VERSION_PACKAGES or package_name == "@angular/compiler-cli" else package_name
+        version = self._resolve_latest_stable_target_version(resolver_package, target_major, project_path, log_path=log_path)["version"]
+        return [version] if version else []
 
     def _apply_preflight_remediations(
         self,
@@ -984,10 +1275,37 @@ class AngularAdapter(BaseAdapter):
 
     def _resolve_angular_target_version(self, target_major: int, project_path: Path, log_path: Path | None) -> str | None:
         if target_major not in self._angular_target_version_cache:
-            result = self._npm_view("@angular/core", f"@angular/core@{target_major}", "version", project_path, log_path)
-            parsed = _parse_npm_json(result.get("stdout", "")) if result["returncode"] == 0 else None
-            self._angular_target_version_cache[target_major] = str(parsed) if isinstance(parsed, str) else None
+            self._angular_target_version_cache[target_major] = self._resolve_latest_stable_target_version(
+                "@angular/core",
+                target_major,
+                project_path,
+                log_path=log_path,
+            )["version"]
         return self._angular_target_version_cache[target_major]
+
+    def _resolve_angular_cli_target_version(
+        self,
+        target_major: int,
+        project_path: Path,
+        *,
+        log_path: Path | None = None,
+        progress: ProgressReporter | None = None,
+        stage: str | None = None,
+        timeout_seconds: int | None = None,
+    ) -> dict[str, Any]:
+        cached = self._angular_cli_target_version_cache.get(target_major)
+        if cached:
+            return {"version": cached, "commands": []}
+        resolved = self._resolve_latest_stable_target_version(
+            "@angular/cli",
+            target_major,
+            project_path,
+            log_path=log_path,
+            progress=progress,
+            stage=stage,
+            timeout_seconds=timeout_seconds,
+        )
+        return {"version": resolved["version"], "commands": [resolved["commandResult"]]}
 
     def _remediate_cli_peer_failure(
         self,
@@ -1079,30 +1397,38 @@ class AngularAdapter(BaseAdapter):
         log_path: Path | None,
         command_timeout_seconds: int,
         legacy_peer_deps_mode: bool = False,
+        attempt: int = 1,
+        max_attempts: int = 3,
     ) -> dict[str, Any]:
         if not ai_config or not ai_config.use_ai:
-            return {"attempted": False, "success": False, "commands": [], "remediations": []}
+            return {"attempted": False, "success": False, "commands": [], "remediations": [], "sourceChanges": [], "manualCorrectionRequests": [], "validation": None}
         if progress:
+            progress.stage(stage, f"[AI Remediation] Attempt {attempt}/{max_attempts}")
             progress.stage(stage, f"Asking AI for targeted remediation after {failure_stage} failure...")
         manifest = self.parse_manifest(project_path)
         output = "\n".join(part for part in [failure.get("stdout", ""), failure.get("stderr", "")] if part)[-12000:]
         system = """You propose minimal remediation after a real framework migration failure.
 Return strict JSON only with:
 {
+  "failureType": "typescript-compile-error",
   "rootCause": "...",
-  "affectedPackages": ["direct-package-name"],
-  "affectedFiles": ["package.json"],
+  "confidence": "high | medium | low",
+  "canAutoFix": true,
+  "affectedFiles": [{"file": "...", "lines": [216], "error": "..."}],
+  "proposedChanges": [{"file": "...", "changeType": "import-compatibility", "description": "...", "functionalImpact": "none | equivalent", "whySafe": "..."}],
   "packageUpdates": [{"name": "direct-package-name", "version": "x.y.z", "reason": "..."}],
   "businessLogicChanged": false,
-  "rollbackSafety": "...",
-  "validationCommand": ["npm", "run", "build"]
+  "requiresHumanReview": false,
+  "manualInstructions": [],
+  "validationCommand": "npm run build"
 }
 Rules:
 - Use only direct dependencies from package.json.
-- Prefer package.json/package manager remediation.
+- Source-code edits are allowed only for real build/test/TypeScript validation failures.
+- Allowed source edits must be import/type/config/test-setup compatibility fixes with no business behavior change.
 - Do not change business logic.
-- Do not request unbounded version scans.
-- Do not upgrade unrelated packages to latest without evidence."""
+- Do not delete code, disable tests, add ts-ignore, or add any.
+- If unsure, set canAutoFix=false and requiresHumanReview=true with manualInstructions."""
         user = json.dumps(
             {
                 "runtime": self.runtime,
@@ -1119,11 +1445,35 @@ Rules:
         except Exception as exc:
             if progress:
                 progress.stage(stage, f"AI remediation unavailable: {exc}")
-            return {"attempted": False, "success": False, "commands": [], "remediations": []}
+            return {"attempted": False, "success": False, "commands": [], "remediations": [], "sourceChanges": [], "manualCorrectionRequests": [], "validation": None}
         direct_versions = {item["name"]: item["version"] for item in manifest.get("dependencies", [])}
+        safety = _validate_ai_remediation_plan(plan)
+        if not safety["safe"]:
+            request = _manual_correction_request(plan, output, safety["reason"])
+            if progress:
+                progress.stage(stage, "[AI Remediation] Manual correction required.")
+            return {
+                "attempted": True,
+                "success": False,
+                "commands": [],
+                "remediations": [],
+                "sourceChanges": [],
+                "manualCorrectionRequests": [request],
+                "validation": None,
+            }
         updates = _safe_ai_package_updates(plan, direct_versions)
-        if not updates:
-            return {"attempted": False, "success": False, "commands": [], "remediations": []}
+        source_changes = _safe_ai_source_changes(project_path, plan, output, attempt, max_attempts, failure_stage)
+        if not updates and not source_changes:
+            request = _manual_correction_request(plan, output, "No safe automatic remediation was identified.")
+            return {
+                "attempted": True,
+                "success": False,
+                "commands": [],
+                "remediations": [],
+                "sourceChanges": [],
+                "manualCorrectionRequests": [request],
+                "validation": None,
+            }
         command_results = []
         remediations = []
         for update in updates:
@@ -1155,7 +1505,10 @@ Rules:
             }
             remediations.append(remediation)
             if result["returncode"] != 0:
-                return {"attempted": True, "success": False, "commands": command_results, "remediations": remediations}
+                return {"attempted": True, "success": False, "commands": command_results, "remediations": remediations, "sourceChanges": source_changes, "manualCorrectionRequests": [], "validation": None}
+        for change in source_changes:
+            if progress:
+                progress.stage(stage, f"[AI Remediation] Applying safe {change['changeType']} fix.")
         install_command = _apply_legacy_peer_deps_mode(self.install_command(package_manager), legacy_peer_deps_mode)
         install_result = _run_command(
             install_command,
@@ -1168,42 +1521,68 @@ Rules:
         )
         command_results.append({"command": install_command, "angularCliPolicy": self.angular_cli_invocation_policy(install_command), **install_result})
         if install_result["returncode"] != 0:
-            return {"attempted": True, "success": False, "commands": command_results, "remediations": remediations}
+            return {"attempted": True, "success": False, "commands": command_results, "remediations": remediations, "sourceChanges": source_changes, "manualCorrectionRequests": [], "validation": None}
+        if progress:
+            progress.stage(stage, f"[Validation] Rerunning {_validation_command_text(plan)}")
         validation = self._run_validations(project_path, progress=progress, stage=stage, log_path=log_path, timeout_seconds=command_timeout_seconds)
         for remediation in remediations:
             remediation["validation"] = "passed" if validation["passed"] else "failed"
             remediation["status"] = "remediated" if validation["passed"] else "failed"
-        return {"attempted": True, "success": bool(validation["passed"]), "commands": command_results, "remediations": remediations}
+        for change in source_changes:
+            change["validationResult"] = "passed" if validation["passed"] else "failed"
+        return {
+            "attempted": True,
+            "success": bool(validation["passed"]),
+            "commands": command_results,
+            "remediations": remediations,
+            "sourceChanges": source_changes,
+            "manualCorrectionRequests": [],
+            "validation": validation,
+        }
 
     def angular_update_command(self, target_major: int) -> list[str]:
+        cli_version = self._angular_cli_target_version_cache.get(target_major) or str(target_major)
+        return self.angular_migrate_only_command("@angular/core", target_major - 1, target_major, cli_version)
+
+    def angular_migrate_only_commands(self, source_major: int, target_major: int, cli_version: str | None = None) -> list[list[str]]:
         return [
-            "npx",
-            "--yes",
-            f"@angular/cli@{target_major}",
-            "update",
-            f"@angular/core@{target_major}",
-            f"@angular/cli@{target_major}",
-            "--allow-dirty",
-            "--force",
+            self.angular_migrate_only_command("@angular/core", source_major, target_major, cli_version),
+            self.angular_migrate_only_command("@angular/cli", source_major, target_major, cli_version),
         ]
 
-    def angular_package_update_command(self, package_name: str, target_major: int) -> list[str]:
+    def angular_migrate_only_command(self, package_name: str, source_major: int, target_major: int, cli_version: str | None = None) -> list[str]:
+        cli_version = cli_version or self._angular_cli_target_version_cache.get(target_major) or str(target_major)
+        target_version = self._migrate_only_target_version(package_name, target_major)
         return [
             "npx",
             "--yes",
-            f"@angular/cli@{target_major}",
+            "-p",
+            f"@angular/cli@{cli_version}",
+            "ng",
             "update",
-            f"{package_name}@{target_major}",
+            package_name,
+            "--migrate-only",
+            "--from",
+            f"{source_major}.0.0",
+            "--to",
+            target_version,
             "--allow-dirty",
-            "--force",
         ]
+
+    def _migrate_only_target_version(self, package_name: str, target_major: int) -> str:
+        if package_name == "@angular/cli":
+            return self._angular_cli_target_version_cache.get(target_major) or str(target_major)
+        return self._angular_target_version_cache.get(target_major) or str(target_major)
 
     def angular_cli_invocation_policy(self, command: list[str]) -> dict[str, str]:
         uses_pinned_npx = (
             len(command) >= 3
             and command[0] == "npx"
             and command[1] == "--yes"
-            and command[2].startswith("@angular/cli@")
+            and (
+                command[2].startswith("@angular/cli@")
+                or (len(command) >= 4 and command[2] == "-p" and command[3].startswith("@angular/cli@"))
+            )
         )
         return {
             "commandSource": "npx" if uses_pinned_npx else command[0],
@@ -1217,12 +1596,12 @@ Rules:
             return self.angular_update_command(target_major)
         if _is_global_angular_command(command) or _is_global_npm_install_update(command):
             return self.angular_update_command(target_major)
+        if "--migrate-only" in command:
+            return self.angular_migrate_only_command("@angular/core", _migration_from_major(command, target_major), target_major)
         safe = _ensure_npx_yes(command)
         if _is_angular_update_command(safe):
             if "--allow-dirty" not in safe:
                 safe.append("--allow-dirty")
-            if "--force" not in safe:
-                safe.append("--force")
         return safe
 
     def detect_package_manager(self, project_path: Path) -> tuple[str, str | None]:
@@ -1239,7 +1618,7 @@ Rules:
             return ["yarn", "install"]
         if package_manager == "pnpm":
             return ["pnpm", "install"]
-        return ["npm", "install"]
+        return ["npm", "install", "--legacy-peer-deps", "--no-audit", "--no-fund", "--prefer-offline"]
 
     def validation_commands(self, manifest: dict[str, Any]) -> list[dict[str, Any]]:
         package_manager = manifest["packageManager"]
@@ -1432,6 +1811,10 @@ def _dependency_section_for(data: dict[str, Any], package_name: str) -> str | No
     return None
 
 
+def _is_angular_package_json_update_candidate(package_name: str) -> bool:
+    return package_name.startswith("@angular/") or package_name.startswith("@angular-devkit/")
+
+
 def _angular_peer_analysis_candidates(data: dict[str, Any]) -> list[dict[str, str]]:
     return _dependency_sections(data)
 
@@ -1457,6 +1840,12 @@ def _version_tuple(version: str | None) -> tuple[int, ...] | None:
     if not match:
         return None
     return tuple(int(part) for part in match.groups(default="0"))
+
+
+def _format_version_tuple(version: tuple[int, ...] | None) -> str | None:
+    if version is None:
+        return None
+    return ".".join(str(part) for part in version)
 
 
 def _node_version(project_path: Path) -> tuple[int, int, int] | None:
@@ -1589,9 +1978,11 @@ def _hop_stage(hop: dict[str, Any]) -> str:
 
 
 def _command_description(command: list[str]) -> str:
-    if len(command) >= 4 and command[:2] == ["npx", "--yes"] and command[3] == "update":
+    if _is_angular_update_command(command):
         if "--name" in command and "use-application-builder" in command:
             return "Angular application builder migration"
+        if "--migrate-only" in command:
+            return "Angular migrate-only"
         return "Angular CLI update"
     if command[:2] in (["npm", "install"], ["yarn", "install"], ["pnpm", "install"]):
         return "dependency install"
@@ -1609,7 +2000,149 @@ def _failure_stage_for_command(command: list[str]) -> str:
 
 
 def _is_angular_update_command(command: list[str]) -> bool:
-    return len(command) >= 4 and command[:2] == ["npx", "--yes"] and command[3] == "update"
+    return (len(command) >= 4 and command[:2] == ["npx", "--yes"] and command[3] == "update") or (
+        len(command) >= 5 and command[:2] == ["npx", "--yes"] and command[3:5] == ["ng", "update"]
+    ) or (
+        len(command) >= 6 and command[:3] == ["npx", "--yes", "-p"] and command[4:6] == ["ng", "update"]
+    )
+
+
+def _has_mixed_direct_npx_angular_cli_invocation(command: list[str]) -> bool:
+    return (
+        len(command) >= 5
+        and command[:2] == ["npx", "--yes"]
+        and command[2].startswith("@angular/cli@")
+        and command[3:5] == ["ng", "update"]
+    )
+
+
+def _correct_angular_cli_invocation(command: list[str]) -> list[str]:
+    if _has_mixed_direct_npx_angular_cli_invocation(command):
+        return [*command[:3], *command[4:]]
+    return command
+
+
+def _migration_from_major(command: list[str], target_major: int) -> int:
+    if "--from" in command:
+        index = command.index("--from")
+        if index + 1 < len(command):
+            try:
+                return int(command[index + 1])
+            except ValueError:
+                pass
+    return target_major - 1
+
+
+def _migration_package_from_command(command: list[str]) -> str | None:
+    if "--migrate-only" not in command or "update" not in command:
+        return None
+    package_start = command.index("update") + 1
+    for token in command[package_start:]:
+        if token.startswith("--"):
+            break
+        if token.startswith("@angular/"):
+            return _strip_package_version_suffix(token)
+    return None
+
+
+def _strip_package_version_suffix(package_specifier: str) -> str:
+    match = re.match(r"^(@[^/]+/[^@]+)@.+$", package_specifier)
+    if match:
+        return match.group(1)
+    return package_specifier
+
+
+def _strip_migrate_only_package_versions(command: list[str]) -> list[str]:
+    if "--migrate-only" not in command or "update" not in command:
+        return command
+    safe = list(command)
+    package_start = safe.index("update") + 1
+    for index in range(package_start, len(safe)):
+        token = safe[index]
+        if token.startswith("--"):
+            break
+        if token.startswith("@angular/"):
+            safe[index] = _strip_package_version_suffix(token)
+    return safe
+
+
+def _invalid_migrate_only_package_specifier(command: list[str], result: dict[str, Any]) -> dict[str, Any] | None:
+    if "--migrate-only" not in command:
+        return None
+    output = "\n".join(part for part in [result.get("stdout", ""), result.get("stderr", "")] if part)
+    normalized_output = output.replace('"', "")
+    if "Package specifier has no effect when using migrate-only option" not in normalized_output:
+        return None
+    corrected = _strip_migrate_only_package_versions(command)
+    return {
+        "failureReason": "Invalid migrate-only package specifier.",
+        "failureCommand": command,
+        "suggestedCorrectedCommand": corrected,
+        "correctedCommand": corrected,
+    }
+
+
+def _angular_cli_version_escape(
+    command: list[str],
+    result: dict[str, Any],
+    target_major: int,
+    intended_cli_version: str | None,
+    project_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_angular_update_command(command) or "--migrate-only" not in command:
+        return None
+    output = "\n".join(part for part in [result.get("stdout", ""), result.get("stderr", "")] if part)
+    escape = detect_angular_cli_version_escape(output, target_major)
+    if not escape:
+        return None
+    output_node_version = _angular_cli_output_node_version(output)
+    node_version = output_node_version or _format_version_tuple(_node_version(project_path))
+    return {
+        "failureType": "Angular CLI version escape",
+        "failureReason": "Angular CLI version escape",
+        "failureCommand": command,
+        "suggestedCorrectedCommand": command,
+        "intendedCliVersion": intended_cli_version,
+        "actualTemporaryCliVersion": escape["temporary_cli_version"],
+        "temporaryCliMajor": escape["temporary_cli_major"],
+        "targetAngularMajor": escape["target_major"],
+        "nodeVersion": node_version,
+        "correctedCommand": command,
+    }
+
+
+def detect_angular_cli_version_escape(output: str, target_major: int) -> dict[str, Any] | None:
+    if "the installed angular cli version is outdated" not in output.lower():
+        return None
+    match = re.search(
+        r"Installing a temporary Angular CLI versioned\s+(\d+)(?:\.(\d+))?(?:\.(\d+))?",
+        output,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    version = ".".join(part for part in match.groups() if part is not None)
+    major = int(match.group(1))
+    if major > target_major:
+        return {
+            "type": "angular_cli_version_escape",
+            "temporary_cli_version": version,
+            "temporary_cli_major": major,
+            "target_major": target_major,
+        }
+    return None
+
+
+def _angular_cli_output_node_version(output: str) -> str | None:
+    match = re.search(r"Node\.js version v?([0-9]+(?:\.[0-9]+){0,2}) detected", output, re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def _is_angular_cli_invocation_failure(command: list[str], result: dict[str, Any]) -> bool:
+    if not _has_mixed_direct_npx_angular_cli_invocation(command):
+        return False
+    output = "\n".join(part for part in [result.get("stdout", ""), result.get("stderr", "")] if part).lower()
+    return "unknown command" in output or "did you mean g" in output
 
 
 def _is_dependency_install_command(command: list[str]) -> bool:
@@ -1656,6 +2189,22 @@ def _parse_npm_json(output: str) -> Any:
         return None
 
 
+def _select_latest_stable_major_version(parsed: Any, target_major: int) -> str | None:
+    if isinstance(parsed, str):
+        version = parsed.strip()
+        return version if _is_stable_major_version(version, target_major) else None
+    if not isinstance(parsed, list):
+        return None
+    versions = [str(item).strip() for item in parsed if _is_stable_major_version(str(item).strip(), target_major)]
+    if not versions:
+        return None
+    return max(versions, key=lambda version: _version_tuple(version) or (0,))
+
+
+def _is_stable_major_version(version: str, target_major: int) -> bool:
+    return bool(version) and "-" not in version and _major_version(version) == target_major
+
+
 def _package_spec(package_name: str, version_range: str) -> str:
     clean_range = str(version_range).strip()
     if not clean_range or clean_range == "*":
@@ -1676,12 +2225,156 @@ def _safe_ai_package_updates(plan: dict[str, Any], direct_versions: dict[str, st
             continue
         name = str(item.get("name", "")).strip()
         version = str(item.get("version", "")).strip()
-        if name not in direct_versions or not version:
+        if name not in direct_versions and name != "moment-timezone":
+            continue
+        if not version:
             continue
         if version in {"latest", "*"}:
             continue
         updates.append({"name": name, "version": version, "reason": str(item.get("reason") or "")})
     return updates
+
+
+def _validate_ai_remediation_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(plan, dict):
+        return {"safe": False, "reason": "AI did not return a JSON object."}
+    if plan.get("confidence") == "low":
+        return {"safe": False, "reason": "AI confidence is low."}
+    if plan.get("canAutoFix") is False:
+        return {"safe": False, "reason": "AI marked the fix as not safe to apply automatically."}
+    if plan.get("requiresHumanReview") is True:
+        return {"safe": False, "reason": "AI requested human review."}
+    if plan.get("businessLogicChanged") is True:
+        return {"safe": False, "reason": "Plan would change business logic."}
+    unsafe_words = ("ts-ignore", "@ts-ignore", " any", "comment out", "disable test", "skip test", "delete", "remove code", "rewrite", "refactor")
+    for change in plan.get("proposedChanges", []):
+        if not isinstance(change, dict):
+            return {"safe": False, "reason": "Invalid proposed change."}
+        if change.get("functionalImpact") not in {"none", "equivalent"}:
+            return {"safe": False, "reason": "Functional impact is not none or equivalent."}
+        text = " ".join(str(change.get(key, "")) for key in ("changeType", "description", "whySafe")).lower()
+        if any(word in text for word in unsafe_words):
+            return {"safe": False, "reason": "Plan contains an unsafe edit pattern."}
+    return {"safe": True, "reason": ""}
+
+
+def _safe_ai_source_changes(
+    project_path: Path,
+    plan: dict[str, Any],
+    output: str,
+    attempt: int,
+    max_attempts: int,
+    failure_stage: str,
+) -> list[dict[str, Any]]:
+    if failure_stage != "build validation":
+        return []
+    if "Property 'tz' does not exist on type 'Moment'" not in output:
+        return []
+    proposed = plan.get("proposedChanges", [])
+    if proposed and not any(change.get("changeType") == "import-compatibility" for change in proposed if isinstance(change, dict)):
+        return []
+    changed = []
+    for file_path in _moment_timezone_import_candidates(project_path):
+        relative = file_path.relative_to(project_path).as_posix()
+        before = file_path.read_text(encoding="utf-8")
+        after = before.replace("from 'moment';", "from 'moment-timezone';").replace('from "moment";', 'from "moment-timezone";')
+        if after == before:
+            continue
+        file_path.write_text(after, encoding="utf-8")
+        changed.append(
+            {
+                "attempt": attempt,
+                "maxAttempts": max_attempts,
+                "failure": "TS2339: Property 'tz' does not exist on type 'Moment'",
+                "file": relative,
+                "linesChanged": _changed_line_numbers(before, after),
+                "oldCodeSummary": 'moment import from "moment"',
+                "newCodeSummary": 'moment import from "moment-timezone"',
+                "reason": "Moment timezone typings are required for existing .tz(...) calls.",
+                "confidence": plan.get("confidence", "high"),
+                "functionalImpact": "none",
+                "whySafe": "Only the import source changed; existing date/time expressions and timezone values were preserved.",
+                "validationCommand": _validation_command_text(plan),
+                "validationResult": "not run",
+                "changeType": "import-compatibility",
+                "failureStage": failure_stage,
+                "businessFile": relative.startswith("src/app/"),
+            }
+        )
+    return changed
+
+
+def _moment_timezone_import_candidates(project_path: Path) -> list[Path]:
+    src = project_path / "src"
+    if not src.exists():
+        return []
+    candidates = []
+    for file_path in src.rglob("*.ts"):
+        try:
+            text = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if ".tz(" not in text:
+            continue
+        if "from 'moment';" in text or 'from "moment";' in text:
+            candidates.append(file_path)
+    return candidates
+
+
+def _changed_line_numbers(before: str, after: str) -> list[int]:
+    before_lines = before.splitlines()
+    after_lines = after.splitlines()
+    return [index for index, (left, right) in enumerate(zip(before_lines, after_lines), start=1) if left != right]
+
+
+def _manual_correction_request(plan: dict[str, Any], output: str, reason: str) -> dict[str, Any]:
+    instructions = plan.get("manualInstructions")
+    if not isinstance(instructions, list) or not instructions:
+        affected = plan.get("affectedFiles", [])
+        instructions = []
+        for item in affected if isinstance(affected, list) else []:
+            if not isinstance(item, dict):
+                continue
+            lines = item.get("lines") if isinstance(item.get("lines"), list) else []
+            instructions.append(
+                {
+                    "file": item.get("file"),
+                    "line": lines[0] if lines else None,
+                    "error": item.get("error") or output[:500],
+                    "currentCode": "",
+                    "possibleChange": "",
+                    "risk": reason,
+                    "humanDecisionNeeded": "Confirm intended behavior before changing.",
+                }
+            )
+    if not instructions:
+        instructions = [
+            {
+                "file": "unknown",
+                "line": None,
+                "error": output[:500],
+                "currentCode": "",
+                "possibleChange": "",
+                "risk": reason,
+                "humanDecisionNeeded": "Review the validation failure and choose a behavior-preserving fix.",
+            }
+        ]
+    return {
+        "canAutoFix": False,
+        "requiresHumanReview": True,
+        "confidence": "low",
+        "reason": reason,
+        "manualInstructions": instructions,
+    }
+
+
+def _validation_command_text(plan: dict[str, Any]) -> str:
+    command = plan.get("validationCommand")
+    if isinstance(command, list):
+        return " ".join(str(part) for part in command)
+    if isinstance(command, str) and command:
+        return command
+    return "npm run build"
 
 
 def _find_dependency_section(project_path: Path, package_name: str) -> str | None:

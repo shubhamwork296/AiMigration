@@ -40,6 +40,8 @@ class MigrationConfig:
     allow_legacy_peer_deps_fallback: bool = True
     command_timeout_seconds: int = 600
     show_timing_summary: bool = True
+    max_ai_remediation_retries: int = 3
+    rollback_mode: str = "manual"
     allow_business_logic_changes: bool = False
     prefer_ng_update: bool = True
     avoid_full_version_scans: bool = True
@@ -90,6 +92,8 @@ def _parse_config(raw: dict[str, Any], base_dir: Path, verbosity: str | None = N
         allow_legacy_peer_deps_fallback=bool(raw.get("allowLegacyPeerDepsFallback", True)),
         command_timeout_seconds=int(raw.get("commandTimeoutSeconds", 600)),
         show_timing_summary=bool(raw.get("showTimingSummary", True)),
+        max_ai_remediation_retries=int(raw.get("maxAiRemediationRetries", 3)),
+        rollback_mode=str(raw.get("rollbackMode", "manual")),
         allow_business_logic_changes=bool(raw.get("allowBusinessLogicChanges", False)),
         prefer_ng_update=bool(raw.get("preferNgUpdate", True)),
         avoid_full_version_scans=bool(raw.get("avoidFullVersionScans", True)),
@@ -183,6 +187,10 @@ def _validate_config(config: MigrationConfig) -> None:
         raise ValueError("dependencyCheckTimeoutSeconds must be zero or greater.")
     if config.preflight_remediation_mode not in {"off", "suggest", "apply"}:
         raise ValueError("preflightRemediationMode must be one of: off, suggest, apply.")
+    if config.max_ai_remediation_retries < 0:
+        raise ValueError("maxAiRemediationRetries must be zero or greater.")
+    if config.rollback_mode not in {"manual", "auto"}:
+        raise ValueError("rollbackMode must be one of: manual, auto.")
     if config.ai.ai_cli not in {"auto", "codex", "claude", "none"}:
         raise ValueError("aiCli must be one of: auto, codex, claude, none.")
     if config.ai.use_ai:

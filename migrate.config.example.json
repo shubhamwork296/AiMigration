@@ -15,5 +15,8 @@
   "useAi": false,
   "aiCli": "none",
   "commandTimeoutSeconds": 600,
-  "showTimingSummary": true
+  "showTimingSummary": true,
+  "maxAiRemediationRetries": 3,
+  "rollbackMode": "manual",
+  "skipPreflightDependencyCompatibility": true
 }

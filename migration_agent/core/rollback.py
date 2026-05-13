@@ -4,6 +4,8 @@ import shutil
 import time
 from pathlib import Path
 
+from migration_agent.core.copy_ignore import migration_copy_ignore
+
 
 def create_snapshot(project_path: Path, output_path: Path) -> Path:
     rollback_root = output_path.parent / "rollback"
@@ -11,7 +13,7 @@ def create_snapshot(project_path: Path, output_path: Path) -> Path:
     snapshot_path = rollback_root / str(int(time.time()))
     if snapshot_path.exists():
         shutil.rmtree(snapshot_path)
-    shutil.copytree(project_path, snapshot_path, ignore=shutil.ignore_patterns("bin", "obj", ".git", ".vs"))
+    shutil.copytree(project_path, snapshot_path, ignore=migration_copy_ignore())
     return snapshot_path
 
 

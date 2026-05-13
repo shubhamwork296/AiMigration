@@ -31,6 +31,8 @@ def test_minimal_config_uses_internal_defaults():
     assert config.dependency_check_timeout_seconds == 300
     assert config.allow_legacy_peer_deps_fallback is True
     assert config.command_timeout_seconds == 600
+    assert config.max_ai_remediation_retries == 3
+    assert config.rollback_mode == "manual"
     assert config.allow_business_logic_changes is False
     assert config.prefer_ng_update is True
     assert config.avoid_full_version_scans is True

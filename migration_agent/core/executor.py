@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from migration_agent.adapters.base import BaseAdapter
+from migration_agent.core.copy_ignore import migration_copy_ignore
 
 
 def execute_changes(
@@ -43,8 +44,7 @@ def execute_single_change(change: dict[str, Any], output_path: Path, adapter: Ba
 def copy_project(source: Path, destination: Path) -> None:
     if destination.exists():
         shutil.rmtree(destination)
-    ignore = shutil.ignore_patterns("bin", "obj", ".git", ".vs")
-    shutil.copytree(source, destination, ignore=ignore)
+    shutil.copytree(source, destination, ignore=migration_copy_ignore())
 
 
 def replace_in_files(root: Path, pattern: str, find: str, replace: str) -> list[Path]:

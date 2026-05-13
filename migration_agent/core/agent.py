@@ -96,12 +96,18 @@ async def run_migration(config: MigrationConfig) -> None:
         validation = validate(config.output_path, adapter)
 
     if not validation["passed"]:
-        progress.error("Validation", "Build failed. Restoring output from snapshot.")
-        try:
-            restore_snapshot(snapshot, config.output_path)
-        except Exception as exc:
-            validation["rollbackError"] = str(exc)
-            progress.error("Validation", f"Rollback failed: {exc}")
+        validation["snapshotPath"] = str(snapshot)
+        validation["outputPath"] = str(config.output_path)
+        if config.rollback_mode == "auto":
+            progress.error("Validation", "Build failed. Restoring output from snapshot.")
+            try:
+                restore_snapshot(snapshot, config.output_path)
+            except Exception as exc:
+                validation["rollbackError"] = str(exc)
+                progress.error("Validation", f"Rollback failed: {exc}")
+        else:
+            progress.error("Validation", "Build failed. Output preserved for manual review.")
+            _print_manual_rollback_options(snapshot)
 
     report = generate_report(plan, results, analysis, validation)
     report_path = config.output_path / "migration-report.md"
@@ -200,6 +206,7 @@ async def run_adapter_hop_migration(
                 skip_preflight_dependency_compatibility=config.skip_preflight_dependency_compatibility,
                 preflight_remediation_mode=config.preflight_remediation_mode,
                 allow_legacy_peer_deps_fallback=config.allow_legacy_peer_deps_fallback,
+                max_ai_remediation_retries=config.max_ai_remediation_retries,
                 ai_config=config.ai,
                 command_timeout_seconds=config.command_timeout_seconds,
             )
@@ -211,7 +218,13 @@ async def run_adapter_hop_migration(
                 "passed": False,
                 "failedHop": f"{hop['fromVersion']} -> {hop['toVersion']}",
                 "errors": result.get("validation", {}).get("errors", "Migration hop failed."),
+                "snapshotPath": str(snapshot),
+                "outputPath": str(config.output_path),
             }
+            if result.get("failureCommand"):
+                validation["failureCommand"] = result["failureCommand"]
+            if result.get("suggestedCorrectedCommand"):
+                validation["suggestedCorrectedCommand"] = result["suggestedCorrectedCommand"]
             if not result.get("commands"):
                 progress.stage("Analysis", f"Found dependency blockers for Angular {hop['fromVersion']} -> {hop['toVersion']}.")
             _print_failure_summary(progress, result, log_path)
@@ -219,15 +232,17 @@ async def run_adapter_hop_migration(
                 _hop_stage(hop),
                 "Execution skipped. See migration report for suggested fixes."
                 if not result.get("commands")
-                else "Migration failed. Restoring output from snapshot.",
+                else _rollback_failure_message(config.rollback_mode),
             )
-            if result.get("commands") or result.get("files"):
+            if (result.get("commands") or result.get("files")) and config.rollback_mode == "auto":
                 try:
                     with timing.measure("rollback"):
                         restore_snapshot(snapshot, config.output_path)
                 except Exception as exc:
                     validation["rollbackError"] = str(exc)
                     progress.error(_hop_stage(hop), f"Rollback failed: {exc}")
+            elif result.get("commands") or result.get("files"):
+                _print_manual_rollback_options(snapshot)
             break
 
     with timing.measure("report generation"):
@@ -286,9 +301,35 @@ def _hop_stage(hop: dict) -> str:
 def _print_failure_summary(progress: ProgressReporter, result: dict, log_path) -> None:
     hop = result["hop"]
     stage = _hop_stage(hop)
-    progress.error(stage, f"Failed during {result.get('failureStage', 'Angular CLI update')}.")
+    failure_stage = result.get("failureStage", "Angular CLI update")
+    progress.error(stage, failure_stage if str(failure_stage).endswith("failed") else f"Failed during {failure_stage}.")
     reason = result.get("failureReason") or "migration command failed"
     print(f"Reason: {reason}.")
+    if result.get("failureCommand"):
+        print(f"Command: {' '.join(result['failureCommand'])}")
+    if result.get("suggestedCorrectedCommand"):
+        print(f"Suggested corrected command: {' '.join(result['suggestedCorrectedCommand'])}")
     if result.get("failurePackage"):
         print(f"Package: {result['failurePackage']}")
+    for request in result.get("manualCorrectionRequests", []):
+        print("[AI Remediation] Unsafe or uncertain fix detected.")
+        print("[AI Remediation] Manual correction required.")
+        for instruction in request.get("manualInstructions", []):
+            print(f"[AI Remediation] File: {instruction.get('file')}")
+            print(f"[AI Remediation] Line: {instruction.get('line')}")
+            print(f"[AI Remediation] Error: {instruction.get('error')}")
+            print(f"[AI Remediation] Possible change: {instruction.get('possibleChange')}")
+            print(f"[AI Remediation] Reason human review is needed: {instruction.get('risk')}")
     print(f"Full log: {log_path}")
+
+
+def _rollback_failure_message(rollback_mode: str) -> str:
+    if rollback_mode == "manual":
+        return "Migration failed. Output preserved for manual review."
+    return "Migration failed. Restoring output from snapshot."
+
+
+def _print_manual_rollback_options(snapshot) -> None:
+    print("[Rollback] Automatic rollback disabled.")
+    print(f"[Rollback] Snapshot available at: {snapshot}")
+    print("[Rollback] Review output manually or run rollback command.")
