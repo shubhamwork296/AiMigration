@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Q3.MigrationAgent.Shared\Q3.MigrationAgent.Shared.csproj" />
+    <ProjectReference Include="..\Q3.MigrationAgent.Core\Q3.MigrationAgent.Core.csproj" />
+    <ProjectReference Include="..\Q3.MigrationAgent.Adapters\Q3.MigrationAgent.Adapters.csproj" />
+    <ProjectReference Include="..\Q3.MigrationAgent.AI\Q3.MigrationAgent.AI.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

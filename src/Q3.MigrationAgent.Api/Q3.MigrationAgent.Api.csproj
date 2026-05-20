@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Q3.MigrationAgent.Business\Q3.MigrationAgent.Business.csproj" />
+    <ProjectReference Include="..\Q3.MigrationAgent.Rules\Q3.MigrationAgent.Rules.csproj" />
+  </ItemGroup>
+
+</Project>

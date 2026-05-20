@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <RestoreUseSkipNonexistentTargets>false</RestoreUseSkipNonexistentTargets>
+    <BuildInParallel>false</BuildInParallel>
+  </PropertyGroup>
+</Project>
+

@@ -1,22 +1,48 @@
 {
-  "projectPath": "D:\\Projects\\YourDotnet6Project",
-  "from": {
-    "runtime": "dotnet",
-    "version": "6"
+  "dotnetExample": {
+    "projectPath": "D:\\Projects\\SampleDotNet6",
+    "from": {
+      "runtime": "dotnet",
+      "version": "6"
+    },
+    "to": {
+      "runtime": "dotnet",
+      "version": "8"
+    },
+    "outputPath": "D:\\Projects\\SampleDotNet6_Output",
+    "dryRun": false,
+    "autoApprove": true,
+    "useAi": true,
+    "aiCli": "auto",
+    "aiProvider": "codex",
+    "aiMode": "cli",
+    "rollbackMode": "manual",
+    "commandTimeoutSeconds": 600,
+    "verbosity": "default"
   },
-  "to": {
-    "runtime": "dotnet",
-    "version": "8"
-  },
-  "outputPath": "D:\\Projects\\YourDotnet6Project-migrated",
-  "dryRun": false,
-  "autoApprove": true,
-  "maxRetries": 1,
-  "useAi": false,
-  "aiCli": "none",
-  "commandTimeoutSeconds": 600,
-  "showTimingSummary": true,
-  "maxAiRemediationRetries": 3,
-  "rollbackMode": "manual",
-  "skipPreflightDependencyCompatibility": true
+  "angularExample": {
+    "projectPath": "D:\\Projects\\Angular14App",
+    "from": {
+      "runtime": "angular",
+      "version": "14"
+    },
+    "to": {
+      "runtime": "angular",
+      "version": "18"
+    },
+    "outputPath": "D:\\Projects\\Angular14App_Output",
+    "dryRun": false,
+    "autoApprove": true,
+    "useAi": true,
+    "aiCli": "auto",
+    "aiProvider": "codex",
+    "aiMode": "cli",
+    "rollbackMode": "manual",
+    "commandTimeoutSeconds": 600,
+    "skipPreflightDependencyCompatibility": false,
+    "preflightRemediationMode": "suggest",
+    "maxAiRemediationRetries": 3,
+    "verbosity": "default"
+  }
 }
+

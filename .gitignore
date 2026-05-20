@@ -5,6 +5,11 @@ pytest-cache-files-*/
 pytest-temp/
 .venv/
 .env
+bin/
+obj/
+**/bin/
+**/obj/
 output/
 tests/output/
 migrate.config.json
+*.log
