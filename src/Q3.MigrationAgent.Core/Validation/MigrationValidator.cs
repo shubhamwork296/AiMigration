@@ -14,7 +14,15 @@ public sealed class MigrationValidator
             {
                 Passed = false,
                 Errors = build.Output,
+                FailureCommand = InferFailureCommand(adapter),
                 Suggestion = "Review build output and add explicit transform rules for any required source changes."
             };
     }
+
+    private static IReadOnlyList<string> InferFailureCommand(IMigrationAdapter adapter) => adapter.RuntimeName.ToLowerInvariant() switch
+    {
+        "dotnet" => ["dotnet", "build"],
+        "angular" => ["npm", "run", "build"],
+        _ => ["validation"]
+    };
 }

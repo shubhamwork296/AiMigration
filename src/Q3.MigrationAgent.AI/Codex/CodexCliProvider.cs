@@ -4,9 +4,8 @@ using Q3.MigrationAgent.Shared.Config;
 
 namespace Q3.MigrationAgent.AI.Codex;
 
-public sealed class CodexCliProvider(ICommandRunner commandRunner) : CliAiProviderBase(commandRunner)
+public sealed class CodexCliProvider(ICommandRunner commandRunner, IPromptLoader promptLoader) : CliAiProviderBase(commandRunner, promptLoader)
 {
     public override string Name => "codex";
     protected override IReadOnlyList<string> DefaultCommand(AiConfig config) => ["codex", "exec", "--skip-git-repo-check"];
 }
-

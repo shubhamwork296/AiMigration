@@ -53,7 +53,11 @@ public sealed class ConfigLoader : IConfigLoader
             AllowBusinessLogicChanges = raw.BoolValue("allowBusinessLogicChanges"),
             PreferNgUpdate = raw.BoolValue("preferNgUpdate", true),
             AvoidFullVersionScans = raw.BoolValue("avoidFullVersionScans", true),
-            DirectDependenciesOnlyPreflight = raw.BoolValue("directDependenciesOnlyPreflight", true)
+            DirectDependenciesOnlyPreflight = raw.BoolValue("directDependenciesOnlyPreflight", true),
+            PackageVersionVerificationMode = raw.StringValue("packageVersionVerificationMode", "install-first"),
+            NpmLookupRetries = raw.IntValue("npmLookupRetries", 0),
+            NpmLookupIdleTimeoutSeconds = raw.IntValue("npmLookupIdleTimeoutSeconds", 20),
+            NpmLookupTimeoutSeconds = raw.IntValue("npmLookupTimeoutSeconds", 45)
         };
     }
 
@@ -113,6 +117,10 @@ public sealed class ConfigLoader : IConfigLoader
         if (config.PreflightRemediationMode is not ("off" or "suggest" or "apply")) throw new InvalidOperationException("preflightRemediationMode must be one of: off, suggest, apply.");
         if (config.MaxAiRemediationRetries < 0) throw new InvalidOperationException("maxAiRemediationRetries must be zero or greater.");
         if (config.RollbackMode is not ("manual" or "auto")) throw new InvalidOperationException("rollbackMode must be one of: manual, auto.");
+        if (config.PackageVersionVerificationMode is not ("strict-npm-view" or "install-first" or "off")) throw new InvalidOperationException("packageVersionVerificationMode must be one of: strict-npm-view, install-first, off.");
+        if (config.NpmLookupRetries < 0) throw new InvalidOperationException("npmLookupRetries must be zero or greater.");
+        if (config.NpmLookupIdleTimeoutSeconds < 0) throw new InvalidOperationException("npmLookupIdleTimeoutSeconds must be zero or greater.");
+        if (config.NpmLookupTimeoutSeconds < 0) throw new InvalidOperationException("npmLookupTimeoutSeconds must be zero or greater.");
         if (config.Ai.AiCli is not ("auto" or "codex" or "claude" or "none")) throw new InvalidOperationException("aiCli must be one of: auto, codex, claude, none.");
         if (config.Ai.UseAi)
         {

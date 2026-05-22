@@ -1,0 +1,1 @@
+type VisibilityState = CSSStyleDeclaration["overflow"];

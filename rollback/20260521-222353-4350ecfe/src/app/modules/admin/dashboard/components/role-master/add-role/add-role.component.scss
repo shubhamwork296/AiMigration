@@ -1,0 +1,63 @@
+div, span, a, p, ul, li, table, td, button, input, select, dl, dd, del, header, footer, textarea, label, strong, b {font-family: 'Be Vietnam Pro', sans-serif !important; letter-spacing: 0px;}
+th, h1, h2, h3, h4, h5, h6 {font-family: 'Baskervville', serif !important; letter-spacing: 0px;}
+
+
+.admin_table table {min-width:800px;}
+.w-px60 {width:60px !important;}
+.w-px100 {width:100px !important;}
+.w-px70 {width: 70px !important;}
+
+.w-td-15pre {width: 15% !important;}
+.w-td-40pre {width:40% !important;}
+
+table > thead > tr > th.w-td-40pre,
+table > thead > tr > th.w-td-15pre {
+    padding: 4px 7px;
+}
+.profile_wrp.profile_wrp_100_p {
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    // padding: 0;
+    // margin: 0 0 0 -15px;
+    margin-bottom: 15px;
+}
+.profile_wrp.profile_wrp_100_p .form-group {
+    width:30%;
+    padding-left:15px;
+    padding-right:15px;
+}
+
+.add_prd_btn_rw {
+    justify-content: flex-end;
+}
+// .add_prd_btn_rw .btn.btn-default.login_btn.cancel_btn_frm {
+//     margin-right: 0;
+// }
+// .btn.btn-default.login_btn {
+//     margin-top: 0;
+// }
+
+.admin_table.role_frm_table {
+    width: calc(100% - 30px);
+    margin-left: 15px;
+    margin-bottom: 0;
+}
+.admin_table.role_frm_table table {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+.bg-light-grey {
+    background-color: #eee;
+}
+
+.pl-2 {
+    padding-left: 1.15rem !important;
+}
+
+.table-responsive h2{
+    font-size: 20px;
+    color: #1c1c1c;
+    margin: 0px 0 5px;
+    float: left;
+}

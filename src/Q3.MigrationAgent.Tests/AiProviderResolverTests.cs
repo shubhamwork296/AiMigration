@@ -1,8 +1,11 @@
 using Q3.MigrationAgent.AI.Abstractions;
+using Q3.MigrationAgent.AI.Codex;
+using Q3.MigrationAgent.AI.Prompts;
 using Q3.MigrationAgent.AI.Providers;
 using Q3.MigrationAgent.Core.Abstractions;
 using Q3.MigrationAgent.Shared.Config;
 using Q3.MigrationAgent.Shared.DTO;
+using System.Text.Json.Nodes;
 
 namespace Q3.MigrationAgent.Tests;
 
@@ -141,6 +144,109 @@ public sealed class AiProviderResolverTests
 
         Assert.NotNull(resolved.CliCommand);
         Assert.Equal("C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd", resolved.CliCommand![0]);
+    }
+
+    [Fact]
+    public void ParseJsonObject_Accepts_Json_With_Trailing_Cli_Text()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            I can fix this.
+            {
+              "summary": "replace deprecated flag",
+              "changes": [
+                {
+                  "file": "package.json",
+                  "before": "ng build --prod",
+                  "after": "ng build --configuration production"
+                }
+              ]
+            }
+
+            Verified locally.
+            """, "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+        Assert.Equal("package.json", parsed["changes"]?.AsArray()[0]?["file"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Accepts_Fenced_Json_With_Trailing_Cli_Text()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            ```json
+            [
+              { "file": "package.json", "change": "script" }
+            ]
+            ```
+            Done.
+            """, "codex");
+
+        Assert.Equal("package.json", parsed["items"]?.AsArray()[0]?["file"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Ignores_Braces_Inside_Json_Strings()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            {"summary":"replace {placeholder} and escaped \"quote\"","changes":[]}
+            extra
+            """, "codex");
+
+        Assert.Equal("replace {placeholder} and escaped \"quote\"", parsed["summary"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Extracts_First_Valid_Json_Object_And_Ignores_Command_Logs()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            OpenAI Codex v0.125.0
+            $ npm run build
+            An unhandled exception occurred: spawn EPERM
+            ```diff
+            +not json
+            ```
+            {
+              "summary": "add third-party type shim",
+              "confidence": 0.91,
+              "risk": "low",
+              "requiresManualCorrection": false,
+              "failureCategory": "type_declaration",
+              "businessLogicChanged": false,
+              "changes": [
+                {
+                  "file": "src/ngx-pinch-zoom-compat.d.ts",
+                  "type": "type_shim",
+                  "reason": "VisibilityState is missing",
+                  "before": null,
+                  "after": "declare type VisibilityState = 'hidden' | 'visible';\n"
+                }
+              ],
+              "commandsToRunAfter": []
+            }
+            tokens used: 999
+            """, "codex");
+
+        Assert.Equal("add third-party type shim", parsed["summary"]?.ToString());
+        Assert.Equal("src/ngx-pinch-zoom-compat.d.ts", parsed["changes"]?.AsArray()[0]?["file"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Codex_Provider_Parses_Json_Even_When_Cli_Returns_Nonzero_With_Logs()
+    {
+        var runner = new FakeCommandRunner(command => new CommandResult
+        {
+            ReturnCode = 1,
+            Stdout = """
+                $ npm run build
+                spawn EPERM
+                {"summary":"plan only","confidence":0.9,"risk":"low","requiresManualCorrection":false,"changes":[]}
+                """
+        });
+        var provider = new CodexCliProvider(runner, new PromptLoader());
+
+        var parsed = await provider.AskAsync(new AiConfig { UseAi = true, CliCommand = ["codex", "exec"] }, "system", "user");
+
+        Assert.Equal("plan only", parsed?["summary"]?.ToString());
     }
 
     private static AiProviderResolver Resolver(ICommandRunner runner) => new(runner, Array.Empty<IAiProvider>());

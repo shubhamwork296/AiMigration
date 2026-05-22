@@ -1,0 +1,42 @@
+<button type="button" class="close modal_close_icon" data-dismiss="modal" title="Close" (click)="close()">&times;</button>
+<!-- Modal body -->
+<div class="modal-body padding-0">
+<div class="row">
+
+   <div class="col-md-12"> 
+      <div class="tab-content overflow-hidd">
+         <div id="home" class="tab-pane in" [ngClass]="{ 'active show': currentSection === 'home' }">
+         
+               <div class="hand_wrp_m">
+                  <div class="img_opticity_wrp">
+                     <div class="wrapper">
+
+                     <div class="zoom_img_prev" [ngClass]="zoomInOut =='1' ? 'active' : ''">
+                        <img class="img_opcity1" src="assets/front/images/6-11.jpg" alt="hand">
+                        <img id="image" class="img_opcity1 img_opcity"  src="assets/front/images/6-21.jpg" alt="hand" [ngStyle]="{'opacity': opacity}">
+                        
+                        <img src="{{ring_url}}" *ngFor="let url of imageRings"  alt="ring" class="{{url}}"  [ngClass]="ringOnFingure ==url ? 'active' : ''" (click)="setRing(url)">
+                        
+                     </div>
+                        <div class="slider-wrapper" *ngIf="!upload_hand_bas64_image">
+                           <mat-slider
+                           aria-label="unit(s)"
+                           max="1"
+                           value="0"
+                           step="0.01"
+                           (input)="pitch($event)"
+                        ></mat-slider>
+                     
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <button type="button" class="zoombtn" [ngClass]="{ 'zoomoutbtn': zoomInOut =='1','zoominbtn': zoomInOut =='0' }" (click)="zoom()" >0</button>
+               <div class="viewhand-note">
+                  {{AppConstants.RING_ON_HAND_NOTE}}
+               </div>
+         </div>
+      </div>
+   </div>
+</div>
+</div>

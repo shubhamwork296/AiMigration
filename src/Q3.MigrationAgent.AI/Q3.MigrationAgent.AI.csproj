@@ -5,6 +5,10 @@
     <ProjectReference Include="..\Q3.MigrationAgent.Core\Q3.MigrationAgent.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Prompts/**/*.prompt.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

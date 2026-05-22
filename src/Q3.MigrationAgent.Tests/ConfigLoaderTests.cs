@@ -19,6 +19,9 @@ public sealed class ConfigLoaderTests
         Assert.Equal(1, config.MaxRetries);
         Assert.Equal("auto", config.Ai.AiCli);
         Assert.EndsWith("output", config.OutputPath, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("install-first", config.PackageVersionVerificationMode);
+        Assert.Equal(0, config.NpmLookupRetries);
+        Assert.Equal(20, config.NpmLookupIdleTimeoutSeconds);
+        Assert.Equal(45, config.NpmLookupTimeoutSeconds);
     }
 }
-

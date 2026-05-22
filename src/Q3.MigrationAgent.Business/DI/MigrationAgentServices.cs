@@ -6,6 +6,7 @@ using Q3.MigrationAgent.AI.Abstractions;
 using Q3.MigrationAgent.AI.Claude;
 using Q3.MigrationAgent.AI.Codex;
 using Q3.MigrationAgent.AI.Providers;
+using Q3.MigrationAgent.AI.Prompts;
 using Q3.MigrationAgent.Business.Abstractions;
 using Q3.MigrationAgent.Business.Services;
 using Q3.MigrationAgent.Core.Abstractions;
@@ -32,12 +33,13 @@ public sealed class MigrationAgentServices
         rulesRoot ??= LocateRulesRoot();
         var runLog = new RunLog();
         ICommandRunner commandRunner = new CommandRunner(runLog);
-        var providers = new IAiProvider[] { new CodexCliProvider(commandRunner), new ClaudeCliProvider(commandRunner) };
+        var promptLoader = new PromptLoader();
+        var providers = new IAiProvider[] { new CodexCliProvider(commandRunner, promptLoader), new ClaudeCliProvider(commandRunner, promptLoader) };
         var aiResolver = new AiProviderResolver(commandRunner, providers);
         var dotnet = new DotNetAdapter(commandRunner);
-        var analyzer = new ProjectAnalyzer(aiResolver);
-        var planner = new MigrationPlanner(aiResolver);
-        var angular = new AngularAdapter(commandRunner, new PackageClassifier(aiResolver), aiResolver);
+        var analyzer = new ProjectAnalyzer(aiResolver, promptLoader);
+        var planner = new MigrationPlanner(aiResolver, promptLoader);
+        var angular = new AngularAdapter(commandRunner, new PackageClassifier(aiResolver, promptLoader), aiResolver, promptLoader);
         var registry = new AdapterRegistry([dotnet, angular]);
         var orchestrator = new MigrationOrchestrator(
             registry,
@@ -46,7 +48,7 @@ public sealed class MigrationAgentServices
             planner,
             new MigrationExecutor(),
             new MigrationValidator(),
-            new AiRemediationPlanner(aiResolver),
+            new AiRemediationPlanner(aiResolver, promptLoader),
             new RollbackService(),
             new MarkdownReportWriter(),
             runLog,

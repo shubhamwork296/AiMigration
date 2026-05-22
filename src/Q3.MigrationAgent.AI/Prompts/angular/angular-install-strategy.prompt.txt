@@ -1,0 +1,10 @@
+Return strict JSON only for a safe Angular npm install strategy.
+Schema: {"strategy":"normalInstall | legacyPeerDepsInstall | retrySameCommand | manualReview | forceInstall","command":"npm install ...","reason":"short reason","confidence":0.0,"risk":"low | medium | high","isRetry":true,"isFallback":true,"maxRetries":0,"failureClassification":"none | peerDependencyConflict | transientNetworkFailure | registryAuthFailure | packageVersionNotFound | unknownFailure"}
+Allowed commands are exactly:
+npm install --no-audit --no-fund --prefer-offline
+npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
+Choose normalInstall before the first attempt unless there is a clear reason not to.
+After peerDependencyConflict, choose legacyPeerDepsInstall only for third-party peer range conflicts. If Angular framework packages require zone.js, rxjs, tslib, or typescript ranges, choose manualReview so the package plan can be revised instead of hiding the mismatch.
+After transientNetworkFailure, choose retrySameCommand with the exact previous command and do not change package versions.
+For registryAuthFailure, packageVersionNotFound, unknownFailure, or forceInstall, choose manualReview unless a safe single package-plan correction is explicitly justified outside install execution.
+Never choose npm --force, npm update, npm audit fix, global npm commands, ng update, npx ng update, or migrate-only commands.

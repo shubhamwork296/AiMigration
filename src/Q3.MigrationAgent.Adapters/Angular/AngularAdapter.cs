@@ -3,13 +3,14 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Q3.MigrationAgent.Adapters.PackageClassification;
 using Q3.MigrationAgent.Core.Abstractions;
+using Q3.MigrationAgent.Core.Remediation;
 using Q3.MigrationAgent.Shared.Common;
 using Q3.MigrationAgent.Shared.Config;
 using Q3.MigrationAgent.Shared.DTO;
 
 namespace Q3.MigrationAgent.Adapters.Angular;
 
-public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifier? packageClassifier = null, IAiService? ai = null) : IMigrationAdapter
+public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifier? packageClassifier = null, IAiService? ai = null, IPromptLoader? promptLoader = null, AngularPackageVersionRecommendationPlanner? versionRecommendationPlanner = null, AngularCriticalDependencyAlignmentPlanner? criticalDependencyAlignmentPlanner = null) : IMigrationAdapter
 {
     private static readonly string[] StructuralFiles = ["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "angular.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.spec.json", "karma.conf.js", "jest.config.js", "eslint.config.js", ".eslintrc.json", "browserslist", ".nvmrc", ".node-version"];
     private static readonly HashSet<string> AllowedInstallModes = ["normalInstall", "legacyPeerDepsInstall", "retrySameCommand", "manualReview", "forceInstall", "normal", "legacyPeerDeps"];
@@ -22,6 +23,9 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     ];
     private static readonly HashSet<string> AngularRuntimeSupportPackages = ["zone.js", "rxjs", "tslib"];
     private static readonly HashSet<string> AngularCoupledRuntimePackages = ["zone.js", "rxjs", "tslib", "typescript"];
+    private static readonly HashSet<string> AngularFrameworkPackages = ["@angular/core", "@angular/common", "@angular/compiler", "@angular/forms", "@angular/router", "@angular/platform-browser", "@angular/platform-browser-dynamic", "@angular/animations"];
+    private static readonly HashSet<string> AngularToolingPackages = ["@angular/cli", "@angular-devkit/build-angular", "@angular/compiler-cli", "@ngtools/webpack"];
+    private static readonly HashSet<string> AngularComponentPackages = ["@angular/cdk", "@angular/material"];
     private static readonly HashSet<string> AngularAiPackageCategories = ["angular_framework_package", "angular_tooling_package", "angular_runtime_support_package", "typescript_runtime_or_compiler_package", "angular_ui_or_extension_package", "third_party_runtime_package", "third_party_build_or_test_tooling", "business_or_unknown_package"];
     private static readonly HashSet<string> AngularAiPackageActions = ["upgrade", "preserve", "remove", "manual_review"];
     private static readonly HashSet<string> AngularAiConfigFiles = ["angular.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.spec.json", "package.json"];
@@ -154,7 +158,9 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var packageUpdate = await ApplyAiDrivenPackageJsonUpdateAsync(projectPath, hop, config, progress, stage, logPath, cancellationToken);
         if (packageUpdate["success"]?.GetValue<bool>() != true)
         {
-            return FailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, packageUpdate.StringValue("reason"), packageUpdate.StringValue("package"));
+            var failed = FailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, packageUpdate.StringValue("reason"), packageUpdate.StringValue("package"));
+            AddAngularAiHopDetails(failed, packageUpdate, new JsonObject(), new JsonObject(), [], new JsonObject { ["passed"] = false, ["errors"] = packageUpdate.StringValue("reason") });
+            return failed;
         }
 
         var configUpdate = await ApplyAiStructuralConfigPlanAsync(projectPath, hop, config, progress, stage, cancellationToken);
@@ -180,8 +186,132 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         }
 
         var success = true;
-        var validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, cancellationToken);
+        var validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, config.MaxAiRemediationRetries > 0, cancellationToken);
         if (validation["buildVerificationCommandResult"] is JsonObject buildCommandResult) commands.Add(buildCommandResult.DeepClone());
+        var aiRemediationChanges = new JsonArray();
+        var manualCorrectionRequests = new JsonArray();
+        var validationFailures = new JsonArray();
+        if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, false));
+        if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0)
+        {
+            for (var attempt = 1; attempt <= config.MaxAiRemediationRetries && !validation.BoolValue("passed"); attempt++)
+            {
+                var validationResult = ValidationResultFromAngularValidation(validation, hop);
+                foreach (var existing in aiRemediationChanges.OfType<JsonObject>()) validationResult.AiRemediationChanges.Add(existing.DeepClone().AsObject());
+                RemediationAttempt remediation;
+                var deterministic = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(projectPath, validationResult, attempt, config.MaxAiRemediationRetries, cancellationToken);
+                if (deterministic is not null)
+                {
+                    remediation = RemediationAttempt.AppliedResult([deterministic]);
+                    progress?.Stage(stage, "Applied deterministic validation remediation. Re-running build verification.");
+                }
+                else if (config.Ai.UseAi && ai is not null && promptLoader is not null)
+                {
+                    progress?.Stage(stage, $"Requesting AI validation remediation attempt {attempt}.");
+                    remediation = await new AiRemediationPlanner(ai, promptLoader).TryRemediateAsync(config, projectPath, this, validationResult, attempt, cancellationToken);
+                    progress?.Stage(stage, AiRemediationResultSummary(remediation));
+                }
+                else
+                {
+                    manualCorrectionRequests.Add(ManualCorrectionObject(validation, "AI remediation disabled or maxAiRemediationRetries is 0"));
+                    break;
+                }
+
+                foreach (var change in remediation.Changes) aiRemediationChanges.Add(change.DeepClone());
+                MarkLatestValidationFailureRemediation(validationFailures, remediation.Attempted, remediation.Applied, remediation.ManualCorrection is not null);
+                if (remediation.ManualCorrection is not null)
+                {
+                    progress?.Stage(stage, $"AI validation remediation stopped: {remediation.ManualCorrection.StringValue("reason", "manual correction required")}");
+                    manualCorrectionRequests.Add(remediation.ManualCorrection.DeepClone());
+                    MarkLatestValidationFailureManualCorrection(validationFailures);
+                    break;
+                }
+                if (!remediation.Applied)
+                {
+                    if (remediation.Changes.Any(IsAiEnvironmentError))
+                    {
+                        progress?.Stage(stage, $"Codex sandbox validation output was ignored. Re-running build verification with the migration agent.");
+                        validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, attempt < config.MaxAiRemediationRetries, cancellationToken);
+                        if (validation["buildVerificationCommandResult"] is JsonObject sandboxRerunCommandResult) commands.Add(sandboxRerunCommandResult.DeepClone());
+                        foreach (var change in aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt))
+                        {
+                            change["agentValidationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build");
+                            change["agentValidationResult"] = validation.BoolValue("passed") ? "passed" : "failed";
+                            change["validationResultAfterRemediation"] = "inconclusive";
+                            change["validationErrorTail"] = validation.BoolValue("passed") ? "" : Tail(validation.StringValue("output", validation.StringValue("errors")));
+                        }
+                        if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: false));
+                        if (attempt < config.MaxAiRemediationRetries) continue;
+                    }
+                    if (remediation.Changes.Any(IsAiTimeoutFailure) && attempt < config.MaxAiRemediationRetries)
+                    {
+                        progress?.Stage(stage, $"AI validation remediation attempt {attempt} timed out. Retrying with reduced context.");
+                        continue;
+                    }
+                    break;
+                }
+
+                if (RemediationRequiresNpmInstall(remediation.Changes))
+                {
+                    progress?.Stage(stage, "AI remediation changed Angular package dependencies. Running npm install before validation rerun.");
+                    var installDecision = DeterministicDecision("normalInstall", "Package remediation changed package.json; reinstall dependencies before rerunning Angular validation.", "low", false, false, "validationPackageRemediation");
+                    var installAttempt = await RunInstallAttemptAsync(projectPath, NormalNpmInstallCommand, installDecision, "validation-remediation", false, false, 0, remediation.Changes.Any(c => string.Equals(c.StringValue("mode"), "ai", StringComparison.OrdinalIgnoreCase)), true, "", false, config, progress, stage, logPath, cancellationToken);
+                    commands.Add(InstallCommandObject(installAttempt));
+                    if (installAttempt.Result.ReturnCode != 0)
+                    {
+                        validation = new JsonObject
+                        {
+                            ["passed"] = false,
+                            ["output"] = FormatCommandOutput(installAttempt.Command, installAttempt.Result),
+                            ["errors"] = "npm install failed after validation remediation changed package.json.",
+                            ["buildVerificationAttempted"] = true,
+                            ["buildVerificationCommand"] = string.Join(" ", installAttempt.Command),
+                            ["buildVerificationExecutor"] = "npm-install",
+                            ["buildVerificationPassed"] = false,
+                            ["buildVerificationSkipped"] = false,
+                            ["buildVerificationFailureReason"] = "npm install failed after validation remediation changed package.json.",
+                            ["buildVerificationFailureCategory"] = installAttempt.FailureClassification?.Category ?? "dependency",
+                            ["nextHopStartedOnlyAfterBuildVerificationPassed"] = false
+                        };
+                        validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: true));
+                        break;
+                    }
+                }
+
+                validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, attempt < config.MaxAiRemediationRetries, cancellationToken);
+                var rerunPassed = validation.BoolValue("passed");
+                foreach (var change in aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt))
+                {
+                    change["validationResultAfterRemediation"] = rerunPassed ? "passed" : "failed";
+                    change["validationErrorTail"] = rerunPassed ? "" : Tail(validation.StringValue("output", validation.StringValue("errors")));
+                }
+                if (validation["buildVerificationCommandResult"] is JsonObject remediationBuildCommandResult) commands.Add(remediationBuildCommandResult.DeepClone());
+                if (!rerunPassed) validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: remediation.Applied));
+            }
+        }
+        JsonObject? postFailureCriticalAlignment = null;
+        if (!validation.BoolValue("passed") && IsCriticalDependencyBuildFailure(validation))
+        {
+            postFailureCriticalAlignment = await RemediateCriticalDependencyBuildFailureAsync(projectPath, hop, config, packageUpdate, validation, commands, cleanInstall, progress, stage, logPath, cancellationToken);
+            if (postFailureCriticalAlignment.BoolValue("remediationApplied"))
+            {
+                validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, false, cancellationToken);
+                if (validation["buildVerificationCommandResult"] is JsonObject retryBuildCommandResult) commands.Add(retryBuildCommandResult.DeepClone());
+            }
+        }
+        if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries == 0 && manualCorrectionRequests.Count == 0)
+        {
+            manualCorrectionRequests.Add(ManualCorrectionObject(validation, "AI remediation disabled or maxAiRemediationRetries is 0"));
+        }
+        if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0 && !config.Ai.UseAi && aiRemediationChanges.Count == 0 && manualCorrectionRequests.Count == 0)
+        {
+            manualCorrectionRequests.Add(ManualCorrectionObject(validation, "AI remediation is disabled and no deterministic safe remediation matched the validation failure."));
+        }
+        if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0 && manualCorrectionRequests.Count == 0)
+        {
+            manualCorrectionRequests.Add(ManualCorrectionObject(validation, "Validation remediation stopped after maxAiRemediationRetries was exhausted."));
+        }
+        if (!validation.BoolValue("passed")) progress?.Error(stage, "Stopping migration.");
         if (!validation.BoolValue("passed")) success = false;
         var result = new JsonObject
         {
@@ -191,12 +321,14 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             ["files"] = new JsonArray(ChangedStructuralFiles(projectPath, beforeFiles).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
             ["preflightDependencyAnalysis"] = preflight,
             ["validation"] = validation,
+            ["validationFailures"] = validationFailures,
             ["optionalMigrations"] = new JsonArray(),
-            ["aiRemediationChanges"] = new JsonArray(),
-            ["manualCorrectionRequests"] = new JsonArray(),
+            ["aiRemediationChanges"] = aiRemediationChanges,
+            ["manualCorrectionRequests"] = manualCorrectionRequests,
             ["migrateOnlySkipped"] = true,
             ["migrateOnlySkippedReason"] = "disabled by new default flow"
         };
+        if (postFailureCriticalAlignment is not null) result["postFailureAngularCriticalDependencyAlignment"] = postFailureCriticalAlignment.DeepClone();
         AddAngularAiHopDetails(result, packageUpdate, configUpdate, cleanInstall, installAttempts, validation);
         return result;
     }
@@ -291,20 +423,26 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var path = Path.Combine(projectPath, "package.json");
         var data = ReadJson(path);
         var entries = DependencyEntries(data).Where(d => d.Section is "dependencies" or "devDependencies").ToArray();
-        var targetAngularVersion = await ResolveAngularTargetVersionAsync(hop.ToVersion, projectPath, logPath, cancellationToken) ?? $"{hop.ToVersion}.0.0";
+        var targetAngularVersion = $"{hop.ToVersion}.0.0";
         var targetVersionByPackage = DefaultAngularTargetVersions(entries, hop.ToVersion, targetAngularVersion);
         var classification = await GetAngularAiPackageClassificationAsync(data, entries, hop, targetVersionByPackage, config, cancellationToken);
+        var versionRecommendations = await GetAngularPackageVersionRecommendationsAsync(data, classification, targetVersionByPackage, hop, config, progress, stage, cancellationToken);
+        var criticalAlignment = await GetAngularCriticalDependencyAlignmentAsync(projectPath, data, classification, versionRecommendations, hop, config, progress, stage, cancellationToken: cancellationToken);
+        var acceptedVersionRecommendations = versionRecommendations["accepted"]?.AsArray()?.OfType<JsonObject>().ToDictionary(r => r.StringValue("packageName"), StringComparer.OrdinalIgnoreCase) ?? [];
+        var acceptedCriticalAlignments = criticalAlignment["accepted"]?.AsArray()?.OfType<JsonObject>().ToDictionary(r => r.StringValue("packageName"), StringComparer.OrdinalIgnoreCase) ?? [];
         var accepted = new JsonArray();
         var rejected = new JsonArray();
         var preserved = new JsonArray();
         var manual = new JsonArray();
         var thirdParty = new JsonArray();
         var applied = new JsonArray();
+        var pendingUpdates = new List<PendingPackageUpdate>();
 
         foreach (var item in classification["packages"]?.AsArray()?.OfType<JsonObject>() ?? [])
         {
-            var decision = ValidateAngularPackageDecision(item, entries, targetVersionByPackage);
-            if (!decision.Accepted)
+            var decision = ValidateAngularPackageDecision(item, entries, targetVersionByPackage, hop.ToVersion);
+            var acceptedCriticalForItem = acceptedCriticalAlignments.TryGetValue(item.StringValue("name"), out var prevalidatedCriticalRecommendation);
+            if (!decision.Accepted && !acceptedCriticalForItem)
             {
                 rejected.Add(RejectedPackageSuggestion(item, decision.Reason));
                 var rejectedName = item.StringValue("name");
@@ -322,6 +460,25 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             var action = item.StringValue("action");
             var category = item.StringValue("category");
             var current = entries.First(e => e.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && e.Section == section);
+            if (acceptedCriticalAlignments.TryGetValue(name, out var criticalRecommendation))
+            {
+                action = criticalRecommendation.StringValue("action", action) switch { "align" or "add" => "upgrade", "manualReview" => "manual_review", var other => other };
+                if (action == "upgrade")
+                {
+                    item["targetVersion"] = criticalRecommendation.StringValue("recommendedVersion");
+                    item["reason"] = criticalRecommendation.StringValue("reason", item.StringValue("reason"));
+                }
+            }
+            if (!acceptedCriticalAlignments.ContainsKey(name) && acceptedVersionRecommendations.TryGetValue(name, out var recommendation))
+            {
+                action = recommendation.StringValue("action", action);
+                if (action == "manualReview") action = "manual_review";
+                if (action == "upgrade")
+                {
+                    item["targetVersion"] = recommendation.StringValue("recommendedVersion");
+                    item["reason"] = recommendation.StringValue("reason", item.StringValue("reason"));
+                }
+            }
             if (action == "manual_review")
             {
                 manual.Add(item.DeepClone());
@@ -333,11 +490,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             {
                 if (category == "angular_runtime_support_package" && targetVersionByPackage.TryGetValue(name, out var compatibleRuntimeVersion))
                 {
-                    if (data[section] is JsonObject runtimeDeps && runtimeDeps.ContainsKey(name))
-                    {
-                        runtimeDeps[name] = compatibleRuntimeVersion;
-                        applied.Add(new JsonObject { ["name"] = name, ["fromVersion"] = current.Version, ["toVersion"] = compatibleRuntimeVersion, ["section"] = section, ["category"] = category, ["reason"] = $"Angular {hop.ToVersion} requires a compatible runtime support package version." });
-                    }
+                    pendingUpdates.Add(new PendingPackageUpdate(name, section, current.Version, compatibleRuntimeVersion, compatibleRuntimeVersion, category, $"Angular {hop.ToVersion} requires a compatible runtime support package version.", "deterministic-runtime-support", 1.0));
                     var revised = item.DeepClone().AsObject();
                     revised["action"] = "upgrade";
                     revised["targetVersion"] = compatibleRuntimeVersion;
@@ -356,20 +509,105 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 continue;
             }
 
-            var targetVersion = NormalizedTargetVersion(item.StringValue("targetVersion"), targetVersionByPackage.GetValueOrDefault(name), category, hop.ToVersion);
+            var originalTargetVersion = SuggestedTargetVersion(item);
+            var targetVersion = NormalizedTargetVersion(originalTargetVersion, targetVersionByPackage.GetValueOrDefault(name), category, hop.ToVersion, acceptedVersionRecommendations.ContainsKey(name));
             if (targetVersion is null)
             {
-                rejected.Add(RejectedPackageSuggestion(item, "Upgrade target version was missing or invalid."));
+                rejected.Add(RejectedPackageSuggestion(item, InvalidTargetVersionReason(name, originalTargetVersion, targetVersion, "NormalizeTargetVersion")));
                 preserved.Add(new JsonObject { ["name"] = name, ["version"] = current.Version, ["section"] = section });
                 continue;
             }
             if (data[section] is JsonObject deps && deps.ContainsKey(name))
             {
-                deps[name] = targetVersion;
-                applied.Add(new JsonObject { ["name"] = name, ["fromVersion"] = current.Version, ["toVersion"] = targetVersion, ["section"] = section, ["category"] = category, ["reason"] = item.StringValue("reason") });
+                var source = acceptedCriticalAlignments.ContainsKey(name) ? "ai-critical-dependency-alignment" : acceptedVersionRecommendations.ContainsKey(name) ? "ai-package-version-recommendation" : "classification-or-fallback";
+                var confidence = acceptedCriticalAlignments.TryGetValue(name, out var criticalConfidence) ? DoubleValue(criticalConfidence, "confidence", 0) : acceptedVersionRecommendations.TryGetValue(name, out var versionConfidence) ? DoubleValue(versionConfidence, "confidence", 0) : DoubleValue(item, "confidence", 0);
+                pendingUpdates.Add(new PendingPackageUpdate(name, section, current.Version, originalTargetVersion, targetVersion, category, item.StringValue("reason"), source, confidence));
             }
             accepted.Add(item.DeepClone());
             if (category is "angular_ui_or_extension_package" or "third_party_runtime_package" or "third_party_build_or_test_tooling") thirdParty.Add(item.DeepClone());
+        }
+
+        var acceptedCriticalNames = acceptedCriticalAlignments.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in versionRecommendations["manualReview"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var itemName = item.StringValue("name");
+            if (!acceptedCriticalNames.Contains(itemName) && !manual.OfType<JsonObject>().Any(m => m.StringValue("name").Equals(itemName, StringComparison.OrdinalIgnoreCase)))
+            {
+                manual.Add(item.DeepClone());
+            }
+        }
+        foreach (var item in criticalAlignment["manualReview"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var itemName = item.StringValue("name");
+            if (!acceptedCriticalNames.Contains(itemName) && !manual.OfType<JsonObject>().Any(m => m.StringValue("name").Equals(itemName, StringComparison.OrdinalIgnoreCase)))
+            {
+                manual.Add(item.DeepClone());
+            }
+        }
+        foreach (var item in acceptedCriticalAlignments.Values.Where(r => r.StringValue("action") == "add"))
+        {
+            var name = item.StringValue("packageName");
+            var section = item.StringValue("dependencySection");
+            if (data[section] is JsonObject deps && !deps.ContainsKey(name))
+            {
+                pendingUpdates.Add(new PendingPackageUpdate(name, section, "", item.StringValue("recommendedVersion"), item.StringValue("recommendedVersion"), DefaultPackageCategory(name), item.StringValue("reason"), "ai-critical-dependency-alignment", DoubleValue(item, "confidence", 0)));
+            }
+        }
+
+        var validation = await ValidateAndResolvePackageTargetsAsync(pendingUpdates, hop, data, config, projectPath, logPath, cancellationToken);
+        if (validation.IntValue("upfrontNpmViewSkippedCount") > 0)
+        {
+            progress?.Stage(stage, $"[Package Resolution] install-first mode enabled; skipping upfront npm view verification for {validation.IntValue("upfrontNpmViewSkippedCount")} AI-recommended packages.");
+            progress?.Stage(stage, "[Package Resolution] npm install will validate selected versions.");
+            progress?.Stage(stage, "[Package Resolution] npm view will be used only if install reports E404/ETARGET.");
+        }
+        if (validation["invalid"] is JsonArray invalid && invalid.Count > 0)
+        {
+            return new JsonObject
+            {
+                ["success"] = false,
+                ["packageCategorisationCompleted"] = classification["packages"] is JsonArray,
+                ["aiPackageCategorisation"] = classification.DeepClone(),
+                ["packageUpgradesApplied"] = applied,
+                ["packagesPreserved"] = preserved,
+                ["packagesManualReview"] = manual,
+                ["thirdPartyPackageDecisions"] = thirdParty,
+                ["rejectedAiPackageSuggestions"] = rejected,
+                ["packageTargetValidation"] = validation,
+                ["aiPackageVersionRecommendations"] = versionRecommendations.DeepClone(),
+                ["aiPackageVersionRecommendationsAccepted"] = versionRecommendations["accepted"]?.DeepClone() ?? new JsonArray(),
+                ["aiPackageVersionRecommendationsRejected"] = FilterOutPackages(versionRecommendations["rejected"]?.AsArray(), acceptedCriticalNames),
+                ["angularCriticalDependencyAlignment"] = criticalAlignment.DeepClone(),
+                ["angularCriticalDependencyAlignmentAccepted"] = criticalAlignment["accepted"]?.DeepClone() ?? new JsonArray(),
+                ["angularCriticalDependencyAlignmentRejected"] = FilterOutPackages(criticalAlignment["rejected"]?.AsArray(), acceptedCriticalNames),
+                ["package"] = invalid.OfType<JsonObject>().FirstOrDefault()?.StringValue("packageName", "@angular/core") ?? "@angular/core",
+                ["reason"] = $"Package target validation failed before package.json write: {invalid.OfType<JsonObject>().FirstOrDefault()?.StringValue("packageName", "unknown")}@{invalid.OfType<JsonObject>().FirstOrDefault()?.StringValue("requestedTarget", "unknown")}"
+            };
+        }
+
+        foreach (var resolved in validation["resolved"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var name = resolved.StringValue("packageName");
+            var section = resolved.StringValue("section");
+            if (data[section] is not JsonObject deps) continue;
+            deps[name] = resolved.StringValue("finalAcceptedVersion");
+            applied.Add(new JsonObject
+            {
+                ["name"] = name,
+                ["fromVersion"] = resolved.StringValue("fromVersion"),
+                ["toVersion"] = resolved.StringValue("finalAcceptedVersion"),
+                ["originalSuggestedVersion"] = resolved.StringValue("originalSuggestedVersion"),
+                ["finalAcceptedVersion"] = resolved.StringValue("finalAcceptedVersion"),
+                ["packageJsonUpdated"] = true,
+                ["section"] = section,
+                ["category"] = resolved.StringValue("category"),
+                ["role"] = resolved.StringValue("role"),
+                ["reason"] = resolved.StringValue("reason"),
+                ["versionRecommendationSource"] = resolved.StringValue("source"),
+                ["npmValidationResult"] = resolved.StringValue("npmValidationResult"),
+                ["npmFallbackReason"] = resolved.StringValue("npmFallbackReason"),
+                ["npmRequestedTarget"] = resolved.StringValue("requestedTarget")
+            });
         }
 
         File.WriteAllText(path, data.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
@@ -383,9 +621,107 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             ["packagesManualReview"] = manual,
             ["thirdPartyPackageDecisions"] = thirdParty,
             ["rejectedAiPackageSuggestions"] = rejected,
+            ["packageTargetValidation"] = validation,
+            ["aiPackageVersionRecommendations"] = versionRecommendations.DeepClone(),
+            ["aiPackageVersionRecommendationsAccepted"] = versionRecommendations["accepted"]?.DeepClone() ?? new JsonArray(),
+            ["aiPackageVersionRecommendationsRejected"] = FilterOutPackages(versionRecommendations["rejected"]?.AsArray(), acceptedCriticalNames),
+            ["angularCriticalDependencyAlignment"] = criticalAlignment.DeepClone(),
+            ["angularCriticalDependencyAlignmentAccepted"] = criticalAlignment["accepted"]?.DeepClone() ?? new JsonArray(),
+            ["angularCriticalDependencyAlignmentRejected"] = FilterOutPackages(criticalAlignment["rejected"]?.AsArray(), acceptedCriticalNames),
             ["package"] = "@angular/core",
             ["reason"] = ""
         };
+    }
+
+    private async Task<JsonObject> GetAngularPackageVersionRecommendationsAsync(JsonObject packageJson, JsonObject classification, IReadOnlyDictionary<string, string> defaultTargets, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, CancellationToken cancellationToken)
+    {
+        if (!config.Ai.UseAi || ai is null || promptLoader is null)
+        {
+            return new JsonObject { ["attempted"] = false, ["fallbackUsed"] = true, ["accepted"] = new JsonArray(), ["rejected"] = new JsonArray(), ["manualReview"] = new JsonArray(), ["warnings"] = new JsonArray("AI package version recommendation skipped.") };
+        }
+
+        var packages = classification["packages"]?.AsArray()?.OfType<JsonObject>().ToArray() ?? [];
+        progress?.Stage(stage, $"Requesting AI package version recommendations for {packages.Length} Angular migration packages...");
+        var planner = versionRecommendationPlanner ?? new AngularPackageVersionRecommendationPlanner(ai, promptLoader);
+        var recommendations = await planner.RecommendAsync(config.Ai, hop, packageJson, packages, defaultTargets, cancellationToken: cancellationToken);
+        foreach (var item in recommendations["accepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            progress?.Stage(stage, $"Accepted AI package version recommendation: {item.StringValue("packageName")} -> {item.StringValue("recommendedVersion", item.StringValue("action"))}");
+        }
+        foreach (var item in recommendations["rejected"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            progress?.Stage(stage, $"Rejected AI package version recommendation: {item.StringValue("packageName", "unknown")} ({item.StringValue("rejectionReason")})");
+        }
+        return recommendations;
+    }
+
+    private async Task<JsonObject> GetAngularCriticalDependencyAlignmentAsync(string projectPath, JsonObject packageJson, JsonObject classification, JsonObject packageVersionRecommendations, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, JsonObject? installFailureContext = null, JsonObject? buildFailureContext = null, JsonObject? npmLsProblemContext = null, CancellationToken cancellationToken = default)
+    {
+        if (!config.Ai.UseAi || ai is null || promptLoader is null)
+        {
+            return new JsonObject { ["attempted"] = false, ["fallbackUsed"] = true, ["accepted"] = new JsonArray(), ["rejected"] = new JsonArray(), ["manualReview"] = KnownCriticalDependencyManualReviewItems(packageJson, hop.ToVersion), ["warnings"] = new JsonArray("AI critical dependency alignment skipped.") };
+        }
+
+        var criticalPackages = DependencyEntries(packageJson).Where(d => AngularCriticalDependencyAlignmentPlanner.IsFrameworkCritical(d.Name)).Select(d => d.Name).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray();
+        progress?.Stage(stage, $"AI critical dependency alignment attempted for {criticalPackages.Length} framework-critical packages: {string.Join(", ", criticalPackages)}");
+        var planner = criticalDependencyAlignmentPlanner ?? new AngularCriticalDependencyAlignmentPlanner(ai, promptLoader);
+        var alignment = await planner.RecommendAsync(config.Ai, hop, packageJson, classification, packageVersionRecommendations, installFailureContext, buildFailureContext, npmLsProblemContext, LocalAngularPackageMetadata(projectPath), cancellationToken);
+        foreach (var item in alignment["accepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            progress?.Stage(stage, $"Accepted Angular critical dependency alignment: {item.StringValue("packageName")} -> {item.StringValue("recommendedVersion", item.StringValue("action"))}");
+        }
+        foreach (var item in alignment["rejected"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            progress?.Stage(stage, $"Rejected Angular critical dependency alignment: {item.StringValue("packageName", "unknown")} ({item.StringValue("rejectionReason")})");
+        }
+        if (alignment.BoolValue("fallbackUsed")) progress?.Stage(stage, "Angular critical dependency alignment fallback used.");
+        return alignment;
+    }
+
+    private async Task<JsonObject> RemediateCriticalDependencyBuildFailureAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject packageUpdate, JsonObject validation, JsonArray commands, JsonObject cleanInstall, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        progress?.Stage(stage, "Build failure indicates Angular compiler/build-tool dependency incompatibility; requesting critical dependency alignment.");
+        var npmLs = await commandRunner.RunAsync(["npm", "ls", "typescript"], projectPath, timeoutSeconds: 60, idleTimeoutSeconds: 20, progress: progress, stage: stage, description: "npm ls typescript", logPath: logPath, cancellationToken: cancellationToken);
+        commands.Add(CommandObject(["npm", "ls", "typescript"], npmLs));
+        var packageJsonPath = Path.Combine(projectPath, "package.json");
+        var data = ReadJson(packageJsonPath);
+        var alignment = await GetAngularCriticalDependencyAlignmentAsync(projectPath, data, packageUpdate["aiPackageCategorisation"]?.AsObject() ?? new JsonObject(), packageUpdate["aiPackageVersionRecommendations"]?.AsObject() ?? new JsonObject(), hop, config, progress, stage,
+            buildFailureContext: new JsonObject { ["failureText"] = validation.StringValue("output"), ["failureReason"] = validation.StringValue("buildVerificationFailureReason"), ["failureCategory"] = validation.StringValue("buildVerificationFailureCategory") },
+            npmLsProblemContext: new JsonObject { ["command"] = "npm ls typescript", ["returncode"] = npmLs.ReturnCode, ["stdout"] = npmLs.Stdout, ["stderr"] = npmLs.Stderr },
+            cancellationToken: cancellationToken);
+
+        var applied = ApplyCriticalDependencyAlignment(packageJsonPath, alignment);
+        alignment["remediationApplied"] = applied.Count > 0;
+        alignment["postFailureApplied"] = applied;
+        if (applied.Count == 0) return alignment;
+
+        var installDecision = DeterministicDecision("legacyPeerDepsInstall", "Reinstalling after Angular critical dependency alignment corrected a compiler/build-tool incompatibility.", "medium", true, true, "angularCriticalDependencyMismatch");
+        var install = await RunInstallAttemptAsync(projectPath, LegacyPeerDepsNpmInstallCommand, installDecision, "angular-critical-dependency-alignment-remediation", true, true, 1, false, false, "", false, config, progress, stage, logPath, cancellationToken);
+        commands.Add(InstallCommandObject(install));
+        cleanInstall["installCommandUsed"] = string.Join(" ", install.Command);
+        return alignment;
+    }
+
+    private static JsonArray ApplyCriticalDependencyAlignment(string packageJsonPath, JsonObject alignment)
+    {
+        var applied = new JsonArray();
+        var data = ReadJson(packageJsonPath);
+        foreach (var item in alignment["accepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var action = item.StringValue("action");
+            if (action is not ("align" or "add")) continue;
+            var section = item.StringValue("dependencySection");
+            if (data[section] is not JsonObject deps) continue;
+            var name = item.StringValue("packageName");
+            var toVersion = item.StringValue("recommendedVersion");
+            var fromVersion = deps.ContainsKey(name) ? deps[name]?.ToString() ?? "" : "";
+            if (action == "align" && !deps.ContainsKey(name)) continue;
+            if (fromVersion == toVersion) continue;
+            deps[name] = toVersion;
+            applied.Add(new JsonObject { ["name"] = name, ["fromVersion"] = fromVersion, ["toVersion"] = toVersion, ["section"] = section, ["reason"] = item.StringValue("reason"), ["status"] = "accepted" });
+        }
+        if (applied.Count > 0) File.WriteAllText(packageJsonPath, data.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+        return applied;
     }
 
     private async Task<JsonObject> GetAngularAiPackageClassificationAsync(JsonObject packageJson, IReadOnlyList<(string Name, string Version, string Section)> entries, MigrationHop hop, IReadOnlyDictionary<string, string> defaultTargets, MigrationConfig config, CancellationToken cancellationToken)
@@ -401,7 +737,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         {
             try
             {
-                var result = await ai.AskAsync(config.Ai, AngularPackageClassificationPrompt, payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+                var result = await ai.AskAsync(config.Ai, LoadPrompt("angular/angular-package-classification"), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
                 if (result?["packages"] is JsonArray) return EnsureEveryPackageHasDecision(result, entries, defaultTargets, hop.ToVersion);
             }
             catch
@@ -464,21 +800,23 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return result;
     }
 
-    private static (bool Accepted, string Reason) ValidateAngularPackageDecision(JsonObject item, IReadOnlyList<(string Name, string Version, string Section)> entries, IReadOnlyDictionary<string, string> defaultTargets)
+    private static (bool Accepted, string Reason) ValidateAngularPackageDecision(JsonObject item, IReadOnlyList<(string Name, string Version, string Section)> entries, IReadOnlyDictionary<string, string> defaultTargets, int targetMajor)
     {
         var name = item.StringValue("name");
         var section = item.StringValue("section");
         var category = item.StringValue("category");
         var action = item.StringValue("action");
         var risk = item.StringValue("risk", "medium");
-        var target = item.StringValue("targetVersion");
+        var target = SuggestedTargetVersion(item);
         if (!entries.Any(e => e.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && e.Section == section)) return (false, "Package is not a direct dependency in the declared section.");
         if (!AngularAiPackageCategories.Contains(category)) return (false, "Package category is not allowlisted.");
         if (!AngularAiPackageActions.Contains(action)) return (false, "Package action is not allowlisted.");
-        if (risk == "high") return (false, "High-risk package suggestion rejected.");
-        if (DoubleValue(item, "confidence", 0) < MinimumAiPackageConfidence) return (false, "Package suggestion confidence is below the high-confidence threshold.");
+        var criticalAlignmentTarget = action == "upgrade" && AngularCriticalDependencyPolicy.IsSafeCriticalAlignment(name, string.IsNullOrWhiteSpace(target) ? defaultTargets.GetValueOrDefault(name) ?? "" : target, targetMajor);
+        if (risk == "high" && !criticalAlignmentTarget) return (false, "High-risk package suggestion rejected.");
+        if (DoubleValue(item, "confidence", 0) < MinimumAiPackageConfidence && !(IsThirdPartyAngularPackageCategory(category) && action == "preserve")) return (false, "Package suggestion confidence is below the high-confidence threshold.");
         if (action == "remove") return (false, "Package removals are not automatic in Angular hop migration.");
         if (target.Contains("||") || target.Contains(" or ", StringComparison.OrdinalIgnoreCase) || target.Contains(",")) return (false, "Multiple target versions were suggested; one stable compatible version is required.");
+        if (action == "upgrade" && !string.IsNullOrWhiteSpace(target) && !NpmVersionRange.IsSafe(target)) return (false, InvalidTargetVersionReason(name, target, null, "ValidatePackageDecision"));
         if (action == "upgrade" && string.IsNullOrWhiteSpace(target) && !defaultTargets.ContainsKey(name)) return (false, "Upgrade action requires one target version.");
         if (category is "third_party_runtime_package" or "third_party_build_or_test_tooling" or "business_or_unknown_package" && action == "upgrade" && !defaultTargets.ContainsKey(name)) return (false, "Third-party upgrades are accepted only when Angular compatibility requires them.");
         return (true, "");
@@ -491,24 +829,245 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return clone;
     }
 
-    private static string? NormalizedTargetVersion(string aiTarget, string? defaultTarget, string category, int targetMajor)
+    private static JsonArray FilterOutPackages(JsonArray? items, IReadOnlySet<string> packageNames)
     {
-        var value = string.IsNullOrWhiteSpace(aiTarget) || aiTarget == "null" ? defaultTarget : aiTarget;
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        if (category is "angular_framework_package" or "angular_tooling_package" && MajorVersion(value) != targetMajor) return defaultTarget;
-        if (category == "typescript_runtime_or_compiler_package" && !IsTypeScriptCompatibleWithAngular(value, targetMajor)) return defaultTarget;
+        if (items is null || packageNames.Count == 0) return items?.DeepClone().AsArray() ?? new JsonArray();
+        return new JsonArray(items
+            .OfType<JsonObject>()
+            .Where(item => !packageNames.Contains(item.StringValue("packageName", item.StringValue("name"))))
+            .Select(item => (JsonNode?)item.DeepClone())
+            .ToArray());
+    }
+
+    private static bool IsThirdPartyAngularPackageCategory(string category) =>
+        category is "angular_ui_or_extension_package" or "third_party_runtime_package" or "third_party_build_or_test_tooling" or "business_or_unknown_package";
+
+    private static string? NormalizedTargetVersion(string aiTarget, string? defaultTarget, string category, int targetMajor, bool fromAcceptedVersionRecommendation = false)
+    {
+        var value = NpmVersionRange.Normalize(string.IsNullOrWhiteSpace(aiTarget) || aiTarget == "null" ? defaultTarget : aiTarget);
+        if (string.IsNullOrWhiteSpace(value) || !NpmVersionRange.IsSafe(value)) return null;
+        if (category is "angular_framework_package" or "angular_tooling_package" && NpmVersionRange.Major(value) != targetMajor) return fromAcceptedVersionRecommendation ? null : NpmVersionRange.Normalize(defaultTarget);
+        if (category == "typescript_runtime_or_compiler_package" && !IsTypeScriptCompatibleWithAngular(value, targetMajor)) return NpmVersionRange.Normalize(defaultTarget);
         return value;
     }
 
+    private async Task<JsonObject> ValidateAndResolvePackageTargetsAsync(IReadOnlyList<PendingPackageUpdate> updates, MigrationHop hop, JsonObject packageJson, MigrationConfig config, string projectPath, string? logPath, CancellationToken cancellationToken)
+    {
+        var resolved = new JsonArray();
+        var invalid = new JsonArray();
+        var mode = NormalizePackageVersionVerificationMode(config.PackageVersionVerificationMode);
+        var upfrontSkipped = 0;
+        foreach (var update in updates)
+        {
+            var role = AngularPackageRole(update.Name, update.Category);
+            var shouldVerify = ShouldVerifyPackageTargetUpfront(update, role, hop.ToVersion, mode);
+            if (!shouldVerify && string.IsNullOrWhiteSpace(update.NormalizedTargetVersion) || !NpmVersionRange.IsSafe(update.NormalizedTargetVersion))
+            {
+                shouldVerify = true;
+            }
+
+            var resolution = shouldVerify
+                ? await ResolveNpmPackageTargetAsync(update.Name, hop.ToVersion, update.NormalizedTargetVersion, role, config, projectPath, logPath, cancellationToken)
+                : SkippedInstallFirstResolution(update.NormalizedTargetVersion);
+            if (mode == "install-first" && resolution.FinalTarget is null && resolution.ValidationResult is "timeout" or "inconclusive")
+            {
+                resolution = resolution with
+                {
+                    FinalTarget = update.NormalizedTargetVersion,
+                    ValidationResult = "skipped_due_to_timeout",
+                    FallbackReason = $"{resolution.FallbackReason} Proceeding because install-first mode uses npm install as the source of truth."
+                };
+            }
+            if (!shouldVerify) upfrontSkipped++;
+            JsonObject? alternative = null;
+            if (resolution.ValidationResult == "E404" && update.Source == "ai-package-version-recommendation" && ai is not null && promptLoader is not null)
+            {
+                alternative = await RequestAiPackageVersionAlternativeAsync(update, hop, packageJson, resolution, config, cancellationToken);
+                if (alternative is not null)
+                {
+                    var alternativeRange = alternative.StringValue("recommendedVersion");
+                    var alternativeResolution = await ResolveNpmPackageTargetAsync(update.Name, hop.ToVersion, alternativeRange, role, config, projectPath, logPath, cancellationToken);
+                    resolution = alternativeResolution with
+                    {
+                        AiReRecommendedVersion = alternativeRange,
+                        AiReRecommendationReason = alternative.StringValue("reason"),
+                        AiReRecommendationUsed = alternativeResolution.FinalTarget is not null,
+                        InitialRecommendedVersion = update.NormalizedTargetVersion,
+                        InitialVerificationResult = "E404"
+                    };
+                }
+            }
+            var item = new JsonObject
+            {
+                ["packageName"] = update.Name,
+                ["fromVersion"] = update.FromVersion,
+                ["section"] = update.Section,
+                ["category"] = update.Category,
+                ["role"] = role,
+                ["requestedTarget"] = update.NormalizedTargetVersion,
+                ["originalSuggestedVersion"] = string.IsNullOrWhiteSpace(update.OriginalSuggestedVersion) ? update.NormalizedTargetVersion : update.OriginalSuggestedVersion,
+                ["source"] = update.Source,
+                ["reason"] = update.Reason,
+                ["aiConfidence"] = update.Confidence,
+                ["verificationMode"] = mode,
+                ["npmValidationResult"] = resolution.ValidationResult,
+                ["npmFallbackReason"] = resolution.FallbackReason,
+                ["npmVerificationCommand"] = resolution.VerificationCommand,
+                ["npmVerificationResult"] = resolution.VerificationResult,
+                ["npmVerificationError"] = resolution.NpmError,
+                ["npmVerificationAttemptCount"] = resolution.AttemptCount,
+                ["aiRecommendedVersion"] = resolution.InitialRecommendedVersion,
+                ["aiReRecommendedVersion"] = resolution.AiReRecommendedVersion,
+                ["aiReRecommendationReason"] = resolution.AiReRecommendationReason,
+                ["aiReRecommendationUsed"] = resolution.AiReRecommendationUsed,
+                ["initialNpmVerificationResult"] = resolution.InitialVerificationResult,
+                ["finalResolvedVersion"] = resolution.FinalTarget,
+                ["finalAcceptedVersion"] = resolution.FinalTarget,
+                ["aiRecommendationOverriddenByNpm"] = resolution.FinalTarget is not null && !resolution.FinalTarget.Equals(update.NormalizedTargetVersion, StringComparison.OrdinalIgnoreCase),
+                ["packageJsonUpdated"] = resolution.FinalTarget is not null
+            };
+
+            if (resolution.FinalTarget is null)
+            {
+                item["packageJsonUpdated"] = false;
+                item["failureReason"] = resolution.ValidationResult is "timeout" or "inconclusive"
+                    ? $"Npm verification was {resolution.ValidationResult} for {update.Name}@{update.NormalizedTargetVersion}; no broad version discovery was attempted."
+                    : $"Could not verify a published npm version for {update.Name}@{update.NormalizedTargetVersion} in target major {hop.ToVersion}.";
+                invalid.Add(item);
+            }
+            else
+            {
+                resolved.Add(item);
+            }
+        }
+
+        return new JsonObject { ["resolved"] = resolved, ["invalid"] = invalid, ["verificationMode"] = mode, ["upfrontNpmViewSkippedCount"] = upfrontSkipped };
+    }
+
+    private async Task<JsonObject?> RequestAiPackageVersionAlternativeAsync(PendingPackageUpdate update, MigrationHop hop, JsonObject packageJson, NpmPackageTargetResolution resolution, MigrationConfig config, CancellationToken cancellationToken)
+    {
+        var planner = versionRecommendationPlanner ?? new AngularPackageVersionRecommendationPlanner(ai!, promptLoader!);
+        return await planner.RecommendAlternativeAsync(config.Ai, hop, packageJson, new JsonObject
+        {
+            ["packageName"] = update.Name,
+            ["currentVersion"] = update.FromVersion,
+            ["recommendedVersion"] = update.NormalizedTargetVersion,
+            ["action"] = "upgrade",
+            ["confidence"] = 90,
+            ["risk"] = "low",
+            ["reason"] = update.Reason,
+            ["installImpact"] = "required",
+            ["buildImpact"] = "required",
+            ["manualReviewRequired"] = false
+        }, resolution.NpmError, cancellationToken);
+    }
+
+    private async Task<NpmPackageTargetResolution> ResolveNpmPackageTargetAsync(string packageName, int targetMajor, string proposedRange, string role, MigrationConfig config, string projectPath, string? logPath, CancellationToken cancellationToken)
+    {
+        var command = $"npm view {packageName}@{proposedRange} version --json";
+        if (string.IsNullOrWhiteSpace(proposedRange) || !NpmVersionRange.IsSafe(proposedRange))
+        {
+            return new NpmPackageTargetResolution(null, "invalidRangeSyntax", "invalidRangeSyntax", command, "Requested target is not a safe bounded npm semver range.", "", 0, proposedRange, "", "", false, "");
+        }
+
+        var angularOwned = IsAngularOwnedPackageName(packageName);
+        var expectedMajor = role == "support" || !angularOwned ? NpmVersionRange.Major(proposedRange) ?? targetMajor : targetMajor;
+        var proposedResult = await NpmViewWithRetryAsync($"{packageName}@{proposedRange}", "version", "--json", Math.Max(0, config.NpmLookupRetries), config.NpmLookupTimeoutSeconds, config.NpmLookupIdleTimeoutSeconds, projectPath, logPath, cancellationToken);
+        var proposedVersion = SelectLatestStableMajorVersion(proposedResult.Value, expectedMajor);
+        if (!string.IsNullOrWhiteSpace(proposedVersion))
+        {
+            var resolvedProposedTarget = ShouldMaterializeResolvedRange(proposedRange)
+                ? $"{RangePrefix(proposedRange)}{proposedVersion}"
+                : proposedRange;
+            return new NpmPackageTargetResolution(resolvedProposedTarget, "verified", "verified", command, "", "", proposedResult.AttemptCount, proposedRange, "", "", false, "");
+        }
+
+        if (role == "support" && proposedResult.Status == "verified")
+        {
+            return new NpmPackageTargetResolution(proposedRange, "verified", "verified", command, "", "", proposedResult.AttemptCount, proposedRange, "", "", false, "");
+        }
+
+        if (proposedResult.Status == "timeout")
+        {
+            return new NpmPackageTargetResolution(null, "timeout", "timeout", command, $"npm verification timed out for {packageName}@{proposedRange}; broad discovery was not attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
+        }
+
+        if (proposedResult.Status == "inconclusive")
+        {
+            return new NpmPackageTargetResolution(null, "inconclusive", "inconclusive", command, $"npm verification was inconclusive for {packageName}@{proposedRange}; broad discovery was not attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
+        }
+
+        if (proposedResult.Status == "notFound")
+        {
+            return new NpmPackageTargetResolution(null, "E404", "E404", command, $"Requested {packageName}@{proposedRange} was unavailable. npm returned E404. No package@{targetMajor} discovery was attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
+        }
+
+        return new NpmPackageTargetResolution(null, "inconclusive", "inconclusive", command, $"npm verification returned no stable version for {packageName}@{proposedRange}; broad discovery was not attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
+    }
+
+    private static string NormalizePackageVersionVerificationMode(string mode) =>
+        mode is "strict-npm-view" or "install-first" or "off" ? mode : "install-first";
+
+    private static NpmPackageTargetResolution SkippedInstallFirstResolution(string proposedRange) =>
+        new(proposedRange, "skipped", "skipped", "", "Skipped upfront npm view verification because install-first mode is enabled; npm install will validate this range.", "", 0, proposedRange, "", "", false, "skipped");
+
+    private static bool ShouldVerifyPackageTargetUpfront(PendingPackageUpdate update, string role, int targetMajor, string mode)
+    {
+        if (mode == "strict-npm-view") return true;
+        if (mode == "off") return false;
+        var confidence = NormalizeAiConfidence(update.Confidence);
+        if (confidence > 0 && confidence < MinimumAiPackageConfidence) return true;
+        if (update.Source != "ai-package-version-recommendation") return true;
+        return IsSuspiciousAngularExactPatch(update.Name, update.NormalizedTargetVersion, role, targetMajor);
+    }
+
+    private static bool IsSuspiciousAngularExactPatch(string packageName, string range, string role, int targetMajor)
+    {
+        if (!IsAngularOwnedPackageName(packageName)) return false;
+        var trimmed = range.Trim();
+        if (trimmed.StartsWith('^') || trimmed.StartsWith('~')) return false;
+        var version = VersionTuple(trimmed);
+        return version is { Length: >= 3 } && version[0] == targetMajor && version[2] > 0 && role is "framework" or "tooling" or "component";
+    }
+
+    private static double NormalizeAiConfidence(double confidence) => confidence is > 1 ? confidence / 100 : confidence;
+
+    private static string RangePrefix(string range) => range.TrimStart().StartsWith('~') ? "~" : range.TrimStart().StartsWith('^') ? "^" : "";
+
+    private static string FallbackRangePrefix(string range, string role) => role == "component" ? "~" : RangePrefix(range);
+
+    private static bool ShouldMaterializeResolvedRange(string range) =>
+        range.TrimStart().StartsWith('~') && VersionTuple(range) is { Length: >= 3 };
+
+    private static string AngularPackageRole(string name, string category)
+    {
+        if (AngularFrameworkPackages.Contains(name)) return "framework";
+        if (AngularToolingPackages.Contains(name)) return "tooling";
+        if (AngularComponentPackages.Contains(name)) return "component";
+        if (category is "angular_runtime_support_package" or "typescript_runtime_or_compiler_package" || name is "typescript" or "rxjs" or "zone.js") return "support";
+        if (category == "angular_tooling_package" && IsAngularOwnedPackageName(name)) return "tooling";
+        if (category == "angular_ui_or_extension_package" && IsAngularOwnedPackageName(name)) return "component";
+        if (category == "angular_framework_package" && IsAngularOwnedPackageName(name)) return "framework";
+        return "third-party";
+    }
+
+    private static bool IsAngularOwnedPackageName(string name) => AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name);
+
+    private static string SuggestedTargetVersion(JsonObject item) =>
+        item.StringValue("targetVersion", item.StringValue("toVersion", item.StringValue("recommendedVersion")));
+
+    private static string InvalidTargetVersionReason(string name, string original, string? normalized, string stage) =>
+        $"Upgrade target version was missing or invalid. Package: {name}; Original target version: {(string.IsNullOrWhiteSpace(original) ? "<empty>" : original)}; Normalized target version: {(string.IsNullOrWhiteSpace(normalized) ? "null" : normalized)}; Failure stage: {stage}; Reason: value is not a supported safe npm semver range.";
+
     private async Task<string?> ResolveAngularTargetVersionAsync(int target, string projectPath, string? logPath, CancellationToken cancellationToken)
     {
-        var result = await NpmViewAsync("@angular/core", "versions", "--json", projectPath, logPath, cancellationToken);
+        var result = await NpmViewAsync($"@angular/core@{target}", "version", "--json", projectPath, logPath, cancellationToken);
         return SelectLatestStableMajorVersion(result, target);
     }
 
     private async Task<string?> ResolveAngularCliTargetVersionAsync(int target, string projectPath, string? logPath, IProgressReporter? progress, string stage, int timeout, CancellationToken cancellationToken)
     {
-        var result = await NpmViewAsync("@angular/cli", "versions", "--json", projectPath, logPath, cancellationToken);
+        var result = await NpmViewAsync($"@angular/cli@{target}", "version", "--json", projectPath, logPath, cancellationToken);
         return SelectLatestStableMajorVersion(result, target) ?? $"{target}.0.0";
     }
 
@@ -561,7 +1120,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             };
             try
             {
-                var plan = await ai.AskAsync(config.Ai, AngularConfigPlanPrompt, payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+                var plan = await ai.AskAsync(config.Ai, LoadPrompt("angular/angular-structural-config"), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
                 foreach (var change in plan?["changes"]?.AsArray()?.OfType<JsonObject>() ?? [])
                 {
                     var validation = ValidateAngularConfigSuggestion(projectPath, change);
@@ -767,7 +1326,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             }
             if (dependency.Name == "typescript")
             {
-                remediations.Add(new JsonObject { ["package"] = "typescript", ["toVersion"] = target switch { 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => dependency.Version }, ["status"] = "planned", ["reason"] = "TypeScript is framework-critical for Angular." });
+                remediations.Add(new JsonObject { ["package"] = "typescript", ["toVersion"] = TypeScriptVersionForAngular(target), ["status"] = "planned", ["reason"] = "TypeScript is framework-critical for Angular." });
                 continue;
             }
             if (dependency.Name == "rxjs" && VersionTuple(dependency.Version) is { } rx && rx[0] < 6)
@@ -791,19 +1350,71 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
     private async Task<JsonNode?> NpmViewAsync(string package, string field, string range, string projectPath, string? logPath, CancellationToken cancellationToken)
     {
+        var result = await NpmViewOnceAsync(package, field, range, 300, 60, projectPath, logPath, cancellationToken);
+        return result.Value?.DeepClone();
+    }
+
+    private async Task<NpmViewResult> NpmViewWithRetryAsync(string package, string field, string range, int retries, int timeoutSeconds, int idleTimeoutSeconds, string projectPath, string? logPath, CancellationToken cancellationToken)
+    {
+        var attempts = 0;
+        NpmViewResult result;
+        do
+        {
+            attempts++;
+            result = await NpmViewOnceAsync(package, field, range, timeoutSeconds, idleTimeoutSeconds, projectPath, logPath, cancellationToken);
+        }
+        while (result.Status == "timeout" && attempts <= retries);
+
+        return result with { AttemptCount = attempts };
+    }
+
+    private async Task<NpmViewResult> NpmViewOnceAsync(string package, string field, string range, int timeoutSeconds, int idleTimeoutSeconds, string projectPath, string? logPath, CancellationToken cancellationToken)
+    {
         var key = (package, field, range);
-        if (_npmViewCache.TryGetValue(key, out var cached)) return cached["value"]?.DeepClone();
-        var result = await commandRunner.RunAsync(["npm", "view", package, field, range], projectPath, timeoutSeconds: 300, idleTimeoutSeconds: 60, logPath: logPath, cancellationToken: cancellationToken);
+        if (_npmViewCache.TryGetValue(key, out var cached))
+        {
+            return new NpmViewResult(
+                cached["value"]?.DeepClone(),
+                cached.StringValue("status", cached["value"] is null ? "inconclusive" : "verified"),
+                cached.StringValue("error"),
+                cached.IntValue("attemptCount", 1));
+        }
+
+        var result = await commandRunner.RunAsync(["npm", "view", package, field, range], projectPath, timeoutSeconds: timeoutSeconds, idleTimeoutSeconds: idleTimeoutSeconds, logPath: logPath, cancellationToken: cancellationToken);
         JsonNode? parsed = null;
+        var status = "inconclusive";
+        var error = FirstNonEmptyLine(result.Stderr, result.Stdout, result.FailureReason ?? "");
         if (result.ReturnCode == 0)
         {
             try { parsed = JsonNode.Parse(result.Stdout); } catch { parsed = null; }
+            status = parsed is null ? "inconclusive" : "verified";
         }
-        _npmViewCache[key] = new JsonObject { ["value"] = parsed };
-        return parsed?.DeepClone();
+        else if (result.TimeoutKind is not null || result.FailureCategory == "timeout")
+        {
+            status = "timeout";
+        }
+        else if (IsNpmNotFound(result))
+        {
+            status = "notFound";
+        }
+        if (status != "timeout")
+        {
+            _npmViewCache[key] = new JsonObject { ["value"] = parsed, ["status"] = status, ["error"] = error, ["attemptCount"] = 1 };
+        }
+        return new NpmViewResult(parsed?.DeepClone(), status, error, 1);
     }
 
-    private async Task<JsonObject> RunValidationsAsync(string projectPath, MigrationHop hop, int? timeoutSeconds, int? idleTimeoutSeconds, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    private static bool IsNpmNotFound(CommandResult result)
+    {
+        var output = $"{result.Stdout}\n{result.Stderr}\n{result.FailureReason}".ToLowerInvariant();
+        return output.Contains("e404") ||
+               output.Contains("no match found for version") ||
+               output.Contains("no matching version found") ||
+               output.Contains("notarget") ||
+               output.Contains("version not found");
+    }
+
+    private async Task<JsonObject> RunValidationsAsync(string projectPath, MigrationHop hop, int? timeoutSeconds, int? idleTimeoutSeconds, IProgressReporter? progress, string stage, string? logPath, bool remediationAvailable, CancellationToken cancellationToken)
     {
         var manifest = await ParseManifestAsync(projectPath, cancellationToken);
         var build = await RunBuildVerificationCommandAsync(projectPath, manifest, progress, stage, logPath, timeoutSeconds, idleTimeoutSeconds, cancellationToken);
@@ -817,7 +1428,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         }
         else
         {
-            progress?.Error(stage, $"Build verification failed for Angular {hop.FromVersion} -> {hop.ToVersion}. Stopping migration.");
+            var nextAction = remediationAvailable ? "Attempting validation remediation." : "Validation remediation is not available for this build failure.";
+            progress?.Error(stage, $"Build verification failed for Angular {hop.FromVersion} -> {hop.ToVersion}. {nextAction}");
         }
 
         var validation = new JsonObject
@@ -835,6 +1447,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             ["buildVerificationFailureCategory"] = build.FailureCategory,
             ["nextHopStartedOnlyAfterBuildVerificationPassed"] = build.Passed
         };
+        validation["aiRemediationRootCauseAnalysis"] = BuildAngularValidationRootCauseAnalysis(projectPath, validation, hop);
         if (build.CommandResult is not null) validation["buildVerificationCommandResult"] = build.CommandResult.DeepClone();
         return validation;
     }
@@ -912,13 +1525,15 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static int Compare(int[] left, int[] right) { for (var i = 0; i < Math.Max(left.Length, right.Length); i++) { var l = i < left.Length ? left[i] : 0; var r = i < right.Length ? right[i] : 0; if (l != r) return l.CompareTo(r); } return 0; }
     private static bool IsAngularPackageJsonUpdateCandidate(string name) => name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) || name is "@angular-devkit/build-angular";
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').TrimStart('/').Replace("../", "", StringComparison.Ordinal);
-    private static string TypeScriptVersionForAngular(int targetMajor) => targetMajor switch { 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => "~5.5.4" };
+    private static string TypeScriptVersionForAngular(int targetMajor) => targetMajor switch { 13 => "~4.5.5", 14 => "~4.8.4", 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => "~5.5.4" };
     private static bool IsTypeScriptCompatibleWithAngular(string version, int targetMajor)
     {
         var tuple = VersionTuple(version);
         if (tuple is null) return false;
         return targetMajor switch
         {
+            13 => Compare(tuple, [4, 4, 0]) >= 0 && Compare(tuple, [4, 6, 0]) < 0,
+            14 => Compare(tuple, [4, 6, 0]) >= 0 && Compare(tuple, [4, 9, 0]) < 0,
             15 => Compare(tuple, [4, 8, 2]) >= 0 && Compare(tuple, [5, 0, 0]) < 0,
             16 => Compare(tuple, [4, 9, 3]) >= 0 && Compare(tuple, [5, 2, 0]) < 0,
             17 => Compare(tuple, [5, 2, 0]) >= 0 && Compare(tuple, [5, 5, 0]) < 0,
@@ -926,6 +1541,236 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             _ => true
         };
     }
+    private static bool IsCriticalDependencyBuildFailure(JsonObject validation)
+    {
+        var text = $"{validation.StringValue("output")}\n{validation.StringValue("errors")}".ToLowerInvariant();
+        return text.Contains("ts23.createnull is not a function") ||
+               text.Contains("typescript") && text.Contains("invalid") ||
+               text.Contains("compiler-cli") && text.Contains("typescript") ||
+               text.Contains("angular compiler") && text.Contains("typescript");
+    }
+
+    private static ValidationResult ValidationResultFromAngularValidation(JsonObject validation, MigrationHop hop)
+    {
+        var command = validation.StringValue("buildVerificationCommand", "npm run build")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return new ValidationResult
+        {
+            Passed = validation.BoolValue("passed"),
+            Output = validation.StringValue("output"),
+            Errors = validation.StringValue("errors"),
+            FailedHop = $"{hop.FromVersion} -> {hop.ToVersion}",
+            FailureCommand = command.Length == 0 ? ["npm", "run", "build"] : command
+        };
+    }
+
+    private static JsonObject ValidationFailureObject(JsonObject validation, MigrationHop hop, bool remediationAttempted, bool remediationApplied = false, bool remediationRejected = false, bool manualCorrectionRequired = false)
+    {
+        var output = validation.StringValue("output", validation.StringValue("errors"));
+        return new JsonObject
+        {
+            ["command"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["exitCode"] = ExtractExitCode(output),
+            ["failureCategory"] = ClassifyValidationFailure(output, validation.StringValue("buildVerificationFailureCategory")),
+            ["errorTail"] = Tail(output),
+            ["migrationHop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+            ["runtime"] = "angular",
+            ["remediationAttempted"] = remediationAttempted,
+            ["remediationApplied"] = remediationApplied,
+            ["remediationRejected"] = remediationRejected,
+            ["manualCorrectionRequired"] = manualCorrectionRequired,
+            ["rootCauseAnalysis"] = validation["aiRemediationRootCauseAnalysis"]?.DeepClone()
+        };
+    }
+
+    private static void MarkLatestValidationFailureRemediation(JsonArray validationFailures, bool attempted, bool applied, bool rejected)
+    {
+        var latest = validationFailures.OfType<JsonObject>().LastOrDefault();
+        if (latest is null) return;
+        latest["remediationAttempted"] = latest.BoolValue("remediationAttempted") || attempted;
+        latest["remediationApplied"] = latest.BoolValue("remediationApplied") || applied;
+        latest["remediationRejected"] = latest.BoolValue("remediationRejected") || rejected;
+    }
+
+    private static void MarkLatestValidationFailureManualCorrection(JsonArray validationFailures)
+    {
+        var latest = validationFailures.OfType<JsonObject>().LastOrDefault();
+        if (latest is null) return;
+        latest["manualCorrectionRequired"] = true;
+    }
+
+    private static string AiRemediationResultSummary(RemediationAttempt remediation)
+    {
+        var proposedFiles = remediation.ManualCorrection?["aiPlanDiagnostics"]?["proposedFiles"]?.AsArray()?.Select(f => f?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToArray() ?? [];
+        var fileText = proposedFiles.Length == 0 ? "" : $" Proposed files: {string.Join(", ", proposedFiles)}.";
+        var reason = remediation.ManualCorrection?.StringValue("reason");
+        var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : $" Reason: {reason}.";
+        return $"AI validation remediation result: attempted={remediation.Attempted}; applied={remediation.Applied}; changes={remediation.Changes.Count}; manualCorrection={remediation.ManualCorrection is not null}.{reasonText}{fileText}";
+    }
+
+    private static bool RemediationRequiresNpmInstall(IEnumerable<JsonObject> changes) =>
+        changes.Any(c =>
+            string.Equals(Path.GetFileName(c.StringValue("file")), "package.json", StringComparison.OrdinalIgnoreCase) &&
+            c.StringValue("type") is "package_update" or "package" or "dependency");
+
+    private static JsonObject BuildAngularValidationRootCauseAnalysis(string projectPath, JsonObject validation, MigrationHop hop)
+    {
+        var output = validation.StringValue("output", validation.StringValue("errors"));
+        var obsolete = new JsonArray();
+        var incompatible = new JsonArray();
+        var cascading = new JsonArray();
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            return RootCauseAnalysisObject(hop, obsolete, incompatible, cascading);
+        }
+
+        foreach (var file in ExtractProjectSourceFiles(output))
+        {
+            if (output.Contains("entryComponents", StringComparison.OrdinalIgnoreCase) &&
+                (output.Contains(file.Replace('/', Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) ||
+                 output.Contains(file, StringComparison.OrdinalIgnoreCase)))
+            {
+                obsolete.Add(new JsonObject
+                {
+                    ["category"] = "obsolete Angular metadata",
+                    ["sourceFile"] = file,
+                    ["symbol"] = "entryComponents",
+                    ["reason"] = "entryComponents is obsolete under Ivy and invalid in Angular 16 NgModule metadata.",
+                    ["safeRemediation"] = "remove entryComponents metadata only"
+                });
+            }
+        }
+
+        foreach (var packageName in ExtractNodeModulePackages(output))
+        {
+            var kind = output.Contains("ModuleWithProviders", StringComparison.OrdinalIgnoreCase)
+                ? "Angular-library-incompatible"
+                : "third-party Angular library Ivy/partial-compilation incompatibility";
+            incompatible.Add(new JsonObject
+            {
+                ["category"] = "incompatible Angular library package",
+                ["package"] = packageName,
+                ["targetAngularMajor"] = hop.ToVersion,
+                ["sourceFiles"] = new JsonArray(ExtractNodeModuleFilesForPackage(output, packageName).Select(f => (JsonNode?)JsonValue.Create(f)).ToArray()),
+                ["reason"] = kind,
+                ["allowedRemediation"] = "package.json update or equivalent Angular module import wiring only",
+                ["editNodeModules"] = false
+            });
+        }
+
+        foreach (var local in ExtractLocalNg600xModules(output))
+        {
+            var moduleFile = ResolveLocalModuleFile(projectPath, local.Symbol, output);
+            var hasNgModule = !string.IsNullOrWhiteSpace(moduleFile) && File.Exists(Path.Combine(projectPath, moduleFile)) && File.ReadAllText(Path.Combine(projectPath, moduleFile)).Contains("@NgModule", StringComparison.Ordinal);
+            cascading.Add(new JsonObject
+            {
+                ["category"] = "cascading local module error",
+                ["symbol"] = local.Symbol,
+                ["sourceFile"] = moduleFile,
+                ["ngModuleDecoratorPresent"] = hasNgModule,
+                ["reason"] = hasNgModule && incompatible.Count > 0
+                    ? "Local module has @NgModule; NG6002 is likely cascading from incompatible third-party Angular modules imported earlier."
+                    : "Local module needs structural NgModule inspection.",
+                ["correlatedThirdPartyPackages"] = new JsonArray(incompatible.OfType<JsonObject>().Select(i => (JsonNode?)JsonValue.Create(i.StringValue("package"))).DistinctBy(n => n?.ToString(), StringComparer.OrdinalIgnoreCase).ToArray())
+            });
+        }
+
+        return RootCauseAnalysisObject(hop, obsolete, incompatible, cascading);
+    }
+
+    private static JsonObject RootCauseAnalysisObject(MigrationHop hop, JsonArray obsolete, JsonArray incompatible, JsonArray cascading) => new()
+    {
+        ["migrationHop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+        ["obsoleteAngularMetadata"] = obsolete,
+        ["incompatibleAngularLibraryPackages"] = incompatible,
+        ["cascadingLocalModuleErrors"] = cascading,
+        ["genericCompatibilityAdviceSuppressed"] = obsolete.Count > 0 || incompatible.Count > 0 || cascading.Count > 0
+    };
+
+    private static IReadOnlyList<string> ExtractProjectSourceFiles(string output) =>
+        Regex.Matches(output, @"(?<file>(?:\.\/)?src[\\/][^\s:]+?\.ts)", RegexOptions.IgnoreCase)
+            .Select(m => NormalizeRelativePath(m.Groups["file"].Value.TrimStart('.', '/', '\\')))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static IReadOnlyList<string> ExtractNodeModulePackages(string output) =>
+        Regex.Matches(output, @"node_modules[\\/](?<pkg>@[^\\/]+[\\/][^\\/]+|[^\\/:\s]+)", RegexOptions.IgnoreCase)
+            .Select(m => m.Groups["pkg"].Value.Replace('\\', '/'))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static IReadOnlyList<string> ExtractNodeModuleFilesForPackage(string output, string packageName) =>
+        Regex.Matches(output, @"(?<file>node_modules[\\/][^\s:]+?\.(?:d\.ts|ts|mjs|js))", RegexOptions.IgnoreCase)
+            .Select(m => NormalizeRelativePath(m.Groups["file"].Value))
+            .Where(f => f.StartsWith($"node_modules/{packageName}/", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static IReadOnlyList<(string Symbol, string File)> ExtractLocalNg600xModules(string output)
+    {
+        var results = new List<(string Symbol, string File)>();
+        foreach (var match in Regex.Matches(output, @"(?<symbol>\w+Module)\s+does not appear to be an NgModule class", RegexOptions.IgnoreCase).OfType<Match>())
+        {
+            var symbol = match.Groups["symbol"].Value;
+            var prefix = output[..match.Index];
+            var file = ExtractProjectSourceFiles(prefix).LastOrDefault() ?? "";
+            if (!KnownThirdPartyModuleSymbol(symbol)) results.Add((symbol, file));
+        }
+        return results.Distinct().ToArray();
+    }
+
+    private static bool KnownThirdPartyModuleSymbol(string symbol) =>
+        symbol is "SlickCarouselModule" or "PinchZoomModule" or "UserIdleModule";
+
+    private static string ResolveLocalModuleFile(string projectPath, string symbol, string outputFile)
+    {
+        if (!string.IsNullOrWhiteSpace(outputFile) && File.Exists(Path.Combine(projectPath, outputFile))) return outputFile;
+        var src = Path.Combine(projectPath, "src");
+        if (!Directory.Exists(src)) return "";
+        var expected = Regex.Replace(symbol, "Module$", "", RegexOptions.IgnoreCase);
+        expected = Regex.Replace(expected, "([a-z0-9])([A-Z])", "$1-$2").ToLowerInvariant() + ".module.ts";
+        return Directory.EnumerateFiles(src, "*.module.ts", SearchOption.AllDirectories)
+            .Select(path => NormalizeRelativePath(Path.GetRelativePath(projectPath, path)))
+            .FirstOrDefault(path => path.EndsWith(expected, StringComparison.OrdinalIgnoreCase) || File.ReadAllText(Path.Combine(projectPath, path)).Contains($"class {symbol}", StringComparison.Ordinal)) ?? "";
+    }
+
+    private static JsonObject ManualCorrectionObject(JsonObject validation, string reason) => new()
+    {
+        ["reason"] = reason,
+        ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+        ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+        ["manualInstructions"] = new JsonArray(new JsonObject
+        {
+            ["file"] = "package.json",
+            ["error"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+            ["possibleChange"] = "Review the failing validation output and apply the smallest package/config/script fix.",
+            ["risk"] = "manual correction required",
+            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build")
+        })
+    };
+
+    private static bool IsAiTimeoutFailure(JsonObject change) =>
+        string.Equals(change.StringValue("failureCategory"), "ai_timeout", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(change.StringValue("type"), "ai_timeout", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAiEnvironmentError(JsonObject change) =>
+        string.Equals(change.StringValue("failureCategory"), "environment_error", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(change.StringValue("type"), "ai_environment_error", StringComparison.OrdinalIgnoreCase);
+
+    private static int? ExtractExitCode(string text) => Regex.Match(text, @"exit code:\s*(?<code>-?\d+)", RegexOptions.IgnoreCase) is { Success: true } m ? int.Parse(m.Groups["code"].Value) : null;
+    private static string ClassifyValidationFailure(string text, string fallback)
+    {
+        if (AiRemediationPlanner.IsCodexSandboxValidationError(text)) return "environment_error";
+        if (text.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase)) return "script";
+        if (text.Contains("ERESOLVE", StringComparison.OrdinalIgnoreCase) || text.Contains("peer dependency", StringComparison.OrdinalIgnoreCase)) return "dependency";
+        if (AiRemediationPlanner.IsCssDependencyImportFailure(text)) return "css_dependency_import";
+        if (Regex.IsMatch(text, @"node_modules[\\/].*TS2304", RegexOptions.IgnoreCase)) return "type_declaration";
+        if (Regex.IsMatch(text, @"\b(TS|CS|NG)\d+\b|compiler", RegexOptions.IgnoreCase)) return "compiler";
+        return string.IsNullOrWhiteSpace(fallback) ? "unknown" : fallback;
+    }
+
+    private static string Tail(string text) => string.Join(" ", (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries).TakeLast(12)).Trim();
+
     private static string DefaultPackageCategory(string name)
     {
         if (name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) && name is not "@angular/cli" and not "@angular/compiler-cli" and not "@angular/language-service") return "angular_framework_package";
@@ -933,6 +1778,41 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (name is "typescript" or "ts-node") return "typescript_runtime_or_compiler_package";
         if (AngularRuntimeSupportPackages.Contains(name)) return "angular_runtime_support_package";
         return "business_or_unknown_package";
+    }
+    private static JsonArray KnownCriticalDependencyManualReviewItems(JsonObject packageJson, int targetMajor)
+    {
+        var manual = new JsonArray();
+        var deps = AllDependencies(packageJson);
+        if (deps.TryGetValue("typescript", out var ts) && !IsTypeScriptCompatibleWithAngular(ts, targetMajor))
+        {
+            manual.Add(new JsonObject { ["name"] = "typescript", ["reason"] = $"TypeScript {ts} is incompatible with Angular {targetMajor}; align this framework-critical dependency before build.", ["risk"] = "high" });
+        }
+        return manual;
+    }
+
+    private static JsonObject LocalAngularPackageMetadata(string projectPath)
+    {
+        var metadata = new JsonObject();
+        foreach (var package in new[] { "@angular/compiler-cli", "@angular-devkit/build-angular", "@ngtools/webpack", "@angular/cli", "@angular/core" })
+        {
+            var path = Path.Combine([projectPath, "node_modules", .. package.Split('/') , "package.json"]);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var data = ReadJson(path);
+                metadata[package] = new JsonObject
+                {
+                    ["version"] = data.StringValue("version"),
+                    ["peerDependencies"] = data["peerDependencies"]?.DeepClone() ?? new JsonObject(),
+                    ["dependencies"] = data["dependencies"]?.DeepClone() ?? new JsonObject()
+                };
+            }
+            catch
+            {
+                metadata[package] = new JsonObject { ["readError"] = true };
+            }
+        }
+        return metadata;
     }
     private static string? SelectLatestStableMajorVersion(JsonNode? parsed, int target) { var versions = parsed is JsonArray arr ? arr.Select(x => x?.ToString() ?? "") : [parsed?.ToString() ?? ""]; return versions.Where(v => !v.Contains('-') && MajorVersion(v) == target).OrderBy(VersionTuple, Comparer<int[]?>.Create((a, b) => a is null ? -1 : b is null ? 1 : Compare(a, b))).LastOrDefault(); }
     private static Dictionary<string, string> StructuralFileContents(string projectPath) => StructuralFiles.Where(f => File.Exists(Path.Combine(projectPath, f))).ToDictionary(f => f, f => File.ReadAllText(Path.Combine(projectPath, f)));
@@ -1051,6 +1931,11 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             if (installAttempt.Result.ReturnCode == 0) return attempts;
 
             var classification = installAttempt.FailureClassification?.Category ?? "unknownFailure";
+            if (classification == "packageVersionNotFound" && await TryRemediatePackageVersionNotFoundAsync(projectPath, hop, config, installAttempt, progress, stage, logPath, cancellationToken))
+            {
+                previous = null;
+                continue;
+            }
             if (classification == "peerDependencyConflict" && TryReviseAngularRuntimeMismatch(projectPath, hop.ToVersion, installAttempt, progress, stage))
             {
                 previous = null;
@@ -1061,6 +1946,36 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             if (attempts.Count >= 4) return attempts;
             progress?.Stage(stage, $"Dependency install failed ({classification}). Asking for next validated install strategy.");
         }
+    }
+
+    private async Task<bool> TryRemediatePackageVersionNotFoundAsync(string projectPath, MigrationHop hop, MigrationConfig config, InstallAttemptResult installAttempt, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        if (ai is null || promptLoader is null || !config.Ai.UseAi) return false;
+        if (!TryExtractPackageVersionNotFound(installAttempt.Result, out var packageName, out var requestedRange)) return false;
+
+        var path = Path.Combine(projectPath, "package.json");
+        if (!File.Exists(path)) return false;
+        var packageJson = ReadJson(path);
+        var section = DependencySection(packageJson, packageName);
+        if (section is null) return false;
+
+        progress?.Stage(stage, $"[Package Resolution] npm install reported {packageName}@{requestedRange} as unavailable; requesting a targeted AI replacement.");
+        var update = new PendingPackageUpdate(packageName, section, packageJson[section]?[packageName]?.ToString() ?? "", requestedRange, requestedRange, DefaultPackageCategory(packageName), "npm install reported the selected version as unavailable.", "install-e404-remediation", 1.0);
+        var resolution = new NpmPackageTargetResolution(null, "E404", "E404", $"npm install {packageName}@{requestedRange}", "npm install reported E404/ETARGET for this package.", installAttempt.Result.Stderr, 1, requestedRange, "", "", false, "E404");
+        var alternative = await RequestAiPackageVersionAlternativeAsync(update, hop, packageJson, resolution, config, cancellationToken);
+        var alternativeRange = alternative?.StringValue("recommendedVersion") ?? "";
+        if (string.IsNullOrWhiteSpace(alternativeRange) || !NpmVersionRange.IsSafe(alternativeRange)) return false;
+
+        var role = AngularPackageRole(packageName, DefaultPackageCategory(packageName));
+        var verify = await ResolveNpmPackageTargetAsync(packageName, hop.ToVersion, alternativeRange, role, config, projectPath, logPath, cancellationToken);
+        if (verify.ValidationResult == "E404" || verify.ValidationResult == "invalidRangeSyntax") return false;
+
+        var finalRange = verify.FinalTarget ?? alternativeRange;
+        if (packageJson[section] is not JsonObject deps) return false;
+        deps[packageName] = finalRange;
+        File.WriteAllText(path, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+        progress?.Stage(stage, $"[Package Resolution] Patched {packageName} to {finalRange} after npm install version-not-found failure.");
+        return true;
     }
 
     private static int RetryCountFor(IReadOnlyList<string> command, Dictionary<string, int> retryCounts) => command.Count == 0 ? 0 : retryCounts.GetValueOrDefault(string.Join(" ", command));
@@ -1131,6 +2046,13 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         result["packagesManualReview"] = packageUpdate["packagesManualReview"]?.DeepClone() ?? new JsonArray();
         result["thirdPartyPackageDecisions"] = packageUpdate["thirdPartyPackageDecisions"]?.DeepClone() ?? new JsonArray();
         result["rejectedAiPackageSuggestions"] = packageUpdate["rejectedAiPackageSuggestions"]?.DeepClone() ?? new JsonArray();
+        result["packageTargetValidation"] = packageUpdate["packageTargetValidation"]?.DeepClone() ?? new JsonObject();
+        result["aiPackageVersionRecommendations"] = packageUpdate["aiPackageVersionRecommendations"]?.DeepClone() ?? new JsonObject();
+        result["aiPackageVersionRecommendationsAccepted"] = packageUpdate["aiPackageVersionRecommendationsAccepted"]?.DeepClone() ?? new JsonArray();
+        result["aiPackageVersionRecommendationsRejected"] = packageUpdate["aiPackageVersionRecommendationsRejected"]?.DeepClone() ?? new JsonArray();
+        result["angularCriticalDependencyAlignment"] = packageUpdate["angularCriticalDependencyAlignment"]?.DeepClone() ?? new JsonObject();
+        result["angularCriticalDependencyAlignmentAccepted"] = packageUpdate["angularCriticalDependencyAlignmentAccepted"]?.DeepClone() ?? new JsonArray();
+        result["angularCriticalDependencyAlignmentRejected"] = packageUpdate["angularCriticalDependencyAlignmentRejected"]?.DeepClone() ?? new JsonArray();
         result["angularStructuralConfigChanges"] = configUpdate["changes"]?.DeepClone() ?? new JsonArray();
         result["rejectedAiConfigSuggestions"] = configUpdate["rejectedAiConfigSuggestions"]?.DeepClone() ?? new JsonArray();
         result["manualAngularConfigRecommendations"] = configUpdate["manualAngularConfigRecommendations"]?.DeepClone() ?? new JsonArray();
@@ -1164,7 +2086,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             string rejectedReason = "";
             try
             {
-                var recommended = await ai.AskAsync(config.Ai, InstallStrategyPrompt, context.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+                var recommended = await ai.AskAsync(config.Ai, LoadPrompt("angular/angular-install-strategy"), context.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
                 var parsed = ParseInstallStrategyDecision(recommended);
                 if (parsed is not null)
                 {
@@ -1197,7 +2119,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     {
         if (decision.PackageManager != "npm") return [];
         var strategy = NormalizeInstallStrategy(decision);
-        if (strategy == "manualReview" || strategy == "forceInstall") return [];
+        if (strategy == "manualReview" || strategy == "forceInstall") return previousCommand?.ToArray() ?? NormalNpmInstallCommand;
         if (strategy == "retrySameCommand" && previousCommand is not null) return previousCommand.ToArray();
         if (!string.IsNullOrWhiteSpace(decision.Command) && AllowedNpmInstallCommands.Contains(NormalizeCommandText(decision.Command))) return SplitCommand(decision.Command);
         return strategy == "legacyPeerDepsInstall" ? LegacyPeerDepsNpmInstallCommand : NormalNpmInstallCommand;
@@ -1219,6 +2141,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (decision.Confidence < MinimumInstallDecisionConfidence) return (false, "Install decision confidence is below threshold.");
         if (decision.Flags.Force || strategy == "forceInstall" || decision.Command.Contains("--force", StringComparison.OrdinalIgnoreCase)) return (false, "Force install is manual review only and is not executed automatically.");
         if (ContainsForbiddenInstallCommand(decision.Command)) return (false, "AI install strategy attempted a forbidden npm/ng command.");
+        if (strategy == "manualReview" && context.BoolValue("packageJsonChanged") && previousFailure is null) return (false, "Manual review cannot block the first clean install after Angular package.json alignment.");
         if (strategy == "manualReview") return (true, "");
         if (command.Count == 0 || !AllowedNpmInstallCommands.Contains(commandText)) return (false, "Install command is not in the npm command allowlist.");
         if (strategy == "retrySameCommand" && previousCommand is null) return (false, "retrySameCommand requires a previous command.");
@@ -1238,7 +2161,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (result.TimeoutKind is not null) return new("transientNetworkFailure", result.FailureReason ?? "Install timed out.", "Retry the same install command if the registry/network is otherwise healthy.");
         if (IsPeerDependencyConflict(result)) return new("peerDependencyConflict", "npm reported a peer dependency conflict.", "Retry with a validated legacyPeerDeps strategy or remediate the conflicting package.");
         if (ContainsAny(output, "e401", "e403", "401 unauthorized", "403 forbidden", "authentication required", "npm login")) return new("registryAuthFailure", "npm registry authentication or authorization failed.", "Check npm auth, private registry, proxy, or npm login state.");
-        if (ContainsAny(output, "etarget", "no matching version found", "notarget", "version not found")) return new("packageVersionNotFound", "npm could not resolve a package version.", "Ask AI to re-check the package upgrade plan for the failed package before retrying.");
+        if (ContainsAny(output, "etarget", "e404", "no matching version found", "notarget", "version not found")) return new("packageVersionNotFound", "npm could not resolve a package version.", "Ask AI to re-check the package upgrade plan for the failed package before retrying.");
         if (ContainsAny(output, "econnreset", "etimedout", "econnrefused", "enotfound", "socket hang up", "network timeout", "request failed", "failed while downloading tarball", "npm error network", "eai_again", "fetch failed")) return new("transientNetworkFailure", "npm reported a transient registry/network failure.", "Retry the exact same install command without changing package versions.");
         return new("unknownFailure", "npm install returned a non-zero exit code.", "Inspect stdout/stderr in the migration log.");
     }
@@ -1393,7 +2316,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         PackageManager = "npm",
         Strategy = strategy,
         Mode = strategy,
-        Command = command ?? (strategy == "legacyPeerDepsInstall" ? string.Join(" ", LegacyPeerDepsNpmInstallCommand) : strategy == "manualReview" ? "" : string.Join(" ", NormalNpmInstallCommand)),
+        Command = command ?? (strategy == "legacyPeerDepsInstall" ? string.Join(" ", LegacyPeerDepsNpmInstallCommand) : string.Join(" ", NormalNpmInstallCommand)),
         Reason = reason,
         Confidence = 1,
         Risk = risk,
@@ -1494,32 +2417,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static string TrimForPrompt(string text, int max) => text.Length <= max ? text : text[^max..];
     private static string FirstNonEmptyLine(params string[] values) => values.SelectMany(v => v.Split('\n')).Select(v => v.Trim()).FirstOrDefault(v => v.Length > 0) ?? "";
 
-    private const string InstallStrategyPrompt = """
-Return strict JSON only for a safe Angular npm install strategy.
-Schema: {"strategy":"normalInstall | legacyPeerDepsInstall | retrySameCommand | manualReview | forceInstall","command":"npm install ...","reason":"short reason","confidence":0.0,"risk":"low | medium | high","isRetry":true,"isFallback":true,"maxRetries":0,"failureClassification":"none | peerDependencyConflict | transientNetworkFailure | registryAuthFailure | packageVersionNotFound | unknownFailure"}
-Allowed commands are exactly:
-npm install --no-audit --no-fund --prefer-offline
-npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
-Choose normalInstall before the first attempt unless there is a clear reason not to.
-After peerDependencyConflict, choose legacyPeerDepsInstall only for third-party peer range conflicts. If Angular framework packages require zone.js, rxjs, tslib, or typescript ranges, choose manualReview so the package plan can be revised instead of hiding the mismatch.
-After transientNetworkFailure, choose retrySameCommand with the exact previous command and do not change package versions.
-For registryAuthFailure, packageVersionNotFound, unknownFailure, or forceInstall, choose manualReview unless a safe single package-plan correction is explicitly justified outside install execution.
-Never choose npm --force, npm update, npm audit fix, global npm commands, ng update, npx ng update, or migrate-only commands.
-""";
-
-    private const string AngularPackageClassificationPrompt = """
-Return strict JSON only. Classify every direct Angular package.json dependency and devDependency for this Angular major-version hop.
-Use this schema: {"packages":[{"name":"package-name","currentVersion":"current-version","section":"dependencies | devDependencies","category":"angular_framework_package | angular_tooling_package | angular_runtime_support_package | typescript_runtime_or_compiler_package | angular_ui_or_extension_package | third_party_runtime_package | third_party_build_or_test_tooling | business_or_unknown_package","targetVersion":"version-or-null","action":"upgrade | preserve | remove | manual_review","reason":"short reason","confidence":0.0,"risk":"low | medium | high"}],"notes":[]}
-Rules: choose one stable compatible targetVersion only; align Angular framework packages to the target major; review Angular-coupled runtime packages zone.js, rxjs, tslib, and typescript whenever Angular core/framework packages are upgraded; upgrade Angular tooling, runtime support packages, and TypeScript only to Angular-compatible versions; preserve unrelated third-party packages; mark uncertain packages manual_review. Do not use latest blindly.
-""";
-
-    private const string AngularConfigPlanPrompt = """
-Return strict JSON only. Propose only safe structural Angular config updates after package.json has been upgraded.
-Allowed files: angular.json, tsconfig.json, tsconfig.app.json, tsconfig.spec.json, package.json.
-Do not touch src/app, components, services, models, business code, API usage, or application logic.
-Use this schema: {"changes":[{"filePath":"angular.json","changeType":"update_builder | update_option | remove_deprecated_option | update_tsconfig | manual_review","targetAngularHop":"14->15","reason":"short reason","confidence":0.0,"risk":"low | medium | high","patch":{"before":"exact existing value or snippet","after":"new value or snippet"}}],"manualRecommendations":[]}
-Only suggest exact snippet replacements. Preserve project names, custom architect targets, sourceRoot, root, assets, styles, scripts, budgets, fileReplacements, outputPath, index, main/browser, unknown angular.json options, tsconfig paths, aliases, include, exclude, files, and references unless a safe structural migration requires a precise low-risk change.
-""";
+    private string LoadPrompt(string promptPath) => promptLoader?.Load(promptPath) ?? throw new InvalidOperationException("Prompt loader is required when AI Angular migration is enabled.");
 
     private static JsonObject CommandObject(IReadOnlyList<string> command, CommandResult result, bool legacyPeerDepsFallbackUsed = false)
     {
@@ -1613,6 +2511,37 @@ Only suggest exact snippet replacements. Preserve project names, custom architec
         }
     }
 
+    private static string? DependencySection(JsonObject data, string packageName)
+    {
+        foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
+        {
+            if (data[section] is JsonObject deps && deps.ContainsKey(packageName)) return section;
+        }
+        return null;
+    }
+
+    private static bool TryExtractPackageVersionNotFound(CommandResult result, out string packageName, out string requestedRange)
+    {
+        var output = $"{result.Stdout}\n{result.Stderr}";
+        foreach (var pattern in new[]
+        {
+            @"No matching version found for\s+((?:@[^/\s]+/)?[^@\s]+)@([^\s.][^\s]*)",
+            @"notarget\s+No matching version found for\s+((?:@[^/\s]+/)?[^@\s]+)@([^\s.][^\s]*)",
+            @"(?:ETARGET|E404).*?\s((?:@[^/\s]+/)?[^@\s]+)@([~^]?\d+[^\s]*)"
+        })
+        {
+            var match = Regex.Match(output, pattern, RegexOptions.IgnoreCase);
+            if (!match.Success) continue;
+            packageName = match.Groups[1].Value.Trim().TrimEnd('.', ',', ')');
+            requestedRange = match.Groups[2].Value.Trim().TrimEnd('.', ',', ')');
+            return !string.IsNullOrWhiteSpace(packageName) && !string.IsNullOrWhiteSpace(requestedRange);
+        }
+
+        packageName = "";
+        requestedRange = "";
+        return false;
+    }
+
     private static string AngularDependencyRole(string name)
     {
         if (name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) return "framework-owned";
@@ -1624,6 +2553,21 @@ Only suggest exact snippet replacements. Preserve project names, custom architec
 
     private static bool LooksAngularCoupledThirdParty(string name) => name.Contains("angular", StringComparison.OrdinalIgnoreCase) || name.StartsWith("ngx-", StringComparison.OrdinalIgnoreCase) || name.StartsWith("@ng-", StringComparison.OrdinalIgnoreCase);
 
+    private sealed record PendingPackageUpdate(string Name, string Section, string FromVersion, string OriginalSuggestedVersion, string NormalizedTargetVersion, string Category, string Reason, string Source, double Confidence);
+    private sealed record NpmViewResult(JsonNode? Value, string Status, string Error, int AttemptCount);
+    private sealed record NpmPackageTargetResolution(
+        string? FinalTarget,
+        string ValidationResult,
+        string VerificationResult,
+        string VerificationCommand,
+        string FallbackReason,
+        string NpmError,
+        int AttemptCount,
+        string InitialRecommendedVersion,
+        string AiReRecommendedVersion,
+        string AiReRecommendationReason,
+        bool AiReRecommendationUsed,
+        string InitialVerificationResult);
     private sealed record FailureInfo(string Category, string Stage, IReadOnlyList<string> Command, string Reason, string SuggestedNextAction, bool CanContinue, bool ManualCorrectionRequired);
     private static JsonObject FailedHopResult(MigrationHop hop, JsonArray commands, IReadOnlyList<string> files, JsonObject preflight, string reason, string package) => new() { ["hop"] = HopObject(hop), ["status"] = "failed", ["commands"] = commands, ["files"] = new JsonArray(files.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()), ["preflightDependencyAnalysis"] = preflight, ["validation"] = new JsonObject { ["passed"] = false, ["errors"] = reason }, ["failureReason"] = reason, ["failurePackage"] = package, ["optionalMigrations"] = new JsonArray() };
     private static string CommandDescription(IReadOnlyList<string> command) => command.Take(2).SequenceEqual(["npm", "install"]) || command.Take(2).SequenceEqual(["yarn", "install"]) || command.Take(2).SequenceEqual(["pnpm", "install"]) ? "dependency install" : command.Contains("--migrate-only") ? "Angular migrate-only" : "command";

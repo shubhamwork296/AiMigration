@@ -6,7 +6,7 @@ using Q3.MigrationAgent.Shared.Config;
 
 namespace Q3.MigrationAgent.Core.Analysis;
 
-public sealed class ProjectAnalyzer(IAiService ai)
+public sealed class ProjectAnalyzer(IAiService ai, IPromptLoader? promptLoader = null)
 {
     public async Task<JsonObject> AnalyzeProjectAsync(
         string projectPath,
@@ -35,7 +35,7 @@ public sealed class ProjectAnalyzer(IAiService ai)
                 ["confidence"] = "0-100"
             }
         };
-        var aiAnalysis = await ai.AskAsync(config.Ai, BuildStructuralPrompt(), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+        var aiAnalysis = await ai.AskAsync(config.Ai, LoadPrompt("analysis/structural-analysis"), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
         if (aiAnalysis is not null)
         {
             aiAnalysis["analysisMode"] ??= config.Ai.Provider ?? "ai";
@@ -89,19 +89,5 @@ public sealed class ProjectAnalyzer(IAiService ai)
         return analysis;
     }
 
-    private static string BuildStructuralPrompt() => """
-You are a senior software migration engineer working across multiple programming languages (e.g., .NET, Java, Python, Node.js).
-
-Your responsibility is to generate a SAFE migration analysis that ONLY modifies the OUTER STRUCTURE of a project.
-
-STRICT RULES (NON-NEGOTIABLE):
-1. You MUST NOT modify business logic.
-2. You MUST NOT suggest any changes inside source code files such as .cs, .java, .py, .js, .ts, .cpp, .go.
-3. You MUST NOT suggest API replacements, method changes, class refactoring, or logic updates.
-4. You are ONLY allowed to suggest runtime/framework upgrades, dependency/package version upgrades, project configuration updates, and build configuration changes.
-5. If a required migration step involves modifying code, you MUST IGNORE it.
-6. If you are unsure, return findings as an empty list.
-
-Return only valid JSON using the requested response shape.
-""";
+    private string LoadPrompt(string promptPath) => promptLoader?.Load(promptPath) ?? throw new InvalidOperationException("Prompt loader is required when AI analysis is enabled.");
 }

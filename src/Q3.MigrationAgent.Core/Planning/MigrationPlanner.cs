@@ -7,7 +7,7 @@ using Q3.MigrationAgent.Shared.Config;
 
 namespace Q3.MigrationAgent.Core.Planning;
 
-public sealed class MigrationPlanner(IAiService ai)
+public sealed class MigrationPlanner(IAiService ai, IPromptLoader? promptLoader = null)
 {
     private static readonly HashSet<string> StructuralRoles = ["project_manifest", "dependency_manifest", "build_manifest", "solution_manifest", "lock_file"];
     private static readonly HashSet<string> BlockedRoles = ["source_code", "business_logic", "configuration", "generated_file", "unknown"];
@@ -19,7 +19,7 @@ public sealed class MigrationPlanner(IAiService ai)
         var normalizedRules = NormalizeDependencyRules(rules);
         StoreStructureClassification(analysis, FallbackStructureClassification(analysis));
         var deterministic = BuildChangePlan(analysis, normalizedRules);
-        var aiPlan = await ai.AskAsync(aiConfig, BuildPlanningPrompt(), new JsonObject
+        var aiPlan = await ai.AskAsync(aiConfig, LoadPrompt("planning/migration-planning"), new JsonObject
         {
             ["rules"] = normalizedRules.DeepClone(),
             ["analysis"] = analysis.DeepClone(),
@@ -400,5 +400,5 @@ public sealed class MigrationPlanner(IAiService ai)
     private static IReadOnlyList<JsonObject> SortPlan(IEnumerable<JsonObject> plan) => plan.OrderBy(p => p.IntValue("priority")).ThenBy(p => p.StringValue("type")).ThenBy(p => p.StringValue("name")).ToArray();
     private static IReadOnlyList<JsonObject> MergePlans(IEnumerable<JsonObject> preferred, IEnumerable<JsonObject> fallback) => preferred.Concat(fallback).GroupBy(PlanKey).Select(g => g.First()).OrderBy(p => p.IntValue("priority")).ThenBy(p => p.StringValue("type")).ToArray();
     private static string PlanKey(JsonObject item) => item.StringValue("type") is "dependency" or "package" ? $"dependency|{item.StringValue("name")}|{item.StringValue("toVersion")}|{item.StringValue("sourceFile")}" : $"{item.StringValue("type")}|{item.StringValue("file")}|{item.StringValue("find")}|{item.StringValue("replace")}";
-    private static string BuildPlanningPrompt() => "You are a senior software migration planner. Return only valid JSON. Plan only structural framework/runtime/dependency/package changes. Do not plan source-code or business-logic edits.";
+    private string LoadPrompt(string promptPath) => promptLoader?.Load(promptPath) ?? throw new InvalidOperationException("Prompt loader is required when AI planning is enabled.");
 }

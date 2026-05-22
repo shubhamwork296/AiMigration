@@ -1,0 +1,17 @@
+<div class="modal-header mdl_hd_nw">
+    <h5 class="modal-title pull-left">{{mainHeading}}</h5>
+    <button type="button" class="close pull-right modal_close_btn" aria-label="Close" (click)="close()">
+        <span aria-hidden="true">X</span>
+    </button>
+</div>
+<div class="modal-body">
+    <div class="delete_txt_n">{{subHeading}} <strong *ngIf="title">{{title + ' ?'}}</strong></div>
+</div>
+<div class="modal-footer justify-content-center">
+    <ng-container>
+        <button type="button" class="btn btn-primary btn-theme dlt_btn_y_n_w"
+            (click)="onSubmit(buttonHeading1)"><i class="fa fa-check" aria-hidden="true"></i> {{buttonHeading1}}</button>
+        <button type="button" class="btn btn-primary btn-gray ml-2 dlt_btn_y_n_w"
+            (click)="onSubmit(buttonHeading2)"><i class="fa fa-times" aria-hidden="true"></i> {{buttonHeading2}}</button>
+    </ng-container>
+</div>

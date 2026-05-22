@@ -39,10 +39,13 @@
     "aiMode": "cli",
     "rollbackMode": "manual",
     "commandTimeoutSeconds": 600,
+    "packageVersionVerificationMode": "install-first",
+    "npmLookupRetries": 0,
+    "npmLookupIdleTimeoutSeconds": 20,
+    "npmLookupTimeoutSeconds": 45,
     "skipPreflightDependencyCompatibility": false,
     "preflightRemediationMode": "suggest",
     "maxAiRemediationRetries": 3,
     "verbosity": "default"
   }
 }
-

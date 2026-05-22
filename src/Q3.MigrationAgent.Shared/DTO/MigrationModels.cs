@@ -81,6 +81,7 @@ public sealed record ValidationResult
     public IReadOnlyList<string>? FailureCommand { get; set; }
     public IReadOnlyList<string>? SuggestedCorrectedCommand { get; set; }
     public List<JsonObject> Attempts { get; set; } = [];
+    public List<JsonObject> ValidationFailures { get; set; } = [];
     public List<JsonObject> AiRemediationChanges { get; set; } = [];
     public List<JsonObject> ManualCorrectionRequests { get; set; } = [];
     public string RollbackMode { get; set; } = "manual";

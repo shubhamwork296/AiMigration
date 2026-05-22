@@ -11,7 +11,7 @@ public sealed record ClassificationSafety(
     bool DirectDependenciesOnlyPreflight = true,
     bool AvoidFullVersionScans = true);
 
-public sealed class PackageClassifier(IAiService ai)
+public sealed class PackageClassifier(IAiService ai, IPromptLoader? promptLoader = null)
 {
     public static readonly HashSet<string> FrameworkAlignedRoles = ["framework-core", "framework-cli", "framework-compiler", "framework-extension"];
     public static readonly HashSet<string> FrameworkCoupledRoles = ["framework-coupled-ui", "framework-coupled-tooling"];
@@ -53,7 +53,7 @@ public sealed class PackageClassifier(IAiService ai)
         };
         if (aiConfig?.UseAi == true)
         {
-            var result = await ai.AskAsync(aiConfig, PackageClassifierPrompt, payload.ToJsonString(), cancellationToken);
+            var result = await ai.AskAsync(aiConfig, LoadPrompt("package-classification/generic-package-classifier"), payload.ToJsonString(), cancellationToken);
             if (result is not null) return result;
         }
         return FallbackClassification(runtime, dependencies, devDependencies, npmMetadata);
@@ -150,5 +150,5 @@ public sealed class PackageClassifier(IAiService ai)
     private static string NormalAction(string? value) => PackageActions.Contains(value ?? "") ? value! : "defer-until-failure";
     private static string NormalizeConfidence(string? value) => value is "low" or "medium" or "high" ? value : "medium";
 
-    private const string PackageClassifierPrompt = "You are classifying dependencies for a framework migration. Return strict JSON only. Unknown compatibility is not a blocker. Third-party peer warnings are advisory. Do not recommend latest unconstrained for framework-coupled packages.";
+    private string LoadPrompt(string promptPath) => promptLoader?.Load(promptPath) ?? throw new InvalidOperationException("Prompt loader is required when AI package classification is enabled.");
 }

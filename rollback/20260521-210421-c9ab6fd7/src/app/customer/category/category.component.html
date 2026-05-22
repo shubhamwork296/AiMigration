@@ -1,0 +1,25 @@
+<div class="loading-spinner" *ngIf="loading">
+  <div class="loading-spinner__mask"></div>
+  <div class="loading-spinner__spinner"></div>
+</div>
+
+<div *ngIf="!loading" class="category_list_wrp">
+  <h1>Jewellery Builder</h1>
+  <p class="subtitle">Begin your journey by selecting a category:</p>
+  <h2>Wedding rings</h2>
+  <div class="category_list_row">
+    <div *ngFor="let item of categoryList" class="category_list_card">
+      <a (click)="onCategoryClick(item)">
+        <div class="category_list_img">
+          <!-- <img [src]="[item.Image ? item.Image:'assets/front/images/no_image.jpg']"
+            alt="Category"> -->
+          <img [src]="getImagePath(item)" alt="Category">
+        </div>
+        <div class="category_list_txt">{{item.CategoryName}}</div>
+      </a>
+    </div>
+  </div>
+  <a href="https://www.michaelhill.com.au/made-to-order/rings" target="_blank" class="learn-more-link">learn more about
+    wedding rings,
+    made for you</a>
+</div>

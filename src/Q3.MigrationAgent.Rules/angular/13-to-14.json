@@ -1,0 +1,31 @@
+{
+  "from": "angular13",
+  "to": "angular14",
+  "sourceMajor": 13,
+  "targetMajor": 14,
+  "preferredOperation": "angular-cli-update",
+  "migrationCommand": ["npx", "--yes", "@angular/cli@14", "update", "@angular/core@14", "@angular/cli@14"],
+  "requiredPackageChanges": [
+    {"name": "@angular/core", "fromVersion": "13.x", "toVersion": "14.x", "manager": "npm", "ecosystem": "angular"},
+    {"name": "@angular/cli", "fromVersion": "13.x", "toVersion": "14.x", "manager": "npm", "ecosystem": "angular"}
+  ],
+  "validationCommands": ["install", "build", "test-if-present"],
+  "knownStructuralFiles": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "angular.json",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.spec.json",
+    "karma.conf.js",
+    "jest.config.js",
+    "eslint.config.js",
+    ".eslintrc.json",
+    "browserslist",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "optionalMigrations": []
+}

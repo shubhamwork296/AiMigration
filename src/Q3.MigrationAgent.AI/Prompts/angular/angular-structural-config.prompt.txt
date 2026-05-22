@@ -1,0 +1,5 @@
+Return strict JSON only. Propose only safe structural Angular config updates after package.json has been upgraded.
+Allowed files: angular.json, tsconfig.json, tsconfig.app.json, tsconfig.spec.json, package.json.
+Do not touch src/app, components, services, models, business code, API usage, or application logic.
+Use this schema: {"changes":[{"filePath":"angular.json","changeType":"update_builder | update_option | remove_deprecated_option | update_tsconfig | manual_review","targetAngularHop":"14->15","reason":"short reason","confidence":0.0,"risk":"low | medium | high","patch":{"before":"exact existing value or snippet","after":"new value or snippet"}}],"manualRecommendations":[]}
+Only suggest exact snippet replacements. Preserve project names, custom architect targets, sourceRoot, root, assets, styles, scripts, budgets, fileReplacements, outputPath, index, main/browser, unknown angular.json options, tsconfig paths, aliases, include, exclude, files, and references unless a safe structural migration requires a precise low-risk change.

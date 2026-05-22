@@ -67,25 +67,76 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     {
         var stripped = text.Trim();
         if (stripped.Length == 0) throw new InvalidOperationException($"{provider} returned empty output");
-        if (stripped.StartsWith("```", StringComparison.Ordinal))
+        foreach (var candidate in ExtractJsonCandidates(stripped))
         {
-            stripped = stripped.Trim('`').Trim();
-            if (stripped.StartsWith("json", StringComparison.OrdinalIgnoreCase)) stripped = stripped[4..].Trim();
-        }
-
-        for (var i = 0; i < stripped.Length; i++)
-        {
-            if (stripped[i] is not ('{' or '[')) continue;
             try
             {
-                var node = JsonNode.Parse(stripped[i..]);
+                var node = JsonNode.Parse(candidate);
                 if (node is JsonObject obj) return obj;
                 if (node is JsonArray arr) return new JsonObject { ["items"] = arr };
             }
             catch (JsonException) { }
         }
+
         File.WriteAllText("codex_raw_output.txt", text);
         throw new InvalidOperationException($"{provider} did not return a valid JSON object. Raw output saved to codex_raw_output.txt");
+    }
+
+    private static IEnumerable<string> ExtractJsonCandidates(string text)
+    {
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] is not ('{' or '[')) continue;
+            var candidate = TryReadBalancedJsonValue(text, i);
+            if (candidate is not null) yield return candidate;
+        }
+    }
+
+    private static string? TryReadBalancedJsonValue(string text, int start)
+    {
+        var stack = new Stack<char>();
+        var inString = false;
+        var escaped = false;
+
+        for (var i = start; i < text.Length; i++)
+        {
+            var ch = text[i];
+            if (inString)
+            {
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+                if (ch == '\\')
+                {
+                    escaped = true;
+                    continue;
+                }
+                if (ch == '"') inString = false;
+                continue;
+            }
+
+            if (ch == '"')
+            {
+                inString = true;
+                continue;
+            }
+
+            if (ch is '{' or '[')
+            {
+                stack.Push(ch);
+                continue;
+            }
+
+            if (ch is not ('}' or ']')) continue;
+            if (stack.Count == 0) return null;
+            var open = stack.Pop();
+            if ((open == '{' && ch != '}') || (open == '[' && ch != ']')) return null;
+            if (stack.Count == 0) return text[start..(i + 1)];
+        }
+
+        return null;
     }
 
     private async Task<(string? Selected, CliDetection? Detection)> ResolveCliSelectionAsync(

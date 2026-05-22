@@ -1,0 +1,17 @@
+Return strict JSON only. Recommend compatible versions for Angular framework-critical dependencies for one migration hop.
+
+Use this schema:
+{"sourceAngularMajor":13,"targetAngularMajor":13,"recommendations":[{"packageName":"typescript","currentVersion":"^5.5.4","recommendedVersion":"~4.5.5","dependencySection":"devDependencies","action":"align | preserve | add | remove | manualReview","criticality":"required | recommended | advisory | unknown","confidence":95,"risk":"low | medium | high","reason":"short specific Angular compatibility reason","blocksInstall":false,"blocksBuild":true,"manualReviewRequired":false}],"warnings":[]}
+
+Framework-critical packages include Angular-owned framework packages, Angular CLI/build/compiler tooling, TypeScript, RxJS, Zone.js, tslib, Angular CDK/Material, and test tooling only when directly tied to Angular CLI test/build compatibility.
+
+Rules:
+- Make one aligned plan for the hop, not one package at a time.
+- Do not enumerate npm versions.
+- Do not use latest, *, unbounded ranges, or placeholder versions.
+- For Angular-owned packages, keep the package major aligned with the target hop major.
+- For TypeScript, respect Angular compiler-cli/build-angular compatibility for the target Angular major. Angular 13 and 14 must not use TypeScript 5.x.
+- Prefer bounded compatible ranges, for example ~4.5.5 when Angular 13 compiler tooling requires TypeScript 4.4/4.5 compatibility.
+- Preserve compatible critical packages.
+- Manual review if confidence is low, risk is high, or compatibility cannot be determined from Angular compatibility rules, local package metadata, or supplied failure context.
+- Third-party packages should only be changed here when they directly affect Angular build/compiler/runtime/test compatibility.

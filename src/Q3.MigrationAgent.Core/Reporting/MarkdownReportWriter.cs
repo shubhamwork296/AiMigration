@@ -40,6 +40,8 @@ public sealed class MarkdownReportWriter
         lines.AddRange(FormatDependencyUpgrades(plan, results, new HashSet<string> { "ai-validation-repair" }));
         lines.AddRange(["", "## Validation Attempts"]);
         lines.AddRange(validation.Attempts.Count == 0 ? ["- Not run"] : validation.Attempts.Select(a => $"- Attempt {a["attempt"]}: passed={a["passed"]}; stage={a["stage"]}"));
+        lines.AddRange(["", "## Validation Failures"]);
+        lines.AddRange(FormatValidationFailures(validation.ValidationFailures));
         lines.AddRange(["", "## AI Remediation Changes"]);
         lines.AddRange(FormatAiRemediation(validation.AiRemediationChanges));
         lines.AddRange(["", "## Manual Correction Required"]);
@@ -53,6 +55,10 @@ public sealed class MarkdownReportWriter
         lines.AddRange(findings is null || findings.Count == 0 ? ["- None"] : findings.OfType<JsonObject>().Select(FormatFinding));
         lines.AddRange(
         [
+            "",
+            "## Validation",
+            $"- Validation command executed by migration agent: {ValidationCommand(validation)}",
+            $"- Result: {ValidationResultText(validation)}",
             "",
             "## What Was Not Changed",
             "- Business logic was not intentionally modified.",
@@ -113,6 +119,10 @@ public sealed class MarkdownReportWriter
         lines.AddRange(remediations.Length == 0 ? ["- No remediations recorded"] : remediations.Select(r => $"- {r.StringValue("package", "unknown")}: {r.StringValue("toVersion", "unknown")} ({r.StringValue("reason", r.StringValue("status"))})"));
         lines.AddRange(["", "## AI Remediation Changes"]);
         lines.AddRange(FormatAiRemediation(hopResults.SelectMany(r => r["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray()));
+        lines.AddRange(["", "## AI Remediation Root Cause Analysis"]);
+        lines.AddRange(FormatAngularRootCauseAnalysis(hopResults));
+        lines.AddRange(["", "## Validation Failures"]);
+        lines.AddRange(FormatValidationFailures(hopResults.SelectMany(ValidationFailuresFromHop).ToArray()));
         lines.AddRange(["", "## Manual Correction Required"]);
         lines.AddRange(FormatManualCorrections(hopResults.SelectMany(r => r["manualCorrectionRequests"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray(), validation));
         lines.AddRange(["", "## Warnings"]);
@@ -120,6 +130,12 @@ public sealed class MarkdownReportWriter
         lines.AddRange(warnings.Length == 0 ? ["- None"] : warnings.Select(w => $"- {w}"));
         lines.AddRange(["", "## AI Package Categorisation"]);
         lines.AddRange(FormatHopPackages(hopResults, "aiPackageCategorisation", "packages"));
+        lines.AddRange(["", "## AI Package Version Recommendations"]);
+        lines.AddRange(FormatPackageVersionRecommendations(hopResults));
+        lines.AddRange(["", "## Package Version Verification"]);
+        lines.AddRange(FormatPackageVersionVerification(hopResults));
+        lines.AddRange(["", "## Angular Critical Dependency Alignment"]);
+        lines.AddRange(FormatCriticalDependencyAlignment(hopResults));
         lines.AddRange(["", "## Angular Package Upgrade Plan"]);
         lines.AddRange(FormatHopPackages(hopResults, "angularPackageUpgradePlan"));
         lines.AddRange(["", "## Third-Party Package Decisions"]);
@@ -136,6 +152,8 @@ public sealed class MarkdownReportWriter
         lines.AddRange(FormatCleanInstall(hopResults));
         lines.AddRange(["", "## Validation Summary"]);
         lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: passed={r["validationSummary"]?["passed"] ?? r["validation"]?["passed"]}; installFallbackUsed={r.BoolValue("installFallbackUsed")}; migrateOnlySkipped={r.BoolValue("migrateOnlySkipped")}"));
+        lines.AddRange(["", "## Validation"]);
+        lines.AddRange(FormatAgentValidation(hopResults));
         lines.AddRange(["", "## Build Verification"]);
         lines.AddRange(FormatBuildVerification(hopResults));
         lines.AddRange(["", "## Angular CLI Migrate-only Status"]);
@@ -260,6 +278,116 @@ public sealed class MarkdownReportWriter
         return lines.Count == 0 ? ["- None"] : lines;
     }
 
+    private static IEnumerable<string> FormatPackageVersionRecommendations(IReadOnlyList<JsonObject> hopResults)
+    {
+        var lines = new List<string>();
+        foreach (var hop in hopResults)
+        {
+            var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            var acceptedTargets = hop["angularPackageUpgradePlan"]?.AsArray()?.OfType<JsonObject>()
+                .ToDictionary(i => i.StringValue("name"), StringComparer.OrdinalIgnoreCase) ?? [];
+            foreach (var item in hop["aiPackageVersionRecommendationsAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var action = item.StringValue("action", "upgrade") == "upgrade" ? "accepted" : item.StringValue("action");
+                var packageName = item.StringValue("packageName");
+                var applied = acceptedTargets.GetValueOrDefault(packageName);
+                var final = applied?.StringValue("finalAcceptedVersion", applied.StringValue("toVersion")) ?? item.StringValue("recommendedVersion", item.StringValue("action"));
+                var updated = applied?.BoolValue("packageJsonUpdated") ?? false;
+                lines.Add($"- [{action}] {label}: {packageName}: originalSuggested={item.StringValue("recommendedVersion", item.StringValue("action"))}; finalAccepted={final}; packageJsonUpdated={updated}");
+                lines.Add($"  Reason: {item.StringValue("reason", "AI package version recommendation accepted.")}");
+            }
+            foreach (var item in hop["aiPackageVersionRecommendationsRejected"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- [rejected] {label}: {item.StringValue("packageName", "unknown")}: {item.StringValue("currentVersion")} -> {item.StringValue("recommendedVersion")}");
+                lines.Add($"  Reason: {item.StringValue("rejectionReason", item.StringValue("reason", "AI package version recommendation rejected."))}");
+            }
+            foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- [packageVersionNotFound] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalResolvedVersion", "none")}; fallbackReason={item.StringValue("npmFallbackReason", item.StringValue("failureReason", "none"))}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}; packageJsonUpdated={item.BoolValue("packageJsonUpdated")}");
+            }
+            foreach (var item in hop["packageTargetValidation"]?["resolved"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var tag = string.IsNullOrWhiteSpace(item.StringValue("npmFallbackReason")) ? "npmVerified" : "resolvedFallback";
+                lines.Add($"- [{tag}] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalAcceptedVersion", "unknown")}; fallbackReason={item.StringValue("npmFallbackReason", "none")}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
+    private static IEnumerable<string> FormatPackageVersionVerification(IReadOnlyList<JsonObject> hopResults)
+    {
+        var lines = new List<string>();
+        foreach (var hop in hopResults)
+        {
+            var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            var installSucceeded = hop["commands"]?.AsArray()?.OfType<JsonObject>()
+                .Where(c => string.Equals(c.StringValue("installMode"), "normalInstall", StringComparison.OrdinalIgnoreCase) || string.Equals(c.StringValue("installMode"), "legacyPeerDepsInstall", StringComparison.OrdinalIgnoreCase))
+                .LastOrDefault()?.IntValue("returncode") == 0;
+            foreach (var item in hop["packageTargetValidation"]?["resolved"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- {item.StringValue("packageName", "unknown")}");
+                lines.Add($"  - AI recommended: {item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}");
+                lines.Add($"  - verification mode: {item.StringValue("verificationMode", hop["packageTargetValidation"]?.AsObject().StringValue("verificationMode", "install-first") ?? "install-first")}");
+                lines.Add($"  - npm view: {FormatNpmViewStatus(item)}");
+                lines.Add($"  - install result: {(installSucceeded ? "npm install succeeded" : "not validated by successful install")}");
+                lines.Add($"  - final selected range: {item.StringValue("finalAcceptedVersion", item.StringValue("finalResolvedVersion", "unknown"))}");
+                lines.Add($"  - hop: {label}");
+            }
+            foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- {item.StringValue("packageName", "unknown")}");
+                lines.Add($"  - AI recommended: {item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}");
+                lines.Add($"  - verification mode: {item.StringValue("verificationMode", hop["packageTargetValidation"]?.AsObject().StringValue("verificationMode", "install-first") ?? "install-first")}");
+                lines.Add($"  - npm view: {FormatNpmViewStatus(item)}");
+                lines.Add($"  - install result: not run before package target validation failed");
+                lines.Add($"  - final selected range: {item.StringValue("finalAcceptedVersion", item.StringValue("finalResolvedVersion", "none"))}");
+                lines.Add($"  - hop: {label}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
+    private static string FormatNpmViewStatus(JsonObject item)
+    {
+        var status = item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"));
+        if (status == "skipped") return "skipped because install-first mode is enabled";
+        if (item.StringValue("npmValidationResult") == "skipped_due_to_timeout") return "timeout; skipped due to timeout and deferred to npm install";
+        if (status == "timeout") return "timeout";
+        if (status == "verified") return "verified";
+        return status;
+    }
+
+    private static IEnumerable<string> FormatCriticalDependencyAlignment(IReadOnlyList<JsonObject> hopResults)
+    {
+        var lines = new List<string>();
+        foreach (var hop in hopResults)
+        {
+            var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            foreach (var item in hop["angularCriticalDependencyAlignmentAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var action = item.StringValue("action") switch { "align" or "add" => "accepted", "preserve" => "preserved", _ => item.StringValue("action") };
+                var versionText = item.StringValue("action") == "preserve"
+                    ? item.StringValue("currentVersion")
+                    : $"{item.StringValue("currentVersion")} -> {item.StringValue("recommendedVersion")}";
+                lines.Add($"- [{action}] {label}: {item.StringValue("packageName")}: {versionText}");
+                lines.Add($"  Criticality: {item.StringValue("criticality", "unknown")}");
+                lines.Add($"  Reason: {item.StringValue("reason", "Angular critical dependency alignment accepted.")}");
+            }
+            foreach (var item in hop["angularCriticalDependencyAlignmentRejected"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- [rejected] {label}: {item.StringValue("packageName", "unknown")}: {item.StringValue("currentVersion")} -> {item.StringValue("recommendedVersion")}");
+                lines.Add($"  Reason: {item.StringValue("rejectionReason", item.StringValue("reason", "Angular critical dependency alignment rejected."))}");
+            }
+            foreach (var item in hop["postFailureAngularCriticalDependencyAlignment"]?["postFailureApplied"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- [accepted] {label}: {item.StringValue("name")}: {item.StringValue("fromVersion")} -> {item.StringValue("toVersion")}");
+                lines.Add($"  Criticality: required");
+                lines.Add($"  Reason: {item.StringValue("reason", "Applied after build failure indicated Angular compiler/build-tool incompatibility.")}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
     private static IEnumerable<string> FormatCleanInstall(IReadOnlyList<JsonObject> hopResults)
     {
         if (hopResults.Count == 0) return ["- None"];
@@ -276,6 +404,16 @@ public sealed class MarkdownReportWriter
             var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : $"; failure reason={reason}";
             return $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: build verification attempted={validation.BoolValue("buildVerificationAttempted")}; command=`{validation.StringValue("buildVerificationCommand")}`; executor={validation.StringValue("buildVerificationExecutor", "unknown")}; passed={validation.BoolValue("buildVerificationPassed")}; skipped={validation.BoolValue("buildVerificationSkipped")}; next hop started only after build verification passed={validation.BoolValue("nextHopStartedOnlyAfterBuildVerificationPassed")}{reasonText}";
         });
+    }
+
+    private static IEnumerable<string> FormatAgentValidation(IReadOnlyList<JsonObject> hopResults)
+    {
+        if (hopResults.Count == 0) return ["- Validation command executed by migration agent: validation command", "- Result: not run"];
+        var latest = hopResults.LastOrDefault(r => r["validation"] is JsonObject);
+        var validation = latest?["validation"]?.AsObject();
+        if (validation is null) return ["- Validation command executed by migration agent: validation command", "- Result: not run"];
+        var passed = validation.BoolValue("passed") ? "passed" : "failed";
+        return [$"- Validation command executed by migration agent: {validation.StringValue("buildVerificationCommand", "npm run build")}", $"- Result: {passed}"];
     }
 
     private static string DependencyUpgradeSectionTitle(JsonObject analysis)
@@ -304,7 +442,191 @@ public sealed class MarkdownReportWriter
             lines.Add("These business/source files were edited by post-validation AI remediation. Review before accepting migration.");
             lines.AddRange(businessFiles.Select(f => $"- {f}"));
         }
-        lines.AddRange(items.Select(c => $"- Attempt {c["attempt"]}: {c.StringValue("type")} {c.StringValue("file", c.StringValue("name"))} - {c.StringValue("reason")}"));
+        foreach (var item in items.OrderBy(c => c.IntValue("attempt")))
+        {
+            lines.Add($"### Attempt {item["attempt"]}");
+            lines.Add("- Trigger: validation/build failure");
+            lines.Add($"- Failed command: {item.StringValue("failedCommand", "validation command")}");
+            lines.Add($"- Failure cause: {item.StringValue("failureCause", item.StringValue("reason"))}");
+            lines.Add($"- Failure category: {item.StringValue("failureCategory", "unknown")}");
+            lines.Add($"- Remediation mode: {item.StringValue("mode", "ai")}");
+            if (!string.Equals(item.StringValue("result"), "failed", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(item.StringValue("type"), "type_shim", StringComparison.OrdinalIgnoreCase)) lines.Add("- AI proposed type shim");
+                lines.Add($"- File changed: {item.StringValue("file", item.StringValue("name"))}");
+                if (item["files"] is JsonArray files)
+                {
+                    foreach (var file in files.Select(f => f?.ToString() ?? "").Where(f => f.Length > 0).Distinct())
+                    {
+                        lines.Add($"  File: {file}");
+                    }
+                }
+                lines.Add($"- Change type: {item.StringValue("type")}");
+                lines.Add($"- Change: {item.StringValue("change", item.StringValue("type"))}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("rootCause"))) lines.Add($"- Root cause: {item.StringValue("rootCause")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("packageName"))) lines.Add($"- Package: {item.StringValue("packageName")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("installedVersion"))) lines.Add($"- Installed version: {item.StringValue("installedVersion")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("oldImport"))) lines.Add($"- Before: {item.StringValue("oldImport")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("newImport"))) lines.Add($"- After: {item.StringValue("newImport")}");
+                if (item["cssImportRemediationResolution"] is JsonArray cssResolution)
+                {
+                    lines.Add("#### CSS Import Remediation Resolution");
+                    foreach (var plan in cssResolution.OfType<JsonObject>())
+                    {
+                        lines.Add($"- Original import: {plan.StringValue("originalImport")}");
+                        lines.Add($"  Source file: {plan.StringValue("sourceFile")}");
+                        lines.Add($"  Selected strategy: {plan.StringValue("selectedStrategy")}");
+                        lines.Add($"  Replacement import: {plan.StringValue("replacementImport", "manual review")}");
+                        var evidence = string.Join("; ", plan["evidence"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                        if (!string.IsNullOrWhiteSpace(evidence)) lines.Add($"  Evidence: {evidence}");
+                        var rejected = string.Join("; ", plan["rejectedCandidates"]?.AsArray()?.OfType<JsonObject>().Select(c => $"{c.StringValue("candidate")}={c.StringValue("reason")}") ?? []);
+                        if (!string.IsNullOrWhiteSpace(rejected)) lines.Add($"  Rejected candidates: {rejected}");
+                        if (plan.TryGetPropertyValue("confidence", out var planConfidence)) lines.Add($"  Confidence: {planConfidence}");
+                    }
+                }
+                var unresolvedImports = string.Join(", ", item["unresolvedDependencyImports"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(unresolvedImports)) lines.Add($"- Unresolved dependency imports from Can't resolve: {unresolvedImports}");
+                var loaderResources = string.Join(", ", item["loaderResourceFilesFromErrorChain"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(loaderResources)) lines.Add($"- Loader/resource stylesheet files from error chain: {loaderResources}");
+                var containingFiles = string.Join(", ", item["styleFilesContainingUnresolvedImports"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(containingFiles)) lines.Add($"- Stylesheet files containing unresolved dependency imports: {containingFiles}");
+                var remainingExact = string.Join(", ", item["exactUnresolvedImportsRemainingAfterRemediation"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                lines.Add($"- Exact unresolved imports remaining after remediation: {(string.IsNullOrWhiteSpace(remainingExact) ? "none" : remainingExact)}");
+                if (item.TryGetPropertyValue("deterministicRemediationAttempted", out var deterministicAttempted)) lines.Add($"- Deterministic remediation attempted: {deterministicAttempted}");
+                if (item.TryGetPropertyValue("deterministicRemediationApplied", out var deterministicApplied)) lines.Add($"- Deterministic remediation applied: {deterministicApplied}");
+                if (item.TryGetPropertyValue("deterministicRemediationRejected", out var deterministicRejected)) lines.Add($"- Deterministic remediation rejected: {deterministicRejected}");
+                if (item.TryGetPropertyValue("aiRemediationAttempted", out var aiAttempted)) lines.Add($"- AI remediation attempted: {aiAttempted}");
+                if (item.TryGetPropertyValue("aiRemediationApplied", out var aiApplied)) lines.Add($"- AI remediation applied: {aiApplied}");
+                if (item.TryGetPropertyValue("originalUnresolvedImportsRemain", out var importsRemain)) lines.Add($"- Original unresolved imports remain: {importsRemain}");
+                if (item["changedStyleFiles"] is JsonArray changedStyleFiles)
+                {
+                    var changed = string.Join(", ", changedStyleFiles.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)));
+                    if (!string.IsNullOrWhiteSpace(changed)) lines.Add($"- Changed style files: {changed}");
+                }
+                if (!string.IsNullOrWhiteSpace(item.StringValue("directNormalizedImportAttempted"))) lines.Add($"- Direct normalized import attempted: {item.StringValue("directNormalizedImportAttempted")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("selectedPackageScssAsset"))) lines.Add($"- Selected package SCSS asset: {item.StringValue("selectedPackageScssAsset")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("missingInternalPartial"))) lines.Add($"- Missing internal partial: {item.StringValue("missingInternalPartial")}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("packageDirectoryInspected"))) lines.Add($"- Package directory inspected: {item.StringValue("packageDirectoryInspected")}");
+                var partialCandidates = string.Join(", ", item["partialCandidatesFound"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(partialCandidates)) lines.Add($"- Partial candidates found: {partialCandidates}");
+                if (item.TryGetPropertyValue("originalImporterWasCss", out var importerWasCss)) lines.Add($"- Original importer was CSS: {importerWasCss}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("finalChosenRemediation"))) lines.Add($"- Final chosen remediation: {item.StringValue("finalChosenRemediation")}");
+                var packageCandidates = string.Join(", ", item["packageExportCandidatesAttempted"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(packageCandidates)) lines.Add($"- Package-export candidates attempted: {packageCandidates}");
+                var fileCandidates = string.Join(", ", item["candidateFilesAttempted"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(fileCandidates)) lines.Add($"- Candidate files attempted: {fileCandidates}");
+                if (item["styleImportUpdates"] is JsonArray styleUpdates)
+                {
+                    foreach (var update in styleUpdates.OfType<JsonObject>())
+                    {
+                        lines.Add($"  Style import: {update.StringValue("file")}: {update.StringValue("before")} -> {update.StringValue("after")}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("directNormalizedImportAttempted"))) lines.Add($"    Direct normalized import attempted: {update.StringValue("directNormalizedImportAttempted")}");
+                        var updateCandidates = string.Join(", ", update["candidateFilesAttempted"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                        if (!string.IsNullOrWhiteSpace(updateCandidates)) lines.Add($"    Candidate files attempted: {updateCandidates}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("selectedImport"))) lines.Add($"    Final selected import: {update.StringValue("selectedImport")}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("selectedPackageScssAsset"))) lines.Add($"    Selected package SCSS asset: {update.StringValue("selectedPackageScssAsset")}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("missingInternalPartial"))) lines.Add($"    Missing internal partial: {update.StringValue("missingInternalPartial")}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("packageDirectoryInspected"))) lines.Add($"    Package directory inspected: {update.StringValue("packageDirectoryInspected")}");
+                        var updatePartialCandidates = string.Join(", ", update["partialCandidatesFound"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                        if (!string.IsNullOrWhiteSpace(updatePartialCandidates)) lines.Add($"    Partial candidates found: {updatePartialCandidates}");
+                        if (!string.IsNullOrWhiteSpace(update.StringValue("finalChosenRemediation"))) lines.Add($"    Final chosen remediation: {update.StringValue("finalChosenRemediation")}");
+                    }
+                }
+                lines.Add($"- Reason: {item.StringValue("reason")}");
+            }
+            if (!string.IsNullOrWhiteSpace(item.StringValue("failureReason"))) lines.Add($"- Failure reason: {item.StringValue("failureReason")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("timeoutType"))) lines.Add($"- Timeout type: {item.StringValue("timeoutType")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("timeoutDetails"))) lines.Add($"- Timeout details: {item.StringValue("timeoutDetails")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("environmentErrorDetails"))) lines.Add($"- Codex sandbox error: {item.StringValue("environmentErrorDetails")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("agentValidationCommand"))) lines.Add($"- Agent validation command: {item.StringValue("agentValidationCommand")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("agentValidationResult"))) lines.Add($"- Agent validation result: {item.StringValue("agentValidationResult")}");
+            if (item.TryGetPropertyValue("confidence", out var confidence)) lines.Add($"- Confidence: {confidence}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("risk"))) lines.Add($"- Risk: {item.StringValue("risk")}");
+            lines.Add($"- Business logic changed: {(item.BoolValue("businessLogicChanged") || item.BoolValue("businessFile") ? "yes" : "no")}");
+            if (item.TryGetPropertyValue("manualCriticalAttentionRequired", out var attention)) lines.Add($"- Manual critical attention required: {(attention?.ToString().Equals("true", StringComparison.OrdinalIgnoreCase) == true ? "yes" : "no")}");
+            if (!string.IsNullOrWhiteSpace(item.StringValue("reviewNote"))) lines.Add($"- Review note: {item.StringValue("reviewNote")}");
+            lines.Add($"- Result after rerun: {item.StringValue("validationResultAfterRemediation", "not recorded")}");
+            lines.Add($"- Result: {item.StringValue("result", "validation rerun " + item.StringValue("validationResultAfterRemediation", "not recorded"))}");
+            lines.Add($"- Next action: {item.StringValue("nextAction", item.StringValue("validationResultAfterRemediation") == "passed" ? "continue normal validation pipeline" : "continue remediation or manual correction")}");
+        }
+        return lines;
+    }
+
+    private static IEnumerable<string> FormatAngularRootCauseAnalysis(IReadOnlyList<JsonObject> hopResults)
+    {
+        var analyses = hopResults
+            .SelectMany(r => new[]
+            {
+                r["validation"]?["aiRemediationRootCauseAnalysis"] as JsonObject,
+                r["validationSummary"]?["aiRemediationRootCauseAnalysis"] as JsonObject
+            }.Concat(r["validationFailures"]?.AsArray()?.OfType<JsonObject>().Select(f => f["rootCauseAnalysis"] as JsonObject) ?? []))
+            .Where(a => a is not null)
+            .Cast<JsonObject>()
+            .ToArray();
+        if (analyses.Length == 0) return ["- None"];
+
+        var lines = new List<string>();
+        foreach (var analysis in analyses)
+        {
+            var hop = analysis.StringValue("migrationHop", "unknown");
+            foreach (var item in analysis["obsoleteAngularMetadata"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- obsolete Angular metadata: hop={hop}; file={item.StringValue("sourceFile", "unknown")}; symbol={item.StringValue("symbol", "entryComponents")}; reason={item.StringValue("reason")}");
+            }
+            foreach (var item in analysis["incompatibleAngularLibraryPackages"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var files = string.Join(", ", item["sourceFiles"]?.AsArray()?.Select(f => f?.ToString()).Where(f => !string.IsNullOrWhiteSpace(f)) ?? []);
+                lines.Add($"- incompatible Angular library package: hop={hop}; package={item.StringValue("package", "unknown")}; files={files}; reason={item.StringValue("reason")}; editNodeModules={item.BoolValue("editNodeModules")}");
+            }
+            foreach (var item in analysis["cascadingLocalModuleErrors"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var packages = string.Join(", ", item["correlatedThirdPartyPackages"]?.AsArray()?.Select(p => p?.ToString()).Where(p => !string.IsNullOrWhiteSpace(p)) ?? []);
+                lines.Add($"- cascading local module error: hop={hop}; symbol={item.StringValue("symbol", "unknown")}; file={item.StringValue("sourceFile", "unknown")}; @NgModule present={item.BoolValue("ngModuleDecoratorPresent")}; correlated packages={packages}; reason={item.StringValue("reason")}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
+    private static IEnumerable<JsonObject> ValidationFailuresFromHop(JsonObject hop)
+    {
+        if (hop["validationFailures"] is JsonArray recorded) return recorded.OfType<JsonObject>();
+        var validation = hop["validation"]?.AsObject();
+        if (validation?.BoolValue("passed") != false) return [];
+        var command = validation.StringValue("buildVerificationCommand", string.Join(" ", hop["failureCommand"]?.AsArray()?.Select(x => x?.ToString()) ?? ["validation command"]));
+        return
+        [
+            new JsonObject
+            {
+                ["command"] = command,
+                ["exitCode"] = null,
+                ["failureCategory"] = validation.StringValue("buildVerificationFailureCategory", hop.StringValue("failureCategory", "unknown")),
+                ["errorTail"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+                ["migrationHop"] = $"{hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}",
+                ["remediationAttempted"] = (hop["aiRemediationChanges"]?.AsArray()?.Count ?? 0) > 0 || (hop["manualCorrectionRequests"]?.AsArray()?.Count ?? 0) > 0,
+                ["remediationApplied"] = (hop["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>().Any(c => !string.Equals(c.StringValue("result"), "failed", StringComparison.OrdinalIgnoreCase)) ?? false),
+                ["remediationRejected"] = (hop["manualCorrectionRequests"]?.AsArray()?.Count ?? 0) > 0,
+                ["manualCorrectionRequired"] = (hop["manualCorrectionRequests"]?.AsArray()?.Count ?? 0) > 0
+            }
+        ];
+    }
+
+    private static IEnumerable<string> FormatValidationFailures(IEnumerable<JsonObject> failures)
+    {
+        var items = failures.ToArray();
+        if (items.Length == 0) return ["- None"];
+        var lines = new List<string>();
+        foreach (var failure in items)
+        {
+            lines.Add($"- Command: {failure.StringValue("command", "validation command")}");
+            lines.Add($"  Exit code: {failure["exitCode"]?.ToString() ?? "unknown"}");
+            lines.Add($"  Failure category: {failure.StringValue("failureCategory", "unknown")}");
+            lines.Add($"  Error tail: {failure.StringValue("errorTail")}");
+            lines.Add($"  Migration hop: {failure.StringValue("migrationHop", "unknown")}");
+            lines.Add($"  Remediation attempted: {failure.BoolValue("remediationAttempted")}");
+            lines.Add($"  Remediation applied: {failure.BoolValue("remediationApplied")}");
+            lines.Add($"  Remediation rejected: {failure.BoolValue("remediationRejected")}");
+            lines.Add($"  Manual correction required: {failure.BoolValue("manualCorrectionRequired")}");
+        }
         return lines;
     }
 
@@ -316,11 +638,64 @@ public sealed class MarkdownReportWriter
         foreach (var request in items)
         {
             lines.Add($"- Reason: {request.StringValue("reason", "Manual review required")}");
+            lines.Add($"- Failed command: {request.StringValue("failedCommand", "validation command")}");
+            lines.Add($"- Final error: {request.StringValue("lastError", validation.Errors)}");
+            if (request["aiRemediationTimeoutDetails"] is JsonObject timeout)
+            {
+                lines.Add($"- AI remediation timeout details: {timeout.StringValue("timeoutDetails", timeout.StringValue("failureReason"))}");
+                lines.Add($"- Timeout type: {timeout.StringValue("timeoutType", "timeout")}");
+            }
+            lines.Add($"- Reason remediation stopped: {request.StringValue("reason", "Manual review required")}");
+            if (!string.IsNullOrWhiteSpace(request.StringValue("rejectedAiPlanReason"))) lines.Add($"- Rejected AI plan reason: {request.StringValue("rejectedAiPlanReason")}");
+            if (request["aiPlanDiagnostics"] is JsonObject diagnostics)
+            {
+                lines.Add($"- AI plan returned: {diagnostics.BoolValue("planReturned")}");
+                lines.Add($"- AI returned manual correction: {diagnostics.BoolValue("manualCorrectionReturned")}");
+                lines.Add($"- AI plan rejected by safety: {diagnostics.BoolValue("safetyRejected")}");
+                if (!string.IsNullOrWhiteSpace(diagnostics.StringValue("safetyRejectionReason"))) lines.Add($"- Safety rejection reason: {diagnostics.StringValue("safetyRejectionReason")}");
+                var proposedFiles = string.Join(", ", diagnostics["proposedFiles"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(proposedFiles)) lines.Add($"- AI proposed files: {proposedFiles}");
+                foreach (var replacement in diagnostics["proposedReplacements"]?.AsArray()?.OfType<JsonObject>() ?? [])
+                {
+                    lines.Add($"- AI proposed replacement: {replacement.StringValue("file")}: {replacement.StringValue("oldImport", replacement.StringValue("before"))} -> {replacement.StringValue("newImport", replacement.StringValue("after"))}");
+                }
+                foreach (var remaining in diagnostics["oldImportsRemaining"]?.AsArray()?.OfType<JsonObject>() ?? [])
+                {
+                    var files = string.Join(", ", remaining["files"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                    lines.Add($"- Old import remained after remediation: {remaining.StringValue("import")} in {files}");
+                }
+            }
+            if (request["cssDependencyImportFailures"] is JsonObject css)
+            {
+                var unresolvedImports = string.Join(", ", css["unresolvedDependencyImports"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(unresolvedImports)) lines.Add($"- Unresolved dependency imports from Can't resolve: {unresolvedImports}");
+                var containingFiles = string.Join(", ", css["styleFilesContainingUnresolvedImports"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(containingFiles)) lines.Add($"- Stylesheet files containing unresolved dependency imports: {containingFiles}");
+                var loaderFiles = string.Join(", ", css["loaderResourceFilesFromErrorChain"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                if (!string.IsNullOrWhiteSpace(loaderFiles)) lines.Add($"- Loader/resource stylesheet files from error chain: {loaderFiles}");
+                foreach (var failure in css["failures"]?.AsArray()?.OfType<JsonObject>() ?? [])
+                {
+                    lines.Add($"- Original failed import: {failure.StringValue("originalImport")}");
+                    lines.Add($"- Direct normalized import attempted: {failure.StringValue("directNormalizedImportAttempted")}");
+                    var exportCandidates = string.Join(", ", failure["packageExportCandidatesAttempted"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                    if (!string.IsNullOrWhiteSpace(exportCandidates)) lines.Add($"- Package-export candidates attempted: {exportCandidates}");
+                    var fileCandidates = string.Join(", ", failure["candidateFilesAttempted"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                    if (!string.IsNullOrWhiteSpace(fileCandidates)) lines.Add($"- Candidate files attempted: {fileCandidates}");
+                    if (!string.IsNullOrWhiteSpace(failure.StringValue("recommendedImport"))) lines.Add($"- Final selected import: {failure.StringValue("recommendedImport")}");
+                    if (!string.IsNullOrWhiteSpace(failure.StringValue("selectedPackageScssAsset"))) lines.Add($"- Selected package SCSS asset: {failure.StringValue("selectedPackageScssAsset")}");
+                    if (!string.IsNullOrWhiteSpace(failure.StringValue("missingInternalPartial"))) lines.Add($"- Missing internal partial: {failure.StringValue("missingInternalPartial")}");
+                    if (!string.IsNullOrWhiteSpace(failure.StringValue("packageDirectoryInspected"))) lines.Add($"- Package directory inspected: {failure.StringValue("packageDirectoryInspected")}");
+                    var partialCandidates = string.Join(", ", failure["partialCandidatesFound"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)) ?? []);
+                    if (!string.IsNullOrWhiteSpace(partialCandidates)) lines.Add($"- Partial candidates found: {partialCandidates}");
+                    if (failure.TryGetPropertyValue("originalImporterWasCss", out var importerWasCss)) lines.Add($"- Original importer was CSS: {importerWasCss}");
+                    if (!string.IsNullOrWhiteSpace(failure.StringValue("finalChosenRemediation"))) lines.Add($"- Final chosen remediation: {failure.StringValue("finalChosenRemediation")}");
+                }
+            }
             foreach (var instruction in request["manualInstructions"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
                 lines.Add($"  File: {instruction.StringValue("file", "unknown")}");
                 lines.Add($"  Error: {instruction.StringValue("error")}");
-                lines.Add($"  Possible fix: {instruction.StringValue("possibleChange")}");
+                lines.Add($"  Suggested manual next step: {instruction.StringValue("possibleChange")}");
                 lines.Add($"  Risk: {instruction.StringValue("risk")}");
                 lines.Add($"  Validation command: {instruction.StringValue("validationCommand", "rerun validation")}");
             }
@@ -329,4 +704,8 @@ public sealed class MarkdownReportWriter
         if (validation.OutputPath is not null) lines.Add($"- Output path: {validation.OutputPath}");
         return lines;
     }
+
+    private static string Tail(string text) => string.Join(" ", (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries).TakeLast(8)).Trim();
+    private static string ValidationCommand(ValidationResult validation) => validation.FailureCommand is { Count: > 0 } ? string.Join(" ", validation.FailureCommand) : "validation command";
+    private static string ValidationResultText(ValidationResult validation) => validation.Passed switch { true => "passed", false => "failed", _ => "not run" };
 }

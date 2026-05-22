@@ -10,6 +10,7 @@ using Q3.MigrationAgent.Core.Remediation;
 using Q3.MigrationAgent.Core.Rollback;
 using Q3.MigrationAgent.Core.Timing;
 using Q3.MigrationAgent.Core.Validation;
+using Q3.MigrationAgent.Shared.Common;
 using Q3.MigrationAgent.Shared.Config;
 using Q3.MigrationAgent.Shared.DTO;
 
@@ -143,8 +144,9 @@ public sealed class MigrationOrchestrator(
         validationResult.SnapshotPath = snapshot;
         validationResult.OutputPath = config.OutputPath;
         validationResult.Attempts.Add(new JsonObject { ["attempt"] = 0, ["passed"] = validationResult.Passed, ["stage"] = "initial validation" });
+        if (validationResult.Passed == false) RecordValidationFailure(validationResult, adapter.RuntimeName, config.From.Version, 0, false);
 
-        if (validationResult.Passed == false && config.Ai.UseAi)
+        if (validationResult.Passed == false && config.MaxAiRemediationRetries > 0)
         {
             for (var attempt = 1; attempt <= config.MaxAiRemediationRetries && validationResult.Passed == false; attempt++)
             {
@@ -152,25 +154,98 @@ public sealed class MigrationOrchestrator(
                 {
                     var remediation = await remediationPlanner.TryRemediateAsync(config, config.OutputPath, adapter, validationResult, attempt, cancellationToken);
                     if (!remediation.Attempted) break;
+                    foreach (var change in remediation.Changes) validationResult.AiRemediationChanges.Add(change);
                     if (remediation.ManualCorrection is not null)
                     {
                         validationResult.ManualCorrectionRequests.Add(remediation.ManualCorrection);
                         break;
                     }
-                    foreach (var change in remediation.Changes) validationResult.AiRemediationChanges.Add(change);
                     var previousAttempts = validationResult.Attempts.ToArray();
                     var previousRemediations = validationResult.AiRemediationChanges.ToArray();
                     var previousManual = validationResult.ManualCorrectionRequests.ToArray();
+                    var failedCommand = validationResult.FailureCommand?.ToArray();
+                    if (!remediation.Applied)
+                    {
+                        if (remediation.Changes.Any(IsAiEnvironmentError))
+                        {
+                            progress.Stage("Validation", "Codex sandbox validation output was ignored. Re-running validation with the migration agent.");
+                            validationResult = await validator.ValidateAsync(config.OutputPath, adapter, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, cancellationToken);
+                            validationResult.RollbackMode = config.RollbackMode;
+                            validationResult.SnapshotPath = snapshot;
+                            validationResult.OutputPath = config.OutputPath;
+                            validationResult.FailureCommand = failedCommand ?? validationResult.FailureCommand;
+                            validationResult.Attempts.AddRange(previousAttempts);
+                            validationResult.AiRemediationChanges.AddRange(previousRemediations);
+                            validationResult.ManualCorrectionRequests.AddRange(previousManual);
+                            validationResult.Attempts.Add(new JsonObject { ["attempt"] = attempt, ["passed"] = validationResult.Passed, ["stage"] = "agent validation after Codex sandbox output" });
+                            if (validationResult.Passed == false) RecordValidationFailure(validationResult, adapter.RuntimeName, config.From.Version, attempt, true);
+                            foreach (var change in validationResult.AiRemediationChanges.Where(c => c.IntValue("attempt") == attempt))
+                            {
+                                change["agentValidationCommand"] = validationResult.FailureCommand is { Count: > 0 } ? string.Join(" ", validationResult.FailureCommand) : "validation command";
+                                change["agentValidationResult"] = validationResult.Passed == true ? "passed" : "failed";
+                                change["validationResultAfterRemediation"] = "inconclusive";
+                                change["validationErrorTail"] = validationResult.Passed == true ? "" : LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output);
+                            }
+                            if (attempt < config.MaxAiRemediationRetries) continue;
+                        }
+                        if (remediation.Changes.Any(IsAiTimeoutFailure) && attempt < config.MaxAiRemediationRetries)
+                        {
+                            progress.Stage("Validation", $"AI remediation attempt {attempt} timed out. Retrying with reduced context.");
+                            continue;
+                        }
+                        break;
+                    }
                     validationResult = await validator.ValidateAsync(config.OutputPath, adapter, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, cancellationToken);
                     validationResult.RollbackMode = config.RollbackMode;
                     validationResult.SnapshotPath = snapshot;
                     validationResult.OutputPath = config.OutputPath;
+                    validationResult.FailureCommand = failedCommand ?? validationResult.FailureCommand;
                     validationResult.Attempts.AddRange(previousAttempts);
                     validationResult.AiRemediationChanges.AddRange(previousRemediations);
                     validationResult.ManualCorrectionRequests.AddRange(previousManual);
                     validationResult.Attempts.Add(new JsonObject { ["attempt"] = attempt, ["passed"] = validationResult.Passed, ["stage"] = "AI remediation validation" });
+                    if (validationResult.Passed == false) RecordValidationFailure(validationResult, adapter.RuntimeName, config.From.Version, attempt, true);
+                    foreach (var change in validationResult.AiRemediationChanges.Where(c => c.IntValue("attempt") == attempt))
+                    {
+                        change["validationResultAfterRemediation"] = validationResult.Passed == true ? "passed" : "failed";
+                        change["validationErrorTail"] = validationResult.Passed == true ? "" : LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output);
+                    }
                 }
             }
+        }
+        else if (validationResult.Passed == false)
+        {
+            validationResult.ManualCorrectionRequests.Add(new JsonObject
+            {
+                ["reason"] = "AI remediation disabled or maxAiRemediationRetries is 0",
+                ["failedCommand"] = validationResult.FailureCommand is { Count: > 0 } ? string.Join(" ", validationResult.FailureCommand) : "validation command",
+                ["lastError"] = LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output),
+                ["manualInstructions"] = new JsonArray(new JsonObject
+                {
+                    ["file"] = "unknown",
+                    ["error"] = LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output),
+                    ["possibleChange"] = "Review the failing validation output and apply the smallest safe manifest/config/script/source fix.",
+                    ["risk"] = "manual correction required",
+                    ["validationCommand"] = validationResult.FailureCommand is { Count: > 0 } ? string.Join(" ", validationResult.FailureCommand) : "validation command"
+                })
+            });
+        }
+        if (validationResult.Passed == false && config.MaxAiRemediationRetries > 0 && validationResult.ManualCorrectionRequests.Count == 0)
+        {
+            validationResult.ManualCorrectionRequests.Add(new JsonObject
+            {
+                ["reason"] = "Validation remediation stopped after maxAiRemediationRetries was exhausted.",
+                ["failedCommand"] = validationResult.FailureCommand is { Count: > 0 } ? string.Join(" ", validationResult.FailureCommand) : "validation command",
+                ["lastError"] = LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output),
+                ["manualInstructions"] = new JsonArray(new JsonObject
+                {
+                    ["file"] = "unknown",
+                    ["error"] = LogTail(validationResult.Errors.Length > 0 ? validationResult.Errors : validationResult.Output),
+                    ["possibleChange"] = "Review the failing validation output and apply the smallest safe manifest/config/script/source fix.",
+                    ["risk"] = "manual correction required",
+                    ["validationCommand"] = validationResult.FailureCommand is { Count: > 0 } ? string.Join(" ", validationResult.FailureCommand) : "validation command"
+                })
+            });
         }
 
         if (validationResult.Passed == false)
@@ -194,6 +269,7 @@ public sealed class MigrationOrchestrator(
         var finalReportPath = Path.Combine(config.OutputPath, "migration-report.md");
         await File.WriteAllTextAsync(finalReportPath, finalReport, cancellationToken);
         progress.FinalReport(finalReportPath);
+        if (validationResult.Passed == false) PrintFailedValidationSummary(progress, "Validation", validationResult, finalReportPath);
         if (config.ShowTimingSummary) timing.Write(config.OutputPath);
         return new MigrationRunResult { Success = validationResult.Passed != false, ReportPath = finalReportPath, LogPath = logPath, ValidationPassed = validationResult.Passed, Warnings = warnings, Errors = validationResult.Passed == false ? [validationResult.Errors] : [] };
     }
@@ -258,7 +334,16 @@ public sealed class MigrationOrchestrator(
             hopResults.Add(result);
             if (result["status"]?.ToString() != "done")
             {
-                validation = new ValidationResult { Passed = false, FailedHop = $"{hop.FromVersion} -> {hop.ToVersion}", Errors = result["validation"]?["errors"]?.ToString() ?? "Migration hop failed.", SnapshotPath = snapshot, OutputPath = config.OutputPath };
+                validation = new ValidationResult
+                {
+                    Passed = false,
+                    FailedHop = $"{hop.FromVersion} -> {hop.ToVersion}",
+                    Errors = result["validation"]?["errors"]?.ToString() ?? "Migration hop failed.",
+                    Output = result["validation"]?["output"]?.ToString() ?? "",
+                    FailureCommand = SplitCommandText(result["validation"]?["buildVerificationCommand"]?.ToString() ?? ""),
+                    SnapshotPath = snapshot,
+                    OutputPath = config.OutputPath
+                };
                 progress.Error($"Angular {hop.FromVersion} -> {hop.ToVersion}", config.RollbackMode == "manual" ? "Migration failed. Output preserved for manual review." : "Migration failed. Restoring output from snapshot.");
                 if (config.RollbackMode == "auto")
                 {
@@ -279,10 +364,57 @@ public sealed class MigrationOrchestrator(
         await File.WriteAllTextAsync(finalPath, final, cancellationToken);
         if (config.ShowTimingSummary) timing.Write(config.OutputPath);
         progress.FinalReport(finalPath);
+        if (validation.Passed == false) PrintFailedValidationSummary(progress, $"Angular {validation.FailedHop ?? "validation"}", validation, finalPath);
         return new MigrationRunResult { Success = validation.Passed != false, ReportPath = finalPath, LogPath = logPath, ValidationPassed = validation.Passed, Warnings = warnings, Errors = validation.Passed == false ? [validation.Errors] : [] };
     }
 
     private static bool ShouldResolveAiCli(MigrationConfig config) => config.Ai.Provider is null && (config.Ai.UseAi || config.Ai.AiCli == "none");
     private static bool Confirm(string prompt) { Console.Write($"{prompt} [y/N] "); var answer = Console.ReadLine()?.Trim().ToLowerInvariant(); return answer is "y" or "yes"; }
     private static void PrintManualRollbackOptions(string snapshot) { Console.WriteLine("[Rollback] Automatic rollback disabled."); Console.WriteLine($"[Rollback] Snapshot available at: {snapshot}"); Console.WriteLine("[Rollback] Review output manually or run rollback command."); }
+    private static void RecordValidationFailure(ValidationResult validation, string runtime, string? hop, int attempt, bool remediationAttempted)
+    {
+        validation.ValidationFailures.Add(new JsonObject
+        {
+            ["command"] = validation.FailureCommand is { Count: > 0 } ? string.Join(" ", validation.FailureCommand) : "validation command",
+            ["exitCode"] = ExtractExitCode(validation.Output + "\n" + validation.Errors),
+            ["failureCategory"] = ClassifyValidationFailure(validation.Output + "\n" + validation.Errors),
+            ["errorTail"] = LogTail(validation.Errors.Length > 0 ? validation.Errors : validation.Output),
+            ["migrationHop"] = validation.FailedHop ?? hop ?? "",
+            ["runtime"] = runtime,
+            ["attempt"] = attempt,
+            ["remediationAttempted"] = remediationAttempted
+        });
+    }
+
+    private static int? ExtractExitCode(string text) => System.Text.RegularExpressions.Regex.Match(text, @"exit code:\s*(?<code>-?\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase) is { Success: true } m ? int.Parse(m.Groups["code"].Value) : null;
+    private static IReadOnlyList<string>? SplitCommandText(string command) => string.IsNullOrWhiteSpace(command) ? null : command.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    private static string ClassifyValidationFailure(string text)
+    {
+        if (AiRemediationPlanner.IsCodexSandboxValidationError(text)) return "environment_error";
+        if (text.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase)) return "script";
+        if (text.Contains("ERESOLVE", StringComparison.OrdinalIgnoreCase) || text.Contains("peer dependency", StringComparison.OrdinalIgnoreCase)) return "dependency";
+        if (AiRemediationPlanner.IsCssDependencyImportFailure(text)) return "css_dependency_import";
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, @"node_modules[\\/].*TS2304", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "type_declaration";
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, @"\b(TS|CS|NG)\d+\b|compiler", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "compiler";
+        if (text.Contains("test failed", StringComparison.OrdinalIgnoreCase)) return "test";
+        return "unknown";
+    }
+
+    private static string LogTail(string text) => string.Join(Environment.NewLine, (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.None).TakeLast(40));
+    private static bool IsAiTimeoutFailure(JsonObject change) =>
+        string.Equals(change.StringValue("failureCategory"), "ai_timeout", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(change.StringValue("type"), "ai_timeout", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAiEnvironmentError(JsonObject change) =>
+        string.Equals(change.StringValue("failureCategory"), "environment_error", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(change.StringValue("type"), "ai_environment_error", StringComparison.OrdinalIgnoreCase);
+
+    private static void PrintFailedValidationSummary(IProgressReporter progress, string stage, ValidationResult validation, string reportPath)
+    {
+        var command = validation.FailureCommand is { Count: > 0 } ? string.Join(" ", validation.FailureCommand) : "validation command";
+        var latestOutput = string.IsNullOrWhiteSpace(validation.Output) ? validation.Errors : validation.Output;
+        progress.Error(stage, $"Failed validation command: {command}");
+        progress.Error(stage, $"Latest build error tail: {LogTail(latestOutput)}");
+        progress.Error(stage, $"Report path: {reportPath}");
+    }
 }

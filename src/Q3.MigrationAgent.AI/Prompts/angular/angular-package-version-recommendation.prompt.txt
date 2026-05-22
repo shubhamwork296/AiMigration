@@ -1,0 +1,18 @@
+Return strict JSON only. Recommend safe package target versions for this Angular major-version migration hop.
+Use this schema: {"targetAngularMajor":14,"recommendations":[{"package":"@angular/core","from":"^13.0.0","to":"~14.3.0","role":"framework | tooling | angular_companion | angular_runtime | typescript | third_party_angular | third_party_tooling | unknown","reason":"short specific reason","confidence":0.95,"action":"upgrade | preserve | remove | manualReview","risk":"low | medium | high","installImpact":"required | advisory | none | unknown","buildImpact":"required | advisory | none | unknown","manualReviewRequired":false}],"warnings":[],"thirdPartyPackageUpgradeStrategy":[{"package":"ngx-color-picker","classification":"preserved | upgraded because validation proved it necessary | rollback/reselected because proactive upgrade caused failure | manual review required","reason":"specific evidence-based reason"}]}
+
+Rules:
+- Keep per-hop validation strict. Never recommend bypassing build validation, skipping validation, or proceeding to the next Angular hop after a failed install/build.
+- Upgrade only framework-critical Angular packages by default: @angular/*, @angular-devkit/build-angular, @angular/cli, @angular/compiler-cli, typescript, zone.js, and rxjs only when Angular peer compatibility requires it.
+- For Angular-owned framework packages, align framework packages to a published stable target Angular version.
+- Do not assume companion packages such as CDK or Material share the same patch version as core.
+- For Angular CLI and Angular DevKit build tooling, use a published stable version compatible with the target Angular major.
+- Preserve third-party Angular-coupled packages by default. Do not recommend upgrading a third-party package merely because its major version matches the Angular target major.
+- Treat these packages as validation-driven remediation candidates, not default hop upgrades: ngx-color-picker, ngx-slick-carousel, ngx-bootstrap, angularx-qrcode, angular-user-idle, ngx-pinch-zoom, ngx-pagination, ng6-toastr-notifications, ng-dynamic-breadcrumb, ngx-cookie-service, ngx-device-detector, ngx-cookieconsent, @ng-select/ng-select, @angular-slider/ngx-slider.
+- Recommend upgrading a third-party Angular-coupled package only when npm install fails because of that package's peer dependency, Angular build fails and the compiler error points to that package, the package has a direct proven incompatibility with the target Angular version, or there is high-confidence evidence that preserving it will block install or build.
+- Prefer the least disruptive compatible change: preserve the existing version first; if blocked, choose the nearest compatible version; do not blindly align package major to Angular major; do not replace a package unless upgrade/version selection is insufficient.
+- For peer metadata conflicts that are likely advisory, preserve or manualReview with installImpact advisory instead of fabricating a version.
+- Do not ask the agent to discover package@AngularMajor unless an npm E404 verification failure requires fallback discovery.
+- Do not invent versions; do not use unconstrained latest; do not use *; do not derive targetMajor.3.0 or any placeholder version.
+- Include a thirdPartyPackageUpgradeStrategy entry for each Angular-coupled third-party package and classify it as preserved, upgraded because validation proved it necessary, rollback/reselected because proactive upgrade caused failure, or manual review required. Reasons must be specific and evidence-based.
+- If unsure, choose preserve or manualReview and explain the uncertainty.

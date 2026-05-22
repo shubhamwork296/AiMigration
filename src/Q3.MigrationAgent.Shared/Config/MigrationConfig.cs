@@ -31,4 +31,8 @@ public sealed record MigrationConfig
     public bool PreferNgUpdate { get; init; } = true;
     public bool AvoidFullVersionScans { get; init; } = true;
     public bool DirectDependenciesOnlyPreflight { get; init; } = true;
+    public string PackageVersionVerificationMode { get; init; } = "install-first";
+    public int NpmLookupRetries { get; init; } = 0;
+    public int NpmLookupIdleTimeoutSeconds { get; init; } = 20;
+    public int NpmLookupTimeoutSeconds { get; init; } = 45;
 }

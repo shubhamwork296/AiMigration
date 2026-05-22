@@ -1,0 +1,41 @@
+<div class="login_wrp">
+  <div class="login_left">
+
+    <div class="login_logo"><img src="assets/images/michael-hill.png" alt=""></div>
+
+    <div class="login_form">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <input type="text" formControlName="username" required autofocus class="form-control login_fild"
+            placeholder="Email / Username" [ngClass]="{ 'has-error': submitted && hasError('username', 'required') }"
+            inputRef>
+          <div *ngIf="(f.username.touched || submitted) && f.username.errors?.required"
+            class="text-danger validation-error">
+            {{AppConstants.USERNAME_EMAIL_REQUIRED}}
+          </div>
+        </div>
+        <div class="form-group">
+          <input type="password" class="form-control login_fild" placeholder="Password" formControlName="password"
+            required [ngClass]="{ 'has-error': submitted && hasError('password', 'required') }" inputRef>
+          <div *ngIf="(f.password.touched || submitted) && f.password.errors?.required"
+            class="text-danger validation-error">
+            {{AppConstants.PASSWORD_REUIRED}}
+          </div>
+        </div>
+        <div class="login_btn_rw">
+          <button type="submit" class="btn btn-default login_btn width-100-pre"><em
+              class="fas fa-sign-in-alt"></em>{{AppConstants.LOGIN}}</button>
+        </div>
+
+        <div class="forgot_pass_link"><a href="javascript:void(0);"
+            [routerLink]="['/admin/forget-password']">{{AppConstants.FORGOT_PASSWORD}}</a></div>
+      </form>
+
+
+
+    </div>
+
+
+  </div>
+  <div class="login_wrp_in"></div>
+</div>

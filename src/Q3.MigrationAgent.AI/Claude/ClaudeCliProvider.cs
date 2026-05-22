@@ -4,9 +4,8 @@ using Q3.MigrationAgent.Shared.Config;
 
 namespace Q3.MigrationAgent.AI.Claude;
 
-public sealed class ClaudeCliProvider(ICommandRunner commandRunner) : CliAiProviderBase(commandRunner)
+public sealed class ClaudeCliProvider(ICommandRunner commandRunner, IPromptLoader promptLoader) : CliAiProviderBase(commandRunner, promptLoader)
 {
     public override string Name => "claude";
     protected override IReadOnlyList<string> DefaultCommand(AiConfig config) => ["claude", "-p"];
 }
-
