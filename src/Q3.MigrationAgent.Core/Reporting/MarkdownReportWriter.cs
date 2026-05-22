@@ -121,6 +121,10 @@ public sealed class MarkdownReportWriter
         lines.AddRange(FormatAiRemediation(hopResults.SelectMany(r => r["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray()));
         lines.AddRange(["", "## AI Remediation Root Cause Analysis"]);
         lines.AddRange(FormatAngularRootCauseAnalysis(hopResults));
+        lines.AddRange(["", "## Third-Party Validation Blockers"]);
+        lines.AddRange(FormatThirdPartyValidationBlockers(hopResults));
+        lines.AddRange(["", "## Persistent CSS Remediation State"]);
+        lines.AddRange(FormatPersistentCssRemediationState(hopResults));
         lines.AddRange(["", "## Validation Failures"]);
         lines.AddRange(FormatValidationFailures(hopResults.SelectMany(ValidationFailuresFromHop).ToArray()));
         lines.AddRange(["", "## Manual Correction Required"]);
@@ -453,6 +457,16 @@ public sealed class MarkdownReportWriter
             if (!string.Equals(item.StringValue("result"), "failed", StringComparison.OrdinalIgnoreCase))
             {
                 if (string.Equals(item.StringValue("type"), "type_shim", StringComparison.OrdinalIgnoreCase)) lines.Add("- AI proposed type shim");
+                if (string.Equals(item.StringValue("type"), "type_shim", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (item.StringValue("packageName").Equals("ngx-pinch-zoom", StringComparison.OrdinalIgnoreCase) || item.StringValue("reason").Contains("VisibilityState", StringComparison.OrdinalIgnoreCase))
+                    {
+                        lines.Add("- Validation failed because third-party declaration file referenced missing VisibilityState type.");
+                    }
+                    lines.Add("- AI remediation attempted: type_shim");
+                    lines.Add($"- Shim applied: {item.StringValue("status", "applied").Equals("applied", StringComparison.OrdinalIgnoreCase)}");
+                    if (!string.IsNullOrWhiteSpace(item.StringValue("validationResultAfterRemediation"))) lines.Add($"- Build passed after remediation: {item.StringValue("validationResultAfterRemediation").Equals("passed", StringComparison.OrdinalIgnoreCase)}");
+                }
                 lines.Add($"- File changed: {item.StringValue("file", item.StringValue("name"))}");
                 if (item["files"] is JsonArray files)
                 {
@@ -582,6 +596,38 @@ public sealed class MarkdownReportWriter
             {
                 var packages = string.Join(", ", item["correlatedThirdPartyPackages"]?.AsArray()?.Select(p => p?.ToString()).Where(p => !string.IsNullOrWhiteSpace(p)) ?? []);
                 lines.Add($"- cascading local module error: hop={hop}; symbol={item.StringValue("symbol", "unknown")}; file={item.StringValue("sourceFile", "unknown")}; @NgModule present={item.BoolValue("ngModuleDecoratorPresent")}; correlated packages={packages}; reason={item.StringValue("reason")}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
+    private static IEnumerable<string> FormatThirdPartyValidationBlockers(IReadOnlyList<JsonObject> hopResults)
+    {
+        var lines = new List<string>();
+        foreach (var hop in hopResults)
+        {
+            var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            var changes = hop["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>().ToArray() ?? [];
+            foreach (var blocker in hop["thirdPartyValidationBlockers"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var package = blocker.StringValue("package", blocker.StringValue("packageName", "unknown"));
+                var remediation = changes.LastOrDefault(c => c.StringValue("packageName").Equals(package, StringComparison.OrdinalIgnoreCase));
+                var evidence = string.Join(" | ", blocker["evidence"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)).Take(3) ?? []);
+                lines.Add($"- {label}: package={package}; current={blocker.StringValue("currentVersion", "unknown")}; errorCategory={blocker.StringValue("errorCategory", "unknown")}; evidence={evidence}; selectedRemediation={remediation?.StringValue("action", "not selected") ?? "not selected"}; target={remediation?.StringValue("targetPackageName", package) ?? package}@{remediation?.StringValue("targetVersionRange", "not selected") ?? "not selected"}; installResult={remediation?.StringValue("installResult", "not run") ?? "not run"}; buildRetryResult={remediation?.StringValue("buildRetryResult", "not run") ?? "not run"}");
+            }
+        }
+        return lines.Count == 0 ? ["- None"] : lines;
+    }
+
+    private static IEnumerable<string> FormatPersistentCssRemediationState(IReadOnlyList<JsonObject> hopResults)
+    {
+        var lines = new List<string>();
+        foreach (var hop in hopResults)
+        {
+            var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            foreach (var item in hop["persistentCssRemediationState"]?["records"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                lines.Add($"- {label}: {item.StringValue("sourceFile", "unknown")}: {item.StringValue("originalImport")} -> {item.StringValue("replacementImport")}; acceptedHop={item.StringValue("acceptedHop", item.StringValue("acceptedAtHop", "unknown"))}; enforcement={item.StringValue("status", "unknown")}");
             }
         }
         return lines.Count == 0 ? ["- None"] : lines;

@@ -67,76 +67,20 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     {
         var stripped = text.Trim();
         if (stripped.Length == 0) throw new InvalidOperationException($"{provider} returned empty output");
-        foreach (var candidate in ExtractJsonCandidates(stripped))
+        try
         {
-            try
-            {
-                var node = JsonNode.Parse(candidate);
-                if (node is JsonObject obj) return obj;
-                if (node is JsonArray arr) return new JsonObject { ["items"] = arr };
-            }
-            catch (JsonException) { }
+            var node = JsonNode.Parse(stripped);
+            if (node is JsonObject obj) return obj;
+            if (node is JsonArray arr) return new JsonObject { ["items"] = arr };
+        }
+        catch (JsonException ex)
+        {
+            File.WriteAllText("codex_raw_output.txt", text);
+            throw new InvalidOperationException($"{provider} did not return strict JSON. Raw output saved to codex_raw_output.txt", ex);
         }
 
         File.WriteAllText("codex_raw_output.txt", text);
-        throw new InvalidOperationException($"{provider} did not return a valid JSON object. Raw output saved to codex_raw_output.txt");
-    }
-
-    private static IEnumerable<string> ExtractJsonCandidates(string text)
-    {
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] is not ('{' or '[')) continue;
-            var candidate = TryReadBalancedJsonValue(text, i);
-            if (candidate is not null) yield return candidate;
-        }
-    }
-
-    private static string? TryReadBalancedJsonValue(string text, int start)
-    {
-        var stack = new Stack<char>();
-        var inString = false;
-        var escaped = false;
-
-        for (var i = start; i < text.Length; i++)
-        {
-            var ch = text[i];
-            if (inString)
-            {
-                if (escaped)
-                {
-                    escaped = false;
-                    continue;
-                }
-                if (ch == '\\')
-                {
-                    escaped = true;
-                    continue;
-                }
-                if (ch == '"') inString = false;
-                continue;
-            }
-
-            if (ch == '"')
-            {
-                inString = true;
-                continue;
-            }
-
-            if (ch is '{' or '[')
-            {
-                stack.Push(ch);
-                continue;
-            }
-
-            if (ch is not ('}' or ']')) continue;
-            if (stack.Count == 0) return null;
-            var open = stack.Pop();
-            if ((open == '{' && ch != '}') || (open == '[' && ch != ']')) return null;
-            if (stack.Count == 0) return text[start..(i + 1)];
-        }
-
-        return null;
+        throw new InvalidOperationException($"{provider} returned JSON that was not an object or array. Raw output saved to codex_raw_output.txt");
     }
 
     private async Task<(string? Selected, CliDetection? Detection)> ResolveCliSelectionAsync(

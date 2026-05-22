@@ -122,6 +122,27 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
+    public void LegacyPeerDeps_Is_Rejected_For_Framework_Critical_Mismatch()
+    {
+        var decision = new InstallStrategyDecision
+        {
+            PackageManager = "npm",
+            Mode = "legacyPeerDepsInstall",
+            Command = "npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline",
+            Confidence = 0.95,
+            Risk = "medium",
+            Flags = new InstallStrategyFlags { NoAudit = true, NoFund = true, PreferOffline = true, LegacyPeerDeps = true }
+        };
+        var context = InstallContext();
+        context["previousInstallFailureOutput"] = """npm ERR! peer typescript@">=5.2 <5.5" from @angular/compiler-cli@17.3.0""";
+
+        var validation = AngularAdapter.ValidateInstallDecision(decision, context, Config(TestWorkspace.Create()), new InstallFailureClassification("peerDependencyConflict", "", ""));
+
+        Assert.False(validation.Valid);
+        Assert.Contains("framework-critical", validation.Reason);
+    }
+
+    [Fact]
     public void Optional_Dependency_Output_Is_Ignored_When_Exit_Code_Is_Zero()
     {
         var classification = AngularAdapter.ClassifyInstallFailure(["npm", "install"], new CommandResult { ReturnCode = 0, Stderr = "failed optional dependency fsevents" });
@@ -155,7 +176,7 @@ public sealed class AngularAdapterTests
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxRetries = 1 }, null, null);
 
         Assert.Equal("done", result["status"]!.ToString());
-        Assert.Equal(1, ai.SystemPrompts.Count(p => p.Contains("Recommend safe package target versions")));
+        Assert.Equal(1, ai.SystemPrompts.Count(IsPackageVersionPrompt));
         Assert.Contains(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
     }
 
@@ -226,6 +247,44 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
+    public async Task Angular_13_To_14_Preserves_NgxPinchZoom_Before_Validation()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        var ai = new SequenceAi(new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/common", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/cli", "~13.1.2", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "~13.1.0", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "^13.3.10", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("typescript", "~4.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~4.8.4", "upgrade"),
+                PackageDecision("ngx-pinch-zoom", "^2.5.6", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+            ["notes"] = new JsonArray()
+        }, VersionRecommendations(
+                VersionRecommendation("@angular/core", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/common", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/compiler", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "~13.1.2", "^14.2.13", "Angular CLI aligned."),
+                VersionRecommendation("@angular/compiler-cli", "~13.1.0", "^14.2.13", "Angular compiler aligned."),
+                VersionRecommendation("@angular-devkit/build-angular", "^13.3.10", "^14.2.13", "Angular DevKit aligned."),
+                VersionRecommendation("typescript", "~4.5.2", "~4.8.4", "TypeScript aligned.")),
+            EmptyCriticalAlignment(13, 14),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command => command[0] == "npm" && command[1] == "view" ? new CommandResult { ReturnCode = 0, Stdout = """["14.2.13","4.8.4"]""" } : new CommandResult { ReturnCode = 0 });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^2.5.6", deps["ngx-pinch-zoom"]!.ToString());
+        Assert.Contains(result["packagesPreserved"]!.AsArray().OfType<JsonObject>(), p => p.StringValue("name") == "ngx-pinch-zoom");
+        Assert.Empty(result["thirdPartyValidationBlockers"]!.AsArray());
+    }
+
+    [Fact]
     public async Task Ai_Package_Version_Recommendations_Replace_Invalid_Angular_14_Targets()
     {
         var root = TestWorkspace.Create();
@@ -266,9 +325,9 @@ public sealed class AngularAdapterTests
 
         Assert.Equal("done", result.StringValue("status"));
         Assert.Equal("^14.2.13", devDeps["@angular-devkit/build-angular"]!.ToString());
-        Assert.Equal("^14.0.0", deps["@angular-slider/ngx-slider"]!.ToString());
+        Assert.Equal("^13.0.0", deps["@angular-slider/ngx-slider"]!.ToString());
         Assert.DoesNotContain("^14.3.0", packageJsonText);
-        Assert.Equal(1, ai.SystemPrompts.Count(p => p.Contains("Recommend safe package target versions")));
+        Assert.Equal(1, ai.SystemPrompts.Count(IsPackageVersionPrompt));
         Assert.Contains(result["aiPackageVersionRecommendationsAccepted"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@angular-devkit/build-angular");
     }
 
@@ -414,7 +473,9 @@ public sealed class AngularAdapterTests
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@14", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@14", "version", "--json"]));
-        Assert.Contains(result["packageTargetValidation"]!["resolved"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "ngx-bootstrap" && r.StringValue("npmVerificationResult") == "skipped");
+        Assert.Equal("^7.1.0", JsonNode.Parse(await File.ReadAllTextAsync(packagePath))!["dependencies"]!["ngx-bootstrap"]!.ToString());
+        Assert.DoesNotContain(result["packageTargetValidation"]!["resolved"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "ngx-bootstrap");
+        Assert.Contains(result["packagesPreserved"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("name") == "ngx-bootstrap");
     }
 
     [Fact]
@@ -602,18 +663,18 @@ public sealed class AngularAdapterTests
         Assert.Equal("~15.2.10", deps["@angular/core"]!.ToString());
         Assert.Equal("~15.2.9", deps["@angular/cdk"]!.ToString());
         Assert.Equal("~15.2.9", deps["@angular/material"]!.ToString());
-        Assert.Equal("^4.0.0", deps["angular-user-idle"]!.ToString());
-        Assert.Equal("^10.0.0", deps["ngx-bootstrap"]!.ToString());
+        Assert.Equal("^2.2.6", deps["angular-user-idle"]!.ToString());
+        Assert.Equal("^7.1.0", deps["ngx-bootstrap"]!.ToString());
         Assert.Equal("~15.2.11", devDeps["@angular/cli"]!.ToString());
         Assert.Equal("~15.2.11", devDeps["@angular-devkit/build-angular"]!.ToString());
         Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/cdk" && r.StringValue("originalSuggestedVersion") == "^15.2.10" && r.StringValue("aiReRecommendedVersion") == "~15.2.9" && r.StringValue("finalAcceptedVersion") == "~15.2.9");
         Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/material" && r.StringValue("originalSuggestedVersion") == "^15.2.10" && r.StringValue("aiReRecommendedVersion") == "~15.2.9" && r.StringValue("finalAcceptedVersion") == "~15.2.9");
-        Assert.Contains(resolved, r => r.StringValue("packageName") == "angular-user-idle" && r.StringValue("originalSuggestedVersion") == "^4.0.0" && r.StringValue("npmValidationResult") == "verified" && r.StringValue("finalAcceptedVersion") == "^4.0.0");
-        Assert.Contains(resolved, r => r.StringValue("packageName") == "ngx-bootstrap" && r.StringValue("originalSuggestedVersion") == "^10.0.0" && r.StringValue("npmValidationResult") == "verified" && r.StringValue("finalAcceptedVersion") == "^10.0.0");
+        Assert.DoesNotContain(resolved, r => r.StringValue("packageName") == "angular-user-idle");
+        Assert.DoesNotContain(resolved, r => r.StringValue("packageName") == "ngx-bootstrap");
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@15", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/material@15", "version", "--json"]));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angular-user-idle@^4.0.0", "version", "--json"]));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^10.0.0", "version", "--json"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angular-user-idle@^4.0.0", "version", "--json"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^10.0.0", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angular-user-idle@15", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@15", "version", "--json"]));
         var report = new MarkdownReportWriter().GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular15" }, [new MigrationHop(14, 15, "Angular 14 to 15")], [result], new ValidationResult { Passed = true });
@@ -622,7 +683,7 @@ public sealed class AngularAdapterTests
         Assert.Contains("finalSelected=~15.2.9", report);
         Assert.Contains("aiOverriddenByNpm=True", report);
         Assert.Contains("angular-user-idle", report);
-        Assert.Contains("finalSelected=^4.0.0", report);
+        Assert.DoesNotContain("finalSelected=^4.0.0", report);
     }
 
     [Fact]
@@ -687,7 +748,7 @@ public sealed class AngularAdapterTests
         Assert.Equal("~15.2.9", packageJson["dependencies"]!["@angular/cdk"]!.ToString());
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@^15.2.10", "version", "--json"]));
         Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@~15.2.9", "version", "--json"]));
-        Assert.Equal(2, ai.SystemPrompts.Count(p => p.Contains("Recommend safe package target versions")));
+        Assert.Equal(2, ai.SystemPrompts.Count(IsPackageVersionPrompt));
     }
 
     [Fact]
@@ -1558,24 +1619,11 @@ export class SharedModule {}
         };
         var aiRemediation = new JsonObject
         {
-            ["summary"] = "Angular compiler errors identify obsolete NgModule metadata plus Angular 16 incompatible third-party Angular libraries.",
-            ["confidence"] = 0.91,
-            ["risk"] = "medium",
-            ["requiresManualCorrection"] = false,
-            ["failureCategory"] = "dependency",
-            ["businessLogicChanged"] = false,
-            ["changes"] = new JsonArray(new JsonObject
-            {
-                ["file"] = "package.json",
-                ["type"] = "package_update",
-                ["failureCategory"] = "dependency",
-                ["packageName"] = "ng6-toastr-notifications, ngx-slick-carousel, ngx-pinch-zoom, angular-user-idle",
-                ["reason"] = "Validation-proven Angular compiler errors show these installed Angular libraries are incompatible with Angular 16; update or replace packages without editing node_modules.",
-                ["before"] = "\"ng6-toastr-notifications\": \"^1.0.4\"",
-                ["after"] = "\"ngx-toastr\": \"^17.0.2\""
-            }),
-            ["commandsToRunAfter"] = new JsonArray(),
-            ["reportNotes"] = new JsonArray("ng6-toastr-notifications should be replaced with an Angular 16 compatible toastr package; module wiring must remain equivalent.")
+            ["remediations"] = new JsonArray(
+                ThirdPartyRemediation("ng6-toastr-notifications", "^1.0.4", "^1.0.5"),
+                ThirdPartyRemediation("ngx-slick-carousel", "^0.6.0", "^0.7.0"),
+                ThirdPartyRemediation("ngx-pinch-zoom", "^2.6.2", "^2.7.0"),
+                ThirdPartyRemediation("angular-user-idle", "^2.2.7", "^4.0.0"))
         };
         var ai = new SequenceAi(
             aiPackagePlan,
@@ -1607,7 +1655,8 @@ export class SharedModule {}
 
         Assert.True(result.StringValue("status") == "done", result.ToJsonString(JsonHelpers.SerializerOptions));
         Assert.DoesNotContain("entryComponents", await File.ReadAllTextAsync(Path.Combine(root, "src", "app", "app.module.ts")));
-        Assert.Contains("ngx-toastr", await File.ReadAllTextAsync(Path.Combine(root, "package.json")));
+        Assert.Contains("\"angular-user-idle\": \"^4.0.0\"", await File.ReadAllTextAsync(Path.Combine(root, "package.json")));
+        Assert.DoesNotContain("ngx-toastr", await File.ReadAllTextAsync(Path.Combine(root, "package.json")));
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCategory") == "obsolete_angular_metadata");
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "package_update");
         Assert.Empty(result["manualCorrectionRequests"]!.AsArray());
@@ -1617,6 +1666,433 @@ export class SharedModule {}
         Assert.Contains("ngx-slick-carousel", report);
         Assert.Contains("cascading local module error", report);
         Assert.Contains("@NgModule present=True", report);
+    }
+
+    [Fact]
+    public void Angular_15_To_16_Third_Party_Blocker_Parser_Classifies_NodeModules_Errors_And_SharedModule_As_Cascading()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src", "app", "shared"));
+        File.WriteAllText(Path.Combine(root, "package.json"), """
+{
+  "dependencies": {
+    "ngx-bootstrap": "^6.0.0",
+    "ng6-toastr-notifications": "^1.0.4",
+    "ngx-slick-carousel": "^0.6.0",
+    "ngx-pinch-zoom": "^2.6.2",
+    "angular-user-idle": "^2.2.7",
+    "ngx-color-picker": "^9.1.0"
+  }
+}
+""");
+        File.WriteAllText(Path.Combine(root, "src", "app", "shared", "shared.module.ts"), "import { NgModule } from '@angular/core';\n@NgModule({})\nexport class SharedModule {}\n");
+        var output = Angular16FailureSample + """
+
+Error: node_modules/ngx-bootstrap/dropdown/dropdown.directive.d.ts:2:10 - error TS2305: Module '"@angular/core"' has no exported member 'ɵɵDirectiveDefWithMeta'.
+Error: node_modules/ngx-bootstrap/dropdown/dropdown.module.d.ts:2:10 - error TS2305: Module '"@angular/core"' has no exported member 'ɵɵNgModuleDefWithMeta'.
+Error: node_modules/ngx-pinch-zoom/lib/model/visibility-state.d.ts:1:20 - error TS2304: Cannot find name 'VisibilityState'.
+Error: node_modules/ngx-color-picker/lib/color-picker.service.d.ts:1:10 - error TS2305: Module '"@angular/core"' has no exported member 'ReflectiveInjector'.
+""";
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, output, new MigrationHop(15, 16, "Angular 15 to 16"));
+        var names = blockers.Select(b => b.StringValue("package")).ToArray();
+
+        Assert.Contains("ngx-bootstrap", names);
+        Assert.Contains("ng6-toastr-notifications", names);
+        Assert.Contains("ngx-slick-carousel", names);
+        Assert.Contains("ngx-pinch-zoom", names);
+        Assert.Contains("angular-user-idle", names);
+        Assert.Contains("ngx-color-picker", names);
+        Assert.DoesNotContain("SharedModule", names);
+        Assert.Contains(blockers, b => b.StringValue("package") == "ngx-pinch-zoom" && b.StringValue("errorCategory") == "third_party_declaration_type_missing");
+        Assert.All(blockers.Where(b => b.StringValue("package") != "ngx-pinch-zoom"), b => Assert.Equal("third_party_angular_library_incompatibility", b.StringValue("errorCategory")));
+    }
+
+    [Theory]
+    [InlineData("ngx-bootstrap", "^6.0.0", "Error: node_modules/ngx-bootstrap/dropdown/dropdown.directive.d.ts:2:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ɵɵDirectiveDefWithMeta'.")]
+    [InlineData("ng6-toastr-notifications", "^1.0.4", "Error: node_modules/ng6-toastr-notifications/lib/toastr.module.d.ts:3:23 - error TS2314: Generic type 'ModuleWithProviders<T>' requires 1 type argument(s).")]
+    [InlineData("ngx-slick-carousel", "^0.6.0", "Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG6002: SlickCarouselModule does not appear to be an NgModule class.")]
+    [InlineData("angular-user-idle", "^2.2.7", "Error: node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:1:22 - error NG6002: UserIdleModule does not appear to be an NgModule class.")]
+    [InlineData("ngx-color-picker", "^9.1.0", "Error: node_modules/ngx-color-picker/lib/color-picker.service.d.ts:1:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ReflectiveInjector'.")]
+    public void Angular_15_To_16_Known_Third_Party_Blockers_Are_Classified_As_Angular_Library_Incompatibility(string packageName, string version, string error)
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "package.json"), "{\"dependencies\":{\"" + packageName + "\":\"" + version + "\"}}");
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, "$ npm run build\nexit code: 1\n" + error, new MigrationHop(15, 16, "Angular 15 to 16"));
+
+        var blocker = Assert.Single(blockers);
+        Assert.Equal(packageName, blocker.StringValue("package"));
+        Assert.Equal("validation_proven_third_party_blocker", blocker.StringValue("classification"));
+        Assert.Equal("third_party_angular_library_incompatibility", blocker.StringValue("errorCategory"));
+    }
+
+    [Fact]
+    public void SharedModule_Is_Cascading_Not_ThirdParty_Blocker_When_NodeModules_Errors_Exist()
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "package.json"), """{"dependencies":{"ngx-slick-carousel":"^0.6.0"}}""");
+        var output = """
+$ npm run build
+exit code: 1
+Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG6002: SlickCarouselModule does not appear to be an NgModule class.
+Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear to be an NgModule class.
+""";
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, output, new MigrationHop(15, 16, "Angular 15 to 16"));
+
+        Assert.Contains(blockers, b => b.StringValue("package") == "ngx-slick-carousel");
+        Assert.DoesNotContain(blockers, b => b.StringValue("package").Contains("SharedModule", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NgxPinchZoom_VisibilityState_Build_Error_Is_Classified_As_ThirdPartyDeclarationTypeMissing()
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "package.json"), """{"dependencies":{"ngx-pinch-zoom":"^2.5.6"}}""");
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, NgxPinchZoomVisibilityStateError(), new MigrationHop(13, 14, "Angular 13 to 14"));
+
+        var blocker = Assert.Single(blockers);
+        Assert.Equal("ngx-pinch-zoom", blocker.StringValue("package"));
+        Assert.Equal("third_party_declaration_type_missing", blocker.StringValue("errorCategory"));
+    }
+
+    [Fact]
+    public async Task Validation_Proven_Third_Party_Blocker_Is_Upgraded_With_Npm_Verified_Target()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ngx-slick-carousel"":""^0.6.0""");
+        var ai = new SequenceAi(
+            new JsonObject
+            {
+                ["packages"] = new JsonArray(
+                    PackageDecision("@angular/core", "14.2.0", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                    PackageDecision("@angular/cli", "14.2.0", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                    PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                    PackageDecision("ngx-slick-carousel", "^0.6.0", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+                ["notes"] = new JsonArray()
+            },
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "14.2.0", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "14.2.0", "^16.2.12", "Angular CLI aligned."),
+                VersionRecommendation("typescript", "~4.8.4", "~5.1.6", "TypeScript aligned.")),
+            EmptyCriticalAlignment(15, 16),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+            new JsonObject
+            {
+                ["remediations"] = new JsonArray(new JsonObject
+                {
+                    ["packageName"] = "ngx-slick-carousel",
+                    ["currentVersion"] = "^0.6.0",
+                    ["detectedErrorCategory"] = "third_party_angular_library_incompatibility",
+                    ["action"] = "upgrade",
+                    ["targetPackageName"] = "ngx-slick-carousel",
+                    ["targetVersionRange"] = "^0.7.0",
+                    ["reason"] = "Validation proved the installed package is not Angular Ivy compatible.",
+                    ["expectedCodeImpact"] = "none",
+                    ["requiresSourceChanges"] = false,
+                    ["sourceChangeScope"] = "package_json_only",
+                    ["confidence"] = 0.91,
+                    ["validationCommand"] = "npm run build"
+                })
+            });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["0.7.0"]""" : """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG6002: SlickCarouselModule does not appear to be an NgModule class." } : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^0.7.0", deps["ngx-slick-carousel"]!.ToString());
+        Assert.Contains(result["thirdPartyValidationBlockers"]!.AsArray().OfType<JsonObject>(), b => b.StringValue("package") == "ngx-slick-carousel");
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCause") == "validation_proven_third_party_blocker" && c.StringValue("finalSelected") == "^0.7.0");
+    }
+
+    [Fact]
+    public async Task Third_Party_Remediation_Request_Includes_Only_Validation_Proven_Blockers()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ngx-bootstrap"":""^6.0.0"",""ngx-slick-carousel"":""^0.6.0"",""lodash"":""^4.17.0""");
+        var ai = new SequenceAi(
+            new JsonObject
+            {
+                ["packages"] = new JsonArray(
+                    PackageDecision("@angular/core", "14.2.0", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                    PackageDecision("@angular/cli", "14.2.0", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                    PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                    PackageDecision("ngx-bootstrap", "^6.0.0", "dependencies", "angular_ui_or_extension_package", null, "preserve"),
+                    PackageDecision("ngx-slick-carousel", "^0.6.0", "dependencies", "angular_ui_or_extension_package", null, "preserve"),
+                    PackageDecision("lodash", "^4.17.0", "dependencies", "third_party_runtime_package", null, "preserve")),
+                ["notes"] = new JsonArray()
+            },
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "14.2.0", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "14.2.0", "^16.2.12", "Angular CLI aligned."),
+                VersionRecommendation("typescript", "~4.8.4", "~5.1.6", "TypeScript aligned.")),
+            EmptyCriticalAlignment(15, 16),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+            new JsonObject { ["remediations"] = new JsonArray() });
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-bootstrap/dropdown/dropdown.directive.d.ts:2:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ɵɵDirectiveDefWithMeta'." };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var requestIndex = ai.SystemPrompts.FindIndex(p => p.Contains("validation-proven third-party blockers", StringComparison.OrdinalIgnoreCase));
+        Assert.True(requestIndex >= 0);
+        var request = ai.Users[requestIndex];
+
+        Assert.Contains("\"package\": \"ngx-bootstrap\"", request);
+        Assert.Contains("\"ngx-bootstrap\": \"^6.0.0\"", request);
+        Assert.DoesNotContain("ngx-slick-carousel", request);
+        Assert.DoesNotContain("lodash", request);
+    }
+
+    [Fact]
+    public async Task Same_Failed_Third_Party_Package_Remediation_Plan_Is_Not_Retried()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ngx-slick-carousel"":""^0.6.0""");
+        var remediation = new JsonObject
+        {
+            ["remediations"] = new JsonArray(new JsonObject
+            {
+                ["packageName"] = "ngx-slick-carousel",
+                ["currentVersion"] = "^0.6.0",
+                ["detectedErrorCategory"] = "third_party_angular_library_incompatibility",
+                ["action"] = "upgrade",
+                ["targetPackageName"] = "ngx-slick-carousel",
+                ["targetVersionRange"] = "^0.7.0",
+                ["reason"] = "Validation proved the installed package is not Angular Ivy compatible.",
+                ["expectedCodeImpact"] = "none",
+                ["requiresSourceChanges"] = false,
+                ["sourceChangeScope"] = "package_json_only",
+                ["confidence"] = 0.91,
+                ["validationCommand"] = "npm run build"
+            })
+        };
+        var ai = new SequenceAi(
+            new JsonObject
+            {
+                ["packages"] = new JsonArray(
+                    PackageDecision("@angular/core", "14.2.0", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                    PackageDecision("@angular/cli", "14.2.0", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                    PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                    PackageDecision("ngx-slick-carousel", "^0.6.0", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+                ["notes"] = new JsonArray()
+            },
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "14.2.0", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "14.2.0", "^16.2.12", "Angular CLI aligned."),
+                VersionRecommendation("typescript", "~4.8.4", "~5.1.6", "TypeScript aligned.")),
+            EmptyCriticalAlignment(15, 16),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+            remediation,
+            remediation.DeepClone().AsObject());
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["0.7.0"]""" : """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildRuns++;
+                return new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG6002: SlickCarouselModule does not appear to be an NgModule class." };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "view", "ngx-slick-carousel@^0.7.0", "version", "--json"])));
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("status") == "rejected" && c.StringValue("rejectedReason").Contains("already attempted", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task NgxPinchZoom_Remediation_Uses_ProjectOwned_TypeShim_Before_Verified_Upgrade()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var ai = Angular13To14AiWithNgxResponse(new JsonObject
+        {
+            ["remediations"] = new JsonArray(new JsonObject
+            {
+                ["packageName"] = "ngx-pinch-zoom",
+                ["currentVersion"] = "^2.5.6",
+                ["detectedErrorCategory"] = "third_party_declaration_type_missing",
+                ["action"] = "upgrade",
+                ["targetPackageName"] = "ngx-pinch-zoom",
+                ["targetVersionRange"] = "^2.6.2",
+                ["reason"] = "Same package has a compatible declaration fix.",
+                ["expectedCodeImpact"] = "none",
+                ["requiresSourceChanges"] = false,
+                ["sourceChangeScope"] = "package_json_only",
+                ["confidence"] = 0.92,
+                ["validationCommand"] = "npm run build"
+            })
+        });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-pinch-zoom@", StringComparison.Ordinal) ? """["2.6.2"]""" : """["14.2.13","4.8.4"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = NgxPinchZoomVisibilityStateError() } : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^2.5.6", deps["ngx-pinch-zoom"]!.ToString());
+        Assert.Equal(2, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "run", "build"])));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-pinch-zoom@^2.6.2", "version", "--json"]));
+        Assert.DoesNotContain(ai.Users, u => u.Contains("\"validationProvenBlockers\"", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "type_shim" && c.StringValue("failureCategory") == "type_declaration");
+    }
+
+    [Fact]
+    public async Task NgxPinchZoom_VisibilityState_Uses_ProjectOwned_TypeShim_When_Upgrade_Unavailable()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var ai = Angular13To14AiWithNgxResponse(new JsonObject
+        {
+            ["remediations"] = new JsonArray(new JsonObject
+            {
+                ["packageName"] = "ngx-pinch-zoom",
+                ["currentVersion"] = "^2.5.6",
+                ["detectedErrorCategory"] = "third_party_declaration_type_missing",
+                ["action"] = "upgrade",
+                ["targetPackageName"] = "ngx-pinch-zoom",
+                ["targetVersionRange"] = "^9.9.9",
+                ["reason"] = "Try same package first.",
+                ["expectedCodeImpact"] = "none",
+                ["requiresSourceChanges"] = false,
+                ["sourceChangeScope"] = "package_json_only",
+                ["confidence"] = 0.9,
+                ["validationCommand"] = "npm run build"
+            })
+        });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-pinch-zoom@", StringComparison.Ordinal) ? "[]" : """["14.2.13","4.8.4"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = NgxPinchZoomVisibilityStateError() } : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var shim = await File.ReadAllTextAsync(Path.Combine(root, "src", "types", "third-party-compat.d.ts"));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Contains("type VisibilityState = \"visible\" | \"hidden\" | \"collapse\" | \"inherit\" | \"initial\" | \"unset\";", shim);
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "type_shim" && c.BoolValue("businessLogicChanged") == false);
+        Assert.DoesNotContain(ai.Users, u => u.Contains("\"validationProvenBlockers\"", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task VisibilityState_Shim_Is_Not_Added_For_Project_Code_Error()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var ai = Angular13To14AiWithNgxResponse(new JsonObject { ["remediations"] = new JsonArray() });
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["14.2.13","4.8.4"]""" };
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 1, Stderr = "Error: src/app/app.component.ts:1:1 - error TS2304: Cannot find name 'VisibilityState'." };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.False(File.Exists(Path.Combine(root, "src", "types", "third-party-compat.d.ts")));
+    }
+
+    [Fact]
+    public async Task VisibilityState_Shim_Is_Not_Added_For_Unrelated_ThirdParty_Type_Error()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var ai = Angular13To14AiWithNgxResponse(new JsonObject { ["remediations"] = new JsonArray() });
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["14.2.13","4.8.4"]""" };
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'OtherState'." };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.False(File.Exists(Path.Combine(root, "src", "types", "third-party-compat.d.ts")));
+    }
+
+    [Fact]
+    public async Task Optimization_Error_Is_Classified_Only_After_VisibilityState_Is_Resolved()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.5.6""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
+        var ai = Angular13To14AiWithNgxResponse(new JsonObject { ["remediations"] = new JsonArray() });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["14.2.13","4.8.4"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildRuns++;
+                return buildRuns == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = NgxPinchZoomVisibilityStateError() + Environment.NewLine + OptimizerFailureSample() }
+                    : new CommandResult { ReturnCode = 1, Stderr = OptimizerFailureSample() };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var failures = result["validationFailures"]!.AsArray().OfType<JsonObject>().Select(f => f.StringValue("failureCategory")).ToArray();
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Contains("type_declaration", failures);
+        Assert.Contains("build_optimizer_minification_failure", failures);
+        Assert.Contains("src/**/*.d.ts", await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.app.json")));
+        Assert.Equal(2, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "run", "build"])));
+    }
+
+    [Fact]
+    public async Task Css_Remediation_State_Is_Enforced_Before_Later_Hop()
+    {
+        var root = await CssImportWorkspace(createNgSelectPackage: true);
+        Directory.CreateDirectory(Path.Combine(root, "node_modules", "@ng-select", "ng-select", "themes"));
+        await File.WriteAllTextAsync(Path.Combine(root, "node_modules", "@ng-select", "ng-select", "themes", "material.theme.css"), ".ng-select { color: inherit; }");
+        var validation = CssValidation("src/assets/css/style.css", "~@ng-select/ng-select/themes/material.theme.css");
+        var change = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, validation, 1, 1);
+        Assert.NotNull(change);
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "assets", "css", "style.css"), """@import "~@ng-select/ng-select/themes/material.theme.css";""");
+        var runner = new RecordingRunner(command => command[0] == "npm" && command[1] == "view"
+            ? new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" }
+            : new CommandResult { ReturnCode = 0 });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16") }, null, null);
+        var css = await File.ReadAllTextAsync(Path.Combine(root, "src", "assets", "css", "style.css"));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.DoesNotContain("~@ng-select/ng-select/themes/material.theme.css", css);
+        Assert.DoesNotContain("@ng-select/ng-select/scss/material.theme", css);
+        Assert.Contains("reapplied", result["persistentCssRemediationState"]!["records"]!.AsArray().OfType<JsonObject>().Select(r => r.StringValue("status")));
     }
 
     private static JsonObject InstallContext(bool hasPackageLock = false, bool packageJsonChanged = false, bool nodeModulesExists = true) => new()
@@ -1644,6 +2120,22 @@ Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG60
 Error: node_modules/ngx-pinch-zoom/lib/ngx-pinch-zoom.module.d.ts:1:22 - error NG6002: PinchZoomModule does not appear to be an NgModule class.
 Error: node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:1:22 - error NG6002: UserIdleModule does not appear to be an NgModule class.
 Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear to be an NgModule class.
+""";
+
+    private static string NgxPinchZoomVisibilityStateError() => """
+$ npm run build
+exit code: 1
+Error: node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'.
+54     get hostOverflow(): VisibilityState;
+                           ~~~~~~~~~~~~~~~
+Error: node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:80:20 - error TS2304: Cannot find name 'VisibilityState'.
+80         overflow?: VisibilityState;
+                      ~~~~~~~~~~~~~~~
+""";
+
+    private static string OptimizerFailureSample() => """
+Optimization error [main.123.js]: Unexpected token: punc ({)
+    at D:\Projects\AI\AiMigration\Output\node_modules\esbuild-wasm\lib\main.js:1958:37
 """;
 
     private static JsonObject Flags(bool legacy = false) => new()
@@ -1684,7 +2176,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         return root;
     }
 
-    private static async Task<string> Angular13Workspace()
+    private static async Task<string> Angular13Workspace(string extraDependencies = "")
     {
         var root = TestWorkspace.Create();
         await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
@@ -1693,7 +2185,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
   "dependencies": {
     "@angular/core": "~13.1.0",
     "@angular/common": "~13.1.0",
-    "@angular/compiler": "~13.1.0"
+    "@angular/compiler": "~13.1.0"EXTRA_DEPENDENCIES
   },
   "devDependencies": {
     "@angular/cli": "~13.1.2",
@@ -1702,7 +2194,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
     "typescript": "~4.5.2"
   }
 }
-""");
+""".Replace("EXTRA_DEPENDENCIES", extraDependencies));
         await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
         return root;
     }
@@ -1858,6 +2350,10 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["warnings"] = new JsonArray()
     };
 
+    private static bool IsPackageVersionPrompt(string prompt) =>
+        prompt.Contains("package version recommendation", StringComparison.OrdinalIgnoreCase) &&
+        prompt.Contains("safe package target versions", StringComparison.OrdinalIgnoreCase);
+
     private static JsonObject EmptyVersionRecommendations(int targetMajor) => new()
     {
         ["targetAngularMajor"] = targetMajor,
@@ -1879,6 +2375,22 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["manualReviewRequired"] = manualReview
     };
 
+    private static JsonObject ThirdPartyRemediation(string name, string current, string target) => new()
+    {
+        ["packageName"] = name,
+        ["currentVersion"] = current,
+        ["detectedErrorCategory"] = "third_party_angular_library_incompatibility",
+        ["action"] = "upgrade",
+        ["targetPackageName"] = name,
+        ["targetVersionRange"] = target,
+        ["reason"] = "Validation proved this direct third-party Angular package blocks the hop.",
+        ["expectedCodeImpact"] = "none",
+        ["requiresSourceChanges"] = false,
+        ["sourceChangeScope"] = "package_json_only",
+        ["confidence"] = 0.91,
+        ["validationCommand"] = "npm run build"
+    };
+
     private static JsonObject EmptyConfigPlan() => new()
     {
         ["changes"] = new JsonArray(),
@@ -1892,6 +2404,33 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["recommendations"] = new JsonArray(),
         ["warnings"] = new JsonArray()
     };
+
+    private static SequenceAi Angular13To14AiWithNgxResponse(JsonObject thirdPartyResponse) => new(
+        new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/common", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/cli", "~13.1.2", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "~13.1.0", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "^13.3.10", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("typescript", "~4.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~4.8.4", "upgrade"),
+                PackageDecision("ngx-pinch-zoom", "^2.5.6", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+            ["notes"] = new JsonArray()
+        },
+        VersionRecommendations(
+            VersionRecommendation("@angular/core", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+            VersionRecommendation("@angular/common", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+            VersionRecommendation("@angular/compiler", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+            VersionRecommendation("@angular/cli", "~13.1.2", "^14.2.13", "Angular CLI aligned."),
+            VersionRecommendation("@angular/compiler-cli", "~13.1.0", "^14.2.13", "Angular compiler aligned."),
+            VersionRecommendation("@angular-devkit/build-angular", "^13.3.10", "^14.2.13", "Angular DevKit aligned."),
+            VersionRecommendation("typescript", "~4.5.2", "~4.8.4", "TypeScript aligned.")),
+        EmptyCriticalAlignment(13, 14),
+        EmptyConfigPlan(),
+        InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+        thirdPartyResponse);
 
     private static MigrationConfig Config(string root) => new()
     {
@@ -1908,9 +2447,11 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
     {
         public int Calls { get; private set; }
         public List<string> SystemPrompts { get; } = [];
+        public List<string> Users { get; } = [];
         public Task<JsonObject?> AskAsync(AiConfig config, string system, string user, CancellationToken cancellationToken = default)
         {
             SystemPrompts.Add(system);
+            Users.Add(user);
             if (system.Contains("framework-critical dependencies", StringComparison.OrdinalIgnoreCase) &&
                 (Calls >= responses.Length || responses[Calls]?["sourceAngularMajor"] is null))
             {

@@ -32,6 +32,45 @@ public sealed class AngularCriticalDependencyAlignmentPlannerTests
     }
 
     [Fact]
+    public async Task Accepts_Strict_Package_Source_Target_Response_Shape_With_Fractional_Confidence()
+    {
+        var ai = new CapturingAi(Response(new JsonObject
+        {
+            ["package"] = "typescript",
+            ["source"] = "~5.5.4",
+            ["target"] = "~4.5.5",
+            ["section"] = "devDependencies",
+            ["action"] = "align",
+            ["criticality"] = "required",
+            ["confidence"] = 0.95,
+            ["risk"] = "low",
+            ["reason"] = "Angular 13 compiler-cli peer compatibility requires TypeScript >=4.4 <4.6.",
+            ["blocksInstall"] = false,
+            ["blocksBuild"] = true,
+            ["manualReviewRequired"] = false
+        }));
+
+        var result = await Planner(ai).RecommendAsync(Config(), new MigrationHop(13, 13, "Angular 13 alignment"), PackageJson("^5.5.4"));
+
+        Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r =>
+            r.StringValue("packageName") == "typescript" &&
+            r.StringValue("recommendedVersion") == "~4.5.5" &&
+            r.StringValue("dependencySection") == "devDependencies");
+    }
+
+    [Fact]
+    public async Task Rejects_Invalid_Action_Enum()
+    {
+        var invalid = Rec("typescript", "^5.5.4", "~4.5.5", "Angular 13 compiler TypeScript compatibility.");
+        invalid["action"] = "align | preserve";
+
+        var result = await Planner(new CapturingAi(Response(invalid)))
+            .RecommendAsync(Config(), new MigrationHop(13, 13, "Angular 13 alignment"), PackageJson("^5.5.4"));
+
+        Assert.Contains(result["rejected"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "typescript" && r.StringValue("rejectionReason").Contains("action"));
+    }
+
+    [Fact]
     public async Task Angular_13_CompilerCli_Peer_Range_Rejects_TypeScript_484()
     {
         var ai = new CapturingAi(Response(Rec("typescript", "~4.8.4", "~4.8.4", "Angular 13 broad TypeScript 4.x compatibility.", confidence: 95)));

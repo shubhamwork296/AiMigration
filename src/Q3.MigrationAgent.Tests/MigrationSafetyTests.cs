@@ -372,6 +372,7 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
     public async Task Type_Shim_Plan_Is_Accepted_For_Node_Modules_TS2304()
     {
         var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
         await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
         var ai = new StubAi(new JsonObject
         {
@@ -381,14 +382,284 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
             ["requiresManualCorrection"] = false,
             ["failureCategory"] = "type_declaration",
             ["businessLogicChanged"] = false,
-            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/pkg-compatibility.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/pkg/index.d.ts reports TS2304 for MissingGlobal", ["before"] = null, ["after"] = "declare type MissingGlobal = unknown;\n" })
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/pkg-compatibility.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/pkg/index.d.ts reports TS2304 for MissingGlobal", ["before"] = null, ["after"] = "declare type MissingGlobal = unknown;\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false })
         });
 
         var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/pkg/index.d.ts:1:18 - error TS2304: Cannot find name 'MissingGlobal'." }, 1);
 
         Assert.True(result.Applied, result.ManualCorrection?.ToJsonString());
         Assert.True(File.Exists(Path.Combine(root, "src", "types", "pkg-compatibility.d.ts")));
+        Assert.Contains("src/**/*.d.ts", await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.app.json")));
         Assert.False(result.Changes.Single().BoolValue("businessLogicChanged"));
+    }
+
+    [Fact]
+    public async Task Type_Shim_Is_Merged_Into_Existing_Compat_File_Without_Duplicating()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src", "types"));
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "types", "third-party-compat.d.ts"), "declare const ExistingCompat: unique symbol;\n");
+        var ai = new StubAi(new JsonObject
+        {
+            ["summary"] = "ngx-pinch-zoom declaration references missing VisibilityState",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/third-party-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "type VisibilityState = 'visible' | 'hidden' | 'collapse' | 'inherit' | 'initial' | 'unset';\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false })
+        });
+
+        var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, 1);
+        var shim = await File.ReadAllTextAsync(Path.Combine(root, "src", "types", "third-party-compat.d.ts"));
+
+        Assert.True(result.Applied, result.ManualCorrection?.ToJsonString());
+        Assert.Contains("ExistingCompat", shim);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(shim, @"\btype\s+VisibilityState\b").Cast<System.Text.RegularExpressions.Match>());
+    }
+
+    [Fact]
+    public async Task Type_Shim_Does_Not_Add_Tsconfig_Include_When_Already_Covered()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        var ai = new StubAi(new JsonObject
+        {
+            ["summary"] = "ngx-pinch-zoom declaration references missing VisibilityState",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/third-party-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "type VisibilityState = 'visible' | 'hidden';\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false })
+        });
+
+        await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, 1);
+        var include = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.app.json")))!["include"]!.AsArray().Select(x => x!.ToString()).ToArray();
+
+        Assert.Equal(["src/**/*.d.ts"], include);
+    }
+
+    [Fact]
+    public void Safety_Allows_Medium_Risk_Project_Owned_Type_Shim()
+    {
+        var plan = new JsonObject
+        {
+            ["summary"] = "ngx-pinch-zoom declaration references missing VisibilityState",
+            ["confidence"] = 0.80,
+            ["risk"] = "medium",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "src/types/third-party-compat.d.ts",
+                ["type"] = "type_shim",
+                ["reason"] = "node_modules/ngx-pinch-zoom declaration file reports TS2304 for VisibilityState",
+                ["before"] = null,
+                ["after"] = "type VisibilityState = 'visible' | 'hidden' | 'collapse' | 'inherit' | 'initial' | 'unset';\n",
+                ["validationDriven"] = true,
+                ["businessLogicChanged"] = false,
+                ["sourceCodeImpact"] = false,
+                ["runtimeCodeChanged"] = false
+            }),
+            ["commandsToRunAfter"] = new JsonArray()
+        };
+
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, root);
+
+        Assert.True(safety.Safe, safety.Reason);
+    }
+
+    [Fact]
+    public void Safety_Rejects_Type_Shim_Without_Validation_Driven_Metadata()
+    {
+        var plan = new JsonObject
+        {
+            ["summary"] = "ngx-pinch-zoom declaration references missing VisibilityState",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "src/types/third-party-compat.d.ts",
+                ["type"] = "type_shim",
+                ["reason"] = "node_modules/ngx-pinch-zoom declaration file reports TS2304 for VisibilityState",
+                ["before"] = null,
+                ["after"] = "type VisibilityState = \"visible\" | \"hidden\";\n"
+            }),
+            ["commandsToRunAfter"] = new JsonArray()
+        };
+
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, root);
+
+        Assert.False(safety.Safe);
+        Assert.Contains("validation-driven no-runtime-impact safety metadata", safety.Reason);
+    }
+
+    [Fact]
+    public void Safety_Rejects_Type_Shim_Outside_Declaration_Shim_Folders()
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.d.ts"]}""");
+        var plan = new JsonObject
+        {
+            ["summary"] = "unsafe shim location",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "src/app/third-party-compat.d.ts",
+                ["type"] = "type_shim",
+                ["reason"] = "node_modules/ngx-pinch-zoom declaration file reports TS2304 for VisibilityState",
+                ["before"] = null,
+                ["after"] = "type VisibilityState = \"visible\" | \"hidden\";\n",
+                ["validationDriven"] = true,
+                ["businessLogicChanged"] = false,
+                ["sourceCodeImpact"] = false,
+                ["runtimeCodeChanged"] = false
+            }),
+            ["commandsToRunAfter"] = new JsonArray()
+        };
+
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, root);
+
+        Assert.False(safety.Safe);
+        Assert.Contains("not a safe project-level declaration file", safety.Reason);
+    }
+
+    [Fact]
+    public async Task Type_Shim_Requires_Tsconfig_Inclusion_Or_Safe_Config_Patch()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        var ai = new StubAi(new JsonObject
+        {
+            ["summary"] = "third-party declaration references missing global type",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "type_declaration",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/third-party-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "type VisibilityState = \"visible\" | \"hidden\";\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false })
+        });
+
+        var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, 1);
+
+        Assert.NotNull(result.ManualCorrection);
+        Assert.Contains("no safe tsconfig include update is possible", result.ManualCorrection!.StringValue("reason"));
+        Assert.False(File.Exists(Path.Combine(root, "src", "types", "third-party-compat.d.ts")));
+    }
+
+    [Fact]
+    public void Safety_Allows_Tsconfig_Include_Update_For_Type_Shim()
+    {
+        var plan = new JsonObject
+        {
+            ["summary"] = "tsconfig needs to include project-owned declaration shims",
+            ["confidence"] = 0.86,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "config",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "tsconfig.app.json",
+                ["type"] = "config_update",
+                ["reason"] = "Include src/**/*.d.ts so the project-owned VisibilityState shim is compiled for the third-party declaration failure.",
+                ["before"] = "\"include\": [\"src/**/*.ts\"]",
+                ["after"] = "\"include\": [\"src/**/*.ts\", \"src/**/*.d.ts\"]"
+            }),
+            ["commandsToRunAfter"] = new JsonArray()
+        };
+
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }, TestWorkspace.Create());
+
+        Assert.True(safety.Safe, safety.Reason);
+    }
+
+    [Fact]
+    public void Safety_Allows_Package_Update_For_Validation_Proven_Blocker_And_Rejects_Unrelated_Package()
+    {
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            Output = "Error: node_modules/ngx-bootstrap/dropdown/dropdown.directive.d.ts:2:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ɵɵDirectiveDefWithMeta'."
+        };
+        var allowed = PackageUpdatePlan("ngx-bootstrap", "^6.0.0", "^11.0.0");
+        var rejected = PackageUpdatePlan("lodash", "^4.17.0", "^4.17.21");
+
+        var allowedSafety = AiRemediationPlanner.ValidatePlanForTesting(allowed, validation, TestWorkspace.Create());
+        var rejectedSafety = AiRemediationPlanner.ValidatePlanForTesting(rejected, validation, TestWorkspace.Create());
+
+        Assert.True(allowedSafety.Safe, allowedSafety.Reason);
+        Assert.False(rejectedSafety.Safe);
+        Assert.Contains("validation-proven blocker", rejectedSafety.Reason);
+    }
+
+    [Fact]
+    public void Safety_Rejects_Local_Module_Edit_When_NodeModules_Angular_Package_Is_Root_Cause()
+    {
+        var plan = new JsonObject
+        {
+            ["summary"] = "change SharedModule imports",
+            ["confidence"] = 0.90,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["failureCategory"] = "third_party_angular_incompatibility",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "src/app/shared/shared.module.ts",
+                ["type"] = "source_update",
+                ["reason"] = "SharedModule appears in NG6002 output",
+                ["before"] = "exports: [SharedModule]",
+                ["after"] = "exports: []"
+            }),
+            ["commandsToRunAfter"] = new JsonArray()
+        };
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            Output = """
+Error: src/app/shared/shared.module.ts:10:5 - error NG6002: SharedModule does not appear to be an NgModule class.
+Error: node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:3:22 - error NG6002: 'UserIdleModule' does not appear to be an NgModule class.
+This likely means that the library (angular-user-idle) which declares UserIdleModule is not compatible with Angular Ivy.
+"""
+        };
+
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, validation, TestWorkspace.Create());
+
+        Assert.False(safety.Safe);
+        Assert.Contains("node_modules Angular package", safety.Reason);
+    }
+
+    [Fact]
+    public async Task Rejected_Ai_Changes_Are_Reported_With_RejectedReason()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        var ai = new StubAi(PackageUpdatePlan("lodash", "^4.17.0", "^4.17.21"));
+
+        var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/ngx-bootstrap/dropdown/dropdown.directive.d.ts:2:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ɵɵDirectiveDefWithMeta'." }, 1);
+
+        Assert.True(result.Attempted);
+        Assert.False(result.Applied);
+        var change = Assert.Single(result.Changes);
+        Assert.Equal("rejected", change.StringValue("status"));
+        Assert.False(string.IsNullOrWhiteSpace(change.StringValue("rejectedReason")));
     }
 
     [Fact]
@@ -402,6 +673,7 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
   "devDependencies": {"typescript": "~4.8.4"}
 }
 """);
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
         var ai = new CapturingAi(new JsonObject
         {
             ["summary"] = "third-party declaration references missing global type",
@@ -410,7 +682,7 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
             ["requiresManualCorrection"] = false,
             ["failureCategory"] = "type_declaration",
             ["businessLogicChanged"] = false,
-            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/ngx-pinch-zoom-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "declare type VisibilityState = \"hidden\" | \"visible\";\n" }),
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = "src/types/third-party-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "declare type VisibilityState = \"hidden\" | \"visible\";\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false }),
             ["reportNotes"] = new JsonArray("Codex internal npm run build reported spawn EPERM and must be ignored")
         });
         var buildAttempts = 0;
@@ -438,13 +710,49 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
 
         Assert.Equal("done", result.StringValue("status"));
         Assert.Equal(2, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "run", "build"])));
-        Assert.True(File.Exists(Path.Combine(root, "src", "ngx-pinch-zoom-compat.d.ts")));
+        Assert.True(File.Exists(Path.Combine(root, "src", "types", "third-party-compat.d.ts")));
         Assert.Contains("- AI proposed type shim", report);
-        Assert.Contains("- File changed: src/ngx-pinch-zoom-compat.d.ts", report);
+        Assert.Contains("- File changed: src/types/third-party-compat.d.ts", report);
         Assert.Contains("- Business logic changed: no", report);
         Assert.Contains("- Validation command executed by migration agent: npm run build", report);
         Assert.Contains("- Result: passed", report);
         Assert.DoesNotContain("Result: failed", report);
+    }
+
+    [Fact]
+    public async Task Angular_VisibilityState_Declaration_Failure_Uses_Type_Shim_Before_Package_Update()
+    {
+        var root = await AngularWorkspace(extraDependency: ",\n    \"ngx-pinch-zoom\": \"2.6.2\"");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
+        var packageJson = Path.Combine(root, "package.json");
+        var ai = new QueueAi(PackageUpdatePlan("ngx-pinch-zoom", "2.6.2", "2.7.0"));
+        var buildAttempts = 0;
+        var runner = AngularRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildAttempts++;
+                return buildAttempts == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:54:25 - error TS2304: Cannot find name 'VisibilityState'." }
+                    : new CommandResult { ReturnCode = 0 };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal(0, ai.Calls);
+        Assert.Contains("\"ngx-pinch-zoom\": \"2.6.2\"", await File.ReadAllTextAsync(packageJson));
+        var change = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("type_declaration", change.StringValue("failureCategory"));
+        Assert.Equal("type_shim", change.StringValue("type"));
+        Assert.False(change.BoolValue("businessLogicChanged"));
+        Assert.False(change.BoolValue("sourceCodeImpact"));
+        Assert.True(change.BoolValue("validationDriven"));
+        Assert.False(change.BoolValue("manualReviewRequired"));
     }
 
     [Fact]
@@ -488,6 +796,7 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
     {
         var root = TestWorkspace.Create();
         await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
         var ai = new StubAi(new JsonObject
         {
             ["summary"] = "script fix",
@@ -512,7 +821,9 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
         var prompt = new PromptLoader().Load("remediation/validation-remediation");
 
         Assert.Contains("Do not execute commands", prompt);
-        Assert.Contains("The migration agent will apply changes and run commands", prompt);
+        Assert.Contains("The migration agent will:", prompt);
+        Assert.Contains("verify package versions", prompt);
+        Assert.Contains("run commands", prompt);
         Assert.Contains("css_dependency_import", prompt);
         Assert.Contains("dependency_asset_import_resolution", prompt);
         Assert.Contains("style_import_update", prompt);
@@ -1166,7 +1477,9 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
 
         Assert.Equal("failed", result.StringValue("status"));
         Assert.Equal(1, ai.Calls);
-        Assert.Empty(result["aiRemediationChanges"]!.AsArray());
+        var rejectedChange = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("rejected", rejectedChange.StringValue("status"));
+        Assert.False(string.IsNullOrWhiteSpace(rejectedChange.StringValue("rejectedReason")));
         var failure = Assert.Single(result["validationFailures"]!.AsArray().OfType<JsonObject>());
         Assert.True(failure.BoolValue("remediationAttempted"));
         Assert.False(failure.BoolValue("remediationApplied"));
@@ -1219,6 +1532,7 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
     {
         var root = TestWorkspace.Create();
         await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"}}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.app.json"), """{"include":["src/**/*.ts"]}""");
         var ai = new StubAi(new JsonObject
         {
             ["summary"] = "third-party declaration references missing global type",
@@ -1227,14 +1541,14 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
             ["requiresManualCorrection"] = false,
             ["failureCategory"] = "type_declaration",
             ["businessLogicChanged"] = false,
-            ["changes"] = new JsonArray(new JsonObject { ["file"] = $"{Path.GetFileName(root)}/src/ngx-pinch-zoom-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "declare type VisibilityState = \"hidden\" | \"visible\";\n" })
+            ["changes"] = new JsonArray(new JsonObject { ["file"] = $"{Path.GetFileName(root)}/src/types/third-party-compat.d.ts", ["type"] = "type_shim", ["reason"] = "node_modules/ngx-pinch-zoom reports TS2304 for VisibilityState", ["before"] = null, ["after"] = "declare type VisibilityState = \"hidden\" | \"visible\";\n", ["validationDriven"] = true, ["businessLogicChanged"] = false, ["sourceCodeImpact"] = false, ["runtimeCodeChanged"] = false })
         });
 
         var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "node_modules/ngx-pinch-zoom/lib/pinch-zoom.component.d.ts:1:18 - error TS2304: Cannot find name 'VisibilityState'." }, 1);
 
         Assert.True(result.Applied);
-        Assert.Equal("src/ngx-pinch-zoom-compat.d.ts", result.Changes.Single().StringValue("file"));
-        Assert.True(File.Exists(Path.Combine(root, "src", "ngx-pinch-zoom-compat.d.ts")));
+        Assert.Equal("src/types/third-party-compat.d.ts", result.Changes.Single().StringValue("file"));
+        Assert.True(File.Exists(Path.Combine(root, "src", "types", "third-party-compat.d.ts")));
         Assert.False(Directory.Exists(Path.Combine(root, Path.GetFileName(root))));
     }
 
@@ -1250,8 +1564,8 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
 }
 """);
         var ai = new QueueAi(
-            Plan("script one", "package.json", "ng build", "ng build --configuration production"),
-            Plan("config two", "angular.json", "{}", "{\"version\":1}"));
+            Plan("build compiler config one", "angular.json", "{}", "{\"version\":1}"),
+            Plan("build compiler config two", "angular.json", "{\"version\":1}", "{\"version\":2}"));
         var runner = AngularRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
@@ -1311,7 +1625,7 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
     {
         var root = TestWorkspace.Create();
         await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"},"dependencies":{"@angular/core":"14.2.0","problem-package":"1.0.0"}}""");
-        var ai = new CapturingAi(Plan("fix script", "package.json", "ng build", "ng build --configuration production"));
+        var ai = new CapturingAi(PackageUpdatePlan("problem-package", "1.0.0", "1.0.1"));
         var previousTimeout = new JsonObject { ["attempt"] = 1, ["failureCategory"] = "ai_timeout", ["type"] = "ai_timeout" };
 
         var result = await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2 }, root, new StubAdapter(), new ValidationResult { Passed = false, Output = "$ npm run build\nexit code: 1\nCannot find module 'problem-package'\n" + string.Join('\n', Enumerable.Range(1, 300).Select(i => $"line {i}")), FailureCommand = ["npm", "run", "build"], AiRemediationChanges = [previousTimeout] }, 2);
@@ -1459,6 +1773,27 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
         ["failureCategory"] = "config",
         ["businessLogicChanged"] = false,
         ["changes"] = new JsonArray(new JsonObject { ["file"] = file, ["type"] = file == "package.json" ? "script_update" : "config_update", ["reason"] = summary, ["before"] = before, ["after"] = after })
+    };
+
+    private static JsonObject PackageUpdatePlan(string packageName, string beforeVersion, string afterVersion) => new()
+    {
+        ["summary"] = $"{packageName} blocks validation after the Angular hop.",
+        ["confidence"] = 0.90,
+        ["risk"] = "medium",
+        ["requiresManualCorrection"] = false,
+        ["failureCategory"] = "third_party_angular_incompatibility",
+        ["businessLogicChanged"] = false,
+        ["changes"] = new JsonArray(new JsonObject
+        {
+            ["file"] = "package.json",
+            ["type"] = "package_update",
+            ["packageName"] = packageName,
+            ["reason"] = $"{packageName} is named directly in the node_modules validation failure.",
+            ["before"] = $"\"{packageName}\":\"{beforeVersion}\"",
+            ["after"] = $"\"{packageName}\":\"{afterVersion}\"",
+            ["requiresVersionVerification"] = true
+        }),
+        ["commandsToRunAfter"] = new JsonArray()
     };
 
     private sealed class RecordingRunner(Func<IReadOnlyList<string>, CommandResult> handler) : ICommandRunner

@@ -77,7 +77,7 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
         foreach (var item in recommendations.OfType<JsonObject>())
         {
             var validation = ValidateRecommendation(item, targetAngularMajor, directPackages, typeScriptPeerEvidence);
-            var clone = item.DeepClone().AsObject();
+            var clone = NormalizeRecommendation(item);
             if (validation.Accepted)
             {
                 clone["accepted"] = true;
@@ -100,14 +100,14 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
 
     private static (bool Accepted, string Reason) ValidateRecommendation(JsonObject item, int targetAngularMajor, IReadOnlyDictionary<string, (string Version, string Section)> directPackages, TypeScriptPeerEvidence typeScriptPeerEvidence)
     {
-        var name = item.StringValue("packageName");
+        var name = RecommendationPackageName(item);
         var action = item.StringValue("action");
-        var section = item.StringValue("dependencySection");
-        var recommended = item.StringValue("recommendedVersion");
+        var section = RecommendationSection(item);
+        var recommended = RecommendationTargetVersion(item);
         var criticality = item.StringValue("criticality");
         var risk = item.StringValue("risk");
         var reason = item.StringValue("reason");
-        var confidence = DoubleValue(item, "confidence", 0);
+        var confidence = NormalizeConfidence(DoubleValue(item, "confidence", 0));
 
         if (!IsFrameworkCritical(name)) return (false, "Package is not framework-critical or directly relevant to Angular build/install/test compatibility.");
         if (!Actions.Contains(action)) return (false, "Recommendation action is not allowlisted.");
@@ -128,6 +128,21 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
         if (item.BoolValue("manualReviewRequired") || action == "manualReview") return (false, string.IsNullOrWhiteSpace(reason) ? "AI requested manual review." : reason);
         return (true, "");
     }
+
+    private static JsonObject NormalizeRecommendation(JsonObject item)
+    {
+        var clone = item.DeepClone().AsObject();
+        clone["packageName"] = RecommendationPackageName(item);
+        clone["currentVersion"] = item.StringValue("currentVersion", item.StringValue("from"));
+        clone["recommendedVersion"] = RecommendationTargetVersion(item);
+        clone["dependencySection"] = RecommendationSection(item);
+        return clone;
+    }
+
+    private static string RecommendationPackageName(JsonObject item) => item.StringValue("packageName", item.StringValue("package"));
+    private static string RecommendationTargetVersion(JsonObject item) => item.StringValue("recommendedVersion", item.StringValue("target", item.StringValue("to")));
+    private static string RecommendationSection(JsonObject item) => item.StringValue("dependencySection", item.StringValue("section"));
+    private static double NormalizeConfidence(double confidence) => confidence is > 0 and <= 1 ? confidence * 100 : confidence;
 
     private static void AddDeterministicTypeScriptPeerCorrection(IReadOnlyDictionary<string, (string Version, string Section)> directPackages, TypeScriptPeerEvidence typeScriptPeerEvidence, JsonArray accepted)
     {

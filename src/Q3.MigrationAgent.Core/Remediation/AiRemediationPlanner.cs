@@ -11,7 +11,7 @@ namespace Q3.MigrationAgent.Core.Remediation;
 
 public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoader = null)
 {
-    private const double MinimumConfidence = 0.70;
+    private const double MinimumConfidence = 0.75;
     private static readonly HashSet<string> SafeStructuralNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", "NuGet.config",
@@ -74,14 +74,24 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         var safety = ValidatePlan(plan, validation, outputPath);
         if (!safety.Safe)
         {
-            return RemediationAttempt.Manual(ManualRequest(plan, validation, outputPath, safety.Reason));
+            var rejected = RejectedChanges(plan, validation, safety.Reason);
+            return RemediationAttempt.Manual(ManualRequest(plan, validation, outputPath, safety.Reason, attemptedChanges: rejected), rejected);
         }
 
         var changes = new List<JsonObject>();
+        var anyApplied = false;
         foreach (var change in plan["changes"]?.AsArray()?.OfType<JsonObject>() ?? [])
         {
             var applied = await ApplyChangeAsync(plan, change, outputPath, adapter, attempt, config.MaxAiRemediationRetries, validation, cancellationToken);
-            if (applied is not null) changes.Add(applied);
+            if (applied is not null)
+            {
+                anyApplied = true;
+                changes.Add(applied);
+            }
+            else
+            {
+                changes.Add(RejectedChange(plan, validation, change, "Change could not be applied because the target file, exact before text, or safety constraints did not match the current workspace."));
+            }
         }
 
         var unresolvedImportsRemain = OriginalCssImportsStillPresent(outputPath, validation, changes);
@@ -90,8 +100,8 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             return RemediationAttempt.Manual(ManualRequest(plan, validation, outputPath, "Style import remediation incomplete; original unresolved imports remain in project style files.", null, changes, unresolvedImportsRemain), changes);
         }
 
-        return changes.Count == 0
-            ? RemediationAttempt.Manual(ManualRequest(plan, validation, outputPath, "AI returned no safe executable remediation changes."))
+        return !anyApplied
+            ? RemediationAttempt.Manual(ManualRequest(plan, validation, outputPath, "AI returned changes, but none could be safely applied.", attemptedChanges: changes), changes)
             : RemediationAttempt.AppliedResult(changes);
     }
 
@@ -154,6 +164,10 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             "For css_dependency_import or dependency_asset_import_resolution failures, do not change TypeScript files, package versions, dependencies, dependency removals, Angular modules, or business logic.",
             "For css_dependency_import or dependency_asset_import_resolution failures, reject AI plans unless the replacement is confirmed direct tilde removal or a package-verified equivalent style asset path.",
             "For css_dependency_import or dependency_asset_import_resolution failures, include the original unresolved import, direct normalized import attempted, whether it was confirmed, selected package asset path, and changed style files in reportNotes or change metadata when available.",
+            "After install/build/test validation proves a third-party package blocks the hop, package_update is allowed for that proven blocker package.",
+            "Project-owned .d.ts compatibility shims are allowed for third-party declaration failures when no runtime behavior changes.",
+            "tsconfig/angular.json/package config updates are allowed when minimal and tied to the validation failure.",
+            "Angular module import/export wiring is allowed only for compiler-proven package visibility errors and must not change business behavior.",
             "Do not execute commands.",
             "Do not inspect the filesystem.",
             "Do not run build/test/install.",
@@ -166,7 +180,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["risk"] = "low|medium|high",
             ["requiresManualCorrection"] = false,
             ["manualCorrectionReason"] = null,
-            ["failureCategory"] = "script|dependency|type_declaration|css_dependency_import|compiler|config|test|unknown",
+            ["failureCategory"] = "script|dependency|type_declaration|css_dependency_import|dependency_asset_import_resolution|third_party_angular_incompatibility|compiler|config|test|unknown",
             ["businessLogicChanged"] = false,
             ["changes"] = new JsonArray(new JsonObject
             {
@@ -189,7 +203,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         if (plan["summary"] is null || plan["confidence"] is null || plan["risk"] is null || plan["changes"] is not JsonArray changes) return (false, "AI remediation JSON is invalid or incomplete.");
         if (plan.BoolValue("requiresManualCorrection") || plan.BoolValue("requiresHumanReview")) return (false, "AI requested manual correction.");
         if (string.Equals(plan.StringValue("risk"), "high", StringComparison.OrdinalIgnoreCase)) return (false, "AI remediation risk is high.");
-        if (plan.BoolValue("businessLogicChanged") && !ValidationOutputHasCompilerEvidence(validation, "")) return (false, "AI remediation changes business logic without direct compiler/test evidence.");
+        if (plan.BoolValue("businessLogicChanged")) return (false, "AI remediation changes business logic, which requires manual correction.");
         if (ConfidenceValue(plan["confidence"]) < MinimumConfidence) return (false, "AI remediation confidence is below the safe threshold.");
         if (changes.Count == 0) return (false, "AI remediation plan contains no changes.");
         if (!CommandsArePlanOnly(plan["commandsToRunAfter"] as JsonArray)) return (false, "AI remediation must not request command execution; the migration agent owns validation.");
@@ -207,8 +221,13 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             if (cssPlan && !IsStyleFile(file)) return (false, $"CSS dependency import remediation cannot edit non-style file {file}.");
             if (TouchesBlockedPath(file)) return (false, $"AI remediation change touches blocked path {file}.");
             if (change.BoolValue("delete") || string.Equals(type, "delete", StringComparison.OrdinalIgnoreCase)) return (false, "AI remediation cannot delete files.");
+            if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && HasThirdPartyAngularRootCause(validation) && !IsEntryComponentsSourceUpdate(change, validation)) return (false, $"Source file {file} cannot be edited while a node_modules Angular package is the validation root cause.");
             if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !ValidationMentionsFile(validation, file)) return (false, $"Source file {file} is not directly tied to the validation failure.");
             if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !ValidationOutputHasCompilerEvidence(validation, file)) return (false, $"Source file {file} lacks exact compiler/build evidence in the validation failure.");
+            if (string.Equals(type, "script_update", StringComparison.OrdinalIgnoreCase) && !IsSafeScriptUpdate(change, validation)) return (false, $"Script update in {file} is not tied to a deprecated CLI flag validation failure.");
+            if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !change.BoolValue("requiresVersionVerification")) return (false, $"Package update in {file} must require npm version verification before applying.");
+            if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !IsValidationProvenPackageUpdate(change, validation)) return (false, $"Package update in {file} is not limited to a validation-proven blocker package.");
+            if (string.Equals(type, "config_update", StringComparison.OrdinalIgnoreCase) && !IsSafeConfigUpdate(file, change, validation)) return (false, $"Config update in {file} is not minimal or directly tied to the validation failure.");
             if (string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase))
             {
                 var styleSafety = ValidateStyleImportUpdate(change, validation, outputPath);
@@ -216,6 +235,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             }
             if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && change.StringValue("after").Length > change.StringValue("before").Length + 2000) return (false, $"Source update for {file} is too large for automatic remediation.");
             if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeTypeShim(file)) return (false, $"Type shim {file} is not a safe project-level declaration file.");
+            if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeTypeShimMetadata(plan, change)) return (false, $"Type shim {file} is missing required validation-driven no-runtime-impact safety metadata.");
+            if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsDeclarationOnlyTypeShim(change.StringValue("after"))) return (false, $"Type shim {file} must contain declarations only.");
+            if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !CanEnsureTypeShimIncluded(outputPath, file)) return (false, $"Type shim {file} is not included by tsconfig and no safe tsconfig include update is possible.");
             if (!string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) && !string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeManifest(file)) return (false, $"File {file} is not a safe remediation target.");
             if (!string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && (string.IsNullOrEmpty(change.StringValue("before")) || change["after"] is null)) return (false, $"Change for {file} must include exact before and after text.");
             if (IsBroadPackageUpdate(change, validation)) return (false, $"Package update in {file} is broad or unrelated to the failure.");
@@ -243,7 +265,12 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         var before = exists ? await File.ReadAllTextAsync(full, cancellationToken) : "";
         var find = change.StringValue("before", change.StringValue("find"));
         var replace = change.StringValue("after", change.StringValue("replace"));
-        if (exists && (string.IsNullOrEmpty(find) || before.Contains(find, StringComparison.Ordinal) is false)) return null;
+        if (!string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) &&
+            exists &&
+            (string.IsNullOrEmpty(find) || before.Contains(find, StringComparison.Ordinal) is false))
+        {
+            return null;
+        }
         JsonArray? styleFilesChanged = null;
         var originalImport = ExtractImportSpecifier(find);
         var replacementImport = ExtractImportSpecifier(replace);
@@ -255,6 +282,14 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             styleFilesChanged = safeApplication.ChangedFiles;
             replacementImport = safeApplication.SelectedImport;
             if (styleFilesChanged.Count == 0 || StyleImportStillPresent(outputPath, originalImport)) return null;
+            RecordCssRemediationState(outputPath, styleFilesChanged.Select(f => f?.ToString() ?? "").Where(f => !string.IsNullOrWhiteSpace(f)), originalImport, replacementImport, beforePackage?.PackageName ?? change.StringValue("packageName"), safeApplication.Reason, validation.FailedHop ?? "", true);
+        }
+        else if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            var after = MergeTypeShimContent(before, replace);
+            await File.WriteAllTextAsync(full, after, cancellationToken);
+            await EnsureTypeShimIncludedAsync(outputPath, file, cancellationToken);
         }
         else
         {
@@ -266,6 +301,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["attempt"] = attempt,
             ["maxAttempts"] = maxAttempts,
             ["type"] = type,
+            ["status"] = "applied",
             ["file"] = file,
             ["reason"] = change.StringValue("reason"),
             ["change"] = exists ? $"replaced `{find}` with `{replace}`" : "added project-level compatibility shim",
@@ -273,6 +309,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["failedCommand"] = FailedCommand(validation),
             ["failureCause"] = plan.StringValue("summary", planSummaryFallback(validation)),
             ["businessFile"] = string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) || string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) ? false : IsSourceFile(file),
+            ["sourceCodeImpact"] = string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) || string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) ? false : IsSourceFile(file),
+            ["validationDriven"] = true,
+            ["manualReviewRequired"] = false,
             ["functionalImpact"] = change.StringValue("functionalImpact", string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) || string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) || !IsSourceFile(file) ? "none" : "compiler-targeted"),
             ["packageName"] = change.StringValue("packageName"),
             ["installedVersion"] = change.StringValue("installedVersion"),
@@ -288,6 +327,98 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["rootCause"] = change.StringValue("rootCause", plan.StringValue("summary")),
             ["reviewNote"] = change.StringValue("reviewNote")
         }, plan, validation);
+    }
+
+    private static string MergeTypeShimContent(string before, string declaration)
+    {
+        var after = declaration.Trim();
+        if (string.IsNullOrWhiteSpace(after)) return before;
+        var typeName = TypeAliasName(after);
+        if (!string.IsNullOrWhiteSpace(typeName) &&
+            Regex.IsMatch(before, $@"\btype\s+{Regex.Escape(typeName)}\b"))
+        {
+            return before;
+        }
+
+        var prefix = string.IsNullOrWhiteSpace(before) ? "" : before.TrimEnd() + Environment.NewLine + Environment.NewLine;
+        return prefix + after + Environment.NewLine;
+    }
+
+    private static string TypeAliasName(string declaration)
+    {
+        var match = Regex.Match(declaration, @"\btype\s+(?<name>[A-Za-z_$][\w$]*)\b");
+        return match.Success ? match.Groups["name"].Value : "";
+    }
+
+    private static async Task EnsureTypeShimIncludedAsync(string outputPath, string relativeFile, CancellationToken cancellationToken)
+    {
+        var normalized = NormalizeRelativePath(relativeFile);
+        if (!normalized.StartsWith("src/", StringComparison.OrdinalIgnoreCase) && !normalized.StartsWith("types/", StringComparison.OrdinalIgnoreCase)) return;
+        if (TsConfigIncludesDeclarationFile(outputPath, normalized)) return;
+
+        foreach (var configFile in new[] { "tsconfig.app.json", "tsconfig.json" })
+        {
+            var path = Path.Combine(outputPath, configFile);
+            if (!File.Exists(path)) continue;
+            JsonObject? config;
+            try
+            {
+                config = JsonNode.Parse(await File.ReadAllTextAsync(path, cancellationToken))?.AsObject();
+            }
+            catch
+            {
+                continue;
+            }
+            if (config is null) continue;
+            var include = config["include"] as JsonArray;
+            if (include is null)
+            {
+                include = new JsonArray();
+                config["include"] = include;
+            }
+            var requiredInclude = normalized.StartsWith("types/", StringComparison.OrdinalIgnoreCase) ? "types/**/*.d.ts" : "src/**/*.d.ts";
+            if (!include.Select(i => NormalizeRelativePath(i?.ToString() ?? "")).Any(i => i.Equals(requiredInclude, StringComparison.OrdinalIgnoreCase)))
+            {
+                include.Add(requiredInclude);
+                await File.WriteAllTextAsync(path, config.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine, cancellationToken);
+            }
+            return;
+        }
+    }
+
+    private static bool TsConfigIncludesDeclarationFile(string outputPath, string relativeFile)
+    {
+        foreach (var configFile in new[] { "tsconfig.app.json", "tsconfig.json" })
+        {
+            var path = Path.Combine(outputPath, configFile);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var config = JsonNode.Parse(File.ReadAllText(path))?.AsObject();
+                if (config?["files"] is JsonArray files &&
+                    files.Select(f => NormalizeRelativePath(f?.ToString() ?? "")).Any(f => f.Equals(relativeFile, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+                if (config?["include"] is JsonArray include)
+                {
+                    var entries = include.Select(i => NormalizeRelativePath(i?.ToString() ?? "")).ToArray();
+                    if (entries.Any(i => i.Equals("src/**/*.d.ts", StringComparison.OrdinalIgnoreCase))) return true;
+                    if (entries.Any(i => i.Equals("types/**/*.d.ts", StringComparison.OrdinalIgnoreCase)) && relativeFile.StartsWith("types/", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (entries.Any(i => i.Equals(relativeFile, StringComparison.OrdinalIgnoreCase))) return true;
+                    if (relativeFile.StartsWith("src/types/", StringComparison.OrdinalIgnoreCase) &&
+                        entries.Any(i => i.Equals("src/types/**/*.d.ts", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore unreadable tsconfig files; the caller can still apply the shim itself safely.
+            }
+        }
+        return false;
     }
 
     public static async Task<JsonObject?> TryApplyDeterministicRemediationAsync(string outputPath, ValidationResult validation, int attempt, int maxAttempts, CancellationToken cancellationToken = default)
@@ -428,6 +559,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             await File.WriteAllTextAsync(full, afterContent, cancellationToken);
             var changedFiles = new JsonArray(file);
             if (FileContainsImport(outputPath, file, originalImport)) return null;
+            RecordCssRemediationState(outputPath, [file], originalImport, replacementImport, failure.StringValue("packageName"), plan.StringValue("selectedStrategy"), validation.FailedHop ?? "", true);
 
             applied.Add(new JsonObject
             {
@@ -779,7 +911,52 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
     {
         var normalized = NormalizeRelativePath(file);
         return normalized.EndsWith(".d.ts", StringComparison.OrdinalIgnoreCase) &&
-               (normalized.StartsWith("src/", StringComparison.OrdinalIgnoreCase) || normalized.StartsWith("types/", StringComparison.OrdinalIgnoreCase));
+               (normalized.StartsWith("src/types/", StringComparison.OrdinalIgnoreCase) || normalized.StartsWith("types/", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsSafeTypeShimMetadata(JsonObject plan, JsonObject change) =>
+        change.BoolValue("validationDriven") &&
+        !plan.BoolValue("businessLogicChanged") &&
+        !change.BoolValue("businessLogicChanged") &&
+        !change.BoolValue("sourceCodeImpact") &&
+        !change.BoolValue("runtimeCodeChanged");
+
+    private static bool IsDeclarationOnlyTypeShim(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var text = Regex.Replace(content, @"/\*.*?\*/|//[^\r\n]*", "", RegexOptions.Singleline).Trim();
+        if (text.Contains("=", StringComparison.Ordinal) &&
+            !Regex.IsMatch(text, @"\btype\s+[A-Za-z_$][\w$]*\s*=", RegexOptions.IgnoreCase))
+        {
+            return false;
+        }
+        if (Regex.IsMatch(text, @"\b(function|class|const|let|var)\b", RegexOptions.IgnoreCase) &&
+            !Regex.IsMatch(text, @"\bdeclare\s+(function|class|const|let|var)\b", RegexOptions.IgnoreCase))
+        {
+            return false;
+        }
+        if (Regex.IsMatch(text, @"\b(import|export)\s+[^;]*from\s+['""]", RegexOptions.IgnoreCase)) return false;
+        return Regex.IsMatch(text, @"^\s*(?:declare\s+)?(?:global\s*\{|type\s+[A-Za-z_$][\w$]*\s*=|interface\s+[A-Za-z_$][\w$]*|namespace\s+[A-Za-z_$][\w$]*|module\s+['""][^'""]+['""]|[A-Za-z_$][\w$]*\s*:)", RegexOptions.IgnoreCase);
+    }
+
+    private static bool CanEnsureTypeShimIncluded(string outputPath, string relativeFile)
+    {
+        var normalized = NormalizeRelativePath(relativeFile);
+        if (TsConfigIncludesDeclarationFile(outputPath, normalized)) return true;
+        foreach (var configFile in new[] { "tsconfig.app.json", "tsconfig.json" })
+        {
+            var path = Path.Combine(outputPath, configFile);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                return JsonNode.Parse(File.ReadAllText(path)) is JsonObject;
+            }
+            catch
+            {
+                continue;
+            }
+        }
+        return false;
     }
 
     private static bool IsSourceFile(string file) => file.Replace('\\', '/').Contains("/src/", StringComparison.OrdinalIgnoreCase) || file.StartsWith("src/", StringComparison.OrdinalIgnoreCase) || new[] { ".cs", ".ts", ".js", ".java", ".py", ".go" }.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
@@ -808,6 +985,124 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         var reason = change.StringValue("reason");
         return reason.Length == 0 || string.Equals(change.StringValue("failureCategory"), "dependency", StringComparison.OrdinalIgnoreCase) is false && before.Count(c => c == '\n') > 2 && after.Count(c => c == '\n') > 2;
     }
+
+    private static bool IsSafeScriptUpdate(JsonObject change, ValidationResult validation)
+    {
+        if (!string.Equals(Path.GetFileName(change.StringValue("file")), "package.json", StringComparison.OrdinalIgnoreCase)) return false;
+        var text = validation.Output + "\n" + validation.Errors;
+        var before = change.StringValue("before");
+        var after = change.StringValue("after");
+        return text.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase) &&
+               before.Contains("--prod", StringComparison.Ordinal) &&
+               after.Contains("--configuration production", StringComparison.Ordinal);
+    }
+
+    private static bool IsSafeConfigUpdate(string file, JsonObject change, ValidationResult validation)
+    {
+        if (!IsSafeManifest(file)) return false;
+        var name = Path.GetFileName(file.Replace('\\', '/'));
+        var text = validation.Output + "\n" + validation.Errors;
+        if (name.StartsWith("tsconfig", StringComparison.OrdinalIgnoreCase) &&
+            (text.Contains(".d.ts", StringComparison.OrdinalIgnoreCase) ||
+             text.Contains("Cannot find name", StringComparison.OrdinalIgnoreCase) ||
+             text.Contains("TS2304", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+        if (name.Equals("angular.json", StringComparison.OrdinalIgnoreCase) &&
+            (IsCssDependencyImportFailure(text) ||
+             text.Contains("Unknown argument", StringComparison.OrdinalIgnoreCase) ||
+             text.Contains("deprecated", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+        return text.Contains(name, StringComparison.OrdinalIgnoreCase) ||
+               change.StringValue("reason").Contains("validation", StringComparison.OrdinalIgnoreCase) ||
+               change.StringValue("reason").Contains("compiler", StringComparison.OrdinalIgnoreCase) ||
+               change.StringValue("reason").Contains("build", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsValidationProvenPackageUpdate(JsonObject change, ValidationResult validation)
+    {
+        var file = Path.GetFileName(change.StringValue("file"));
+        if (!string.Equals(file, "package.json", StringComparison.OrdinalIgnoreCase) &&
+            !file.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var packageNames = ProvenSourcePackageNamesFromPackageUpdate(change).ToArray();
+        if (packageNames.Length == 0) return false;
+        var text = validation.Output + "\n" + validation.Errors;
+        var provenPackages = ExtractValidationMentionedPackages(text).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return packageNames.Any(packageName => provenPackages.Contains(packageName) || text.Contains(packageName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool HasThirdPartyAngularRootCause(ValidationResult validation)
+    {
+        var text = validation.Output + "\n" + validation.Errors;
+        return Regex.IsMatch(text, @"node_modules[\\/].*\.d\.ts", RegexOptions.IgnoreCase) &&
+               (text.Contains("does not appear to be an NgModule class", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("not compatible with Angular Ivy", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("ModuleWithProviders", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("ɵɵNgModuleDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("ɵɵDirectiveDefWithMeta", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsEntryComponentsSourceUpdate(JsonObject change, ValidationResult validation)
+    {
+        var text = validation.Output + "\n" + validation.Errors;
+        return text.Contains("entryComponents", StringComparison.OrdinalIgnoreCase) &&
+               change.StringValue("before").Contains("entryComponents", StringComparison.OrdinalIgnoreCase) &&
+               !change.StringValue("after").Contains("entryComponents", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> ProvenSourcePackageNamesFromPackageUpdate(JsonObject change)
+    {
+        foreach (var value in new[] { change.StringValue("packageName"), change.StringValue("name") })
+        {
+            foreach (var packageName in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!string.IsNullOrWhiteSpace(packageName)) yield return packageName;
+            }
+        }
+        foreach (var text in new[] { change.StringValue("before") })
+        {
+            foreach (Match match in Regex.Matches(text, "\"(?<name>(?:@[^/\"\\s]+/)?[^@\"\\s:]+)\"\\s*:", RegexOptions.IgnoreCase))
+            {
+                var name = match.Groups["name"].Value;
+                if (!string.IsNullOrWhiteSpace(name) && !name.StartsWith("http", StringComparison.OrdinalIgnoreCase)) yield return name;
+            }
+        }
+    }
+
+    private static IEnumerable<string> ExtractValidationMentionedPackages(string text)
+    {
+        foreach (Match match in Regex.Matches(text, @"node_modules[\\/](?<pkg>@[^\\/:\s]+[\\/][^\\/:\s]+|[^\\/:\s]+)", RegexOptions.IgnoreCase))
+        {
+            yield return match.Groups["pkg"].Value.Replace('\\', '/');
+        }
+        foreach (Match match in Regex.Matches(text, @"(?:from|package|dependency)\s+(?<pkg>@?[\w.-]+(?:/[\w.-]+)?)", RegexOptions.IgnoreCase))
+        {
+            yield return match.Groups["pkg"].Value;
+        }
+    }
+
+    private static IReadOnlyList<JsonObject> RejectedChanges(JsonObject plan, ValidationResult validation, string reason) =>
+        (plan["changes"]?.AsArray()?.OfType<JsonObject>().Select(change => RejectedChange(plan, validation, change, reason)).ToArray() ?? []);
+
+    private static JsonObject RejectedChange(JsonObject plan, ValidationResult validation, JsonObject change, string reason) => WithPlanMetadata(new JsonObject
+    {
+        ["attempt"] = null,
+        ["type"] = change.StringValue("type"),
+        ["status"] = "rejected",
+        ["file"] = change.StringValue("file"),
+        ["reason"] = change.StringValue("reason"),
+        ["rejectedReason"] = reason,
+        ["businessLogicChanged"] = plan.BoolValue("businessLogicChanged"),
+        ["businessFile"] = IsSourceFile(change.StringValue("file")),
+        ["failedCommand"] = FailedCommand(validation)
+    }, plan, validation);
 
     private static bool CommandsArePlanOnly(JsonArray? commands)
     {
@@ -1610,6 +1905,60 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             if (content.Contains(import, StringComparison.Ordinal)) files.Add(file);
         }
         return files;
+    }
+
+    private static void RecordCssRemediationState(string outputPath, IEnumerable<string> sourceFiles, string originalImport, string replacementImport, string packageName, string selectedStrategy, string acceptedAtHop, bool validationPassedAfterApply)
+    {
+        var stateDir = Path.Combine(outputPath, ".migration-agent");
+        Directory.CreateDirectory(stateDir);
+        var path = Path.Combine(stateDir, "css-remediation-state.json");
+        JsonArray records;
+        try
+        {
+            records = File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path))?.AsArray() ?? new JsonArray() : new JsonArray();
+        }
+        catch
+        {
+            records = new JsonArray();
+        }
+
+        foreach (var sourceFile in sourceFiles.Select(NormalizeRelativePath).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var existing = records.OfType<JsonObject>().FirstOrDefault(r =>
+                r.StringValue("sourceFile").Equals(sourceFile, StringComparison.OrdinalIgnoreCase) &&
+                r.StringValue("originalImport").Equals(originalImport, StringComparison.OrdinalIgnoreCase));
+            var targetPhysicalFile = TargetPhysicalFile(outputPath, sourceFile, replacementImport);
+            var record = existing ?? new JsonObject();
+            record["sourceFile"] = sourceFile;
+            record["originalImport"] = originalImport;
+            record["replacementImport"] = replacementImport;
+            record["selectedStrategy"] = selectedStrategy;
+            record["packageName"] = packageName;
+            record["targetPhysicalFile"] = targetPhysicalFile;
+            record["acceptedAtHop"] = acceptedAtHop;
+            record["validationPassedAfterApply"] = validationPassedAfterApply;
+            if (existing is null) records.Add(record);
+        }
+
+        File.WriteAllText(path, records.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+    }
+
+    private static string TargetPhysicalFile(string outputPath, string sourceFile, string replacementImport)
+    {
+        var parsed = ParsePackageImport(replacementImport);
+        if (parsed is not null)
+        {
+            var subpath = parsed.Value.Subpath;
+            var full = Path.Combine(outputPath, "node_modules", Path.Combine(parsed.Value.PackageName.Split('/')), subpath.Replace('/', Path.DirectorySeparatorChar));
+            return NormalizeRelativePath(Path.GetRelativePath(outputPath, full));
+        }
+        if (replacementImport.StartsWith(".", StringComparison.Ordinal))
+        {
+            var sourceFull = Path.Combine(outputPath, sourceFile.Replace('/', Path.DirectorySeparatorChar));
+            var full = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourceFull) ?? outputPath, replacementImport.Replace('/', Path.DirectorySeparatorChar)));
+            return IsUnderRoot(full, outputPath) ? NormalizeRelativePath(Path.GetRelativePath(outputPath, full)) : "";
+        }
+        return "";
     }
 
     private static IReadOnlyList<string> EnumerateProjectStyleFiles(string outputPath)

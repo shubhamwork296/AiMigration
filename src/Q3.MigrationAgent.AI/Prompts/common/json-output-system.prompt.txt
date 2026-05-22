@@ -1,1 +1,17 @@
-Return ONLY valid JSON. Do not include markdown or explanations.
+
+
+Return exactly one valid JSON object and nothing else.
+
+Do not include markdown, code fences, comments, explanations, prefix text, or suffix text.
+
+The JSON must be directly parseable by json.loads and must match the requested schema exactly.
+
+Do not add extra top-level fields.
+Do not omit required fields.
+Use null for unknown optional scalar values.
+Use [] for empty arrays.
+Use only the allowed enum values.
+Do not return combined enum strings like "upgrade | preserve | manualReview".
+Use numbers as numbers and booleans as booleans.
+
+If no safe recommendation can be made, return the schema’s empty or manual-review JSON response.

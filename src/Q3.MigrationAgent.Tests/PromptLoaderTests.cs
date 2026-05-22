@@ -11,7 +11,7 @@ public sealed class PromptLoaderTests
 
         var prompt = loader.Load("angular/angular-package-classification");
 
-        Assert.Contains("Classify every direct Angular package.json dependency", prompt);
+        Assert.Contains("classify every direct package.json dependency", prompt, StringComparison.OrdinalIgnoreCase);
         Assert.False(prompt.EndsWith('\n'));
     }
 
@@ -40,9 +40,9 @@ public sealed class PromptLoaderTests
     {
         var prompt = new PromptLoader().Load("angular/angular-package-version-recommendation");
 
-        Assert.Contains("Preserve third-party Angular-coupled packages by default", prompt);
-        Assert.Contains("Do not recommend upgrading a third-party package merely because its major version matches the Angular target major", prompt);
-        Assert.Contains("Keep per-hop validation strict", prompt);
+        Assert.Contains("preserving third-party packages unless validation proves they block the migration", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Do not blindly align its major version with the Angular target major", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Keep validation strict per hop", prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("ngx-color-picker", prompt);
         Assert.Contains("ngx-slick-carousel", prompt);
         Assert.Contains("ngx-bootstrap", prompt);
@@ -55,26 +55,27 @@ public sealed class PromptLoaderTests
     {
         var prompt = new PromptLoader().Load("angular/angular-package-classification");
 
-        Assert.Contains("preserve third-party Angular-coupled packages by default", prompt);
-        Assert.Contains("validation-driven remediation candidates", prompt);
+        Assert.Contains("Preserve third-party Angular-coupled packages by default", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("validation-driven remediation candidates", prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("ngx-color-picker", prompt);
         Assert.Contains("ngx-slick-carousel", prompt);
         Assert.Contains("ngx-bootstrap", prompt);
         Assert.Contains("angularx-qrcode", prompt);
-        Assert.Contains("do not upgrade them merely because their major version matches the Angular target major", prompt);
+        Assert.Contains("A third-party Angular-coupled package is proven to block install/build", prompt, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Angular_Remediation_Prompt_Requires_Module_Wiring_Analysis_For_ColorPicker_Ng8002()
+    public void Angular_Remediation_Prompt_Uses_Risk_Based_Validation_Remediation_Contract()
     {
         var prompt = new PromptLoader().Load("remediation/validation-remediation");
 
-        Assert.Contains("skipLibCheck may be recommended only as a temporary compatibility workaround", prompt);
-        Assert.Contains("Do not treat skipLibCheck as successful remediation if Angular template/compiler errors remain", prompt);
-        Assert.Contains("Can't bind to 'colorPicker' since it isn't a known property of 'input'", prompt);
-        Assert.Contains("ColorPickerModule", prompt);
-        Assert.Contains("SharedModule exports", prompt);
-        Assert.Contains("Do not edit component business logic", prompt);
+        Assert.Contains("Return only strict JSON", prompt);
+        Assert.Contains("third_party_angular_incompatibility", prompt);
+        Assert.Contains("project-owned .d.ts compatibility shims", prompt);
+        Assert.Contains("--prod -> --configuration production", prompt);
+        Assert.Contains("NG6002", prompt);
+        Assert.Contains("minimal_module_or_import_wiring", prompt);
+        Assert.Contains("Do not use skipLibCheck to hide Angular template, compiler, module", prompt);
     }
 
     private static string LocatePromptRoot()

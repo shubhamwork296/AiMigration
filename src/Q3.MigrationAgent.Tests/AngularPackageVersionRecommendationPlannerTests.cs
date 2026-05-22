@@ -78,7 +78,7 @@ public sealed class AngularPackageVersionRecommendationPlannerTests
     }
 
     [Fact]
-    public async Task Low_Confidence_Becomes_Manual_Review_But_Critical_Alignment_Is_Accepted()
+    public async Task Low_Confidence_Becomes_Manual_Review_Proactive_ThirdParty_Rejected_But_Critical_Alignment_Is_Accepted()
     {
         var result = await Planner(new CapturingAi(Response(
                 Rec("@angular-slider/ngx-slider", "^13.0.0", "^14.0.0", "low confidence", confidence: 55),
@@ -88,6 +88,41 @@ public sealed class AngularPackageVersionRecommendationPlannerTests
         Assert.Single(result["manualReview"]!.AsArray());
         Assert.Single(result["rejected"]!.AsArray());
         Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@angular-devkit/build-angular");
+    }
+
+    [Fact]
+    public async Task Rejects_Proactive_ThirdParty_Angular_Package_Upgrade()
+    {
+        var result = await Planner(new CapturingAi(Response(Rec("@angular-slider/ngx-slider", "^13.0.0", "^14.0.0", "proactive third-party upgrade", confidence: 95))))
+            .RecommendAsync(Config(), Hop(), PackageJson(), Decisions(), new Dictionary<string, string>());
+
+        Assert.Contains(result["rejected"]!.AsArray().OfType<JsonObject>(), r =>
+            r.StringValue("packageName") == "@angular-slider/ngx-slider" &&
+            r.StringValue("rejectionReason").Contains("validationDriven=true"));
+    }
+
+    [Fact]
+    public async Task Accepts_Validation_Driven_ThirdParty_Angular_Package_Upgrade()
+    {
+        var recommendation = Rec("@angular-slider/ngx-slider", "^13.0.0", "^14.0.0", "build validation identified this package as the blocker", confidence: 95);
+        recommendation["validationDriven"] = true;
+
+        var result = await Planner(new CapturingAi(Response(recommendation)))
+            .RecommendAsync(Config(), Hop(), PackageJson(), Decisions(), new Dictionary<string, string>());
+
+        Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@angular-slider/ngx-slider");
+    }
+
+    [Fact]
+    public async Task Rejects_Invalid_Action_Enum()
+    {
+        var recommendation = Rec("@angular/core", "^13.3.0", "^14.2.13", "invalid enum");
+        recommendation["action"] = "upgrade | preserve";
+
+        var result = await Planner(new CapturingAi(Response(recommendation)))
+            .RecommendAsync(Config(), Hop(), PackageJson(), Decisions(), new Dictionary<string, string>());
+
+        Assert.Contains(result["rejected"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("rejectionReason").Contains("action"));
     }
 
     [Fact]

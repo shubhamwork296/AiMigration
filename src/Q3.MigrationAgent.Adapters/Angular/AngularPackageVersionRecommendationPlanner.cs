@@ -183,16 +183,19 @@ public sealed class AngularPackageVersionRecommendationPlanner(IAiService ai, IP
         var recommended = RecommendationTargetVersion(item);
         var confidence = NormalizeConfidence(DoubleValue(item, "confidence", 0));
         var angularOwned = AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name);
+        var validationDriven = item.BoolValue("validationDriven");
         var criticalAlignment = AngularCriticalDependencyPolicy.IsSafeCriticalAlignment(name, recommended, targetAngularMajor);
 
         if (!directPackages.ContainsKey(name)) return (false, "Package is not a direct dependency in package.json.");
         if (!Actions.Contains(action)) return (false, "Recommendation action is not allowlisted.");
         if (!Risks.Contains(risk)) return (false, "Recommendation risk is not allowlisted.");
         if (!Impacts.Contains(installImpact) || !Impacts.Contains(buildImpact)) return (false, "Recommendation impact is not allowlisted.");
+        if (item.BoolValue("manualReviewRequired") || action == "manualReview") return (false, item.StringValue("reason", "AI requested manual review."));
         if (risk == "high" && !criticalAlignment) return (false, "High-risk package version recommendation requires manual review.");
         if (confidence < 60) return (false, "Package version recommendation confidence is below 60.");
         if (confidence < 80 && !angularOwned) return (false, "Non-Angular package version recommendation confidence is below 80.");
         if (action != "upgrade") return (true, "");
+        if (!angularOwned && !validationDriven) return (false, "Third-party package upgrades require validationDriven=true after an install/build/test failure.");
         if (string.IsNullOrWhiteSpace(recommended)) return (false, "Upgrade recommendation requires recommendedVersion.");
         if (!NpmVersionRange.IsSafe(recommended)) return (false, "Recommended version is not a safe bounded npm semver range.");
         if (angularOwned && NpmVersionRange.Major(recommended) != targetAngularMajor) return (false, "Angular-owned package recommendation does not match the target Angular major.");

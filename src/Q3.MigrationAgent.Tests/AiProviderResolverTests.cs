@@ -147,9 +147,9 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
-    public void ParseJsonObject_Accepts_Json_With_Trailing_Cli_Text()
+    public void ParseJsonObject_Rejects_Json_With_Trailing_Cli_Text()
     {
-        var parsed = AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             I can fix this.
             {
               "summary": "replace deprecated flag",
@@ -163,25 +163,24 @@ public sealed class AiProviderResolverTests
             }
 
             Verified locally.
-            """, "codex");
+            """, "codex"));
 
-        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
-        Assert.Equal("package.json", parsed["changes"]?.AsArray()[0]?["file"]?.ToString());
+        Assert.Contains("strict JSON", ex.Message);
     }
 
     [Fact]
-    public void ParseJsonObject_Accepts_Fenced_Json_With_Trailing_Cli_Text()
+    public void ParseJsonObject_Rejects_Fenced_Json_With_Trailing_Cli_Text()
     {
-        var parsed = AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             ```json
             [
               { "file": "package.json", "change": "script" }
             ]
             ```
             Done.
-            """, "codex");
+            """, "codex"));
 
-        Assert.Equal("package.json", parsed["items"]?.AsArray()[0]?["file"]?.ToString());
+        Assert.Contains("strict JSON", ex.Message);
     }
 
     [Fact]
@@ -189,16 +188,15 @@ public sealed class AiProviderResolverTests
     {
         var parsed = AiProviderResolver.ParseJsonObject("""
             {"summary":"replace {placeholder} and escaped \"quote\"","changes":[]}
-            extra
             """, "codex");
 
         Assert.Equal("replace {placeholder} and escaped \"quote\"", parsed["summary"]?.ToString());
     }
 
     [Fact]
-    public void ParseJsonObject_Extracts_First_Valid_Json_Object_And_Ignores_Command_Logs()
+    public void ParseJsonObject_Rejects_Command_Logs_Around_Json()
     {
-        var parsed = AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             OpenAI Codex v0.125.0
             $ npm run build
             An unhandled exception occurred: spawn EPERM
@@ -224,14 +222,13 @@ public sealed class AiProviderResolverTests
               "commandsToRunAfter": []
             }
             tokens used: 999
-            """, "codex");
+            """, "codex"));
 
-        Assert.Equal("add third-party type shim", parsed["summary"]?.ToString());
-        Assert.Equal("src/ngx-pinch-zoom-compat.d.ts", parsed["changes"]?.AsArray()[0]?["file"]?.ToString());
+        Assert.Contains("strict JSON", ex.Message);
     }
 
     [Fact]
-    public async Task Codex_Provider_Parses_Json_Even_When_Cli_Returns_Nonzero_With_Logs()
+    public async Task Codex_Provider_Rejects_Nonzero_Cli_Output_With_Logs()
     {
         var runner = new FakeCommandRunner(command => new CommandResult
         {
@@ -244,9 +241,10 @@ public sealed class AiProviderResolverTests
         });
         var provider = new CodexCliProvider(runner, new PromptLoader());
 
-        var parsed = await provider.AskAsync(new AiConfig { UseAi = true, CliCommand = ["codex", "exec"] }, "system", "user");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            provider.AskAsync(new AiConfig { UseAi = true, CliCommand = ["codex", "exec"] }, "system", "user"));
 
-        Assert.Equal("plan only", parsed?["summary"]?.ToString());
+        Assert.Contains("CLI failed", ex.Message);
     }
 
     private static AiProviderResolver Resolver(ICommandRunner runner) => new(runner, Array.Empty<IAiProvider>());

@@ -149,6 +149,13 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var stage = $"Angular {hop.FromVersion} -> {hop.ToVersion}";
         var beforeFiles = StructuralFileContents(projectPath);
         progress?.Stage(stage, "Starting...");
+        var cssState = EnforcePersistentCssRemediationState(projectPath, hop);
+        if (cssState.BoolValue("failed"))
+        {
+            var failed = FailedHopResult(hop, new JsonArray(), ChangedStructuralFiles(projectPath, beforeFiles), new JsonObject { ["targetAngularMajor"] = target, ["blockers"] = new JsonArray(), ["warnings"] = new JsonArray() }, cssState.StringValue("reason"), "css-remediation-state");
+            failed["persistentCssRemediationState"] = cssState;
+            return failed;
+        }
         progress?.Stage(stage, config.SkipPreflightDependencyCompatibility ? "Skipping dependency compatibility checks..." : "Checking dependency compatibility...");
         var preflight = config.SkipPreflightDependencyCompatibility
             ? new JsonObject { ["targetAngularMajor"] = target, ["status"] = "skipped", ["checked"] = new JsonArray(), ["blockers"] = new JsonArray(), ["warnings"] = new JsonArray("Preflight dependency compatibility check skipped by configuration.") }
@@ -191,6 +198,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var aiRemediationChanges = new JsonArray();
         var manualCorrectionRequests = new JsonArray();
         var validationFailures = new JsonArray();
+        var thirdPartyValidationBlockers = new JsonArray();
+        var failedPackagePlans = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, false));
         if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0)
         {
@@ -204,6 +213,18 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 {
                     remediation = RemediationAttempt.AppliedResult([deterministic]);
                     progress?.Stage(stage, "Applied deterministic validation remediation. Re-running build verification.");
+                }
+                else if (config.Ai.UseAi && ai is not null && promptLoader is not null && DetectThirdPartyValidationBlockers(projectPath, validation, hop).Count > 0)
+                {
+                    var blockers = DetectThirdPartyValidationBlockers(projectPath, validation, hop);
+                    foreach (var blocker in blockers) AddUniqueJsonObject(thirdPartyValidationBlockers, blocker, "package");
+                    progress?.Stage(stage, $"Requesting AI package remediation for validation-proven third-party blockers: {string.Join(", ", blockers.Select(b => b.StringValue("package")))}.");
+                    remediation = await TryRemediateValidationProvenThirdPartyPackagesAsync(projectPath, hop, config, validation, blockers, attempt, failedPackagePlans, progress, stage, logPath, cancellationToken);
+                    if (!remediation.Attempted)
+                    {
+                        remediation = await new AiRemediationPlanner(ai, promptLoader).TryRemediateAsync(config, projectPath, this, validationResult, attempt, cancellationToken);
+                    }
+                    progress?.Stage(stage, AiRemediationResultSummary(remediation));
                 }
                 else if (config.Ai.UseAi && ai is not null && promptLoader is not null)
                 {
@@ -257,6 +278,13 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                     var installDecision = DeterministicDecision("normalInstall", "Package remediation changed package.json; reinstall dependencies before rerunning Angular validation.", "low", false, false, "validationPackageRemediation");
                     var installAttempt = await RunInstallAttemptAsync(projectPath, NormalNpmInstallCommand, installDecision, "validation-remediation", false, false, 0, remediation.Changes.Any(c => string.Equals(c.StringValue("mode"), "ai", StringComparison.OrdinalIgnoreCase)), true, "", false, config, progress, stage, logPath, cancellationToken);
                     commands.Add(InstallCommandObject(installAttempt));
+                    if (installAttempt.Result.ReturnCode != 0 && IsPeerDependencyConflict(installAttempt.Result) && config.AllowLegacyPeerDepsFallback)
+                    {
+                        progress?.Stage(stage, "npm install reported ERESOLVE after validation remediation. Retrying once with --legacy-peer-deps.");
+                        var fallbackDecision = DeterministicDecision("legacyPeerDepsInstall", "Package remediation install hit ERESOLVE; legacy peer deps is allowed only as fallback.", "medium", true, true, "peerDependencyConflict");
+                        installAttempt = await RunInstallAttemptAsync(projectPath, LegacyPeerDepsNpmInstallCommand, fallbackDecision, "validation-remediation-peer-fallback", true, true, 1, remediation.Changes.Any(c => string.Equals(c.StringValue("mode"), "ai", StringComparison.OrdinalIgnoreCase)), true, "", false, config, progress, stage, logPath, cancellationToken);
+                        commands.Add(InstallCommandObject(installAttempt));
+                    }
                     if (installAttempt.Result.ReturnCode != 0)
                     {
                         validation = new JsonObject
@@ -322,6 +350,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             ["preflightDependencyAnalysis"] = preflight,
             ["validation"] = validation,
             ["validationFailures"] = validationFailures,
+            ["thirdPartyValidationBlockers"] = thirdPartyValidationBlockers,
+            ["persistentCssRemediationState"] = cssState,
             ["optionalMigrations"] = new JsonArray(),
             ["aiRemediationChanges"] = aiRemediationChanges,
             ["manualCorrectionRequests"] = manualCorrectionRequests,
@@ -521,7 +551,11 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             {
                 var source = acceptedCriticalAlignments.ContainsKey(name) ? "ai-critical-dependency-alignment" : acceptedVersionRecommendations.ContainsKey(name) ? "ai-package-version-recommendation" : "classification-or-fallback";
                 var confidence = acceptedCriticalAlignments.TryGetValue(name, out var criticalConfidence) ? DoubleValue(criticalConfidence, "confidence", 0) : acceptedVersionRecommendations.TryGetValue(name, out var versionConfidence) ? DoubleValue(versionConfidence, "confidence", 0) : DoubleValue(item, "confidence", 0);
-                pendingUpdates.Add(new PendingPackageUpdate(name, section, current.Version, originalTargetVersion, targetVersion, category, item.StringValue("reason"), source, confidence));
+                var requiresVersionVerification =
+                    acceptedCriticalAlignments.TryGetValue(name, out var criticalVerification) && criticalVerification.BoolValue("requiresVersionVerification") ||
+                    acceptedVersionRecommendations.TryGetValue(name, out var versionVerification) && versionVerification.BoolValue("requiresVersionVerification") ||
+                    item.BoolValue("requiresVersionVerification");
+                pendingUpdates.Add(new PendingPackageUpdate(name, section, current.Version, originalTargetVersion, targetVersion, category, item.StringValue("reason"), source, confidence, requiresVersionVerification));
             }
             accepted.Add(item.DeepClone());
             if (category is "angular_ui_or_extension_package" or "third_party_runtime_package" or "third_party_build_or_test_tooling") thirdParty.Add(item.DeepClone());
@@ -550,7 +584,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             var section = item.StringValue("dependencySection");
             if (data[section] is JsonObject deps && !deps.ContainsKey(name))
             {
-                pendingUpdates.Add(new PendingPackageUpdate(name, section, "", item.StringValue("recommendedVersion"), item.StringValue("recommendedVersion"), DefaultPackageCategory(name), item.StringValue("reason"), "ai-critical-dependency-alignment", DoubleValue(item, "confidence", 0)));
+                pendingUpdates.Add(new PendingPackageUpdate(name, section, "", item.StringValue("recommendedVersion"), item.StringValue("recommendedVersion"), DefaultPackageCategory(name), item.StringValue("reason"), "ai-critical-dependency-alignment", DoubleValue(item, "confidence", 0), item.BoolValue("requiresVersionVerification")));
             }
         }
 
@@ -818,6 +852,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (target.Contains("||") || target.Contains(" or ", StringComparison.OrdinalIgnoreCase) || target.Contains(",")) return (false, "Multiple target versions were suggested; one stable compatible version is required.");
         if (action == "upgrade" && !string.IsNullOrWhiteSpace(target) && !NpmVersionRange.IsSafe(target)) return (false, InvalidTargetVersionReason(name, target, null, "ValidatePackageDecision"));
         if (action == "upgrade" && string.IsNullOrWhiteSpace(target) && !defaultTargets.ContainsKey(name)) return (false, "Upgrade action requires one target version.");
+        if (!AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name) && category is "angular_ui_or_extension_package" or "third_party_runtime_package" or "third_party_build_or_test_tooling" or "business_or_unknown_package" && action == "upgrade" && !item.BoolValue("validationDriven")) return (false, "Third-party Angular-coupled package upgrades require validationDriven=true after an install/build/test failure.");
         if (category is "third_party_runtime_package" or "third_party_build_or_test_tooling" or "business_or_unknown_package" && action == "upgrade" && !defaultTargets.ContainsKey(name)) return (false, "Third-party upgrades are accepted only when Angular compatibility requires them.");
         return (true, "");
     }
@@ -1013,6 +1048,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
     private static bool ShouldVerifyPackageTargetUpfront(PendingPackageUpdate update, string role, int targetMajor, string mode)
     {
+        if (update.RequiresVersionVerification) return true;
         if (mode == "strict-npm-view") return true;
         if (mode == "off") return false;
         var confidence = NormalizeAiConfidence(update.Confidence);
@@ -1449,8 +1485,539 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         };
         validation["aiRemediationRootCauseAnalysis"] = BuildAngularValidationRootCauseAnalysis(projectPath, validation, hop);
         if (build.CommandResult is not null) validation["buildVerificationCommandResult"] = build.CommandResult.DeepClone();
+        validation["thirdPartyValidationBlockers"] = new JsonArray(DetectThirdPartyValidationBlockers(projectPath, validation, hop).Select(b => (JsonNode?)b.DeepClone()).ToArray());
         return validation;
     }
+
+    private static JsonObject EnforcePersistentCssRemediationState(string projectPath, MigrationHop hop)
+    {
+        var statePath = Path.Combine(projectPath, ".migration-agent", "css-remediation-state.json");
+        var statuses = new JsonArray();
+        if (!File.Exists(statePath)) return new JsonObject { ["attempted"] = false, ["records"] = statuses };
+        JsonArray records;
+        try
+        {
+            records = JsonNode.Parse(File.ReadAllText(statePath))?.AsArray() ?? new JsonArray();
+        }
+        catch (Exception ex)
+        {
+            return new JsonObject { ["attempted"] = true, ["failed"] = true, ["reason"] = $"Persistent CSS remediation state could not be read: {ex.Message}", ["records"] = statuses };
+        }
+
+        foreach (var record in records.OfType<JsonObject>())
+        {
+            var sourceFile = NormalizeRelativePath(record.StringValue("sourceFile"));
+            var originalImport = record.StringValue("originalImport");
+            var replacementImport = record.StringValue("replacementImport");
+            var full = Path.GetFullPath(Path.Combine(projectPath, sourceFile.Replace('/', Path.DirectorySeparatorChar)));
+            var status = new JsonObject
+            {
+                ["sourceFile"] = sourceFile,
+                ["originalImport"] = originalImport,
+                ["replacementImport"] = replacementImport,
+                ["acceptedHop"] = record.StringValue("acceptedAtHop"),
+                ["enforcedAtHop"] = $"{hop.FromVersion} -> {hop.ToVersion}"
+            };
+            if (!IsUnderRoot(full, projectPath) || !File.Exists(full))
+            {
+                status["status"] = "failed";
+                status["reason"] = "recorded source file was deleted or moved";
+                statuses.Add(status);
+                return new JsonObject { ["attempted"] = true, ["failed"] = true, ["reason"] = $"Recorded CSS remediation source file was deleted or moved: {sourceFile}", ["records"] = statuses };
+            }
+
+            var text = File.ReadAllText(full);
+            var changed = false;
+            if (ContainsImport(text, originalImport))
+            {
+                text = ReplaceCssImport(text, originalImport, replacementImport);
+                changed = true;
+            }
+            var forbidden = ForbiddenNgSelectCssImports(sourceFile, text).ToArray();
+            if (forbidden.Length > 0)
+            {
+                status["status"] = "failed";
+                status["reason"] = $"forbidden ng-select import present: {string.Join(", ", forbidden)}";
+                statuses.Add(status);
+                return new JsonObject { ["attempted"] = true, ["failed"] = true, ["reason"] = $"Forbidden ng-select CSS import present in {sourceFile}: {string.Join(", ", forbidden)}", ["records"] = statuses };
+            }
+            if (changed) File.WriteAllText(full, text);
+            status["status"] = changed ? "reapplied" : "already_enforced";
+            statuses.Add(status);
+        }
+
+        return new JsonObject { ["attempted"] = true, ["failed"] = false, ["records"] = statuses };
+    }
+
+    private static bool ContainsImport(string text, string import) =>
+        Regex.Matches(text, @"@import\s+(?:url\()?['""](?<import>[^'"")]+)['""]", RegexOptions.IgnoreCase)
+            .Any(m => m.Groups["import"].Value.Equals(import, StringComparison.OrdinalIgnoreCase));
+
+    private static string ReplaceCssImport(string text, string before, string after) =>
+        Regex.Replace(text, @"@import\s+(?:url\()?['""](?<import>[^'"")]+)['""]\)?\s*;", match =>
+            match.Groups["import"].Value.Equals(before, StringComparison.OrdinalIgnoreCase)
+                ? match.Value.Replace(match.Groups["import"].Value, after, StringComparison.Ordinal)
+                : match.Value,
+            RegexOptions.IgnoreCase);
+
+    private static IEnumerable<string> ForbiddenNgSelectCssImports(string sourceFile, string text)
+    {
+        var imports = Regex.Matches(text, @"@import\s+(?:url\()?['""](?<import>[^'"")]+)['""]", RegexOptions.IgnoreCase)
+            .Select(m => m.Groups["import"].Value)
+            .ToArray();
+        foreach (var import in imports)
+        {
+            if (import is "~@ng-select/ng-select/themes/material.theme.css" or "~@ng-select/ng-select/themes/default.theme.css") yield return import;
+            if (sourceFile.EndsWith(".css", StringComparison.OrdinalIgnoreCase) &&
+                (import is "@ng-select/ng-select/scss/material.theme" or "@ng-select/ng-select/scss/default.theme")) yield return import;
+        }
+    }
+
+    private async Task<RemediationAttempt> TryRemediateValidationProvenThirdPartyPackagesAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject validation, IReadOnlyList<JsonObject> blockers, int attempt, HashSet<string> failedPackagePlans, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        var packageJsonPath = Path.Combine(projectPath, "package.json");
+        var packageJson = ReadJson(packageJsonPath);
+        var blockerNamesForPayload = blockers.Select(b => b.StringValue("package")).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var payload = new JsonObject
+        {
+            ["targetAngularMajor"] = hop.ToVersion,
+            ["targetAngularHop"] = $"{hop.FromVersion}->{hop.ToVersion}",
+            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["validationProvenBlockers"] = new JsonArray(blockers.Select(b => (JsonNode?)b.DeepClone()).ToArray()),
+            ["exactTypeScriptErrors"] = new JsonArray(ExtractTypeScriptErrorLines(validation.StringValue("output", validation.StringValue("errors"))).Select(e => (JsonNode?)JsonValue.Create(e)).ToArray()),
+            ["packageJson"] = PackageJsonSubset(packageJson, blockerNamesForPayload),
+            ["rules"] = new JsonArray(
+                "Return remediation only for validationProvenBlockers; do not include unrelated third-party packages.",
+                "For declaration-only TS2304 missing type errors in node_modules .d.ts files, prefer a project-owned declaration shim before package upgrades.",
+                "For declaration-only TS2304 errors, a project-owned type shim is allowed only when no runtime/source behavior changes are required.",
+                "For Angular library incompatibilities, package.json changes are allowed only for packages present in validationProvenBlockers.",
+                "Do not treat SharedModule NG6002 as root cause while node_modules package errors are present; it is cascading unless it still fails after third-party blockers are resolved.",
+                "Use manual_review only when neither same-package upgrade nor declaration-only shim is safe.",
+                "Do not edit business logic or node_modules.",
+                "Return strict JSON only."),
+            ["allowedActions"] = new JsonArray("upgrade_same_package", "upgrade", "shim_types_only", "manual_review"),
+            ["requiredResponseShape"] = new JsonObject
+            {
+                ["remediations"] = new JsonArray(new JsonObject
+                {
+                    ["packageName"] = "blocked package",
+                    ["currentVersion"] = "current package.json version",
+                    ["detectedErrorCategory"] = "third_party_angular_library_incompatibility",
+                    ["action"] = "upgrade | replace | remove_if_unused | shim_types_only | manual_review",
+                    ["targetPackageName"] = "same package or replacement package",
+                    ["targetVersionRange"] = "safe npm version/range",
+                    ["reason"] = "evidence-tied reason",
+                    ["expectedCodeImpact"] = "none | imports | module wiring | unknown",
+                    ["requiresSourceChanges"] = false,
+                    ["sourceChangeScope"] = "package_json_only",
+                    ["confidence"] = 0.0,
+                    ["validationCommand"] = "npm run build"
+                })
+            }
+        };
+
+        var changes = new List<JsonObject>();
+        var shimRejectedReason = "";
+        if (TryApplyVisibilityStateTypeShim(projectPath, validation, blockers, attempt, out var shimChange, out shimRejectedReason))
+        {
+            changes.Add(shimChange);
+            return RemediationAttempt.AppliedResult(changes);
+        }
+
+        JsonObject? plan;
+        try
+        {
+            plan = await ai!.AskAsync(config.Ai, ThirdPartyPackageRemediationPrompt(), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return RemediationAttempt.Manual(new JsonObject { ["reason"] = $"AI third-party package remediation unavailable: {ex.Message}", ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"), ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))) });
+        }
+
+        var blockerNames = blockerNamesForPayload;
+        foreach (var item in plan?["remediations"]?.AsArray()?.OfType<JsonObject>() ?? PlanItems(plan))
+        {
+            var packageName = item.StringValue("packageName");
+            if (!blockerNames.Contains(packageName)) continue;
+            var action = NormalizeThirdPartyAction(item.StringValue("action"));
+            if (action is "manual_review" or "shim_types_only") continue;
+            if (action == "remove_if_unused" && IsPackageUsedInProject(projectPath, packageName)) continue;
+            var targetPackage = item.StringValue("targetPackageName", packageName);
+            var targetRange = item.StringValue("targetVersionRange");
+            if (string.IsNullOrWhiteSpace(targetRange) || string.IsNullOrWhiteSpace(targetPackage))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation did not include a target package and version range."));
+                continue;
+            }
+            var signature = $"{packageName}|{action}|{targetPackage}|{targetRange}";
+            if (!failedPackagePlans.Add(signature))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "The same failed package remediation plan was already attempted."));
+                continue;
+            }
+
+            var verified = await VerifyNpmPackageTargetWithCorrectionAsync(projectPath, hop, config, item, targetPackage, targetRange, logPath, cancellationToken);
+            if (verified.FinalTarget is null)
+            {
+                changes.Add(ThirdPartyBlockerChange(item, blockers, attempt, "failed", verified, packageName, targetPackage, targetRange));
+                continue;
+            }
+
+            if (!ApplyThirdPartyPackageJsonRemediation(packageJson, packageName, targetPackage, verified.FinalTarget, action, out var before, out var after))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, $"Package.json did not contain {packageName} in a supported dependency section."));
+                continue;
+            }
+            File.WriteAllText(packageJsonPath, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+            var change = ThirdPartyBlockerChange(item, blockers, attempt, "applied", verified, packageName, targetPackage, verified.FinalTarget);
+            change["file"] = "package.json";
+            change["type"] = "package_update";
+            change["before"] = before;
+            change["after"] = after;
+            change["businessLogicChanged"] = false;
+            change["businessFile"] = false;
+            changes.Add(change);
+        }
+
+        var applied = changes.Any(c => c.StringValue("status") == "applied");
+        if (!applied && !string.IsNullOrWhiteSpace(shimRejectedReason))
+        {
+            changes.Add(new JsonObject
+            {
+                ["attempt"] = attempt,
+                ["mode"] = "deterministic",
+                ["status"] = "rejected",
+                ["failureCause"] = "validation_proven_third_party_blocker",
+                ["failureCategory"] = "type_declaration",
+                ["packageName"] = "ngx-pinch-zoom",
+                ["action"] = "shim_types_only",
+                ["rejectedReason"] = shimRejectedReason
+            });
+        }
+        if (!applied && changes.Count == 0)
+        {
+            return RemediationAttempt.NotAttempted();
+        }
+        if (applied) return RemediationAttempt.AppliedResult(changes);
+        return RemediationAttempt.Manual(new JsonObject
+        {
+            ["requiresHumanReview"] = true,
+            ["reason"] = "No validation-proven third-party remediation could be safely applied.",
+            ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+            ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
+        }, changes);
+    }
+
+    private async Task<NpmPackageTargetResolution> VerifyNpmPackageTargetWithCorrectionAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject item, string targetPackage, string targetRange, string? logPath, CancellationToken cancellationToken)
+    {
+        var role = "third-party";
+        var initial = await ResolveNpmPackageTargetAsync(targetPackage, hop.ToVersion, targetRange, role, config, projectPath, logPath, cancellationToken);
+        if (initial.FinalTarget is not null || initial.ValidationResult is not "E404" and not "invalidRangeSyntax") return initial;
+        try
+        {
+            var payload = new JsonObject
+            {
+                ["targetAngularMajor"] = hop.ToVersion,
+                ["failedPackageRemediation"] = item.DeepClone(),
+                ["npmVerificationFailure"] = new JsonObject { ["packageName"] = targetPackage, ["targetVersionRange"] = targetRange, ["npmError"] = initial.NpmError },
+                ["requiredResponseShape"] = new JsonObject { ["targetPackageName"] = targetPackage, ["targetVersionRange"] = "single corrected version/range" }
+            };
+            var corrected = await ai!.AskAsync(config.Ai, ThirdPartyPackageRemediationPrompt(), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
+            if (corrected is null) return initial;
+            var correctedPackage = corrected.StringValue("targetPackageName", targetPackage);
+            var correctedRange = corrected.StringValue("targetVersionRange");
+            if (string.IsNullOrWhiteSpace(correctedRange)) return initial;
+            var second = await ResolveNpmPackageTargetAsync(correctedPackage, hop.ToVersion, correctedRange, role, config, projectPath, logPath, cancellationToken);
+            return second.FinalTarget is null ? initial : second with { AiReRecommendedVersion = correctedRange, AiReRecommendationUsed = true, InitialVerificationResult = initial.ValidationResult };
+        }
+        catch
+        {
+            return initial;
+        }
+    }
+
+    private static bool ApplyThirdPartyPackageJsonRemediation(JsonObject packageJson, string packageName, string targetPackage, string targetVersion, string action, out string before, out string after)
+    {
+        before = "";
+        after = "";
+        var section = DependencySection(packageJson, packageName) ?? "dependencies";
+        if (packageJson[section] is not JsonObject deps) return false;
+        var current = deps[packageName]?.ToString() ?? "";
+        before = $"\"{packageName}\": \"{current}\"";
+        if (action == "replace" && !packageName.Equals(targetPackage, StringComparison.OrdinalIgnoreCase))
+        {
+            deps.Remove(packageName);
+            deps[targetPackage] = targetVersion;
+            after = $"\"{targetPackage}\": \"{targetVersion}\"";
+            return true;
+        }
+        if (action == "remove_if_unused")
+        {
+            deps.Remove(packageName);
+            after = "";
+            return true;
+        }
+        if (!deps.ContainsKey(packageName)) return false;
+        deps[packageName] = targetVersion;
+        after = $"\"{packageName}\": \"{targetVersion}\"";
+        return true;
+    }
+
+    private static JsonObject PackageJsonSubset(JsonObject packageJson, IReadOnlySet<string> packageNames)
+    {
+        var subset = new JsonObject();
+        foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
+        {
+            if (packageJson[section] is not JsonObject deps) continue;
+            var filtered = new JsonObject();
+            foreach (var packageName in packageNames)
+            {
+                if (deps.TryGetPropertyValue(packageName, out var version)) filtered[packageName] = version?.DeepClone();
+            }
+            if (filtered.Count > 0) subset[section] = filtered;
+        }
+        return subset;
+    }
+
+    private static IEnumerable<JsonObject> PlanItems(JsonObject? plan) => plan is null ? [] : plan["packageRemediations"]?.AsArray()?.OfType<JsonObject>() ?? [];
+
+    private static JsonObject ThirdPartyBlockerChange(JsonObject item, IReadOnlyList<JsonObject> blockers, int attempt, string status, NpmPackageTargetResolution verified, string packageName, string targetPackage, string selectedTarget)
+    {
+        var blocker = blockers.FirstOrDefault(b => b.StringValue("package").Equals(packageName, StringComparison.OrdinalIgnoreCase));
+        return new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["mode"] = "ai",
+            ["status"] = status,
+            ["failureCategory"] = blocker?.StringValue("errorCategory", "third_party_angular_library_incompatibility") ?? "third_party_angular_library_incompatibility",
+            ["failureCause"] = "validation_proven_third_party_blocker",
+            ["packageName"] = packageName,
+            ["currentVersion"] = item.StringValue("currentVersion", blocker?.StringValue("currentVersion") ?? ""),
+            ["detectedErrorCategory"] = item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility"),
+            ["action"] = item.StringValue("action"),
+            ["targetPackageName"] = targetPackage,
+            ["targetVersionRange"] = selectedTarget,
+            ["reason"] = item.StringValue("reason"),
+            ["expectedCodeImpact"] = item.StringValue("expectedCodeImpact"),
+            ["requiresSourceChanges"] = item.BoolValue("requiresSourceChanges"),
+            ["sourceChangeScope"] = item.StringValue("sourceChangeScope"),
+            ["confidence"] = item["confidence"]?.DeepClone() ?? 0,
+            ["validationCommand"] = item.StringValue("validationCommand", "npm run build"),
+            ["evidence"] = blocker?["evidence"]?.DeepClone(),
+            ["npmVerificationCommand"] = verified.VerificationCommand,
+            ["npmVerificationResult"] = verified.VerificationResult,
+            ["rejectedReason"] = status == "applied" ? "" : verified.FallbackReason,
+            ["finalSelected"] = verified.FinalTarget ?? "",
+            ["installResult"] = "pending",
+            ["buildRetryResult"] = "pending"
+        };
+    }
+
+    private static JsonObject RejectedThirdPartyChange(JsonObject item, IReadOnlyList<JsonObject> blockers, int attempt, string packageName, string reason)
+    {
+        var blocker = blockers.FirstOrDefault(b => b.StringValue("package").Equals(packageName, StringComparison.OrdinalIgnoreCase));
+        return new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["mode"] = "ai",
+            ["status"] = "rejected",
+            ["failureCategory"] = blocker?.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility")) ?? item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility"),
+            ["failureCause"] = "validation_proven_third_party_blocker",
+            ["packageName"] = packageName,
+            ["currentVersion"] = item.StringValue("currentVersion", blocker?.StringValue("currentVersion") ?? ""),
+            ["detectedErrorCategory"] = item.StringValue("detectedErrorCategory", blocker?.StringValue("errorCategory", "") ?? ""),
+            ["action"] = item.StringValue("action"),
+            ["targetPackageName"] = item.StringValue("targetPackageName", packageName),
+            ["targetVersionRange"] = item.StringValue("targetVersionRange"),
+            ["reason"] = item.StringValue("reason"),
+            ["rejectedReason"] = reason,
+            ["validationCommand"] = item.StringValue("validationCommand", "npm run build"),
+            ["evidence"] = blocker?["evidence"]?.DeepClone(),
+            ["installResult"] = "not run",
+            ["buildRetryResult"] = "not run"
+        };
+    }
+
+    private static bool TryApplyVisibilityStateTypeShim(string projectPath, JsonObject validation, IReadOnlyList<JsonObject> blockers, int attempt, out JsonObject change, out string rejectedReason)
+    {
+        change = new JsonObject();
+        rejectedReason = "";
+        var output = validation.StringValue("output", validation.StringValue("errors"));
+        var blocker = blockers.FirstOrDefault(b =>
+            b.StringValue("package").Equals("ngx-pinch-zoom", StringComparison.OrdinalIgnoreCase) &&
+            b.StringValue("errorCategory").Equals("third_party_declaration_type_missing", StringComparison.OrdinalIgnoreCase));
+        if (blocker is null) return false;
+
+        var files = VisibilityStateDiagnosticFiles(output);
+        if (files.Count == 0)
+        {
+            rejectedReason = "No exact TS2304 Cannot find name 'VisibilityState' diagnostic was found.";
+            return false;
+        }
+        if (files.Any(f => !f.StartsWith("node_modules/ngx-pinch-zoom/", StringComparison.OrdinalIgnoreCase) || !f.EndsWith(".d.ts", StringComparison.OrdinalIgnoreCase)))
+        {
+            rejectedReason = "VisibilityState diagnostic was not isolated to ngx-pinch-zoom declaration files.";
+            return false;
+        }
+        if (ProjectVisibilityStateDiagnosticsExist(output))
+        {
+            rejectedReason = "VisibilityState diagnostic also appears in project business code.";
+            return false;
+        }
+
+        var shimFile = SelectVisibilityStateShimFile(projectPath);
+        if (shimFile is null)
+        {
+            rejectedReason = "No writable tsconfig.app.json or tsconfig.json was found for including a project-owned VisibilityState .d.ts shim.";
+            return false;
+        }
+
+        var full = Path.Combine(projectPath, shimFile.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        var declaration = "type VisibilityState = \"visible\" | \"hidden\" | \"collapse\" | \"inherit\" | \"initial\" | \"unset\";";
+        var before = File.Exists(full) ? File.ReadAllText(full) : "";
+        if (!before.Contains("type VisibilityState", StringComparison.Ordinal))
+        {
+            var prefix = string.IsNullOrWhiteSpace(before) ? "" : before.TrimEnd() + Environment.NewLine + Environment.NewLine;
+            File.WriteAllText(full, prefix + declaration + Environment.NewLine);
+        }
+        EnsureVisibilityStateShimIncluded(projectPath, shimFile);
+
+        change = new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["mode"] = "deterministic",
+            ["status"] = "applied",
+            ["file"] = shimFile,
+            ["type"] = "type_shim",
+            ["failureCategory"] = "type_declaration",
+            ["failureCause"] = "validation_proven_third_party_blocker",
+            ["packageName"] = "ngx-pinch-zoom",
+            ["currentVersion"] = blocker.StringValue("currentVersion"),
+            ["action"] = "shim_types_only",
+            ["reason"] = "Adds a project-owned ambient type used only by ngx-pinch-zoom declaration files.",
+            ["before"] = before,
+            ["after"] = File.ReadAllText(full),
+            ["businessLogicChanged"] = false,
+            ["businessFile"] = false,
+            ["sourceCodeImpact"] = false,
+            ["validationDriven"] = true,
+            ["manualReviewRequired"] = false,
+            ["runtimeCodeChanged"] = false,
+            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["evidence"] = blocker["evidence"]?.DeepClone(),
+            ["installResult"] = "not required",
+            ["buildRetryResult"] = "pending"
+        };
+        return true;
+    }
+
+    private static IReadOnlyList<string> VisibilityStateDiagnosticFiles(string output) =>
+        Regex.Matches(output, @"(?:Error:\s*)?(?<file>[^:\r\n]+):\d+:\d+\s+-\s+error\s+TS2304:\s+Cannot find name 'VisibilityState'", RegexOptions.IgnoreCase)
+            .Select(m => NormalizeRelativePath(m.Groups["file"].Value.Trim()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static bool ProjectVisibilityStateDiagnosticsExist(string output) =>
+        VisibilityStateDiagnosticFiles(output).Any(f => !f.StartsWith("node_modules/", StringComparison.OrdinalIgnoreCase));
+
+    private static IReadOnlyList<string> ExtractTypeScriptErrorLines(string output) =>
+        output.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.Contains("error TS", StringComparison.OrdinalIgnoreCase))
+            .Select(line => line.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .ToArray();
+
+    private static string? SelectVisibilityStateShimFile(string projectPath)
+    {
+        var candidates = new[] { "src/types/third-party-compat.d.ts", "types/third-party-compat.d.ts" };
+        foreach (var existing in candidates.Where(c => File.Exists(Path.Combine(projectPath, c.Replace('/', Path.DirectorySeparatorChar)))))
+        {
+            if (TsConfigIncludesFile(projectPath, existing)) return existing;
+        }
+        if (TsConfigIncludesFile(projectPath, candidates[0])) return candidates[0];
+        if (TsConfigIncludesFile(projectPath, candidates[1])) return candidates[1];
+        return new[] { "tsconfig.app.json", "tsconfig.json" }.Any(config => File.Exists(Path.Combine(projectPath, config)))
+            ? candidates[0]
+            : null;
+    }
+
+    private static bool TsConfigIncludesFile(string projectPath, string relativeFile)
+    {
+        foreach (var configFile in new[] { "tsconfig.app.json", "tsconfig.json" })
+        {
+            var path = Path.Combine(projectPath, configFile);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var config = ReadJson(path);
+                var normalized = NormalizeRelativePath(relativeFile);
+                if (config["files"] is JsonArray files && files.Select(f => NormalizeRelativePath(f?.ToString() ?? "")).Any(f => f.Equals(normalized, StringComparison.OrdinalIgnoreCase))) return true;
+                if (config["include"] is JsonArray include)
+                {
+                    var entries = include.Select(i => NormalizeRelativePath(i?.ToString() ?? "")).ToArray();
+                    if (entries.Any(i => i.Equals("src/**/*.d.ts", StringComparison.OrdinalIgnoreCase))) return normalized.StartsWith("src/", StringComparison.OrdinalIgnoreCase);
+                    if (entries.Any(i => i.Equals("types/**/*.d.ts", StringComparison.OrdinalIgnoreCase))) return normalized.StartsWith("types/", StringComparison.OrdinalIgnoreCase);
+                    if (entries.Any(i => i.Equals(normalized, StringComparison.OrdinalIgnoreCase))) return true;
+                    if (entries.Any(i => i.Equals("src/types/**/*.d.ts", StringComparison.OrdinalIgnoreCase))) return normalized.StartsWith("src/types/", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch
+            {
+                // Ignore unreadable tsconfig here; the caller reports that no safe include was found.
+            }
+        }
+        return false;
+    }
+
+    private static void EnsureVisibilityStateShimIncluded(string projectPath, string relativeFile)
+    {
+        if (TsConfigIncludesFile(projectPath, relativeFile)) return;
+        foreach (var configFile in new[] { "tsconfig.app.json", "tsconfig.json" })
+        {
+            var path = Path.Combine(projectPath, configFile);
+            if (!File.Exists(path)) continue;
+            JsonObject? config;
+            try
+            {
+                config = ReadJson(path);
+            }
+            catch
+            {
+                continue;
+            }
+            var include = config["include"] as JsonArray;
+            if (include is null)
+            {
+                include = new JsonArray();
+                config["include"] = include;
+            }
+            var entries = include.Select(i => NormalizeRelativePath(i?.ToString() ?? "")).ToArray();
+            var requiredInclude = NormalizeRelativePath(relativeFile).StartsWith("types/", StringComparison.OrdinalIgnoreCase) ? "types/**/*.d.ts" : "src/**/*.d.ts";
+            if (!entries.Any(i => i.Equals(requiredInclude, StringComparison.OrdinalIgnoreCase)))
+            {
+                include.Add(requiredInclude);
+                File.WriteAllText(path, config.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+            }
+            return;
+        }
+    }
+
+    private static string NormalizeThirdPartyAction(string action) => action switch
+    {
+        "upgrade_same_package" => "upgrade",
+        "upgrade" or "replace" or "remove_if_unused" or "shim_types_only" or "manual_review" => action,
+        "manualReview" => "manual_review",
+        _ => "manual_review"
+    };
+
+    private static string ThirdPartyPackageRemediationPrompt() => """
+Return strict JSON only. You are selecting package remediation for Angular validation-proven third-party blockers.
+Schema: {"remediations":[{"packageName":"","currentVersion":"","detectedErrorCategory":"third_party_declaration_type_missing | third_party_angular_library_incompatibility","action":"upgrade | shim_types_only | manual_review","targetPackageName":"","targetVersionRange":"","reason":"","expectedCodeImpact":"none | unknown","requiresSourceChanges":false,"sourceChangeScope":"package_json_only | project_owned_type_shim | none","confidence":0.0,"validationCommand":"npm run build"}]}
+Only include packages listed in validationProvenBlockers. Prefer a project-owned type shim for declaration-only TS2304 missing type errors from node_modules .d.ts files. Prefer upgrading the same package for Angular library incompatibilities. Do not edit business logic. Do not edit node_modules. Do not propose unrelated dependencies.
+""";
 
     private IReadOnlyList<JsonObject> ValidationCommands(JsonObject manifest)
     {
@@ -1525,6 +2092,12 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static int Compare(int[] left, int[] right) { for (var i = 0; i < Math.Max(left.Length, right.Length); i++) { var l = i < left.Length ? left[i] : 0; var r = i < right.Length ? right[i] : 0; if (l != r) return l.CompareTo(r); } return 0; }
     private static bool IsAngularPackageJsonUpdateCandidate(string name) => name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) || name is "@angular-devkit/build-angular";
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').TrimStart('/').Replace("../", "", StringComparison.Ordinal);
+    private static bool IsUnderRoot(string path, string root)
+    {
+        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return full.Equals(rootFull, StringComparison.OrdinalIgnoreCase) || full.StartsWith(rootFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
     private static string TypeScriptVersionForAngular(int targetMajor) => targetMajor switch { 13 => "~4.5.5", 14 => "~4.8.4", 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => "~5.5.4" };
     private static bool IsTypeScriptCompatibleWithAngular(string version, int targetMajor)
     {
@@ -1621,7 +2194,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var cascading = new JsonArray();
         if (string.IsNullOrWhiteSpace(output))
         {
-            return RootCauseAnalysisObject(hop, obsolete, incompatible, cascading);
+            return RootCauseAnalysisObject(hop, new JsonObject(), obsolete, incompatible, cascading);
         }
 
         foreach (var file in ExtractProjectSourceFiles(output))
@@ -1675,17 +2248,251 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             });
         }
 
-        return RootCauseAnalysisObject(hop, obsolete, incompatible, cascading);
+        return RootCauseAnalysisObject(hop, BuildStructuredFailureFacts(output, incompatible, cascading), obsolete, incompatible, cascading);
     }
 
-    private static JsonObject RootCauseAnalysisObject(MigrationHop hop, JsonArray obsolete, JsonArray incompatible, JsonArray cascading) => new()
+    private static JsonObject RootCauseAnalysisObject(MigrationHop hop, JsonObject facts, JsonArray obsolete, JsonArray incompatible, JsonArray cascading) => new()
     {
         ["migrationHop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+        ["failureCategory"] = facts.StringValue("failureCategory"),
+        ["rootPackage"] = facts.StringValue("rootPackage"),
+        ["rootFile"] = facts.StringValue("rootFile"),
+        ["rootSymbol"] = facts.StringValue("rootSymbol"),
+        ["exactErrorCode"] = facts.StringValue("exactErrorCode"),
+        ["suggestedRemediationType"] = facts.StringValue("suggestedRemediationType"),
+        ["cascadingAppErrors"] = facts["cascadingAppErrors"]?.DeepClone() ?? new JsonArray(),
         ["obsoleteAngularMetadata"] = obsolete,
         ["incompatibleAngularLibraryPackages"] = incompatible,
         ["cascadingLocalModuleErrors"] = cascading,
         ["genericCompatibilityAdviceSuppressed"] = obsolete.Count > 0 || incompatible.Count > 0 || cascading.Count > 0
     };
+
+    private static JsonObject BuildStructuredFailureFacts(string output, JsonArray incompatible, JsonArray cascading)
+    {
+        var ts2304 = Regex.Matches(output, @"(?<file>node_modules[\\/][^\r\n:]+?\.d\.ts):\d+:\d+\s+-\s+error\s+(?<code>TS2304):\s+Cannot find name '(?<symbol>[A-Za-z_$][\w$]*)'", RegexOptions.IgnoreCase)
+            .OfType<Match>()
+            .Select(m => new { File = NormalizeRelativePath(m.Groups["file"].Value), Code = m.Groups["code"].Value, Symbol = m.Groups["symbol"].Value })
+            .FirstOrDefault();
+        if (ts2304 is not null)
+        {
+            return new JsonObject
+            {
+                ["failureCategory"] = "type_declaration",
+                ["rootPackage"] = PackageNameFromNodeModuleFile(ts2304.File),
+                ["rootFile"] = ts2304.File,
+                ["rootSymbol"] = ts2304.Symbol,
+                ["exactErrorCode"] = ts2304.Code,
+                ["suggestedRemediationType"] = "type_shim",
+                ["cascadingAppErrors"] = CascadingAppErrors(cascading)
+            };
+        }
+
+        var ivyPackage = Regex.Match(output, @"library\s+\((?<pkg>@?[\w.-]+(?:/[\w.-]+)?)\).*?not compatible with Angular Ivy", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        var ng6002NodeModule = Regex.Match(output, @"(?<file>node_modules[\\/][^\r\n:]+?\.d\.ts):\d+:\d+[\s\S]{0,400}?error\s+(?<code>NG6002):\s+'?(?<symbol>\w+Module)'?\s+does not appear to be an NgModule class", RegexOptions.IgnoreCase);
+        if (ivyPackage.Success || ng6002NodeModule.Success)
+        {
+            var rootFile = ng6002NodeModule.Success ? NormalizeRelativePath(ng6002NodeModule.Groups["file"].Value) : "";
+            var rootPackage = ivyPackage.Success ? ivyPackage.Groups["pkg"].Value : PackageNameFromNodeModuleFile(rootFile);
+            return new JsonObject
+            {
+                ["failureCategory"] = "third_party_angular_incompatibility",
+                ["rootPackage"] = rootPackage,
+                ["rootFile"] = rootFile,
+                ["rootSymbol"] = ng6002NodeModule.Success ? ng6002NodeModule.Groups["symbol"].Value : "",
+                ["exactErrorCode"] = ng6002NodeModule.Success ? ng6002NodeModule.Groups["code"].Value : "NG6002",
+                ["suggestedRemediationType"] = "package_update",
+                ["cascadingAppErrors"] = CascadingAppErrors(cascading)
+            };
+        }
+
+        var firstPackage = incompatible.OfType<JsonObject>().FirstOrDefault();
+        return new JsonObject
+        {
+            ["failureCategory"] = firstPackage is null ? "" : "third_party_angular_incompatibility",
+            ["rootPackage"] = firstPackage?.StringValue("package") ?? "",
+            ["rootFile"] = firstPackage?["sourceFiles"]?.AsArray().FirstOrDefault()?.ToString() ?? "",
+            ["rootSymbol"] = "",
+            ["exactErrorCode"] = "",
+            ["suggestedRemediationType"] = firstPackage is null ? "" : "package_update",
+            ["cascadingAppErrors"] = CascadingAppErrors(cascading)
+        };
+    }
+
+    private static JsonArray CascadingAppErrors(JsonArray cascading) =>
+        new(cascading.OfType<JsonObject>().Select(c => (JsonNode?)new JsonObject
+        {
+            ["symbol"] = c.StringValue("symbol"),
+            ["sourceFile"] = c.StringValue("sourceFile"),
+            ["reason"] = c.StringValue("reason")
+        }).ToArray());
+
+    public static IReadOnlyList<JsonObject> DetectThirdPartyValidationBlockersForTesting(string projectPath, string output, MigrationHop hop) =>
+        DetectThirdPartyValidationBlockers(projectPath, new JsonObject { ["output"] = output, ["errors"] = output, ["buildVerificationCommand"] = "npm run build" }, hop);
+
+    private static IReadOnlyList<JsonObject> DetectThirdPartyValidationBlockers(string projectPath, JsonObject validation, MigrationHop hop)
+    {
+        var output = validation.StringValue("output", validation.StringValue("errors"));
+        if (string.IsNullOrWhiteSpace(output)) return [];
+        var packageJson = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
+        var result = new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in ExtractNodeModuleFiles(output))
+        {
+            var packageName = PackageNameFromNodeModuleFile(file);
+            if (string.IsNullOrWhiteSpace(packageName)) continue;
+            if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
+            var evidence = EvidenceLinesForPackage(output, packageName);
+            if (!EvidenceIsThirdPartyAngularLibraryIncompatibility(evidence)) continue;
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, evidence, validation.StringValue("buildVerificationCommand", "npm run build"));
+        }
+
+        foreach (var match in Regex.Matches(output, @"library\s+\((?<pkg>@?[\w.-]+(?:/[\w.-]+)?)\)\s+which\s+declares\s+(?<symbol>\w+Module)\s+is\s+not\s+compatible\s+with\s+Angular\s+Ivy", RegexOptions.IgnoreCase).OfType<Match>())
+        {
+            var packageName = match.Groups["pkg"].Value;
+            if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, EvidenceLinesForPackage(output, packageName), validation.StringValue("buildVerificationCommand", "npm run build"));
+        }
+
+        foreach (var match in Regex.Matches(output, @"(?<symbol>\w+Module)\s+does not appear to be an NgModule class", RegexOptions.IgnoreCase).OfType<Match>())
+        {
+            var symbol = match.Groups["symbol"].Value;
+            if (!TryMapThirdPartyModuleSymbol(output, symbol, out var packageName)) continue;
+            if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, EvidenceLinesForPackage(output, packageName).Concat([match.Value]).Distinct().ToArray(), validation.StringValue("buildVerificationCommand", "npm run build"));
+        }
+
+        return result.Values.OrderBy(v => v.StringValue("package"), StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    private static JsonObject ThirdPartyBlockerObject(JsonObject packageJson, string packageName, MigrationHop hop, IReadOnlyList<string> evidence, string validationCommand)
+    {
+        var errorCategory = ThirdPartyErrorCategory(packageName, evidence);
+        return new JsonObject
+        {
+            ["package"] = packageName,
+            ["packageName"] = packageName,
+            ["currentVersion"] = PackageVersion(packageJson, packageName),
+            ["hop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+            ["errorCategory"] = errorCategory,
+            ["detectedErrorCategory"] = errorCategory,
+            ["classification"] = "validation_proven_third_party_blocker",
+            ["validationCommand"] = validationCommand,
+            ["evidence"] = new JsonArray(evidence.Take(8).Select(e => (JsonNode?)JsonValue.Create(e)).ToArray()),
+            ["preservePolicy"] = "do_not_preserve_after_validation_proof"
+        };
+    }
+
+    private static string ThirdPartyErrorCategory(string packageName, IReadOnlyList<string> evidence)
+    {
+        var text = string.Join("\n", evidence);
+        return packageName.Equals("ngx-pinch-zoom", StringComparison.OrdinalIgnoreCase) &&
+               text.Contains("TS2304", StringComparison.OrdinalIgnoreCase) &&
+               text.Contains("Cannot find name 'VisibilityState'", StringComparison.OrdinalIgnoreCase) &&
+               evidence.Any(e => NormalizeRelativePath(e).Contains("node_modules/ngx-pinch-zoom/", StringComparison.OrdinalIgnoreCase) && e.Contains(".d.ts", StringComparison.OrdinalIgnoreCase))
+            ? "third_party_declaration_type_missing"
+            : "third_party_angular_library_incompatibility";
+    }
+
+    private static bool EvidenceIsThirdPartyAngularLibraryIncompatibility(IReadOnlyList<string> evidence)
+    {
+        var text = string.Join("\n", evidence);
+        if (ContainsIvyMetadataApi(text)) return true;
+        return text.Contains("ɵɵDirectiveDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("ɵɵNgModuleDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("ɵɵFactoryDef", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("ModuleWithProviders", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("does not appear to be an NgModule class", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("not compatible with Angular Ivy", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("ReflectiveInjector", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("VisibilityState", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsIvyMetadataApi(string text) =>
+        text.Contains("\u0275\u0275DirectiveDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("\u0275\u0275NgModuleDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("\u0275\u0275FactoryDef", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ɵɵDirectiveDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ɵɵNgModuleDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ɵɵFactoryDef", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ÉµÉµDirectiveDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ÉµÉµNgModuleDefWithMeta", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ÉµÉµFactoryDef", StringComparison.OrdinalIgnoreCase);
+
+    private static IReadOnlyList<string> ExtractNodeModuleFiles(string output) =>
+        Regex.Matches(output, @"node_modules[\\/][^\s:'""]+?(?:\.d\.ts|\.ts|\.mjs|\.js)", RegexOptions.IgnoreCase)
+            .Select(m => NormalizeRelativePath(m.Value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static string PackageNameFromNodeModuleFile(string file)
+    {
+        var parts = NormalizeRelativePath(file).Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2 || !parts[0].Equals("node_modules", StringComparison.OrdinalIgnoreCase)) return "";
+        if (parts[1].StartsWith("@", StringComparison.Ordinal) && parts.Length >= 3) return $"{parts[1]}/{parts[2]}";
+        return parts[1];
+    }
+
+    private static IReadOnlyList<string> EvidenceLinesForPackage(string output, string packageName) =>
+        output.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.Contains(packageName, StringComparison.OrdinalIgnoreCase) ||
+                           PreviousLineMentionsPackage(output, line, packageName) ||
+                           (packageName.Equals("ngx-bootstrap", StringComparison.OrdinalIgnoreCase) && line.Contains("ɵɵ", StringComparison.OrdinalIgnoreCase)) ||
+                           (packageName.Equals("ngx-pinch-zoom", StringComparison.OrdinalIgnoreCase) && line.Contains("VisibilityState", StringComparison.OrdinalIgnoreCase)))
+            .Select(line => line.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(12)
+            .ToArray();
+
+    private static bool PreviousLineMentionsPackage(string output, string line, string packageName)
+    {
+        var index = output.IndexOf(line, StringComparison.Ordinal);
+        if (index <= 0) return false;
+        var prefix = output[..index].Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries).TakeLast(2);
+        return prefix.Any(p => p.Contains(packageName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool TryMapThirdPartyModuleSymbol(string output, string symbol, out string packageName)
+    {
+        packageName = symbol switch
+        {
+            "SlickCarouselModule" => "ngx-slick-carousel",
+            "PinchZoomModule" => "ngx-pinch-zoom",
+            "UserIdleModule" => "angular-user-idle",
+            _ => ""
+        };
+        if (!string.IsNullOrWhiteSpace(packageName)) return true;
+        var pattern = $@"library\s+\((?<pkg>@?[\w.-]+(?:/[\w.-]+)?)\)\s+which\s+declares\s+{Regex.Escape(symbol)}";
+        var match = Regex.Match(output, pattern, RegexOptions.IgnoreCase);
+        if (!match.Success) return false;
+        packageName = match.Groups["pkg"].Value;
+        return true;
+    }
+
+    private static string PackageVersion(JsonObject packageJson, string packageName)
+    {
+        foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
+        {
+            if (packageJson[section] is JsonObject deps && deps.TryGetPropertyValue(packageName, out var version)) return version?.ToString() ?? "";
+        }
+        return "";
+    }
+
+    private static void AddUniqueJsonObject(JsonArray target, JsonObject item, string key)
+    {
+        var value = item.StringValue(key);
+        if (target.OfType<JsonObject>().Any(existing => existing.StringValue(key).Equals(value, StringComparison.OrdinalIgnoreCase))) return;
+        target.Add(item.DeepClone());
+    }
+
+    private static bool IsPackageUsedInProject(string projectPath, string packageName)
+    {
+        if (!Directory.Exists(projectPath)) return false;
+        return Directory.EnumerateFiles(projectPath, "*.*", SearchOption.AllDirectories)
+            .Where(path => !NormalizeRelativePath(Path.GetRelativePath(projectPath, path)).Split('/').Any(p => p is "node_modules" or ".git" or "dist" or "build" or ".angular"))
+            .Where(path => path.EndsWith(".ts", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".js", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+            .Take(5000)
+            .Any(path => File.ReadAllText(path).Contains(packageName, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static IReadOnlyList<string> ExtractProjectSourceFiles(string output) =>
         Regex.Matches(output, @"(?<file>(?:\.\/)?src[\\/][^\s:]+?\.ts)", RegexOptions.IgnoreCase)
@@ -1764,10 +2571,24 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (text.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase)) return "script";
         if (text.Contains("ERESOLVE", StringComparison.OrdinalIgnoreCase) || text.Contains("peer dependency", StringComparison.OrdinalIgnoreCase)) return "dependency";
         if (AiRemediationPlanner.IsCssDependencyImportFailure(text)) return "css_dependency_import";
+        if (IsNgxPinchZoomVisibilityStateDeclarationFailure(text)) return "type_declaration";
+        if (IsBuildOptimizerMinificationFailure(text)) return "build_optimizer_minification_failure";
         if (Regex.IsMatch(text, @"node_modules[\\/].*TS2304", RegexOptions.IgnoreCase)) return "type_declaration";
         if (Regex.IsMatch(text, @"\b(TS|CS|NG)\d+\b|compiler", RegexOptions.IgnoreCase)) return "compiler";
         return string.IsNullOrWhiteSpace(fallback) ? "unknown" : fallback;
     }
+
+    private static bool IsNgxPinchZoomVisibilityStateDeclarationFailure(string text)
+    {
+        var files = VisibilityStateDiagnosticFiles(text);
+        return files.Count > 0 && files.All(f => f.StartsWith("node_modules/ngx-pinch-zoom/", StringComparison.OrdinalIgnoreCase) && f.EndsWith(".d.ts", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsBuildOptimizerMinificationFailure(string text) =>
+        text.Contains("Optimization error", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("Unexpected token: punc", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("css-optimizer-plugin", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("esbuild", StringComparison.OrdinalIgnoreCase) && text.Contains("Unexpected token", StringComparison.OrdinalIgnoreCase);
 
     private static string Tail(string text) => string.Join(" ", (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries).TakeLast(12)).Trim();
 
@@ -1960,7 +2781,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (section is null) return false;
 
         progress?.Stage(stage, $"[Package Resolution] npm install reported {packageName}@{requestedRange} as unavailable; requesting a targeted AI replacement.");
-        var update = new PendingPackageUpdate(packageName, section, packageJson[section]?[packageName]?.ToString() ?? "", requestedRange, requestedRange, DefaultPackageCategory(packageName), "npm install reported the selected version as unavailable.", "install-e404-remediation", 1.0);
+        var update = new PendingPackageUpdate(packageName, section, packageJson[section]?[packageName]?.ToString() ?? "", requestedRange, requestedRange, DefaultPackageCategory(packageName), "npm install reported the selected version as unavailable.", "install-e404-remediation", 1.0, true);
         var resolution = new NpmPackageTargetResolution(null, "E404", "E404", $"npm install {packageName}@{requestedRange}", "npm install reported E404/ETARGET for this package.", installAttempt.Result.Stderr, 1, requestedRange, "", "", false, "E404");
         var alternative = await RequestAiPackageVersionAlternativeAsync(update, hop, packageJson, resolution, config, cancellationToken);
         var alternativeRange = alternative?.StringValue("recommendedVersion") ?? "";
@@ -2148,7 +2969,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (strategy == "retrySameCommand" && !transientNetwork) return (false, "retrySameCommand is allowed only after transient network failures.");
         if (strategy == "retrySameCommand" && previousCommand is not null && !command.SequenceEqual(previousCommand)) return (false, "retrySameCommand must repeat the exact previous command.");
         if (transientNetwork && previousCommand is not null && !command.SequenceEqual(previousCommand)) return (false, "Transient network failures must not change install command or package versions.");
-        if (strategy == "legacyPeerDepsInstall" && IsAngularRuntimeMismatchOutput(context.StringValue("previousInstallFailureOutput"))) return (false, "legacy-peer-deps must not hide a direct Angular runtime support package mismatch.");
+        if (strategy == "legacyPeerDepsInstall" && IsFrameworkCriticalMismatchOutput(context.StringValue("previousInstallFailureOutput"))) return (false, "legacy-peer-deps must not hide a framework-critical dependency mismatch.");
         if (strategy == "legacyPeerDepsInstall" && !peerConflict && decision.Confidence < 0.9) return (false, "legacy-peer-deps requires a peer conflict or high-confidence Angular compatibility reasoning.");
         if (strategy == "legacyPeerDepsInstall" && !config.AllowLegacyPeerDepsFallback && !peerConflict) return (false, "legacy-peer-deps requires configuration allowance or a peer conflict.");
         return (true, "");
@@ -2211,6 +3032,20 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return peer.Success &&
                AngularCoupledRuntimePackages.Contains(peer.Groups[1].Value) &&
                peer.Groups[3].Value.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsFrameworkCriticalMismatchOutput(string output)
+    {
+        if (IsAngularRuntimeMismatchOutput(output)) return true;
+        foreach (Match peer in Regex.Matches(output, @"peer\s+(@?[\w./-]+)@""([^""]+)""\s+from\s+(@?[\w./-]+)@([^\s]+)", RegexOptions.IgnoreCase))
+        {
+            var package = peer.Groups[1].Value;
+            var requiredBy = peer.Groups[3].Value;
+            if (AngularCriticalDependencyPolicy.IsCriticalPackage(package) || AngularCriticalDependencyPolicy.IsCriticalPackage(requiredBy)) return true;
+            if (package.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) || requiredBy.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) return true;
+            if (package.StartsWith("@angular-devkit/", StringComparison.OrdinalIgnoreCase) || requiredBy.StartsWith("@angular-devkit/", StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
     }
 
     private static string? CompatibleRuntimeVersionFromPeerRange(string package, string requiredRange, int? targetMajor)
@@ -2553,7 +3388,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
     private static bool LooksAngularCoupledThirdParty(string name) => name.Contains("angular", StringComparison.OrdinalIgnoreCase) || name.StartsWith("ngx-", StringComparison.OrdinalIgnoreCase) || name.StartsWith("@ng-", StringComparison.OrdinalIgnoreCase);
 
-    private sealed record PendingPackageUpdate(string Name, string Section, string FromVersion, string OriginalSuggestedVersion, string NormalizedTargetVersion, string Category, string Reason, string Source, double Confidence);
+    private sealed record PendingPackageUpdate(string Name, string Section, string FromVersion, string OriginalSuggestedVersion, string NormalizedTargetVersion, string Category, string Reason, string Source, double Confidence, bool RequiresVersionVerification = false);
     private sealed record NpmViewResult(JsonNode? Value, string Status, string Error, int AttemptCount);
     private sealed record NpmPackageTargetResolution(
         string? FinalTarget,

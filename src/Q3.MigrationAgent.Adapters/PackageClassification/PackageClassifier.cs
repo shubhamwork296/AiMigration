@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Q3.MigrationAgent.Core.Abstractions;
+using Q3.MigrationAgent.Shared.Common;
 using Q3.MigrationAgent.Shared.Config;
 
 namespace Q3.MigrationAgent.Adapters.PackageClassification;
@@ -69,14 +70,26 @@ public sealed class PackageClassifier(IAiService ai, IPromptLoader? promptLoader
 
         foreach (var item in plan["packages"]?.AsArray()?.OfType<JsonObject>() ?? [])
         {
-            var name = item["name"]?.ToString()?.Trim() ?? "";
+            var name = item.StringValue("name", item.StringValue("package")).Trim();
             if (!directPackageNames.Contains(name))
             {
                 warnings.Add($"Ignored AI classification for non-direct dependency {(name.Length == 0 ? "<unknown>" : name)}.");
                 continue;
             }
-            var role = NormalRole(item["role"]?.ToString());
-            var action = NormalAction(item["recommendedAction"]?.ToString());
+            var rawRole = item.StringValue("role", item.StringValue("classification"));
+            var rawAction = item.StringValue("recommendedAction", item.StringValue("action"));
+            var role = NormalRole(rawRole);
+            var action = NormalAction(rawAction);
+            if (role is null)
+            {
+                warnings.Add($"Rejected AI classification for {name}: role '{rawRole}' is not allowlisted.");
+                continue;
+            }
+            if (action is null)
+            {
+                warnings.Add($"Rejected AI classification for {name}: action '{rawAction}' is not allowlisted.");
+                continue;
+            }
             var blocking = item["blocking"]?.GetValue<bool>() == true;
             if (ThirdPartyFrameworkRoles.Contains(role) || role == "unknown") blocking = false;
             if (action == "remove-only-if-unused-and-confirmed")
@@ -146,8 +159,13 @@ public sealed class PackageClassifier(IAiService ai, IPromptLoader? promptLoader
 
     private static string ActionForRole(string role) => FrameworkAlignedRoles.Contains(role) ? "upgrade-with-framework-target" : FrameworkCoupledRoles.Contains(role) ? "upgrade-with-target-major" : ThirdPartyFrameworkRoles.Contains(role) ? "warn-only" : role is "build-tooling" or "runtime-critical" or "angular-runtime-support" ? "suggest-compatible-upgrade" : role == "unknown" ? "defer-until-failure" : "keep-current";
     private static string ReasonForRole(string runtime, string role, JsonObject peers) => FrameworkAlignedRoles.Contains(role) ? $"Package appears to be owned by the {runtime} framework and should align with the target framework version." : ThirdPartyFrameworkRoles.Contains(role) ? "Package declares framework peer dependencies; treat compatibility risk as advisory until install/build fails." : peers.Count > 0 ? "Package declares peer dependencies that may affect migration." : "No framework coupling evidence found in bounded metadata.";
-    private static string NormalRole(string? value) => value == "third-party-angular-library" ? "third-party-framework-library" : PackageRoles.Contains(value ?? "") ? value! : "unknown";
-    private static string NormalAction(string? value) => PackageActions.Contains(value ?? "") ? value! : "defer-until-failure";
+    private static string? NormalRole(string? value)
+    {
+        if (value == "third-party-angular-library") return "third-party-framework-library";
+        return PackageRoles.Contains(value ?? "") ? value! : null;
+    }
+
+    private static string? NormalAction(string? value) => PackageActions.Contains(value ?? "") ? value! : null;
     private static string NormalizeConfidence(string? value) => value is "low" or "medium" or "high" ? value : "medium";
 
     private string LoadPrompt(string promptPath) => promptLoader?.Load(promptPath) ?? throw new InvalidOperationException("Prompt loader is required when AI package classification is enabled.");

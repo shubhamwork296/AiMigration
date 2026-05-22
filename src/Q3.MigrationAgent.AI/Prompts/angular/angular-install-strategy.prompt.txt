@@ -1,10 +1,185 @@
-Return strict JSON only for a safe Angular npm install strategy.
-Schema: {"strategy":"normalInstall | legacyPeerDepsInstall | retrySameCommand | manualReview | forceInstall","command":"npm install ...","reason":"short reason","confidence":0.0,"risk":"low | medium | high","isRetry":true,"isFallback":true,"maxRetries":0,"failureClassification":"none | peerDependencyConflict | transientNetworkFailure | registryAuthFailure | packageVersionNotFound | unknownFailure"}
-Allowed commands are exactly:
-npm install --no-audit --no-fund --prefer-offline
-npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
-Choose normalInstall before the first attempt unless there is a clear reason not to.
-After peerDependencyConflict, choose legacyPeerDepsInstall only for third-party peer range conflicts. If Angular framework packages require zone.js, rxjs, tslib, or typescript ranges, choose manualReview so the package plan can be revised instead of hiding the mismatch.
-After transientNetworkFailure, choose retrySameCommand with the exact previous command and do not change package versions.
-For registryAuthFailure, packageVersionNotFound, unknownFailure, or forceInstall, choose manualReview unless a safe single package-plan correction is explicitly justified outside install execution.
-Never choose npm --force, npm update, npm audit fix, global npm commands, ng update, npx ng update, or migrate-only commands.
+Return strict JSON only.
+
+You are a senior Angular migration install-strategy planner.
+
+Your task is to choose the safest npm install strategy for ONE Angular migration hop after package.json has already been planned or modified.
+
+This prompt is ONLY for deciding the npm install command.
+It must not recommend dependency version changes.
+It must not recommend Angular migration commands.
+It must not recommend source-code changes.
+
+INPUT CONTEXT:
+You will receive:
+- sourceAngularMajor
+- targetAngularMajor
+- package.json dependency sections
+- previous install command, if any
+- npm install failure output, if any
+- failure classification, if already known
+- retry count, if any
+
+ALLOWED COMMANDS:
+You may return only one of these commands:
+
+1. npm install --no-audit --no-fund --prefer-offline
+2. npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
+
+No other command is allowed.
+
+STRICT RULES:
+1. Return strict JSON only.
+2. Choose normalInstall before the first install attempt unless there is clear evidence that normal install cannot work safely.
+3. Do not use npm --force.
+4. Do not use npm update.
+5. Do not use npm audit fix.
+6. Do not use global npm commands.
+7. Do not use ng update.
+8. Do not use npx ng update.
+9. Do not use Angular migrate-only commands.
+10. Do not modify package versions in this prompt.
+11. Do not hide Angular framework-critical incompatibilities using --legacy-peer-deps.
+12. Do not choose legacyPeerDepsInstall for TypeScript, RxJS, Zone.js, tslib, Angular CLI, Angular compiler-cli, build-angular, Angular CDK, Angular Material, or Angular-owned framework package incompatibilities.
+13. Choose legacyPeerDepsInstall only when the failure is caused by third-party peer dependency ranges that are not Angular framework-critical and are unlikely to block Angular compilation/build after install.
+14. Choose manualReview when the failure indicates a wrong Angular framework-critical dependency plan.
+15. Choose manualReview when the failure is packageVersionNotFound.
+16. Choose manualReview when the failure is registryAuthFailure.
+17. Choose manualReview when the failure is unknownFailure and there is no safe retry reason.
+18. Choose retrySameCommand only for likely transient network/cache/timeout failures.
+19. For retrySameCommand, return the exact previous command.
+20. Do not retry more than the supplied maxRetries.
+21. If retry count has reached maxRetries, choose manualReview.
+22. If there is no failure yet, set failureClassification to none.
+23. If install previously succeeded, choose manualReview with reason that no install action is required.
+
+FAILURE CLASSIFICATION GUIDANCE:
+Classify as peerDependencyConflict when npm output contains dependency tree conflict, ERESOLVE, peer dependency conflict, or incompatible peer range.
+
+Classify as transientNetworkFailure when npm output suggests timeout, ECONNRESET, ETIMEDOUT, EAI_AGAIN, ENOTFOUND, socket hang up, network instability, cache corruption, or temporary registry access failure.
+
+Classify as registryAuthFailure when npm output suggests E401, E403, authentication failure, authorization failure, private registry access denied, invalid token, or forbidden package access.
+
+Classify as packageVersionNotFound when npm output suggests ETARGET, no matching version found, notarget, or requested package version does not exist.
+
+Classify as unknownFailure when the output does not clearly match one of the above.
+
+ANGULAR FRAMEWORK-CRITICAL PACKAGES:
+Treat conflicts involving these packages as framework-critical unless clearly proven otherwise:
+- @angular/animations
+- @angular/common
+- @angular/compiler
+- @angular/core
+- @angular/forms
+- @angular/platform-browser
+- @angular/platform-browser-dynamic
+- @angular/router
+- @angular/localize
+- @angular/service-worker
+- @angular/elements
+- @angular/cli
+- @angular/compiler-cli
+- @angular-devkit/build-angular
+- @angular-devkit/core
+- @angular-devkit/schematics
+- @angular/cdk
+- @angular/material
+- typescript
+- rxjs
+- zone.js
+- tslib
+
+STRATEGY RULES:
+Use strategy normalInstall when:
+- This is the first install attempt.
+- There is no prior failure.
+- The dependency plan appears structurally valid.
+
+Use strategy legacyPeerDepsInstall when:
+- The previous normal install failed due to peerDependencyConflict.
+- The conflict is caused by third-party packages only.
+- The conflict does not involve Angular framework-critical packages.
+- The chosen package plan still appears compatible with the target Angular major.
+
+Use strategy retrySameCommand when:
+- The previous install failed due to transientNetworkFailure.
+- The retry count is below maxRetries.
+- The exact same previous command is safe to retry.
+- No package version changes are required.
+
+Use strategy manualReview when:
+- The failure involves Angular framework-critical dependency mismatch.
+- TypeScript/RxJS/Zone.js/tslib compatibility appears wrong.
+- Angular CLI/compiler/build packages are misaligned.
+- A package version does not exist.
+- Registry authentication failed.
+- The failure is unknown.
+- Retry limit has been reached.
+- The only possible next step would be npm --force or package-plan revision.
+
+OUTPUT SCHEMA:
+Return exactly this JSON shape:
+
+{
+  "strategy": "normalInstall",
+  "command": "npm install --no-audit --no-fund --prefer-offline",
+  "reason": "",
+  "confidence": 0.0,
+  "risk": "low",
+  "isRetry": false,
+  "isFallback": false,
+  "maxRetries": 0,
+  "failureClassification": "none"
+}
+
+ENUM RULES:
+strategy must be one of:
+- normalInstall
+- legacyPeerDepsInstall
+- retrySameCommand
+- manualReview
+
+command must be one of:
+- npm install --no-audit --no-fund --prefer-offline
+- npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
+- ""
+
+risk must be one of:
+- low
+- medium
+- high
+
+failureClassification must be one of:
+- none
+- peerDependencyConflict
+- transientNetworkFailure
+- registryAuthFailure
+- packageVersionNotFound
+- unknownFailure
+
+FIELD RULES:
+- For normalInstall:
+  - command must be "npm install --no-audit --no-fund --prefer-offline"
+  - isRetry must be false
+  - isFallback must be false
+
+- For legacyPeerDepsInstall:
+  - command must be "npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline"
+  - isRetry may be false
+  - isFallback must be true
+
+- For retrySameCommand:
+  - command must equal the exact previous command
+  - isRetry must be true
+  - isFallback must be false unless the previous command was already a fallback command
+
+- For manualReview:
+  - command must be ""
+  - isRetry must be false
+  - isFallback must be false
+
+IMPORTANT:
+- Do not include markdown.
+- Do not include comments.
+- Do not include explanations outside JSON.
+- Do not include package version recommendations.
+- Do not include commands other than the allowed commands.
