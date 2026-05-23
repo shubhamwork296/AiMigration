@@ -1,0 +1,41 @@
+<div class="clearfix"></div>
+<div class="profile_wrp">
+   <div class="login_form">
+      <form [formGroup]="GenerateQrForm" (ngSubmit)="onSubmit()">
+         <div class="form-group">
+            <label>URL<span class="text-danger">*</span></label>
+            <input type="text" class="form-control login_fild" placeholder="Enter URL" formControlName="url" inputRef [appInputMaxLength]="150">
+         </div>
+         <div *ngIf="(f.url.touched || submitted) && f.url.errors?.required"
+            class="text-danger validation-error">
+               {{AppConstants.REQUIRED_FIELD}}
+         </div>
+         <div *ngIf="submitted && f.url.errors?.pattern && !f.url?.errors?.required"
+                class="text-danger validation-error" id="error">{{AppConstants.ENTER_VALID_URL}}
+         </div>
+        
+ 
+         <div class="add_prd_btn_rw" *isAuthorize="[permissionTask.generateQrAdd]">
+            <button type="submit" class="btn btn-default login_btn"><em class="fas fa-sign-in-alt"></em>
+                {{AppConstants.GENERATE_QR}}
+            </button>
+            <button type="button" class="btn btn-default login_btn cancel_btn_frm" (click)="cancel()"><i
+                  class="fa fa-times" aria-hidden="true"></i>{{AppConstants.CHANGE_PASSWORD_CANCEL}}</button>
+         </div>
+
+      </form>
+   </div>
+   <div class="clearfix"></div>
+
+   <div class="qrcodeImage" *ngIf="myAngularxQrCode ||qrCodeDownloadLink || qrCodeDownloadSvg">
+      <qrcode (qrCodeURL)="onChangeURL($event)" [cssClass]="'center'" [qrdata]="myAngularxQrCode" [width]="256" [errorCorrectionLevel]="'H'"></qrcode>
+
+      <qrcode (qrCodeURL)="onSvgChangeUr($event)" style="display: none;" [elementType]="'svg'" [cssClass]="'center'" [qrdata]="myAngularxQrCode" [width]="256" [errorCorrectionLevel]="'H'"></qrcode>
+      
+   </div>
+
+   <div class="qrcodeImage">
+   <a *ngIf="qrCodeDownloadLink" [href]="qrCodeDownloadLink" class="btn btn-default login_btn line_height_45" download="qrcode">{{AppConstants.DOWNLOAD_QR}}</a>
+   <a style="margin-left: 12px;" *ngIf="qrCodeDownloadLink" [href]="qrCodeDownloadSvg" class="btn btn-default login_btn line_height_45" download="qrcode">{{AppConstants.DOWNLOAD_QR_SVG}}</a>
+   </div>
+</div>

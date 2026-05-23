@@ -1,0 +1,200 @@
+
+
+    // .....................................................................
+    .bulk_fild {
+      width: 100%;
+      float: left;
+      font-size: 14px;
+      padding: 0 15px;
+      height: 30px;
+      border: 1px solid #B1B1B4;
+      background: #fff;
+      outline: 0;
+      border-radius: 5px;
+      box-shadow: 0;
+  }
+  .bulk_desc_fild {
+    width: 100%;
+    float: left;
+    font-size: 14px;
+    padding: 0 15px;
+    height:60px;
+    border: 1px solid #B1B1B4;
+    background: #fff;
+    outline: 0;
+    border-radius: 5px;
+    box-shadow: 0;
+    resize: none;
+}
+.bulk_import_wrp_qw {width: 100%; float: left;}
+.bulk_import_wrp_box {width: 100%; float: left; margin:5px 0; background: #fff; border-radius: 5px; box-shadow: 0 0 5px #999;}
+.bulk_import_wrp_box h2 {position: relative; background: #e0d2b8; border-bottom:1px solid #9b258f; padding: 5px 15px; font-size: 18px; color: #1c1c1c; border-radius: 5px 5px 0 0; margin: 0;}
+.bulk_import_wrp_box h2 a.delete_icon_heading {
+  position: absolute;
+    right: 0;
+    top: 0;
+    background: #fff;
+    padding: 5px 17px;
+    border-radius: 0 0 0 30px;
+}
+.bulk_import_frm_box {
+  width: 100%;
+  float: left;
+  padding: 5px 15px;
+}
+.bulk_import_fild_rw {
+  width: 100%;
+  float: left;
+  margin: 0;
+  padding:5px 0;
+  position: relative;
+}
+.attribute_detail_wrp_blk {
+  width: 100%;
+  float: left;
+  padding:0px 5px;
+  // background: #eee;
+  border-radius: 0 0 5px 5px;
+}
+.delete_icon_label {
+  position: absolute;
+  right: 0;
+  top: -5px;
+}
+.product_img_shw_rw {width: 100%; float: left;}
+.product_img_shw_img {width:20%; float: left; position: relative;}
+.product_img_vis_new { width: 50px; height: 50px; object-fit: contain;}
+.product_img_shw_img .delete_icon_label {
+  position: absolute;
+  right: 0;
+  top: -5px;
+  background: #fff;
+  border-radius:50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+.product_img_shw_img img.product_img_vis {max-width: 100%; border-radius: 5px; border:1px solid #B1B1B4;}
+.product_img_shw_img video {max-width: 100%; border-radius: 5px; border:1px solid #B1B1B4; object-fit: contain;}
+
+
+.table.w-50-pre {width: 50%; float: left;  margin: 0;}
+
+
+.plus_btn_ic {
+  font-size: 22px;
+  line-height: 22px;
+  text-decoration: none;
+  margin: -6px 0 0 10px;
+  color: #000;
+  padding: 0px 0 0 0;
+  display: inline-flex;
+}
+.inline-flex {display: inline-flex;}
+.plus_btn_ic.active .plus_icon_td_s {display: none;}
+.plus_btn_ic.active .min_icon_td_s {display: block;}
+
+.plus_btn_ic .plus_icon_td_s {display:block;}
+.plus_btn_ic .min_icon_td_s {display: none;}
+
+.atri_detail_show {display: none;}
+.atri_detail_show.active {display: contents;}
+.atri_detail_show_new {display: none;}
+.atri_detail_show_new.active {display:revert;}
+.admin_table td:first-child {
+  text-align: left;
+}
+
+
+.bulk_fild.attri_fild_value {width: calc(100% - 30px);}
+
+.delete_icon_label_new {
+  position: relative;
+  float: right;
+}
+.valign_top {
+  vertical-align: top;
+}
+.padd-top-15 {padding-top: 15px;}
+
+.table_eror_show .error {background: #ffc5c5;}
+
+
+div, span, a, p, ul, li, table, td, button, input, select, dl, dd, del, header, footer, textarea, label, strong, b {font-family: 'Be Vietnam Pro', sans-serif !important; letter-spacing: 0px;}
+th, h1, h2, h3, h4, h5, h6 {font-family: 'Baskervville', serif !important; letter-spacing: 0px;}
+
+
+.admin_table th {min-width:150px;}
+
+.admin_table th[width="150"] {min-width:150px;}
+.admin_table th[width="120"] {min-width:120px;}
+.admin_table th[width="300"] {min-width:300px;}
+.admin_table th[width="100"] {min-width:100px;}
+.admin_table th[width="80"] {min-width:80px;}
+// .admin_table th {min-width:150px;}
+
+
+.p-top-20 {padding-top: 20px;}
+
+.table_overflow-auto {
+  overflow: auto;
+    max-height: calc(100vh - 206px);
+}
+
+#serial_number{
+  min-width : 80px; 
+}
+
+#products_lable
+{
+  min-width: 150px;
+}
+
+#engravable
+{
+  min-width: 100px;
+}
+
+#desription
+{
+  min-width: 300px;
+}
+
+#price
+{
+  min-width: 120px;
+}
+
+#image_width {
+  width: 20%;
+}
+
+.delete_icon {
+  vertical-align: top;
+}
+
+
+// .table>:not(:first-child) {
+//   border: 0 !important;
+// }
+
+.table-bordered>:not(caption)>* {
+  border-width: 0px 0;
+}
+.table>:not(:first-child) {
+  border-top: 1px solid #eee;
+}
+
+
+.bdr-left-sp {border-left: 1px solid #B1B1B4;}
+.bdr-botm-sp {border-bottom: 1px solid #B1B1B4;}
+.w-100-float {width: 100%; float: left;}
+.padd-top-12-im {padding-top: 12px !important;}
+.text-danger.validation-error {font-size: 12px;}
+
+.disabled{ 
+  pointer-events: none;
+}

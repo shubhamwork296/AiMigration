@@ -2672,8 +2672,10 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
         {
             ["package"] = packageName,
             ["packageName"] = packageName,
+            ["rootPackage"] = packageName,
             ["currentVersion"] = PackageVersion(packageJson, packageName),
             ["hop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+            ["failureCategory"] = "third_party_angular_incompatibility",
             ["errorCategory"] = errorCategory,
             ["detectedErrorCategory"] = errorCategory,
             ["classification"] = "validation_proven_third_party_blocker",

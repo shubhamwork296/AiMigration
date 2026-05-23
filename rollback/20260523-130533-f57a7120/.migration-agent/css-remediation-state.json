@@ -1,0 +1,22 @@
+[
+  {
+    "sourceFile": "src/assets/css/style.css",
+    "originalImport": "~@ng-select/ng-select/themes/material.theme.css",
+    "replacementImport": "../../../node_modules/@ng-select/ng-select/themes/material.theme.css",
+    "selectedStrategy": "relative_node_modules_css_import",
+    "packageName": "@ng-select/ng-select",
+    "targetPhysicalFile": "node_modules/@ng-select/ng-select/themes/material.theme.css",
+    "acceptedAtHop": "14 -\u003E 15",
+    "validationPassedAfterApply": true
+  },
+  {
+    "sourceFile": "src/assets/front/css/front-style.css",
+    "originalImport": "~@ng-select/ng-select/themes/default.theme.css",
+    "replacementImport": "../../../../node_modules/@ng-select/ng-select/themes/default.theme.css",
+    "selectedStrategy": "relative_node_modules_css_import",
+    "packageName": "@ng-select/ng-select",
+    "targetPhysicalFile": "node_modules/@ng-select/ng-select/themes/default.theme.css",
+    "acceptedAtHop": "14 -\u003E 15",
+    "validationPassedAfterApply": true
+  }
+]

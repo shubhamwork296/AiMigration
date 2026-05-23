@@ -1,0 +1,90 @@
+<div class="dash_rew_w" *isAuthorize="[permissionTask.categoryAdd]" >
+    <div class="row">
+        <div class="col-md-12 text-right">
+            <a href="javascript:void(0);" [routerLink]="['add-category']" class="default-btn add_btn_art"><i class="fa fa-plus" aria-hidden="true"></i> Add Category</a>
+        </div>
+    </div>
+ </div>
+ 
+ <div class="prd-srh">
+
+   
+   <div class="prd-srh-left-v" *ngIf="articleData && articleData.length > 0">
+
+      <div class="form-group position-relative" >
+         <label>Search by Article</label>
+         <select class="form-control login_fild prdsrh_icon_v" (change)="searchByArticle($event)" [(ngModel)]="article_search">
+            <option selected value="0">Select article</option>
+            <option *ngFor="let article of articleData; let i=index;" value="{{article?.ArticleId}}">{{article?.ArticleName}}</option>
+         </select>
+      </div>
+
+   </div>
+
+   <div class="prd-srh-right-v">
+    
+      <div class="form-group position-relative">
+         <label>Search by Category Name</label>
+         <input type="text" class="form-control login_fild padd-right-45 prdsrh_icon_v" name="search" #productSearch placeholder="Search by category name" [(ngModel)]="search_text" (keyup)="prodcut_search($event)">
+         <button class="prdfilter_icon_v" type="button" (click)="searchByName(productSearch?.value)"></button>
+      </div>
+
+   </div>
+
+   <div class="prd-srh-left-v" >
+
+      <div class="form-group position-relative" >
+         <label>Search by Status</label>
+         <select class="form-control login_fild prdsrh_icon_v" (change)="searchByStatus($event)" [(ngModel)]="search_status">
+            <option value="-1">{{AppConstants.SELECT_STATUS}}</option>
+            <option value="1">{{AppConstants.STATUS_ACTIVE}}</option>
+            <option value="0">{{AppConstants.STATUS_INACTIVE}}</option>
+         </select>
+      </div>
+
+   </div>
+  
+
+</div>
+ <div class="admin_table">
+    <div class="table-responsive" *ngIf="categoryData && categoryData.length > 0; else recordNotFound">
+       <table class="table table-bordered">
+          <caption style="display:none;">table</caption>
+          <thead>
+             <tr>
+                <th id="srnumber">{{AppConstants.SERIAL_NUMBER}}</th>
+                <th id="category-name">Category Name</th>
+                <th id="parent-category">Parent Category</th>
+                <th id="article">Article</th>
+                <th id="createdon">Created On</th>
+                <th id="modifiedon">Modified On</th>
+                <th id="status">Status</th>
+                <th id="action">Action</th>
+             </tr>
+          </thead>
+          <tbody>
+             <tr *ngFor="let category of categoryData | paginate: { itemsPerPage: itemsPerPage, currentPage: page, totalItems : totalItemsCount}; let i=index;">
+                <td  class="w-px60">{{(page-1)*itemsPerPage +i+1}}</td>
+                <td>{{category?.CategoryName}}</td>
+                <td>{{category?.ParentCategoryName}} </td>
+                <td>{{category?.ParentArticleName}} </td>
+                <td class="w-px100">{{category?.CreatedOn ?( category?.CreatedOn | date :'dd-MMM-yyyy'): ''}} </td>
+                <td class="w-px100">{{category?.ModifiedOn ?( category?.ModifiedOn | date :'dd-MMM-yyyy'): ''}}</td>
+                <td class="Status_clr w-px70">{{category?.IsActive == 1 ? 'Active' : 'Inactive'}}</td>
+                <td class="auction_link w-px70"><a href="javascript:void(0);" *isAuthorize="[permissionTask.categoryEdit]"  (click)="editCategory(category?.CategoryId)"><img src="assets/images/edit_icon.png" alt=""></a><a href="javascript:void(0);" *isAuthorize="[permissionTask.categoryDelete]"  (click)="deleteCadtegory(category?.CategoryId,category?.CategoryName)"><img src="assets/images/delete_icon.png" alt=""></a></td>
+            </tr>
+          </tbody>
+       </table>
+       <div class="pagination" *ngIf="categoryData && categoryData.length > 0">
+         <pagination-controls (pageChange)="pageChanged($event)"></pagination-controls>
+      </div>
+    </div>
+    <ng-template #recordNotFound>
+      <div class="row p-3 g-1">
+        <div class="col-md-12 no-record text-center">
+         {{AppConstants.NO_RECORD_FOUND}}
+        </div>
+      </div>
+    </ng-template>
+ </div>
+

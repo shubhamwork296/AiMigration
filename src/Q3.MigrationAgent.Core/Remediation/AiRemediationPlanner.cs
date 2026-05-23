@@ -24,6 +24,42 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         "script_update", "package_update", "config_update", "type_shim", "source_update", "style_import_update", "test_config_update", "dependency", "package"
     };
     private static readonly string[] ManifestFileNames = ["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".csproj", ".sln", "pom.xml", "build.gradle", "build.gradle.kts", "pyproject.toml", "requirements.txt", "go.mod", "go.sum", "Gemfile", "Gemfile.lock"];
+    private static readonly IReadOnlyDictionary<string, string> AngularMaterialM2SassFunctionMap = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["mat.define-palette"] = "mat.m2-define-palette",
+        ["mat.define-light-theme"] = "mat.m2-define-light-theme",
+        ["mat.define-dark-theme"] = "mat.m2-define-dark-theme",
+        ["mat.get-color-from-palette"] = "mat.m2-get-color-from-palette",
+        ["mat.get-contrast-color-from-palette"] = "mat.m2-get-contrast-color-from-palette",
+        ["mat.get-color-config"] = "mat.m2-get-color-config",
+        ["mat.get-typography-config"] = "mat.m2-get-typography-config",
+        ["mat.define-typography-config"] = "mat.m2-define-typography-config",
+        ["mat.define-typography-level"] = "mat.m2-define-typography-level"
+    };
+    private static readonly IReadOnlyDictionary<string, string> AngularMaterialM2SassPaletteMap = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["mat.$indigo-palette"] = "mat.$m2-indigo-palette",
+        ["mat.$pink-palette"] = "mat.$m2-pink-palette",
+        ["mat.$red-palette"] = "mat.$m2-red-palette",
+        ["mat.$purple-palette"] = "mat.$m2-purple-palette",
+        ["mat.$deep-purple-palette"] = "mat.$m2-deep-purple-palette",
+        ["mat.$blue-palette"] = "mat.$m2-blue-palette",
+        ["mat.$light-blue-palette"] = "mat.$m2-light-blue-palette",
+        ["mat.$cyan-palette"] = "mat.$m2-cyan-palette",
+        ["mat.$teal-palette"] = "mat.$m2-teal-palette",
+        ["mat.$green-palette"] = "mat.$m2-green-palette",
+        ["mat.$light-green-palette"] = "mat.$m2-light-green-palette",
+        ["mat.$lime-palette"] = "mat.$m2-lime-palette",
+        ["mat.$yellow-palette"] = "mat.$m2-yellow-palette",
+        ["mat.$amber-palette"] = "mat.$m2-amber-palette",
+        ["mat.$orange-palette"] = "mat.$m2-orange-palette",
+        ["mat.$deep-orange-palette"] = "mat.$m2-deep-orange-palette",
+        ["mat.$brown-palette"] = "mat.$m2-brown-palette",
+        ["mat.$grey-palette"] = "mat.$m2-grey-palette",
+        ["mat.$gray-palette"] = "mat.$m2-gray-palette",
+        ["mat.$blue-grey-palette"] = "mat.$m2-blue-grey-palette",
+        ["mat.$blue-gray-palette"] = "mat.$m2-blue-gray-palette"
+    };
 
     public async Task<RemediationAttempt> TryRemediateAsync(
         MigrationConfig config,
@@ -68,6 +104,21 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         {
             var failedAttempt = AiEnvironmentErrorChange(validation, attempt, config.MaxAiRemediationRetries, reducedContext, ex.Message);
             return RemediationAttempt.Failed([failedAttempt]);
+        }
+        catch (Exception ex) when (IsStrictJsonParseFailure(ex))
+        {
+            var failedAttempt = AiStrictJsonParseFailureChange(validation, attempt, config.MaxAiRemediationRetries, reducedContext, ex.Message);
+            var fallback = await TryApplyDeterministicRemediationAsync(outputPath, validation, attempt, config.MaxAiRemediationRetries, config.SourceCompatibilityRemediation, cancellationToken);
+            if (fallback is not null)
+            {
+                fallback["aiJsonParseFailed"] = true;
+                fallback["aiStrictJsonRejected"] = true;
+                fallback["aiParseFailureMessage"] = ex.Message;
+                fallback["deterministicFallbackUsed"] = true;
+                return RemediationAttempt.AppliedResult([failedAttempt, fallback]);
+            }
+
+            return RemediationAttempt.Manual(ManualRequest(new JsonObject(), validation, outputPath, "AI remediation output failed strict JSON parsing and no deterministic fallback matched this validation failure.", failedAttempt), [failedAttempt]);
         }
         if (plan is null) return RemediationAttempt.Manual(ManualRequest(new JsonObject(), validation, outputPath, "AI did not return a remediation plan."));
         NormalizePlanPaths(plan, outputPath);
@@ -164,6 +215,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             "For css_dependency_import or dependency_asset_import_resolution failures, do not change TypeScript files, package versions, dependencies, dependency removals, Angular modules, or business logic.",
             "For css_dependency_import or dependency_asset_import_resolution failures, reject AI plans unless the replacement is confirmed direct tilde removal or a package-verified equivalent style asset path.",
             "For css_dependency_import or dependency_asset_import_resolution failures, include the original unresolved import, direct normalized import attempted, whether it was confirmed, selected package asset path, and changed style files in reportNotes or change metadata when available.",
+            "For Angular Material 18 Sass theming Undefined function/variable failures in eligible project-owned theme .scss/.sass files, only rename known old Material M2 Sass functions and palettes to their m2-prefixed equivalents and add @use '@angular/material' as mat when mat.* APIs require it; do not convert to Material 3, change theme values, selectors, TypeScript, package files, or config files.",
             "After install/build/test validation proves a third-party package blocks the hop, package_update is allowed for that proven blocker package.",
             "Project-owned .d.ts compatibility shims are allowed for third-party declaration failures when no runtime behavior changes.",
             "tsconfig/angular.json/package config updates are allowed when minimal and tied to the validation failure.",
@@ -180,7 +232,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["risk"] = "low|medium|high",
             ["requiresManualCorrection"] = false,
             ["manualCorrectionReason"] = null,
-            ["failureCategory"] = "script|dependency|type_declaration|css_dependency_import|dependency_asset_import_resolution|third_party_angular_incompatibility|compiler|config|test|unknown",
+            ["failureCategory"] = "script|dependency|type_declaration|css_dependency_import|dependency_asset_import_resolution|material_sass_theming_api|third_party_angular_incompatibility|compiler|config|test|unknown",
             ["businessLogicChanged"] = false,
             ["changes"] = new JsonArray(new JsonObject
             {
@@ -426,6 +478,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         var cssImportRemediation = await TryApplyCssPackageImportRemediationAsync(outputPath, validation, attempt, maxAttempts, cancellationToken);
         if (cssImportRemediation is not null) return cssImportRemediation;
 
+        var materialSassRemediation = await TryApplyAngularMaterialSassThemingRemediationAsync(outputPath, validation, attempt, maxAttempts, cancellationToken);
+        if (materialSassRemediation is not null) return materialSassRemediation;
+
         var failureText = $"{validation.Output}\n{validation.Errors}";
         var entryComponentsRemediation = sourceCompatibilityRemediation
             ? await TryRemoveEntryComponentsAsync(outputPath, validation, failureText, attempt, maxAttempts, cancellationToken)
@@ -623,6 +678,203 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["cssImportRemediationResolution"] = attemptedCandidates.DeepClone(),
             ["reportNotes"] = new JsonArray("Applied deterministic CSS import remediation resolution.")
         };
+    }
+
+    private static async Task<JsonObject?> TryApplyAngularMaterialSassThemingRemediationAsync(string outputPath, ValidationResult validation, int attempt, int maxAttempts, CancellationToken cancellationToken)
+    {
+        if (validation.Passed != false) return null;
+        var detection = DetectAngularMaterialSassThemingFailure(validation.Output + "\n" + validation.Errors);
+        if (!detection.Detected) return null;
+        var file = detection.File;
+        if (!IsSafeMaterialSassRemediationTarget(file)) return null;
+
+        var full = Path.GetFullPath(Path.Combine(outputPath, file.Replace('/', Path.DirectorySeparatorChar)));
+        if (!IsUnderRoot(full, outputPath) || !File.Exists(full)) return null;
+
+        var before = await File.ReadAllTextAsync(full, cancellationToken);
+        var functionReplacements = AngularMaterialM2SassFunctionMap
+            .Where(pair => before.Contains(pair.Key, StringComparison.Ordinal))
+            .ToArray();
+        if (string.Equals(detection.Function, "mat.typography-hierarchy", StringComparison.Ordinal) &&
+            before.Contains("mat.typography-hierarchy", StringComparison.Ordinal))
+        {
+            functionReplacements = functionReplacements.Concat([new KeyValuePair<string, string>("mat.typography-hierarchy", "mat.m2-typography-hierarchy")]).ToArray();
+        }
+        if (functionReplacements.Length == 0 && detection.Function.Length > 0 && AngularMaterialM2SassFunctionMap.TryGetValue(detection.Function, out var exactReplacement))
+        {
+            functionReplacements = [new KeyValuePair<string, string>(detection.Function, exactReplacement)];
+        }
+        var paletteReplacements = AngularMaterialM2SassPaletteMap
+            .Where(pair => before.Contains(pair.Key, StringComparison.Ordinal))
+            .ToArray();
+        if (functionReplacements.Length == 0 && paletteReplacements.Length == 0) return null;
+
+        var after = before;
+        var functionsRenamed = new JsonArray();
+        var palettesRenamed = new JsonArray();
+        var snippets = new JsonArray();
+        foreach (var replacement in functionReplacements.Concat(paletteReplacements))
+        {
+            var oldToken = replacement.Key;
+            var newToken = replacement.Value;
+            if (!after.Contains(oldToken, StringComparison.Ordinal)) continue;
+            var beforeSnippet = SnippetAround(before, oldToken);
+            after = after.Replace(oldToken, newToken, StringComparison.Ordinal);
+            if (oldToken.Contains("$", StringComparison.Ordinal))
+            {
+                palettesRenamed.Add(new JsonObject { ["before"] = oldToken, ["after"] = newToken });
+            }
+            else
+            {
+                functionsRenamed.Add(new JsonObject { ["before"] = oldToken, ["after"] = newToken });
+            }
+            snippets.Add(new JsonObject { ["before"] = beforeSnippet, ["after"] = beforeSnippet.Replace(oldToken, newToken, StringComparison.Ordinal) });
+        }
+        var addedAngularMaterialUse = false;
+        if (UsesAngularMaterialMatApi(after) && !HasAngularMaterialMatUse(after))
+        {
+            after = AddAngularMaterialMatUse(after, Path.GetExtension(file));
+            addedAngularMaterialUse = true;
+        }
+        if (string.Equals(before, after, StringComparison.Ordinal) || (functionsRenamed.Count == 0 && palettesRenamed.Count == 0 && !addedAngularMaterialUse)) return null;
+
+        await File.WriteAllTextAsync(full, after, cancellationToken);
+        return new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["maxAttempts"] = maxAttempts,
+            ["type"] = "style_import_update",
+            ["mode"] = "deterministic",
+            ["file"] = file,
+            ["files"] = new JsonArray(file),
+            ["reason"] = "Angular Material M2 SCSS theming API normalized for Angular Material 18 compatibility.",
+            ["change"] = "renamed known Angular Material M2 Sass theming functions and palettes to m2-prefixed equivalents",
+            ["failedCommand"] = FailedCommand(validation),
+            ["failureCause"] = "sass-loader Angular Material M2 Sass theming API compatibility failure",
+            ["failureCategory"] = "material_sass_theming_api",
+            ["subtype"] = "material_sass_theming_api",
+            ["failedFunction"] = detection.Function,
+            ["functionsRenamed"] = functionsRenamed,
+            ["palettesRenamed"] = palettesRenamed,
+            ["angularMaterialUseAdded"] = addedAngularMaterialUse,
+            ["before"] = string.Join(Environment.NewLine, snippets.OfType<JsonObject>().Select(s => s.StringValue("before")).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.Ordinal)),
+            ["after"] = string.Join(Environment.NewLine, snippets.OfType<JsonObject>().Select(s => s.StringValue("after")).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.Ordinal)),
+            ["beforeAfterSnippets"] = snippets,
+            ["confidence"] = 1.0,
+            ["risk"] = "low",
+            ["businessLogicChanged"] = false,
+            ["sourceCodeImpact"] = false,
+            ["runtimeCodeChanged"] = false,
+            ["businessFile"] = false,
+            ["validationDriven"] = true,
+            ["manualCriticalAttentionRequired"] = false,
+            ["deterministicRemediationAttempted"] = true,
+            ["deterministicRemediationApplied"] = true,
+            ["aiRemediationAttempted"] = false,
+            ["reportNotes"] = new JsonArray("Angular Material M2 SCSS theming API normalized for Angular Material 18 compatibility.", "No TypeScript, package, Angular config, selectors, declarations, or theme values were changed.")
+        };
+    }
+
+    public static JsonObject DetectAngularMaterialSassThemingFailureForTesting(string text)
+    {
+        var detection = DetectAngularMaterialSassThemingFailure(text);
+        return new JsonObject
+        {
+            ["detected"] = detection.Detected,
+            ["failureCategory"] = detection.Detected ? "material_sass_theming_api" : "unknown",
+            ["file"] = detection.File,
+            ["function"] = detection.Function
+        };
+    }
+
+    public static string ApplyAngularMaterialSassThemingFunctionMapForTesting(string content, bool includeTypographyHierarchy = false)
+    {
+        var after = content;
+        foreach (var replacement in AngularMaterialM2SassFunctionMap.Concat(AngularMaterialM2SassPaletteMap))
+        {
+            after = after.Replace(replacement.Key, replacement.Value, StringComparison.Ordinal);
+        }
+        if (includeTypographyHierarchy)
+        {
+            after = after.Replace("mat.typography-hierarchy", "mat.m2-typography-hierarchy", StringComparison.Ordinal);
+        }
+        return after;
+    }
+
+    public static bool IsSafeAngularMaterialSassRemediationTargetForTesting(string file) => IsSafeMaterialSassRemediationTarget(file);
+
+    public static bool IsAngularMaterialSassThemingFailure(string text) => DetectAngularMaterialSassThemingFailure(text).Detected;
+
+    private static (bool Detected, string File, string Function) DetectAngularMaterialSassThemingFailure(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return (false, "", "");
+        var hasUndefinedFunction = text.Contains("Undefined function", StringComparison.OrdinalIgnoreCase);
+        var hasUndefinedVariable = text.Contains("Undefined variable", StringComparison.OrdinalIgnoreCase);
+        var hasMaterialSassError = hasUndefinedFunction || hasUndefinedVariable;
+        if (!hasMaterialSassError || !text.Contains("mat.", StringComparison.Ordinal)) return (false, "", "");
+
+        var oldFunctions = AngularMaterialM2SassFunctionMap.Keys.Concat(["mat.typography-hierarchy"]).ToArray();
+        var function = oldFunctions.FirstOrDefault(f => Regex.IsMatch(text, $@"\b{Regex.Escape(f)}\s*\(")) ?? "";
+        var oldPalette = AngularMaterialM2SassPaletteMap.Keys.FirstOrDefault(p => text.Contains(p, StringComparison.Ordinal)) ?? "";
+        if (hasUndefinedFunction && function.Length == 0) return (false, "", "");
+        if (!hasUndefinedVariable && function.Length == 0) return (false, "", "");
+        if (function.Length == 0 && oldPalette.Length == 0) return (false, "", "");
+        if (function.Length > 0 && !AngularMaterialM2SassFunctionMap.ContainsKey(function) && !string.Equals(function, "mat.typography-hierarchy", StringComparison.Ordinal)) return (false, "", "");
+
+        var files = Regex.Matches(text, @"(?<file>(?:\.\/)?(?:src|projects)[\\/][^\s:]+?\.(?:scss|sass))", RegexOptions.IgnoreCase)
+            .Select(m => NormalizeRelativePath(m.Groups["file"].Value.TrimStart('.', '/', '\\')))
+            .Where(IsSafeMaterialSassRemediationTarget)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (files.Length == 0) return (false, "", function);
+        if (files.Any(f => f.Contains("node_modules/", StringComparison.OrdinalIgnoreCase))) return (false, "", function);
+        return (true, files[0], function.Length > 0 ? function : oldPalette);
+    }
+
+    private static bool IsSafeMaterialSassRemediationTarget(string file)
+    {
+        var normalized = NormalizeRelativePath(file);
+        if (!normalized.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) && !normalized.EndsWith(".sass", StringComparison.OrdinalIgnoreCase)) return false;
+        if (!normalized.StartsWith("src/", StringComparison.OrdinalIgnoreCase)) return false;
+        if (TouchesBlockedPath(normalized)) return false;
+        var name = Path.GetFileName(normalized);
+        return IsAngularMaterialThemeScssPath(normalized) &&
+               !ManifestFileNames.Contains(name, StringComparer.OrdinalIgnoreCase) &&
+               !name.Equals("angular.json", StringComparison.OrdinalIgnoreCase) &&
+               !name.StartsWith("tsconfig", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAngularMaterialThemeScssPath(string normalized) =>
+        normalized.Equals("src/styles.scss", StringComparison.OrdinalIgnoreCase) ||
+        normalized.Equals("src/styles.sass", StringComparison.OrdinalIgnoreCase) ||
+        normalized.Equals("src/theme.scss", StringComparison.OrdinalIgnoreCase) ||
+        Regex.IsMatch(normalized, @"^src/(?:.*/)?_?theme[^/]*\.scss$", RegexOptions.IgnoreCase) ||
+        Regex.IsMatch(normalized, @"^src/(?:.*/)?_?material[^/]*\.scss$", RegexOptions.IgnoreCase);
+
+    private static bool UsesAngularMaterialMatApi(string content) =>
+        Regex.IsMatch(content, @"\bmat\.(?:m2-)?(?:define|get|typography)|\bmat\.\$(?:m2-)?[a-z-]+-palette\b");
+
+    private static bool HasAngularMaterialMatUse(string content) =>
+        Regex.IsMatch(content, @"^\s*@use\s+['""]@angular/material['""]\s+as\s+mat\s*;?\s*$", RegexOptions.Multiline);
+
+    private static string AddAngularMaterialMatUse(string content, string extension)
+    {
+        var useLine = string.Equals(extension, ".sass", StringComparison.OrdinalIgnoreCase)
+            ? "@use '@angular/material' as mat"
+            : "@use '@angular/material' as mat;";
+        return useLine + Environment.NewLine + content;
+    }
+
+    private static string SnippetAround(string content, string token)
+    {
+        using var reader = new StringReader(content);
+        var lines = new List<string>();
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            if (line.Contains(token, StringComparison.Ordinal)) lines.Add(line.TrimEnd());
+        }
+        return string.Join(Environment.NewLine, lines.Take(5));
     }
 
     public static bool IsCssDependencyImportFailure(string text) =>
@@ -973,7 +1225,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
     {
         var normalized = NormalizeRelativePath(file);
         if (normalized.StartsWith(".env", StringComparison.OrdinalIgnoreCase) || normalized.Contains("secret", StringComparison.OrdinalIgnoreCase) || normalized.Contains("credential", StringComparison.OrdinalIgnoreCase)) return true;
-        return normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Any(p => p is "node_modules" or "bin" or "obj" or "dist" or ".angular" or ".git");
+        return normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Any(p => p is "node_modules" or "bin" or "obj" or "dist" or "build" or ".angular" or ".git");
     }
 
     private static bool IsBroadPackageUpdate(JsonObject change, ValidationResult validation)
@@ -1202,6 +1454,13 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
         ex.Message.Contains("Command timed out", StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsStrictJsonParseFailure(Exception ex) =>
+        ex is JsonException ||
+        ex.Message.Contains("strict JSON", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("non-strict JSON", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("malformed JSON", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("markdown", StringComparison.OrdinalIgnoreCase);
+
     public static bool IsCodexSandboxValidationError(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
@@ -1257,6 +1516,30 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         ["reducedContextUsed"] = reducedContext,
         ["agentValidationRerunRequired"] = true,
         ["nextAction"] = attempt < maxAttempts ? "rerun validation with migration agent and retry with reduced context" : "rerun validation with migration agent"
+    };
+
+    private static JsonObject AiStrictJsonParseFailureChange(ValidationResult validation, int attempt, int maxAttempts, bool reducedContext, string message) => new()
+    {
+        ["attempt"] = attempt,
+        ["maxAttempts"] = maxAttempts,
+        ["type"] = "ai_json_parse_failure",
+        ["mode"] = "ai",
+        ["status"] = "rejected",
+        ["failedCommand"] = FailedCommand(validation),
+        ["failureCause"] = "AI remediation output was rejected by strict JSON parsing.",
+        ["failureCategory"] = "ai_json_parse_failure",
+        ["failureReason"] = "AI output was not accepted because remediation responses must be strict JSON only.",
+        ["reason"] = "AI output was not accepted because remediation responses must be strict JSON only.",
+        ["aiJsonParseFailed"] = true,
+        ["aiStrictJsonRejected"] = true,
+        ["rawOutputSaved"] = true,
+        ["aiParseFailureMessage"] = message,
+        ["businessLogicChanged"] = false,
+        ["businessFile"] = false,
+        ["result"] = "failed",
+        ["validationResultAfterRemediation"] = "not rerun",
+        ["reducedContextUsed"] = reducedContext,
+        ["nextAction"] = attempt < maxAttempts ? "use deterministic fallback if available or retry remediation" : "manual correction"
     };
 
     private static JsonObject ReducedManifest(JsonObject manifest, JsonObject artifact)

@@ -1,0 +1,340 @@
+.close.modal_close_icon {
+    position: absolute;
+    right: 0;
+    top: -1px;
+    font-size: 28px;
+    z-index: 99;
+    border-radius: 0 0 0 5px;
+    }
+    .modal-body.padding-0 {
+    padding: 0;
+    }
+    .avatar-upload {
+    position: relative;
+    max-width:inherit;
+    margin:0;
+    width: 175px;
+    }
+    .avatar-upload .avatar-edit {
+    position: relative;
+    right:0;
+    z-index: 1;
+    top: 0;
+    }
+    .avatar-upload .avatar-edit input {
+    display: none;
+    }
+    .avatar-upload .avatar-edit input + label {
+    display: inline-block;
+    width: 100%;
+    height: 209px;
+    margin-bottom: 0;
+    border-radius:0;
+    border: 0px solid transparent;
+    box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0);
+    cursor: pointer;
+    font-weight: normal;
+    transition: all 0.2s ease-in-out;
+    background-size: 175px;
+    }
+    /*
+    .avatar-upload .avatar-edit input + label:hover {
+    background: #f1f1f1;
+    border-color: #d6d6d6;
+    }
+    .avatar-upload .avatar-edit input + label:after {
+    content: "\f040";
+    font-family: 'FontAwesome';
+    color: #757575;
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    margin: auto;
+    }
+    */
+    .avatar-preview {
+    width: 100%;
+    height: 650px;
+    position: relative;
+    border-radius: 0;
+    border: 0px solid #F8F8F8;
+    box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 10%);
+    }
+    .avatar-preview > div {
+    width: 100%;
+    height: 100%;
+    border-radius: 0%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: block !important;
+    background-color: #fff;
+    }
+    .modal-content.bdr-radius-0 {border-radius: 0;}
+    .bdr-right4 {
+    border-right:6px solid #d1d3d4;
+    }
+    .nav.nav-tabs.left_nav_wr {
+    width: calc(100% + 15px);
+    float: left;
+    }
+    .nav.nav-tabs.left_nav_wr li {width: 100%; float: left;}
+    .nav.nav-tabs.left_nav_wr li a {
+    width:100%; height: 65px; margin-bottom: 3px; background-color: #fff; background-position: center center; background-repeat: no-repeat; background-size: 40px; float: left;
+    }
+    .nav.nav-tabs.left_nav_wr li a.active {background-color: #1c1c1c;}
+    .nav.nav-tabs.left_nav_wr li a.hand {background-image: url(../../../../assets/front/images/hand.png)}
+    .nav.nav-tabs.left_nav_wr li a.hand.active {background-image: url(../../../../assets/front/images/hand_active.png)}
+    .qr_code_wrp {width: 100%; float: left; padding: 15px 0; border-bottom:2px solid #d1d3d4; }
+    .qr_code_wrp h3 {
+    font-weight: 300;
+    text-transform: uppercase;
+    text-align: center;
+    font-size: 16px;
+    font-family: 'Baskervville', serif;
+    margin: 0;
+    padding: 0;
+    color: #58595b;
+    letter-spacing: -0.5px;
+    }
+    .qr_code_wrp p {
+    color: #58595b;
+    font-size: 16px;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding:15px 10px 0;
+    text-align: center;
+    line-height: 17px;
+    }
+    .light_gray_bg_n {background: #f4f4f4;}
+    .or_wrp {width: 100%; float: left; text-align: center; padding: 10px 0 0 0; font-size: 16px;
+    font-family: 'Be Vietnam Pro', sans-serif; font-weight: bold;}
+    .upload_img_wrp {width: 100%; float: left; border-bottom:2px solid #d1d3d4; padding-bottom: 15px;}
+    .upload_img_box {width: 100%; float: left; justify-content: center; display: flex;}
+    .upload_img_txt {width: 175px; margin: auto; padding:5px 0 0 0;}
+    .upload_img_txt p {
+    color: #58595b;
+    font-size: 13px;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding:2px 0px 0;
+    text-align: left;
+    line-height: 15px;
+    }
+    .left_botm_txt_hand {width: 100%; float: left; padding: 15px;}
+    .left_botm_txt_hand p {
+    color: #58595b;
+    font-size: 14px;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding:2px 0px 0;
+    text-align: center;
+    line-height: 17px;
+    font-weight:400;
+    }
+    .left_botm_txt_hand p a {
+    color: #1c1c1c;
+    }
+    #image,#myCanvas{
+    float:left;
+    }
+    .img_opticity_wrp {width: 100%; position: relative;}
+    .img_opticity_wrp .img_opcity1 {position: absolute; left: 0; top: 0; height: 650px; object-fit: contain; width: 100%;}
+    .first_ring {    position: absolute;
+    z-index: 0;
+    left: 44px;
+    top: 320px;
+    width: 65px;
+    transform: rotate(-33deg);
+    opacity: 0;
+    cursor: pointer;
+
+}
+    .two_ring {
+    position: absolute;
+    z-index: 0;
+    left: 108px;
+    top: 271px;
+    width: 65px;
+    transform: rotate(-11deg);
+    opacity: 0;
+    cursor: pointer;
+    }
+    .three_ring {
+    position: absolute;
+    z-index: 0;
+    left: 177px;
+    top: 253px;
+    width: 65px;
+    transform: rotate(5deg);
+    opacity: 0;
+    cursor: pointer;
+    }
+    .four_ring {
+    position: absolute;
+    z-index: 0;
+    left: 251px;
+    top: 268px;
+    width: 65px;
+    transform: rotate(19deg);
+    opacity: 0;
+    cursor: pointer;
+    }
+
+    .first_ring:hover,
+    .two_ring:hover,
+    .three_ring:hover,
+    .four_ring:hover {
+        opacity:0.4;
+    }
+
+
+    .first_ring.active,
+    .two_ring.active,
+    .three_ring.active,
+    .four_ring.active {
+        opacity: 1;
+    }
+
+
+
+
+    .wrapper img.img_opcity {
+    position: absolute;
+    width: 100%;
+    box-sizing: border-box;
+    }
+    .wrapper .slider-wrapper {
+    position: absolute;
+    bottom:15px;
+    left:4%;
+    /*
+    box-shadow: 1px 3px 10px rgba(10, 10, 10, 0.5);
+    border: 0.07rem solid rgb(100,100,100);
+    background: rgba(30,30,30,0.85);
+    padding: 7px 15px 8px;
+    border-radius: 0 0 10px;
+    */
+    color: #ddd;
+    width: 90%;
+    }
+    .wrapper {width: 100%; position: relative; height:700px; margin: -50px 0 0 0;}
+    output {
+    display: inline-block;
+    width:25px;}
+    // #opacity-slider {width: 100%; filter: grayscale()}
+
+
+    .hand_wrp_m {width: 447px; margin: auto; position: relative;}
+
+    .mat-slider-horizontal {
+        height: 48px;
+        min-width: 100% !important;
+    }
+
+   
+
+    .zoom_img_prev {width: 100%; overflow: hidden; height: 680px; position: relative;}
+
+    .zoom_img_prev.active {
+        transform: scale(2.2);
+        margin: 0 0 0 97px;
+    }
+
+    // .img_opticity_wrp .zoom_img_prev.active .img_opcity1 { 
+    //     top: -130px;
+    // }
+
+    .tab-content.overflow-hidd {overflow: hidden;}
+
+.zoombtn {width: 80px; height: 80px; border: 0; outline: 0; box-shadow: none; background-color: initial; background-position: left top;
+background-repeat: no-repeat; background-size: 60px; cursor: pointer; position: absolute; left: 0; bottom: 0; font-size: 0; text-indent: -999px;
+}
+
+.zoombtn.zoominbtn {
+    background-image: url(../../../../assets/front/images/zoom-in.png);
+}
+
+.zoombtn.zoomoutbtn {
+    background-image: url(../../../../assets/front/images/zoom-out.png);
+}
+
+
+.viewhand-note {
+    width: 100%;
+    float: left;
+    padding: 5px 0 10px;
+    text-align: center;
+    font-size: 16px; 
+    color:#1c1c1c;
+    font-weight: 600;
+}
+
+ 
+
+.bracelet_try_p {
+    position: absolute;
+    left: 124px;
+    top: 342px;
+    width: 198px;
+    z-index: 99;
+    cursor: pointer;
+}
+
+.bracelet_try_p.first_try_hand {
+    opacity: 0.3;
+}
+.bracelet_try_p.first_try_hand.active {
+    opacity:1;
+    cursor: auto;
+}
+
+
+.bracelet_try_p.two_try_hand {
+    opacity: 0.3;
+    left: 162px;
+    top: 418px;
+    width: 153px;
+}
+.bracelet_try_p.two_try_hand.active {
+    opacity:1;
+    cursor: auto;
+}
+
+
+.bracelet_try_p.three_try_hand {
+    opacity: 0.3;
+    left: 176px;
+    top: 471px;
+    width: 146px;
+}
+.bracelet_try_p.three_try_hand.active {
+    opacity:1;
+    cursor: auto;
+}
+
+.bracelet_try_p.four_try_hand {
+    opacity: 0.3;
+    left: 187px;
+    top: 522px;
+    width: 149px;
+}
+.bracelet_try_p.four_try_hand.active {
+    opacity:1;
+    cursor: auto;
+}
+
+
+
+.zoom_img_prev.active .bracelet_try_p.first_try_hand {    left: 127px;
+    top: 217px;
+    width: 195px;}
+.zoom_img_prev.active .bracelet_try_p.two_try_hand {top:288px;}
+.zoom_img_prev.active .bracelet_try_p.three_try_hand {    left: 178px;
+    top: 343px;}
+.zoom_img_prev.active .bracelet_try_p.four_try_hand {top:392px;}

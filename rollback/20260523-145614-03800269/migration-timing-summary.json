@@ -1,0 +1,45 @@
+{
+  "totalSeconds": 1504.039,
+  "timings": [
+    {
+      "name": "AI CLI resolution",
+      "seconds": 2.25,
+      "status": "completed"
+    },
+    {
+      "name": "runtime detection",
+      "seconds": 0.004,
+      "status": "completed"
+    },
+    {
+      "name": "manifest parsing",
+      "seconds": 0.011,
+      "status": "completed"
+    },
+    {
+      "name": "project copy",
+      "seconds": 16.257,
+      "status": "completed"
+    },
+    {
+      "name": "rollback snapshot Angular 15 -\u003E 16",
+      "seconds": 1.01,
+      "status": "completed"
+    },
+    {
+      "name": "Angular hop 15 -\u003E 16",
+      "seconds": 664.681,
+      "status": "completed"
+    },
+    {
+      "name": "rollback snapshot Angular 16 -\u003E 17",
+      "seconds": 0.963,
+      "status": "completed"
+    },
+    {
+      "name": "Angular hop 16 -\u003E 17",
+      "seconds": 818.863,
+      "status": "completed"
+    }
+  ]
+}

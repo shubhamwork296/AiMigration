@@ -1,0 +1,148 @@
+@media screen and (min-width:1199px) {
+    .profile_wrp_img img
+    {
+        min-width: 150px;
+        min-height: 150px;
+    }
+/* html, body {
+    overflow: hidden;
+    max-height: 100vh;
+} */
+/* * {overflow: hidden;} */
+/* div:empty {overflow: hidden; height:0px;}
+ul:empty {overflow: hidden; height:0px;} */
+
+/* .left_navigation,
+.sub_frm_wrp_add {overflow: hidden;}*/
+
+.left_navigation .navbar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 99 !important;
+}
+.contant_mid {float: right;padding-top: 70px;}
+.left_navigation .navbar-toggler {position: fixed; z-index: 99;}
+header {position: fixed; right: 0; top: 0; z-index: 15;float: right;}
+} 
+
+@media screen and (max-width:1399px) {
+    .admin_table td.auction_link a {margin: 0 5px;}
+}
+@media screen and (max-width:1199px) {
+    .dash_rew_wrp_txt {width: 100%; text-align: center;}
+    .dash_rew_wrp_icon {clip-path: none; width: 100%; border-radius: 10px 10px 0 0;}
+    .dash_rew_wrp {height: auto;}
+    .admin_table td.auction_link a {margin: 0 2px;}
+}
+
+@media screen and (max-width:991px) {
+    .login_left {width: 320px;}
+    .login_wrp_in {background-position: right;}
+    .search {width: 35%;}
+    .dash_rew_w {margin-top: -5px;}
+    .dash_rew_wrp {margin: 5px 0;}
+    .admin_table {margin-top: 10px;}
+    .profile_wrp {width: 100%;}
+
+    .navbar-toggler span {
+        background-color: inherit;
+        width: 40px;
+        height: 40px;
+    }
+
+    .navbar-collapse {min-width: auto; position: relative; left: calc(100% - 60px);overflow: hidden;}
+}
+@media screen and (max-width:767px) {
+    .login_wrp {background: url(../images/login_right_bg.jpg) no-repeat; background-size: cover; height: 100vh;}
+    .login_wrp.forgot_pass_bg_res {background: url(../images/reset_password.jpg) no-repeat center; background-size: cover; height: 100vh;}
+    .login_wrp.reset_pass_bg_res {background: url(../images/forgot_password.jpg) no-repeat center; background-size: cover; height: 100vh;}
+
+
+    .login_wrp_in {display: none;}
+    .login_left {width: 70%; margin:10ch 0 0 15%;}
+    .admin_table table {width: 800px;}
+    .search {width: 90%;}
+    .left_navigation .navbar-toggler {border: 0;
+        outline: 0;
+        box-shadow: none;
+        height: 50px;}
+        .add_product_left {width:90%;}
+        .add_product_right {width:90%;}
+    .profile_wrp_img {width: 100%; text-align: center;}
+    .profile_wrp_img img {width: 150px;}
+    .profile_wrp_txt {width: 100%;}
+
+    .form-group.Add_Matching_Band_frm .bottom-configurable {
+        margin:0 !important;
+        float:left !important;
+    }
+    
+
+}
+@media screen and (max-width:575px) {
+    .left_navigation .navbar-toggler[aria-expanded="true"] {z-index: 99; left: 195px; position: fixed;}
+    .left_navigation .navbar {position: fixed; left: 0; top: 0; z-index: 9;}
+    .navbar-light .navbar-brand {justify-content: flex-start;
+        padding: 0 0 0 10px;}
+        .left_navigation {padding-left: 60px;}
+        .left_navigation .navbar-toggler[aria-expanded="false"] + .navbar + header {width: 100%;}
+        .left_navigation .navbar-toggler[aria-expanded="true"] + .navbar + header {width: 100%; opacity: 0.4; pointer-events: none;}
+
+        .left_navigation .navbar-toggler[aria-expanded="false"] + .navbar + header + .contant_mid {width: 100%;}
+        .left_navigation .navbar-toggler[aria-expanded="true"] + .navbar + header + .contant_mid {width: 100%; opacity: 0.4; pointer-events: none;}
+    
+    .profile_info li span.left_prf {width: 100%;}
+    .profile_info li label.right_prf {width: 100%; padding-top: 5px;}
+
+    .login_left {
+        width:90%;
+        margin: 10vh 0 0 5%;
+    }
+
+    .btn.btn-default.login_btn {width: 100%;}
+
+
+    .prd-srh-left-v {width:100%; float: left;}
+	.prd-srh-right-v {width:100%; float: right;}
+
+
+    .prd-srh .form-group {width: 100%; float: left; min-height: 40px; margin: 10px 0;}
+
+
+}
+
+
+
+
+
+
+
+.spinnerOuter {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.16);
+    z-index : 99999;
+  }
+  
+  .spinner {
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 70px;
+    transform: translate(-50%, -50%);
+    color: #1c1c1c;
+  }
+  i.fa.fa-spinner.fa-3x.fa-spin {
+    color: #1c1c1c;
+  }
+  em.fa.fa-spinner.fa-3x.fa-spin {
+    color: #1c1c1c;
+  }

@@ -86,6 +86,9 @@ Classify the failure using exactly one failureCategory:
 - dependency_asset_import_resolution:
   css-loader/sass-loader/postcss-loader/mini-css-extract-plugin cannot resolve an asset from a dependency package.
 
+- material_sass_theming_api:
+  sass-loader Undefined function in a project-owned .scss/.sass file caused by old Angular Material M2 Sass theming function names under Angular Material 18.
+
 - third_party_angular_incompatibility:
   Angular compiler/build failure caused by third-party Angular package metadata, declarations, NgModule compatibility, or Ivy/APF mismatch.
 
@@ -155,6 +158,9 @@ ANGULAR-SPECIFIC GUIDANCE:
   Prefer compiled CSS assets when available.
   If package import is blocked by package exports, choose a valid same-package asset path supplied in context or return manual correction if ambiguous.
 
+- Angular Material 18 Sass theming failures:
+  If build output shows sass-loader Undefined function or Undefined variable for an eligible project-owned Material theme .scss/.sass file using old Angular Material M2 Sass APIs such as mat.define-palette, mat.define-light-theme, mat.define-dark-theme, mat.get-color-from-palette, mat.define-typography-config, or palette variables such as mat.$indigo-palette, propose only a style_import_update or config/style remediation that renames the known function or palette to its m2-prefixed equivalent. Add @use '@angular/material' as mat only when mat.* APIs are used and that @use is missing. Do not convert to Material 3. Do not change theme values. Do not change selectors. Do not edit TypeScript. If full before content is unavailable, the deterministic remediation may patch only the exact failing Material theming token.
+
 - skipLibCheck:
   May be suggested only as a temporary workaround for third-party .d.ts errors.
   Do not use skipLibCheck to hide Angular template, compiler, module, package, or framework-critical errors.
@@ -208,6 +214,7 @@ failureCategory must be one of:
 - type_declaration
 - css_dependency_import
 - dependency_asset_import_resolution
+- material_sass_theming_api
 - third_party_angular_incompatibility
 - compiler
 - config

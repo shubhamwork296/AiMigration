@@ -393,6 +393,7 @@ public sealed class MigrationOrchestrator(
         if (AiRemediationPlanner.IsCodexSandboxValidationError(text)) return "environment_error";
         if (text.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase)) return "script";
         if (text.Contains("ERESOLVE", StringComparison.OrdinalIgnoreCase) || text.Contains("peer dependency", StringComparison.OrdinalIgnoreCase)) return "dependency";
+        if (AiRemediationPlanner.IsAngularMaterialSassThemingFailure(text)) return "material_sass_theming_api";
         if (AiRemediationPlanner.IsCssDependencyImportFailure(text)) return "css_dependency_import";
         if (System.Text.RegularExpressions.Regex.IsMatch(text, @"node_modules[\\/].*TS2304", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "type_declaration";
         if (System.Text.RegularExpressions.Regex.IsMatch(text, @"\b(TS|CS|NG)\d+\b|compiler", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "compiler";

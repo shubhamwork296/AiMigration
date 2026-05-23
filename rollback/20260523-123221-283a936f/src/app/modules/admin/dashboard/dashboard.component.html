@@ -1,0 +1,84 @@
+<div class="left_navigation">
+
+   <button class="navbar-toggler"  [ngClass]="{'collapsed': !is_sidebar_opean}" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+      aria-controls="navbarText" [attr.aria-expanded] ="[is_sidebar_opean]" aria-label="Toggle navigation"  (click)="is_sidebar_opean = !is_sidebar_opean">
+      <span class="navbar-toggler-icon"></span>
+   </button>
+   <nav class="navbar navbar-expand-xxxl navbar-light bg-light">
+      <a class="navbar-brand" href="javascript:void(0);"><img src="assets/images/michael-hill.png" class="first_open" alt=""> <img
+            src="assets/images/logo_x_et.png" class="first_close" alt=""></a>
+      <div class="collapse navbar-collapse" [ngClass]="{'show': is_sidebar_opean}" id="navbarText">
+         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+               <a class="nav-link home_icon_nav " [ngClass]="{'active': currentUrl === 'dashboard'}" aria-current="page"
+                  href="javascript:void(0);" [routerLink]="['/admin/dashboard']" (click)="closeSideBar()"><span>Dashboard</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.articleView]">
+               <a class="nav-link event_icon_nav" href="javascript:void(0);"
+                  [ngClass]="{'active': currentUrl === 'article-master'}"
+                  [routerLink]="['/admin/article-master']"  (click)="closeSideBar()"><span>Article Master</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.categoryView]">
+               <a class="nav-link cate_icon_nav" href="javascript:void(0);"
+                  [ngClass]="{'active': currentUrl === 'category-master'}"
+                  [routerLink]="['/admin/category-master']"  (click)="closeSideBar()"><span>Category Master</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.imageViewView]">
+               <a class="nav-link img_view_de_icon_nav" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'image-view-master'}" [routerLink]="['/admin/image-view-master']"  (click)="closeSideBar()"><span>Image View Master</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.attributeView]">
+               <a class="nav-link table_event_icon_nav" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'attribute-master'}" [routerLink]="['/admin/attribute-master']"  (click)="closeSideBar()"><span>Attribute Master</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.productsAdd]">
+               <a class="nav-link add_prd_icon_nav" [ngClass]="{'active': currentUrl === 'add-product'}"
+                  href="javascript:void(0);" [routerLink]="['/admin/add-product']" (click)="closeSideBar()"><span>Add Product</span></a>
+            </li>
+            <li class="nav-item" *ngIf="checkManageSettingsPermissions()">
+               <a class="nav-link setting_n_de_icon_nav" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'manage-setting'}" [routerLink]="['/admin/manage-setting']"  (click)="closeSideBar()"><span>Manage Settings</span></a>
+            </li>
+            <li class="nav-item" *isAuthorize="[permissionTask.bulkUploadAdd]">
+               <a class="nav-link bulk_n_de_icon_nav" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'bulk-import'}" [routerLink]="['/admin/bulk-import']"  (click)="closeSideBar()"><span>Bulk Product Import</span></a>
+            </li>
+
+
+            <li class="nav-item" *isAuthorize="[permissionTask.generateQrView]">
+               <a class="nav-link qr_code_nav_icon" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'generate-qr'}" [routerLink]="['/admin/generate-qr']"  (click)="closeSideBar()"><span>Generate QR</span></a>
+            </li>
+
+
+            <li class="nav-item" *ngIf="checkUserManagementPermissions()">
+               <a class="nav-link user_seting_nav_icon" href="javascript:void(0);" [ngClass]="{'active': currentUrl === 'bulk-import'}"  (click)="closeSideBar()"><span>User Management</span></a>
+               <ul class="sub_menu_left">
+                  <li *isAuthorize="[permissionTask.roleModulePermissionView]"><a href="javascript:void(0)" [routerLink]="['/admin/role-module-permission']"><i class="fa fa-arrow-circle-right" aria-hidden="true"></i>Role Module Permission</a></li>
+                  <li><a href="javascript:void(0)" *isAuthorize="[permissionTask.userRoleMappingView]" [routerLink]="['/admin/user-role-mapping']"><i class="fa fa-arrow-circle-right" aria-hidden="true"></i>User & Role Mapping</a></li>
+
+               </ul>
+            </li>
+
+         </ul>
+      </div>
+   </nav>
+   <header>
+      <div class="head_profile_info">
+         <div class="head_profile_info_img"><img [src]="(user_image ? user_image : 'assets/images/profile_pic.jpg')" alt="" onError="this.src='assets/images/profile_pic.jpg'"></div>
+         <div class="head_profile_info_txt">
+            <h3>{{userName}}</h3>
+            <p>{{RoleName ? RoleName : 'Admin'}}</p>
+         </div>
+         <ul class="sub_menu_p">
+
+            <li><a href="javascript:void(0)" [routerLink]="['/admin/my-profile']"><em class="fa fa-user" aria-hidden="true"></em>My Profile</a></li>
+            <li><a href="javascript:void(0)" [routerLink]="['/admin/change-password']"><em class="fa fa-unlock-alt" aria-hidden="true"></em>Change Password</a></li>
+            <li><a href="javascript:void(0)" class="logout_btn" (click)="userLogout()"><em class="fas fa-sign-out-alt"></em>Logout</a></li>
+
+         </ul>
+
+
+
+      </div>
+   </header>
+   <div class="contant_mid">
+      <app-ng-dynamic-breadcrumb [symbol]="' >> '"></app-ng-dynamic-breadcrumb>
+      <router-outlet></router-outlet>
+   </div>
+</div>

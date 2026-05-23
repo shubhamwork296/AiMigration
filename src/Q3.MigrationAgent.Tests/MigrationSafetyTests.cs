@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Q3.MigrationAgent.AI.Prompts;
 using Q3.MigrationAgent.Adapters.Angular;
 using Q3.MigrationAgent.Adapters.DotNet;
@@ -1672,6 +1673,432 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
     }
 
     [Fact]
+    public void Material_Sass_Theming_Failure_Is_Classified_From_Build_Log()
+    {
+        var detection = AiRemediationPlanner.DetectAngularMaterialSassThemingFailureForTesting("""
+./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
+Undefined function.
+
+16 │ $jewelex-primary: mat.define-palette(mat.$indigo-palette);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/styles.scss 16:19 root stylesheet
+""");
+
+        Assert.True(detection.BoolValue("detected"));
+        Assert.Equal("material_sass_theming_api", detection.StringValue("failureCategory"));
+        Assert.Equal("src/styles.scss", detection.StringValue("file"));
+        Assert.Equal("mat.define-palette", detection.StringValue("function"));
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Rewrites_Define_Palette_To_M2_Define_Palette()
+    {
+        var output = AiRemediationPlanner.ApplyAngularMaterialSassThemingFunctionMapForTesting("$jewelex-primary: mat.define-palette(mat.$indigo-palette);");
+
+        Assert.Equal("$jewelex-primary: mat.m2-define-palette(mat.$m2-indigo-palette);", output);
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_M2_Tokens_Are_Idempotent()
+    {
+        var input = "$jewelex-primary: mat.m2-define-palette(mat.$m2-indigo-palette);";
+
+        var output = AiRemediationPlanner.ApplyAngularMaterialSassThemingFunctionMapForTesting(input);
+
+        Assert.Equal(input, output);
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Rewrites_Only_Known_M2_Functions()
+    {
+        var output = AiRemediationPlanner.ApplyAngularMaterialSassThemingFunctionMapForTesting("""
+$primary: mat.define-palette(mat.$indigo-palette);
+$theme: mat.define-light-theme((color: (primary: $primary)));
+.button { color: mat.get-color-from-palette($primary, 500); }
+.other { color: mat.unknown-material-function($primary); }
+""");
+
+        Assert.Contains("mat.m2-define-palette", output);
+        Assert.Contains("mat.$m2-indigo-palette", output);
+        Assert.Contains("mat.m2-define-light-theme", output);
+        Assert.Contains("mat.m2-get-color-from-palette", output);
+        Assert.Contains("mat.unknown-material-function", output);
+        Assert.DoesNotContain("mat.define-palette", output);
+        Assert.DoesNotContain("mat.$indigo-palette", output);
+        Assert.DoesNotContain("mat.define-light-theme", output);
+        Assert.DoesNotContain("mat.get-color-from-palette", output);
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Preserves_Css_Selectors_And_Declarations()
+    {
+        var input = """
+.toolbar .title {
+  display: flex;
+  color: mat.get-color-from-palette($primary, 700);
+  margin: 0;
+}
+""";
+
+        var output = AiRemediationPlanner.ApplyAngularMaterialSassThemingFunctionMapForTesting(input);
+
+        Assert.Contains(".toolbar .title {", output);
+        Assert.Contains("display: flex;", output);
+        Assert.Contains("margin: 0;", output);
+        Assert.Contains("color: mat.m2-get-color-from-palette($primary, 700);", output);
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Rejects_Node_Modules_Path()
+    {
+        Assert.False(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("node_modules/package/style.scss"));
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Rejects_TypeScript_Path()
+    {
+        Assert.False(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("src/app/app.component.ts"));
+    }
+
+    [Fact]
+    public void Material_Sass_Theming_Only_Allows_Global_Theme_Scss_Targets()
+    {
+        Assert.True(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("src/styles.scss"));
+        Assert.True(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("src/app/theme.scss"));
+        Assert.True(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("src/app/_material-theme.scss"));
+        Assert.False(AiRemediationPlanner.IsSafeAngularMaterialSassRemediationTargetForTesting("src/app/app.component.scss"));
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Unknown_Function_Requires_Manual_Correction()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        var styles = Path.Combine(root, "src", "styles.scss");
+        await File.WriteAllTextAsync(styles, "$primary: mat.define-unknown-theme(mat.$indigo-palette);\n");
+
+        var result = await new AiRemediationPlanner(new StubAi(new JsonObject()), new PromptLoader()).TryRemediateAsync(
+            Config(root) with { Ai = new AiConfig { UseAi = false, Provider = "codex" } },
+            root,
+            new StubAdapter(),
+            new ValidationResult { Passed = false, Output = "./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\nUndefined function.\n$primary: mat.define-unknown-theme(mat.$indigo-palette);\nsrc/styles.scss 1:11 root stylesheet" },
+            1);
+
+        Assert.NotNull(result.ManualCorrection);
+        Assert.Contains("mat.define-unknown-theme", await File.ReadAllTextAsync(styles));
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Does_Not_Modify_Package_Or_Config_Files()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "styles.scss"), "$primary: mat.define-palette(mat.$indigo-palette);\n");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"},"dependencies":{"@angular/material":"17.3.0"}}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), """{"version":1}""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{}}""");
+        var packageBefore = await File.ReadAllTextAsync(Path.Combine(root, "package.json"));
+        var angularBefore = await File.ReadAllTextAsync(Path.Combine(root, "angular.json"));
+        var tsconfigBefore = await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.json"));
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, MaterialSassValidation("mat.define-palette"), 1, 3);
+
+        Assert.NotNull(result);
+        Assert.Equal(packageBefore, await File.ReadAllTextAsync(Path.Combine(root, "package.json")));
+        Assert.Equal(angularBefore, await File.ReadAllTextAsync(Path.Combine(root, "angular.json")));
+        Assert.Equal(tsconfigBefore, await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.json")));
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Adds_Angular_Material_Use_When_Mat_Api_Is_Used()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        var styles = Path.Combine(root, "src", "styles.scss");
+        await File.WriteAllTextAsync(styles, "$primary: mat.define-palette(mat.$indigo-palette);\n@import \"legacy\";\nbody { margin: 0; }\n");
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, MaterialSassValidation("mat.define-palette"), 1, 3);
+
+        Assert.NotNull(result);
+        var content = await File.ReadAllTextAsync(styles);
+        Assert.StartsWith("@use '@angular/material' as mat;", content);
+        Assert.Contains("@import \"legacy\";", content);
+        Assert.Single(Regex.Matches(content, "@use '@angular/material' as mat;").Cast<Match>());
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Does_Not_Duplicate_Angular_Material_Use()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        var styles = Path.Combine(root, "src", "styles.scss");
+        await File.WriteAllTextAsync(styles, "@use '@angular/material' as mat;\n$primary: mat.define-palette(mat.$indigo-palette);\n");
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, MaterialSassValidation("mat.define-palette"), 1, 3);
+
+        Assert.NotNull(result);
+        var content = await File.ReadAllTextAsync(styles);
+        Assert.Single(Regex.Matches(content, "@use '@angular/material' as mat;").Cast<Match>());
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Does_Not_Modify_App_TypeScript()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src", "app"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "styles.scss"), "$primary: mat.define-palette(mat.$indigo-palette);\n");
+        var appTs = Path.Combine(root, "src", "app", "app.component.ts");
+        await File.WriteAllTextAsync(appTs, "export class AppComponent {}\n");
+        var before = await File.ReadAllTextAsync(appTs);
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, MaterialSassValidation("mat.define-palette"), 1, 3);
+
+        Assert.NotNull(result);
+        Assert.Equal(before, await File.ReadAllTextAsync(appTs));
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Remediates_Undefined_M2_Palette_Variable()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        var styles = Path.Combine(root, "src", "styles.scss");
+        await File.WriteAllTextAsync(styles, "@use '@angular/material' as mat;\n$primary: mat.m2-define-palette(mat.$indigo-palette);\n");
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(
+            root,
+            new ValidationResult
+            {
+                Passed = false,
+                FailureCommand = ["npm", "run", "build"],
+                Output = """
+./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
+Undefined variable.
+
+16 │ $primary: mat.m2-define-palette(mat.$indigo-palette);
+   │                                 ^^^^^^^^^^^^^^^^^^^
+
+src/styles.scss 16:33 root stylesheet
+"""
+            },
+            1,
+            3);
+
+        Assert.NotNull(result);
+        var content = await File.ReadAllTextAsync(styles);
+        Assert.Contains("mat.m2-define-palette(mat.$m2-indigo-palette)", content);
+        Assert.DoesNotContain("mat.$indigo-palette", content);
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Only_Triggers_For_Material_Sass_Errors()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "styles.scss"), "$primary: mat.define-palette(mat.$indigo-palette);\n");
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(
+            root,
+            new ValidationResult { Passed = false, Output = "./src/styles.scss - Error:\nUndefined variable.\n$spacing: $missing-spacing;\nsrc/styles.scss 1:1 root stylesheet" },
+            1,
+            3);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Deterministic_Remediation_Does_Not_Depend_On_Ai_Json()
+    {
+        var root = TestWorkspace.Create();
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "styles.scss"), "$primary: mat.define-palette(mat.$indigo-palette);\n");
+
+        var result = await new AiRemediationPlanner(new ThrowingAi(), new PromptLoader()).TryRemediateAsync(
+            Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } },
+            root,
+            new StubAdapter(),
+            MaterialSassValidation("mat.define-palette"),
+            1);
+
+        Assert.True(result.Applied);
+        Assert.Contains("mat.m2-define-palette", await File.ReadAllTextAsync(Path.Combine(root, "src", "styles.scss")));
+        Assert.False(result.Changes.Single().BoolValue("aiRemediationAttempted"));
+    }
+
+    [Fact]
+    public async Task Material_Sass_Theming_Remediation_Reruns_Build_Validation()
+    {
+        var root = await AngularWorkspace();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"},"dependencies":{"@angular/core":"17.3.0","@angular/cli":"17.3.0","@angular/material":"17.3.0"},"devDependencies":{"typescript":"~5.4.5"}}""");
+        Directory.CreateDirectory(Path.Combine(root, "src"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "styles.scss"), "$primary: mat.define-palette(mat.$indigo-palette);\n");
+        var buildAttempts = 0;
+        var runner = AngularRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildAttempts++;
+                return buildAttempts == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = MaterialSassValidation("mat.define-palette").Output }
+                    : new CommandResult { ReturnCode = 0 };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: new ThrowingAi(), promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(17, 18, "Angular 17 to 18"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "17"), To = new RuntimeSpec("angular", "18"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2 }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal(2, buildAttempts);
+        var change = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("material_sass_theming_api", change.StringValue("failureCategory"));
+        Assert.Equal("passed", change.StringValue("validationResultAfterRemediation"));
+    }
+
+    [Fact]
+    public void ReflectiveInjector_Package_Blocker_Is_Classified_With_Root_Package()
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "package.json"), """{"dependencies":{"ngx-color-picker":"14.0.0"}}""");
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, """
+./node_modules/ngx-color-picker/fesm2015/ngx-color-picker.mjs:1:10-28 - Error: export 'ReflectiveInjector' (imported as 'ReflectiveInjector') was not found in '@angular/core'
+""", new MigrationHop(15, 16, "Angular 15 to 16"));
+
+        var blocker = Assert.Single(blockers);
+        Assert.Equal("third_party_angular_incompatibility", blocker.StringValue("failureCategory"));
+        Assert.Equal("ngx-color-picker", blocker.StringValue("rootPackage"));
+        Assert.Equal("ngx-color-picker", blocker.StringValue("package"));
+    }
+
+    [Fact]
+    public async Task Ng6_Toastr_ReflectiveInjector_Without_Source_Compatibility_Stops_For_Manual_Review()
+    {
+        var root = await AngularWorkspace(extraDependency: ",\n    \"ng6-toastr-notifications\": \"1.0.4\"");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {"@angular/core":"15.2.10","@angular/cli":"15.2.10","ng6-toastr-notifications":"1.0.4"},
+  "devDependencies": {"typescript":"~4.9.5"}
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{}}""");
+        var buildAttempts = 0;
+        var runner = AngularRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildAttempts++;
+                return new CommandResult { ReturnCode = 1, Stderr = "node_modules/ng6-toastr-notifications/index.d.ts:1:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ReflectiveInjector'." };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: new ThrowingAi(), promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1, SourceCompatibilityRemediation = false }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.False(File.Exists(Path.Combine(root, "src", "app", "compat", "ng6-toastr-notifications.ts")));
+        var change = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("third_party_angular_incompatibility", change.StringValue("failureCategory"));
+        Assert.Equal("compatibility_shim", change.StringValue("selectedRemediation"));
+        Assert.Equal("rejected", change.StringValue("status"));
+        Assert.Equal("not run", change.StringValue("buildRetryResult"));
+    }
+
+    [Fact]
+    public async Task Ng6_Toastr_ReflectiveInjector_With_Source_Compatibility_Adds_Controlled_Shim()
+    {
+        var root = await AngularWorkspace(extraDependency: ",\n    \"ng6-toastr-notifications\": \"1.0.4\"");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {"@angular/core":"15.2.10","@angular/cli":"15.2.10","ng6-toastr-notifications":"1.0.4"},
+  "devDependencies": {"typescript":"~4.9.5"}
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{}}""");
+        var buildAttempts = 0;
+        var runner = AngularRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildAttempts++;
+                return buildAttempts == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = "node_modules/ng6-toastr-notifications/index.d.ts:1:10 - error TS2305: Module '\"@angular/core\"' has no exported member 'ReflectiveInjector'." }
+                    : new CommandResult { ReturnCode = 0 };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: new ThrowingAi(), promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1, SourceCompatibilityRemediation = true }, null, null);
+        var shimPath = Path.Combine(root, "src", "app", "compat", "ng6-toastr-notifications.ts");
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(File.Exists(shimPath));
+        Assert.Contains("\"ng6-toastr-notifications\"", await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.json")));
+        var change = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("compatibility_shim", change.StringValue("selectedRemediation"));
+        Assert.True(change.BoolValue("sourceCodeImpact"));
+        Assert.True(change.BoolValue("manualReviewRequired"));
+        Assert.False(change.BoolValue("businessLogicChanged"));
+        Assert.Equal("passed", change.StringValue("buildRetryResult"));
+    }
+
+    [Fact]
+    public async Task SharedModule_Cascade_Does_Not_Preempt_Node_Modules_Package_Remediation()
+    {
+        var root = await AngularWorkspace(extraDependency: ",\n    \"ngx-color-picker\": \"14.0.0\"");
+        Directory.CreateDirectory(Path.Combine(root, "src", "app", "shared"));
+        var sharedModule = Path.Combine(root, "src", "app", "shared", "shared.module.ts");
+        await File.WriteAllTextAsync(sharedModule, "export class SharedModule {}\n");
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {"@angular/core":"15.2.10","@angular/cli":"15.2.10","ngx-color-picker":"14.0.0"},
+  "devDependencies": {"typescript":"~4.9.5"}
+}
+""");
+        var sharedBefore = await File.ReadAllTextAsync(sharedModule);
+        var buildAttempts = 0;
+        var runner = AngularRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view" && command[2].StartsWith("ngx-color-picker@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 0, Stdout = """["16.0.0"]""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = AngularVersions(command) };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildAttempts++;
+                return buildAttempts == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = """
+src/app/shared/shared.module.ts:10:5 - error NG6002: SharedModule does not appear to be an NgModule class.
+node_modules/ngx-color-picker/fesm2015/ngx-color-picker.mjs:1:10-28 - Error: export 'ReflectiveInjector' (imported as 'ReflectiveInjector') was not found in '@angular/core'
+""" }
+                    : new CommandResult { ReturnCode = 0 };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: new ThrowingAi(), promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal(sharedBefore, await File.ReadAllTextAsync(sharedModule));
+        var change = Assert.Single(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>());
+        Assert.Equal("package_update", change.StringValue("type"));
+        Assert.Equal("ngx-color-picker", change.StringValue("packageName"));
+        Assert.Equal("same_package_upgrade", change.StringValue("selectedRemediation"));
+        Assert.Equal("passed", change.StringValue("buildRetryResult"));
+    }
+
+    [Fact]
     public void Report_Contains_Validation_Failures_Ai_Remediation_And_Manual_Correction()
     {
         var validation = new ValidationResult { Passed = false, Errors = "final error", SnapshotPath = "snapshot" };
@@ -1764,6 +2191,21 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
         ? """["15.0.0","15.2.10"]"""
         : "\"15.2.10\"";
 
+    private static ValidationResult MaterialSassValidation(string function) => new()
+    {
+        Passed = false,
+        FailureCommand = ["npm", "run", "build"],
+        Output = $$"""
+./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
+Undefined function.
+
+16 │ $primary: {{function}}(mat.$indigo-palette);
+   │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/styles.scss 16:11 root stylesheet
+"""
+    };
+
     private static JsonObject Plan(string summary, string file, string before, string after) => new()
     {
         ["summary"] = summary,
@@ -1830,6 +2272,12 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
     {
         public Task<JsonObject?> AskAsync(AiConfig config, string system, string user, CancellationToken cancellationToken = default) =>
             throw new TimeoutException("codex CLI timed out during remediation planning (idle-timeout): Command timed out (idle-timeout).");
+    }
+
+    private sealed class ThrowingAi : IAiService
+    {
+        public Task<JsonObject?> AskAsync(AiConfig config, string system, string user, CancellationToken cancellationToken = default) =>
+            throw new System.Text.Json.JsonException("non-strict JSON returned by Codex");
     }
 
     private sealed class SandboxErrorAi : IAiService

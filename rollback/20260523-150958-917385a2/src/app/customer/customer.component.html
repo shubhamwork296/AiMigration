@@ -1,0 +1,6 @@
+<div class="loading-spinner" *ngIf="loading">
+  <div class="loading-spinner__mask"></div>
+  <div class="loading-spinner__spinner"></div>
+</div>
+
+<router-outlet (activate)="scrollTop($event)"></router-outlet>
