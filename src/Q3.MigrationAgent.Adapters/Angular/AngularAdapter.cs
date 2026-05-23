@@ -208,19 +208,19 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 var validationResult = ValidationResultFromAngularValidation(validation, hop);
                 foreach (var existing in aiRemediationChanges.OfType<JsonObject>()) validationResult.AiRemediationChanges.Add(existing.DeepClone().AsObject());
                 RemediationAttempt remediation;
-                var deterministic = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(projectPath, validationResult, attempt, config.MaxAiRemediationRetries, cancellationToken);
+                var deterministic = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(projectPath, validationResult, attempt, config.MaxAiRemediationRetries, config.SourceCompatibilityRemediation, cancellationToken);
                 if (deterministic is not null)
                 {
                     remediation = RemediationAttempt.AppliedResult([deterministic]);
                     progress?.Stage(stage, "Applied deterministic validation remediation. Re-running build verification.");
                 }
-                else if (config.Ai.UseAi && ai is not null && promptLoader is not null && DetectThirdPartyValidationBlockers(projectPath, validation, hop).Count > 0)
+                else if (DetectThirdPartyValidationBlockers(projectPath, validation, hop).Count > 0)
                 {
                     var blockers = DetectThirdPartyValidationBlockers(projectPath, validation, hop);
                     foreach (var blocker in blockers) AddUniqueJsonObject(thirdPartyValidationBlockers, blocker, "package");
-                    progress?.Stage(stage, $"Requesting AI package remediation for validation-proven third-party blockers: {string.Join(", ", blockers.Select(b => b.StringValue("package")))}.");
+                    progress?.Stage(stage, $"Selecting validation-driven package remediation for third-party blockers: {string.Join(", ", blockers.Select(b => b.StringValue("package")))}.");
                     remediation = await TryRemediateValidationProvenThirdPartyPackagesAsync(projectPath, hop, config, validation, blockers, attempt, failedPackagePlans, progress, stage, logPath, cancellationToken);
-                    if (!remediation.Attempted)
+                    if (!remediation.Attempted && config.Ai.UseAi && ai is not null && promptLoader is not null)
                     {
                         remediation = await new AiRemediationPlanner(ai, promptLoader).TryRemediateAsync(config, projectPath, this, validationResult, attempt, cancellationToken);
                     }
@@ -304,6 +304,10 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                         validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: true));
                         break;
                     }
+                    foreach (var change in aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt && c.StringValue("installResult") == "pending"))
+                    {
+                        change["installResult"] = "passed";
+                    }
                 }
 
                 validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, attempt < config.MaxAiRemediationRetries, cancellationToken);
@@ -312,6 +316,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 {
                     change["validationResultAfterRemediation"] = rerunPassed ? "passed" : "failed";
                     change["validationErrorTail"] = rerunPassed ? "" : Tail(validation.StringValue("output", validation.StringValue("errors")));
+                    if (change.StringValue("buildRetryResult") == "pending") change["buildRetryResult"] = rerunPassed ? "passed" : "failed";
                 }
                 if (validation["buildVerificationCommandResult"] is JsonObject remediationBuildCommandResult) commands.Add(remediationBuildCommandResult.DeepClone());
                 if (!rerunPassed) validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: remediation.Applied));
@@ -1624,6 +1629,47 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             return RemediationAttempt.AppliedResult(changes);
         }
 
+        var deterministicChanges = await TryApplyDeterministicThirdPartyPackageRemediationAsync(projectPath, hop, config, validation, blockers, attempt, failedPackagePlans, logPath, cancellationToken);
+        if (deterministicChanges.Count > 0)
+        {
+            changes.AddRange(deterministicChanges);
+            if (changes.Any(c => c.StringValue("status") == "applied")) return RemediationAttempt.AppliedResult(changes);
+            return RemediationAttempt.Manual(new JsonObject
+            {
+                ["requiresHumanReview"] = true,
+                ["reason"] = "No deterministic validation-driven third-party remediation could be safely applied.",
+                ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+                ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+                ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
+            }, changes);
+        }
+
+        if (!config.Ai.UseAi || ai is null || promptLoader is null)
+        {
+            if (!string.IsNullOrWhiteSpace(shimRejectedReason))
+            {
+                changes.Add(new JsonObject
+                {
+                    ["attempt"] = attempt,
+                    ["mode"] = "deterministic",
+                    ["status"] = "rejected",
+                    ["failureCause"] = "validation_proven_third_party_blocker",
+                    ["failureCategory"] = "type_declaration",
+                    ["packageName"] = "ngx-pinch-zoom",
+                    ["action"] = "shim_types_only",
+                    ["rejectedReason"] = shimRejectedReason
+                });
+            }
+            return changes.Count == 0 ? RemediationAttempt.NotAttempted() : RemediationAttempt.Manual(new JsonObject
+            {
+                ["requiresHumanReview"] = true,
+                ["reason"] = "No deterministic validation-driven third-party remediation could be safely applied.",
+                ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+                ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+                ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
+            }, changes);
+        }
+
         JsonObject? plan;
         try
         {
@@ -1709,6 +1755,255 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         }, changes);
     }
 
+    private async Task<IReadOnlyList<JsonObject>> TryApplyDeterministicThirdPartyPackageRemediationAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject validation, IReadOnlyList<JsonObject> blockers, int attempt, HashSet<string> failedPackagePlans, string? logPath, CancellationToken cancellationToken)
+    {
+        var packageJsonPath = Path.Combine(projectPath, "package.json");
+        var packageJson = ReadJson(packageJsonPath);
+        var changes = new List<JsonObject>();
+        var packageJsonChanged = false;
+
+        foreach (var blocker in blockers.OrderBy(b => DeterministicThirdPartyRemediationPriority(b)))
+        {
+            var packageName = blocker.StringValue("package");
+            var candidate = DeterministicThirdPartyCandidate(blocker, hop.ToVersion);
+            if (candidate is null) continue;
+
+            if (candidate.Value.Action == "compatibility_shim")
+            {
+                var shim = TryApplyRuntimeCompatibilityShim(projectPath, config, validation, blocker, attempt);
+                changes.Add(shim);
+                continue;
+            }
+
+            var signature = $"{packageName}|{candidate.Value.Action}|{candidate.Value.TargetPackage}|{candidate.Value.TargetRange}";
+            if (!failedPackagePlans.Add(signature))
+            {
+                changes.Add(RejectedThirdPartyChange(DeterministicThirdPartyItem(blocker, candidate.Value), blockers, attempt, packageName, "The same failed package remediation plan was already attempted."));
+                continue;
+            }
+
+            var item = DeterministicThirdPartyItem(blocker, candidate.Value);
+            var verified = await VerifyNpmPackageTargetWithCorrectionAsync(projectPath, hop, config, item, candidate.Value.TargetPackage, candidate.Value.TargetRange, logPath, cancellationToken);
+            if (verified.FinalTarget is null)
+            {
+                changes.Add(ThirdPartyBlockerChange(item, blockers, attempt, "failed", verified, packageName, candidate.Value.TargetPackage, candidate.Value.TargetRange));
+                continue;
+            }
+
+            if (!ApplyThirdPartyPackageJsonRemediation(packageJson, packageName, candidate.Value.TargetPackage, verified.FinalTarget, candidate.Value.Action, out var before, out var after))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, $"Package.json did not contain {packageName} in a supported dependency section."));
+                continue;
+            }
+
+            packageJsonChanged = true;
+            var change = ThirdPartyBlockerChange(item, blockers, attempt, "applied", verified, packageName, candidate.Value.TargetPackage, candidate.Value.Action == "npm_alias_replacement" ? $"npm:{candidate.Value.TargetPackage}@{verified.FinalTarget}" : verified.FinalTarget);
+            change["file"] = "package.json";
+            change["type"] = "package_update";
+            change["selectedRemediation"] = candidate.Value.Strategy;
+            change["before"] = before;
+            change["after"] = after;
+            change["businessLogicChanged"] = false;
+            change["businessFile"] = false;
+            change["requiresVersionVerification"] = true;
+            change["manualReviewRequired"] = candidate.Value.Action == "npm_alias_replacement";
+            changes.Add(change);
+        }
+
+        if (packageJsonChanged)
+        {
+            File.WriteAllText(packageJsonPath, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+        }
+
+        return changes;
+    }
+
+    private static int DeterministicThirdPartyRemediationPriority(JsonObject blocker) =>
+        blocker.StringValue("package").Equals("ng6-toastr-notifications", StringComparison.OrdinalIgnoreCase) ? 100 : 0;
+
+    private static ThirdPartyRemediationCandidate? DeterministicThirdPartyCandidate(JsonObject blocker, int targetMajor)
+    {
+        if (targetMajor != 16) return null;
+        var packageName = blocker.StringValue("package");
+        var category = blocker.StringValue("errorCategory");
+        if (packageName.Equals("ngx-pinch-zoom", StringComparison.OrdinalIgnoreCase) &&
+            category.Equals("third_party_declaration_type_missing", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return packageName switch
+        {
+            "ngx-bootstrap" => new("same_package_upgrade", "upgrade", "ngx-bootstrap", "^11.0.2", "Validation proved the installed ngx-bootstrap package uses Angular metadata APIs removed before Angular 16."),
+            "ngx-color-picker" => new("same_package_upgrade", "upgrade", "ngx-color-picker", "^16.0.0", "Validation proved the installed ngx-color-picker package imports Angular APIs removed in Angular 16."),
+            "ngx-slick-carousel" => new("same_package_upgrade", "upgrade", "ngx-slick-carousel", "15.0.0", "Validation proved the installed ngx-slick-carousel package is not Ivy-compatible for this Angular hop."),
+            "ngx-pagination" => new("same_package_upgrade", "upgrade", "ngx-pagination", "^6.0.3", "Validation proved the installed ngx-pagination package is not Ivy-compatible for this Angular hop."),
+            "angular-user-idle" => new("same_package_upgrade", "upgrade", "angular-user-idle", "^4.0.0", "Validation proved the installed angular-user-idle package is not Ivy-compatible for this Angular hop."),
+            "ngx-pinch-zoom" => new("npm_alias_replacement", "npm_alias_replacement", "@mtnair/ngx-pinch-zoom", "2.5.12", "Validation proved ngx-pinch-zoom module metadata is incompatible; the verified alias preserves the original package name through npm aliasing."),
+            "ng6-toastr-notifications" => new("compatibility_shim", "compatibility_shim", "ng6-toastr-notifications", "", "Validation proved ng6-toastr-notifications imports obsolete Angular runtime APIs and no deterministic same-package Angular 16 target is known."),
+            _ => null
+        };
+    }
+
+    private static JsonObject DeterministicThirdPartyItem(JsonObject blocker, ThirdPartyRemediationCandidate candidate) => new()
+    {
+        ["packageName"] = blocker.StringValue("package"),
+        ["currentVersion"] = blocker.StringValue("currentVersion"),
+        ["detectedErrorCategory"] = blocker.StringValue("errorCategory"),
+        ["action"] = candidate.Action,
+        ["targetPackageName"] = candidate.TargetPackage,
+        ["targetVersionRange"] = candidate.TargetRange,
+        ["reason"] = candidate.Reason,
+        ["expectedCodeImpact"] = candidate.Action == "npm_alias_replacement" ? "package alias" : "none",
+        ["requiresSourceChanges"] = false,
+        ["sourceChangeScope"] = "package_json_only",
+        ["confidence"] = 1.0,
+        ["validationCommand"] = blocker.StringValue("validationCommand", "npm run build")
+    };
+
+    private static JsonObject TryApplyRuntimeCompatibilityShim(string projectPath, MigrationConfig config, JsonObject validation, JsonObject blocker, int attempt)
+    {
+        if (!config.SourceCompatibilityRemediation)
+        {
+            return new JsonObject
+            {
+                ["attempt"] = attempt,
+                ["mode"] = "deterministic",
+                ["status"] = "rejected",
+                ["failureCategory"] = "third_party_angular_incompatibility",
+                ["failureCause"] = "validation_proven_third_party_blocker",
+                ["packageName"] = blocker.StringValue("package"),
+                ["currentVersion"] = blocker.StringValue("currentVersion"),
+                ["selectedRemediation"] = "compatibility_shim",
+                ["action"] = "compatibility_shim",
+                ["reason"] = "Runtime compatibility shim is blocked because sourceCompatibilityRemediation=false.",
+                ["rejectedReason"] = "Enable sourceCompatibilityRemediation to allow project-owned runtime import-surface shims.",
+                ["manualReviewRequired"] = true,
+                ["installResult"] = "not run",
+                ["buildRetryResult"] = "not run",
+                ["evidence"] = blocker["evidence"]?.DeepClone()
+            };
+        }
+
+        var shimFile = "src/app/compat/ng6-toastr-notifications.ts";
+        var full = Path.Combine(projectPath, shimFile.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        var before = File.Exists(full) ? File.ReadAllText(full) : "";
+        var after = Ng6ToastrCompatibilityShimSource();
+        File.WriteAllText(full, after);
+        var tsconfigChanged = EnsureTsconfigPathAlias(projectPath, "ng6-toastr-notifications", ["src/app/compat/ng6-toastr-notifications"]);
+
+        return new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["mode"] = "deterministic",
+            ["status"] = "applied",
+            ["file"] = shimFile,
+            ["type"] = "compatibility_shim",
+            ["failureCategory"] = "third_party_angular_incompatibility",
+            ["failureCause"] = "validation_proven_third_party_blocker",
+            ["packageName"] = blocker.StringValue("package"),
+            ["currentVersion"] = blocker.StringValue("currentVersion"),
+            ["selectedRemediation"] = "compatibility_shim",
+            ["action"] = "compatibility_shim",
+            ["reason"] = "Added a project-owned import-surface compatibility shim for an abandoned Angular package after validation proved the package blocks Angular 16.",
+            ["before"] = before,
+            ["after"] = after,
+            ["businessLogicChanged"] = false,
+            ["businessFile"] = false,
+            ["sourceCodeImpact"] = true,
+            ["validationDriven"] = true,
+            ["runtimeCodeChanged"] = true,
+            ["manualReviewRequired"] = true,
+            ["sourceCompatibilityCodeAdded"] = true,
+            ["tsconfigPathAliasAdded"] = tsconfigChanged,
+            ["installResult"] = "not required",
+            ["buildRetryResult"] = "pending",
+            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["evidence"] = blocker["evidence"]?.DeepClone(),
+            ["reviewNote"] = "Compatibility shim preserves ToastrModule and ToastrManager import names used by the app; manual review is required because runtime notification behavior is represented by source compatibility code."
+        };
+    }
+
+    private static string Ng6ToastrCompatibilityShimSource() => """
+import { Injectable, ModuleWithProviders, NgModule } from '@angular/core';
+
+export interface ToastrOptions {
+  position?: string;
+  showCloseButton?: boolean;
+  animate?: string;
+  [key: string]: unknown;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ToastrManager {
+  successToastr(message: string, title?: string, options?: ToastrOptions): void {
+    this.log('success', message, title, options);
+  }
+
+  errorToastr(message: string, title?: string, options?: ToastrOptions): void {
+    this.log('error', message, title, options);
+  }
+
+  warningToastr(message: string, title?: string, options?: ToastrOptions): void {
+    this.log('warn', message, title, options);
+  }
+
+  infoToastr(message: string, title?: string, options?: ToastrOptions): void {
+    this.log('info', message, title, options);
+  }
+
+  private log(level: 'success' | 'error' | 'warn' | 'info', message: string, title?: string, options?: ToastrOptions): void {
+    const text = title ? `${title}: ${message}` : message;
+    const log = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+    log(text, options ?? {});
+  }
+}
+
+@NgModule({})
+export class ToastrModule {
+  static forRoot(): ModuleWithProviders<ToastrModule> {
+    return {
+      ngModule: ToastrModule,
+      providers: [ToastrManager]
+    };
+  }
+}
+""";
+
+    private static bool EnsureTsconfigPathAlias(string projectPath, string importName, string[] targets)
+    {
+        var path = Path.Combine(projectPath, "tsconfig.json");
+        if (!File.Exists(path)) return false;
+        JsonObject config;
+        try
+        {
+            config = JsonNode.Parse(File.ReadAllText(path), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
+        }
+        catch
+        {
+            return false;
+        }
+
+        var compilerOptions = config["compilerOptions"] as JsonObject;
+        if (compilerOptions is null)
+        {
+            compilerOptions = new JsonObject();
+            config["compilerOptions"] = compilerOptions;
+        }
+        var paths = compilerOptions["paths"] as JsonObject;
+        if (paths is null)
+        {
+            paths = new JsonObject();
+            compilerOptions["paths"] = paths;
+        }
+        var desired = new JsonArray(targets.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        if (paths[importName] is JsonArray existing && existing.Select(v => v?.ToString() ?? "").SequenceEqual(targets, StringComparer.OrdinalIgnoreCase)) return false;
+        paths[importName] = desired;
+        File.WriteAllText(path, config.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+        return true;
+    }
+
     private async Task<NpmPackageTargetResolution> VerifyNpmPackageTargetWithCorrectionAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject item, string targetPackage, string targetRange, string? logPath, CancellationToken cancellationToken)
     {
         var role = "third-party";
@@ -1745,6 +2040,12 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (packageJson[section] is not JsonObject deps) return false;
         var current = deps[packageName]?.ToString() ?? "";
         before = $"\"{packageName}\": \"{current}\"";
+        if (action == "npm_alias_replacement" && !packageName.Equals(targetPackage, StringComparison.OrdinalIgnoreCase))
+        {
+            deps[packageName] = $"npm:{targetPackage}@{targetVersion}";
+            after = $"\"{packageName}\": \"npm:{targetPackage}@{targetVersion}\"";
+            return true;
+        }
         if (action == "replace" && !packageName.Equals(targetPackage, StringComparison.OrdinalIgnoreCase))
         {
             deps.Remove(packageName);
@@ -2008,7 +2309,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static string NormalizeThirdPartyAction(string action) => action switch
     {
         "upgrade_same_package" => "upgrade",
-        "upgrade" or "replace" or "remove_if_unused" or "shim_types_only" or "manual_review" => action,
+        "npm_alias_replacement" or "upgrade" or "replace" or "remove_if_unused" or "shim_types_only" or "manual_review" => action,
         "manualReview" => "manual_review",
         _ => "manual_review"
     };
@@ -3403,6 +3704,7 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
         string AiReRecommendationReason,
         bool AiReRecommendationUsed,
         string InitialVerificationResult);
+    private readonly record struct ThirdPartyRemediationCandidate(string Strategy, string Action, string TargetPackage, string TargetRange, string Reason);
     private sealed record FailureInfo(string Category, string Stage, IReadOnlyList<string> Command, string Reason, string SuggestedNextAction, bool CanContinue, bool ManualCorrectionRequired);
     private static JsonObject FailedHopResult(MigrationHop hop, JsonArray commands, IReadOnlyList<string> files, JsonObject preflight, string reason, string package) => new() { ["hop"] = HopObject(hop), ["status"] = "failed", ["commands"] = commands, ["files"] = new JsonArray(files.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()), ["preflightDependencyAnalysis"] = preflight, ["validation"] = new JsonObject { ["passed"] = false, ["errors"] = reason }, ["failureReason"] = reason, ["failurePackage"] = package, ["optionalMigrations"] = new JsonArray() };
     private static string CommandDescription(IReadOnlyList<string> command) => command.Take(2).SequenceEqual(["npm", "install"]) || command.Take(2).SequenceEqual(["yarn", "install"]) || command.Take(2).SequenceEqual(["pnpm", "install"]) ? "dependency install" : command.Contains("--migrate-only") ? "Angular migrate-only" : "command";

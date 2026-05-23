@@ -1,4 +1,4 @@
-{"sourceAngularMajor":15,"targetAngularMajor":16,"recommendations":[{"packageName":"@angular/animations","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/cdk","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/common","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/compiler","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/core","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16 target major; local metadata confirms Angular core 16 peer support for rxjs ^6.5.3 || ^7.4.0 and zone.js ~0.13.0.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/forms","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/material","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/platform-browser","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/platform-browser-dynamic","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/router","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"rxjs","currentVersion":"~7.4.0","recommendedVersion":"~7.4.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing rxjs range satisfies Angular 16 core peer range ^6.5.3 || ^7.4.0 from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"tslib","currentVersion":"^2.3.0","recommendedVersion":"^2.3.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing tslib range satisfies Angular 16 core/compiler support dependency requirements from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"zone.js","currentVersion":"~0.13.3","recommendedVersion":"~0.13.3","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing zone.js range is compatible with Angular 16 core peer range ~0.13.0 from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular-devkit/build-angular","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16; local metadata confirms build-angular 16 peer compatibility with compiler-cli ^16.0.0 and TypeScript >=4.9.3 <5.2.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/cli","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16 target major; local metadata shows installed Angular CLI 16 tooling.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/compiler-cli","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16; local metadata confirms compiler-cli 16 peer compatibility with TypeScript >=4.9.3 <5.2.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"typescript","currentVersion":"~5.1.6","recommendedVersion":"~5.1.6","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing TypeScript version is within the Angular 16 compiler-cli/build-angular peer range >=4.9.3 <5.2, and npm ls reports it valid.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false}],"warnings":[]}
+{"summary":"The build fails while compiling src/styles.scss because Angular Material 18 no longer exposes the Sass theming function mat.define-palette used at line 16. The supplied context only includes the failing line, not the surrounding Material theming setup, so a safe automatic style migration cannot be chosen without inspecting the full stylesheet.","confidence":0.78,"risk":"high","requiresManualCorrection":true,"manualCorrectionReason":"The failure points to src/styles.scss line 16, but the full stylesheet content is not supplied. Updating Angular Material Sass theming APIs safely may require coordinated changes to related palette/theme function and variable names, and the allowed automatic remediation types do not cover a non-import SCSS theming API edit with incomplete before content.","failureCategory":"compiler","businessLogicChanged":false,"changes":[],"commandsToRunAfter":[],"reportNotes":[],"safetyDecision":{"canApplyAutomatically":false,"requiresManualReview":true,"reason":"Manual review is required to update the project-owned Angular Material SCSS theming API usage in src/styles.scss while preserving the existing theme behavior."}}
 
 OpenAI Codex v0.133.0
 --------
@@ -9,165 +9,277 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: none
 reasoning summaries: none
-session id: 019e501d-aab0-7572-9495-7d7e049d361b
+session id: 019e5395-649c-7712-8616-4c7015fbdb55
 --------
 user
-Return strict JSON only.
+You are fixing a failed migration validation step for a software migration agent.
 
-You are a senior Angular migration dependency planner.
+Do not execute commands.
+Do not inspect the filesystem.
+Do not run build, test, install, restore, or migration commands.
+Do not assume access to files that were not supplied.
+Return only strict JSON.
 
-Your task is to recommend a single compatible dependency alignment plan for ONE Angular migration hop.
+The migration agent will:
+- apply approved changes
+- verify package versions
+- inspect files
+- run commands
+- validate the result
+- reject unsafe changes
 
-This prompt is ONLY for Angular framework-critical dependency alignment.
-It must not modify business logic or application source code.
-It must not recommend API replacements, source edits, component edits, service edits, or runtime behavior changes.
+Your task is to propose the smallest safe remediation for the actual observed validation failure.
 
-INPUT CONTEXT:
-You will receive:
-- sourceAngularMajor
-- targetAngularMajor
-- package.json dependency sections
-- optional installed package metadata
-- optional npm/package-manager failure context
-- optional Angular CLI/compiler/build error context
+This remediation prompt is validation-driven only.
+Do not proactively modernize packages or code.
+Do not fix unrelated warnings.
+Do not refactor.
+Do not change business behavior.
 
-GOAL:
-Recommend compatible versions for Angular framework-critical dependencies for the target Angular major.
+STRICT SAFETY RULES:
+1. Fix only the actual cause shown in the supplied validation/build/test/install failure.
+2. Do not make broad refactors.
+3. Do not modernize unrelated code.
+4. Do not change business rules.
+5. Do not change application behavior.
+6. Do not edit unrelated files.
+7. Do not edit credentials, secrets, environment files, generated files, build output, dependency cache, or vendor folders.
+8. Do not edit node_modules, dist, build, bin, obj, .git, .angular, coverage, .cache, or generated output.
+9. Do not delete files unless the failure directly requires removal and confidence is very high.
+10. Prefer package/config/script/type/style/module-wiring fixes before source edits.
+11. Source edits are allowed only when the compiler/build error points to an exact file and exact symbol, and the fix is minimal wiring only.
+12. Never rewrite templates or component behavior unless the error points to the exact binding and no structural fix exists.
+13. Never change domain logic, API calls, calculations, validation rules, workflows, state transitions, user permissions, data mapping, or business decisions.
+14. If unsure whether a change affects behavior, require manual correction.
+15. If the safe fix requires information not supplied in context, require manual correction.
+16. If multiple possible fixes exist and the safest one cannot be chosen from context, require manual correction.
+17. If a package version is recommended, the migration agent must verify it before applying.
+18. Do not recommend npm --force, forced restore, audit fix, broad update, or global tool changes.
+19. Do not skip validation.
+20. Do not proceed to the next migration hop after a failed validation.
 
-FRAMEWORK-CRITICAL DEPENDENCIES:
-Only consider these packages:
-- Angular-owned framework packages:
-  @angular/animations
-  @angular/common
-  @angular/compiler
-  @angular/core
-  @angular/forms
-  @angular/platform-browser
-  @angular/platform-browser-dynamic
-  @angular/router
-  @angular/localize
-  @angular/service-worker
-  @angular/elements
-- Angular CLI/build/compiler tooling:
-  @angular/cli
-  @angular/compiler-cli
-  @angular-devkit/build-angular
-  @angular-devkit/core
-  @angular-devkit/schematics
-- Angular CDK/Material:
-  @angular/cdk
-  @angular/material
-- Angular runtime/compiler support packages:
-  typescript
-  rxjs
-  zone.js
-  tslib
-- Angular CLI-linked test/build tooling only when directly tied to Angular build/test compatibility:
-  karma
-  karma-chrome-launcher
-  karma-coverage
-  karma-jasmine
-  jasmine-core
-  protractor
-  @types/jasmine
+ALLOWED REMEDIATION TYPES:
+Use script_update for package/build script changes.
+Use package_update for dependency/package version changes.
+Use config_update for structural framework/build/compiler config changes.
+Use type_shim for project-owned declaration/type compatibility shims.
+Use style_import_update for CSS/SCSS/style asset import fixes.
+Use test_config_update for test runner/build test configuration fixes.
+Use minimal_module_or_import_wiring only for narrowly scoped framework module/import/export wiring proven by compiler output.
+Use manual_review when no safe automatic remediation exists.
 
-DO NOT change unrelated third-party packages unless supplied evidence shows that the package directly blocks Angular install, Angular compiler, Angular CLI build, or Angular test execution.
+DISALLOWED REMEDIATION:
+Do not propose:
+- business logic edits
+- service/controller/component behavior edits
+- API replacements
+- method rewrites
+- class refactors
+- template rewrites
+- broad dependency upgrades
+- package replacement unless same-package upgrade cannot work and validation evidence proves replacement is necessary
+- changing generated/vendor/cache/build output
+- disabling compiler errors broadly
+- hiding framework-critical package mismatches with bypass flags
 
-STRICT RULES:
-1. Return strict JSON only.
-2. Make one aligned plan for the full hop, not isolated package-by-package guesses.
-3. Do not suggest business source-code changes.
-4. Do not suggest API replacements, method changes, class refactoring, or logic changes.
-5. Do not use latest, *, x, >=, unbounded ranges, or placeholder versions.
-6. Do not blindly copy the exact @angular/core patch version to every Angular-owned package.
-7. Angular-owned framework packages must align to the target Angular major.
-8. Angular CLI, compiler-cli, and build-angular must align to the target Angular major.
-9. Angular CDK and Angular Material must align to the target Angular major when present.
-10. TypeScript must be compatible with the target Angular major's compiler-cli/build-angular range.
-11. Angular 13 and Angular 14 must not use TypeScript 5.x.
-12. If the current package is already compatible with the target Angular major, preserve it.
-13. If a required framework-critical package is missing and Angular normally requires it for this project type, recommend add.
-14. If a package is obsolete or incompatible for the target Angular major and directly affects Angular build/test, recommend remove only when confidence is high.
-15. If exact compatibility cannot be determined from Angular compatibility rules, local metadata, or supplied failure context, use manualReview.
-16. If a package requires registry verification for an exact patch, recommend a bounded target-major-compatible range and set requiresRegistryVerification to true.
-17. Never invent exact patch versions unless they are supplied in the input or known from Angular compatibility rules.
-18. Prefer bounded compatible ranges:
-    - Angular-owned packages: use target-major-compatible caret or tilde range based on supplied project style.
-    - TypeScript: use the known compatible bounded range for the target Angular major.
-    - RxJS, zone.js, and tslib: preserve when compatible; align only when clearly incompatible.
-19. Third-party packages must not be changed here unless they are directly Angular build/runtime/test critical.
-20. If confidence is low or risk is high, mark manualReviewRequired as true.
+FAILURE CATEGORY RULES:
+Classify the failure using exactly one failureCategory:
 
-VERSION RECOMMENDATION GUIDANCE:
-- Preserve the existing range style where safe.
-- For Angular-owned packages, recommend the target Angular major range, not necessarily a specific patch.
-- For package-specific Angular-owned packages such as @angular/material and @angular/cdk, allow their patch/minor to differ from @angular/core.
-- Do not perform broad npm version enumeration.
-- Do not recommend a version just because it is the newest.
-- Prefer compatibility over freshness.
+- script:
+  package script or command shape failure, for example deprecated CLI flag.
+
+- dependency:
+  dependency version, missing package, incompatible package, peer dependency, or package resolution failure.
+
+- type_declaration:
+  TypeScript declaration failure from third-party types or missing ambient type.
+
+- css_dependency_import:
+  CSS/SCSS import path failure or deprecated style import syntax.
+
+- dependency_asset_import_resolution:
+  css-loader/sass-loader/postcss-loader/mini-css-extract-plugin cannot resolve an asset from a dependency package.
+
+- third_party_angular_incompatibility:
+  Angular compiler/build failure caused by third-party Angular package metadata, declarations, NgModule compatibility, or Ivy/APF mismatch.
+
+- compiler:
+  framework/language compiler error that is not clearly dependency/config/test/style related.
+
+- config:
+  build/framework/compiler configuration failure.
+
+- test:
+  test runner configuration or test execution setup failure.
+
+- unknown:
+  failure cause cannot be classified safely.
+
+GENERAL REMEDIATION PRIORITY:
+1. Script/config fix if the command/config is structurally invalid.
+2. Type shim for third-party declaration-only TS2304 missing type failures where runtime behavior is unaffected.
+3. Package alignment if the failure names an incompatible/missing package and the failure is not safely solved by a declaration-only shim.
+4. Style import fix only for style asset resolution errors.
+5. Minimal framework module/import/export wiring only when compiler output proves exact missing visibility.
+6. Manual correction if the fix may alter behavior or requires source-code migration.
+
+ANGULAR-SPECIFIC GUIDANCE:
+- Deprecated Angular CLI flags may be replaced.
+  Example:
+  --prod -> --configuration production
+
+- Third-party package declaration errors may be fixed with project-owned .d.ts compatibility shims.
+  Example:
+  TS2304 Cannot find name VisibilityState from node_modules/ngx-pinch-zoom/**/*.d.ts may be fixed by adding a project-owned declaration shim such as:
+  src/types/third-party-compat.d.ts
+  containing only a safe type alias.
+  This is allowed only when the shim does not alter runtime behavior.
+
+- Project-owned declaration shim files are allowed only for type_shim changes.
+  They must contain type declarations only.
+  They must not contain runtime code.
+
+- Third-party Angular package incompatibility after validation may be fixed with package_update when the package is directly named by install/build errors.
+  Prefer same-package upgrade first.
+  Use replacement only when same-package upgrade has no safe compatible version and manual review is required.
+  The migration agent must verify package versions before applying.
+
+- Do not force-upgrade third-party packages before validation.
+  Third-party package remediation is allowed only after install/build proves the package blocks the hop.
+
+- NG6002 / does not appear to be an NgModule class:
+  If node_modules package errors exist, treat app module errors like SharedModule/AppModule as cascading.
+  Fix the root third-party package first.
+  Do not edit SharedModule/AppModule unless package remediation succeeds and the remaining compiler error proves module wiring is wrong.
+
+- NG8002 template binding errors:
+  Minimal module import/export wiring is allowed only when:
+  1. the package/module is already used by the project,
+  2. compiler output identifies the exact declaring module/component context,
+  3. the fix is only making an already-used module visible,
+  4. no template or component behavior is changed.
+  Do not rewrite templates or component behavior.
+
+- CSS/style asset import failures:
+  Classify css-loader/sass-loader/postcss-loader/mini-css-extract-plugin "Can't resolve" errors as dependency_asset_import_resolution.
+  Only edit style files for this category.
+  Do not edit TypeScript, Angular modules, package versions, or business logic for style import errors unless package metadata proves the asset was removed and no same-package replacement exists.
+  Same-package style asset rewrites are allowed.
+  For .css files, do not import package SCSS unless the file is safely converted and the config update is included.
+  Prefer compiled CSS assets when available.
+  If package import is blocked by package exports, choose a valid same-package asset path supplied in context or return manual correction if ambiguous.
+
+- skipLibCheck:
+  May be suggested only as a temporary workaround for third-party .d.ts errors.
+  Do not use skipLibCheck to hide Angular template, compiler, module, package, or framework-critical errors.
+  Prefer targeted shim or package remediation first.
+  If suggested, mark risk as medium or high and explain why safer options are unavailable.
 
 OUTPUT SCHEMA:
 Return exactly this JSON shape:
 
 {
-  "sourceAngularMajor": 0,
-  "targetAngularMajor": 0,
-  "recommendations": [
+  "summary": "Short explanation of the actual failure cause",
+  "confidence": 0.0,
+  "risk": "low",
+  "requiresManualCorrection": false,
+  "manualCorrectionReason": null,
+  "failureCategory": "unknown",
+  "businessLogicChanged": false,
+  "changes": [
     {
-      "packageName": "",
-      "currentVersion": "",
-      "recommendedVersion": "",
-      "dependencySection": "dependencies",
-      "action": "align",
-      "criticality": "required",
-      "confidence": 0,
-      "risk": "low",
-      "reason": "",
-      "blocksInstall": false,
-      "blocksBuild": false,
-      "manualReviewRequired": false,
-      "requiresRegistryVerification": false
+      "file": "relative/path/to/file",
+      "type": "config_update",
+      "reason": "Why this exact change fixes the observed failure",
+      "before": "existing content or relevant excerpt, null if new file",
+      "after": "new content or relevant excerpt",
+      "sourceCodeImpact": false,
+      "validationDriven": true,
+      "requiresVersionVerification": false,
+      "manualReviewRequired": false
     }
   ],
-  "warnings": [
-    {
-      "packageName": "",
-      "warningType": "compatibility-risk",
-      "message": "",
-      "manualReviewRequired": true
-    }
-  ]
+  "commandsToRunAfter": [],
+  "reportNotes": [
+    "Short bullet to include in migration report"
+  ],
+  "safetyDecision": {
+    "canApplyAutomatically": false,
+    "requiresManualReview": false,
+    "reason": ""
+  }
 }
 
 ENUM RULES:
-- dependencySection must be one of:
-  dependencies, devDependencies, peerDependencies, optionalDependencies, missing, unknown
+risk must be one of:
+- low
+- medium
+- high
 
-- action must be one of:
-  align, preserve, add, remove, manualReview
+failureCategory must be one of:
+- script
+- dependency
+- type_declaration
+- css_dependency_import
+- dependency_asset_import_resolution
+- third_party_angular_incompatibility
+- compiler
+- config
+- test
+- unknown
 
-- criticality must be one of:
-  required, recommended, advisory, unknown
+changes.type must be one of:
+- script_update
+- package_update
+- config_update
+- type_shim
+- style_import_update
+- test_config_update
+- minimal_module_or_import_wiring
+- manual_review
 
-- risk must be one of:
-  low, medium, high
+FIELD RULES:
+- businessLogicChanged must always be false.
+- commandsToRunAfter must be [] unless the caller explicitly allows command recommendations.
+- For package_update, requiresVersionVerification must be true.
+- For type_shim, sourceCodeImpact must be false only if the file contains declarations/types only and no runtime behavior.
+- For minimal_module_or_import_wiring, sourceCodeImpact must be true and manualReviewRequired should usually be true unless the compiler evidence is exact and low risk.
+- For manual_review, changes should usually be [] and requiresManualCorrection must be true.
+- If before content is unavailable, return manual correction unless creating a new safe declaration/config file.
+- Every change must be minimal and directly tied to the observed failure.
 
-- warningType must be one of:
-  compatibility-risk, missing-metadata, registry-verification-needed, unsupported-package, source-code-impact, unknown
+IF YOU CANNOT SAFELY FIX:
+Return exactly this JSON shape:
 
-IMPORTANT OUTPUT RULES:
-- Include only framework-critical packages in recommendations.
-- Do not include unrelated application dependencies.
-- Do not include markdown.
-- Do not include comments.
-- Do not include explanation outside JSON.
-- If there are no safe recommendations, return:
-  {
-    "sourceAngularMajor": <sourceAngularMajor>,
-    "targetAngularMajor": <targetAngularMajor>,
-    "recommendations": [],
-    "warnings": []
+{
+  "summary": "Why the failure could not be safely remediated",
+  "confidence": 0.0,
+  "risk": "high",
+  "requiresManualCorrection": true,
+  "manualCorrectionReason": "Specific reason",
+  "failureCategory": "unknown",
+  "businessLogicChanged": false,
+  "changes": [],
+  "commandsToRunAfter": [],
+  "reportNotes": [],
+  "safetyDecision": {
+    "canApplyAutomatically": false,
+    "requiresManualReview": true,
+    "reason": "Specific reason"
   }
+}
+
+FINAL OUTPUT CONTRACT:
+Return exactly one valid JSON object and nothing else.
+Do not include markdown, code fences, comments, explanations, prefix text, or suffix text.
+The JSON must be directly parseable by json.loads.
+Do not add extra top-level fields.
+Do not omit required fields.
+Use null for unknown optional scalar values.
+Use [] for empty arrays.
+Use only the allowed enum values.
+Do not return combined enum strings.
+Use numbers as numbers and booleans as booleans.
 
 
 
@@ -188,952 +300,850 @@ Use numbers as numbers and booleans as booleans.
 If no safe recommendation can be made, return the schema's empty or manual-review JSON response.
 
 {
-  "sourceAngularMajor": 15,
-  "targetAngularMajor": 16,
-  "dependencies": {
-    "-": "^0.0.1",
-    "@angular-slider/ngx-slider": "^13.0.0",
-    "@angular/animations": "^16.0.0",
-    "@angular/cdk": "^16.0.0",
-    "@angular/common": "^16.0.0",
-    "@angular/compiler": "^16.0.0",
-    "@angular/core": "^16.0.0",
-    "@angular/forms": "^16.0.0",
-    "@angular/material": "^16.0.0",
-    "@angular/platform-browser": "^16.0.0",
-    "@angular/platform-browser-dynamic": "^16.0.0",
-    "@angular/router": "^16.0.0",
-    "@fortawesome/fontawesome-free": "^6.0.0",
-    "@ng-select/ng-option-highlight": "^0.0.7",
-    "@ng-select/ng-select": "^8.3.0",
-    "angular-user-idle": "^2.2.6",
-    "angularx-qrcode": "^13.0.15",
-    "bootstrap": "^5.0.0-beta3",
-    "cookieconsent": "^3.1.1",
-    "jquery": "^3.6.2",
-    "ng-dynamic-breadcrumb": "^6.0.0",
-    "ng6-toastr-notifications": "^1.0.4",
-    "ngx-bootstrap": "^7.1.0",
-    "ngx-color-picker": "^11.0.0",
-    "ngx-cookie-service": "^13.1.2",
-    "ngx-cookieconsent": "^2.2.3",
-    "ngx-device-detector": "^3.0.0",
-    "ngx-image-zoom": "0.6.0",
-    "ngx-img-zoom": "4.1.2",
-    "ngx-pagination": "^5.1.1",
-    "ngx-pinch-zoom": "^2.5.6",
-    "ngx-red-zoom": "^0.9.0",
-    "ngx-slick-carousel": "^0.5.1",
-    "rxjs": "~7.4.0",
-    "slick-carousel": "^1.8.1",
-    "swiper": "^11.2.1",
-    "tslib": "^2.3.0",
-    "xlsx": "^0.18.5",
-    "zone.js": "~0.13.3"
-  },
-  "devDependencies": {
-    "@angular-devkit/build-angular": "^16.0.0",
-    "@angular/cli": "^16.0.0",
-    "@angular/compiler-cli": "^16.0.0",
-    "@types/jasmine": "~3.10.0",
-    "@types/jquery": "^3.5.8",
-    "@types/node": "^12.11.1",
-    "jasmine-core": "~3.10.0",
-    "karma": "~6.3.0",
-    "karma-chrome-launcher": "~3.1.0",
-    "karma-coverage": "~2.1.0",
-    "karma-jasmine": "~4.0.0",
-    "karma-jasmine-html-reporter": "~1.7.0",
-    "typescript": "~5.1.6"
-  },
-  "detectedAngularPackageVersions": {
-    "@angular/animations": "^16.0.0",
-    "@angular/cdk": "^16.0.0",
-    "@angular/common": "^16.0.0",
-    "@angular/compiler": "^16.0.0",
-    "@angular/core": "^16.0.0",
-    "@angular/forms": "^16.0.0",
-    "@angular/material": "^16.0.0",
-    "@angular/platform-browser": "^16.0.0",
-    "@angular/platform-browser-dynamic": "^16.0.0",
-    "@angular/router": "^16.0.0",
-    "@angular-devkit/build-angular": "^16.0.0",
-    "@angular/cli": "^16.0.0",
-    "@angular/compiler-cli": "^16.0.0"
-  },
-  "detectedTypeScriptVersion": "~5.1.6",
-  "detectedRxJSVersion": "~7.4.0",
-  "detectedZoneJsVersion": "~0.13.3",
-  "detectedAngularCliBuildToolingVersions": {
-    "@angular-devkit/build-angular": "^16.0.0",
-    "@angular/cli": "^16.0.0",
-    "@angular/compiler-cli": "^16.0.0"
-  },
-  "packageClassificationResults": {
-    "packages": [
+  "runtime": "angular",
+  "currentRuntime": "angular",
+  "migrationHop": "17 -\u003E 18",
+  "failedCommand": "npm run build",
+  "exitCode": 1,
+  "manifest": {
+    "runtime": "angular",
+    "angularVersion": 18,
+    "angularCoreVersion": "^18.0.0",
+    "angularCliVersion": "^18.0.0",
+    "packageManager": "npm",
+    "lockfile": "package-lock.json",
+    "scripts": {
+      "ng": "ng",
+      "start": "ng serve --live-reload=true --port 4201",
+      "build": "ng build --configuration production --aot --build-optimizer --output-hashing=all",
+      "watch": "ng build --watch --configuration development",
+      "test": "ng test",
+      "build-compress": "ng build \u0026\u0026 gzipper c ./dist --include js,css,html --output-file-format [filename].[ext] ./dist-compressed/"
+    },
+    "hasAngularJson": true,
+    "hasTsconfig": true,
+    "builder": {
+      "name": "@angular-devkit/build-angular:browser"
+    },
+    "dependencies": [
       {
         "name": "-",
-        "currentVersion": "^0.0.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "@angular-slider/ngx-slider",
-        "currentVersion": "^13.0.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/animations",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/cdk",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/common",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/compiler",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/core",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/forms",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/material",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/platform-browser",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/platform-browser-dynamic",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@angular/router",
-        "currentVersion": "^15.0.0",
-        "section": "dependencies",
-        "category": "angular_framework_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
-      },
-      {
-        "name": "@fortawesome/fontawesome-free",
-        "currentVersion": "^6.0.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "@ng-select/ng-option-highlight",
-        "currentVersion": "^0.0.7",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "@ng-select/ng-select",
-        "currentVersion": "^8.3.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "angular-user-idle",
-        "currentVersion": "^2.2.6",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "angularx-qrcode",
-        "currentVersion": "^13.0.15",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "bootstrap",
-        "currentVersion": "^5.0.0-beta3",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "cookieconsent",
-        "currentVersion": "^3.1.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "jquery",
-        "currentVersion": "^3.6.2",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ng-dynamic-breadcrumb",
-        "currentVersion": "^6.0.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ng6-toastr-notifications",
-        "currentVersion": "^1.0.4",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-bootstrap",
-        "currentVersion": "^7.1.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-color-picker",
-        "currentVersion": "^11.0.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-cookie-service",
-        "currentVersion": "^13.1.2",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-cookieconsent",
-        "currentVersion": "^2.2.3",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-device-detector",
-        "currentVersion": "^3.0.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-image-zoom",
-        "currentVersion": "0.6.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-img-zoom",
-        "currentVersion": "4.1.2",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-pagination",
-        "currentVersion": "^5.1.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-pinch-zoom",
-        "currentVersion": "^2.5.6",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-red-zoom",
-        "currentVersion": "^0.9.0",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "ngx-slick-carousel",
-        "currentVersion": "^0.5.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "rxjs",
-        "currentVersion": "~7.4.0",
-        "section": "dependencies",
-        "category": "angular_runtime_support_package",
-        "targetVersion": null,
-        "action": "preserve",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "slick-carousel",
-        "currentVersion": "^1.8.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "swiper",
-        "currentVersion": "^11.2.1",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "tslib",
-        "currentVersion": "^2.3.0",
-        "section": "dependencies",
-        "category": "angular_runtime_support_package",
-        "targetVersion": null,
-        "action": "preserve",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "xlsx",
-        "currentVersion": "^0.18.5",
-        "section": "dependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
-      },
-      {
-        "name": "zone.js",
-        "currentVersion": "~0.11.4",
-        "section": "dependencies",
-        "category": "angular_runtime_support_package",
-        "targetVersion": "~0.13.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
+        "version": "^0.0.1",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@angular-devkit/build-angular",
-        "currentVersion": "^15.0.0",
-        "section": "devDependencies",
-        "category": "angular_tooling_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular-slider/ngx-slider",
+        "version": "^13.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/animations",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/cdk",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@angular/cli",
-        "currentVersion": "^15.0.0",
-        "section": "devDependencies",
-        "category": "angular_tooling_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/common",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/compiler",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@angular/compiler-cli",
-        "currentVersion": "^15.0.0",
-        "section": "devDependencies",
-        "category": "angular_tooling_package",
-        "targetVersion": "^16.0.0",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/core",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/forms",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/material",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/platform-browser",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/platform-browser-dynamic",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@angular/router",
+        "version": "^18.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@fortawesome/fontawesome-free",
+        "version": "^6.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@ng-select/ng-option-highlight",
+        "version": "^0.0.7",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "@ng-select/ng-select",
+        "version": "^8.3.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@types/jasmine",
-        "currentVersion": "~3.10.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~3.10.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@types/jquery",
-        "currentVersion": "^3.5.8",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "^3.5.8",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "@types/node",
-        "currentVersion": "^12.11.1",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "^12.11.1",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "angular-user-idle",
+        "version": "^4.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "angularx-qrcode",
+        "version": "^13.0.15",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "bootstrap",
+        "version": "^5.0.0-beta3",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "cookieconsent",
+        "version": "^3.1.1",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "jasmine-core",
-        "currentVersion": "~3.10.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~3.10.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "jquery",
+        "version": "^3.6.2",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "karma",
-        "currentVersion": "~6.3.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~6.3.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "karma-chrome-launcher",
-        "currentVersion": "~3.1.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~3.1.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "karma-coverage",
-        "currentVersion": "~2.1.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~2.1.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "karma-jasmine",
-        "currentVersion": "~4.0.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~4.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "karma-jasmine-html-reporter",
-        "currentVersion": "~1.7.0",
-        "section": "devDependencies",
-        "category": "business_or_unknown_package",
-        "targetVersion": null,
-        "action": "manual_review",
-        "reason": "Preserved unless Angular compatibility requires a change.",
-        "confidence": 0.85,
-        "risk": "low"
+        "version": "~1.7.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ng-dynamic-breadcrumb",
+        "version": "^6.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ng6-toastr-notifications",
+        "version": "^1.0.4",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-bootstrap",
+        "version": "^11.0.2",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-color-picker",
+        "version": "^16.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-cookie-service",
+        "version": "^13.1.2",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-cookieconsent",
+        "version": "^2.2.3",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-device-detector",
+        "version": "^3.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-image-zoom",
+        "version": "0.6.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-img-zoom",
+        "version": "4.1.2",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-pagination",
+        "version": "^6.0.3",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-pinch-zoom",
+        "version": "npm:@mtnair/ngx-pinch-zoom@2.5.12",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-red-zoom",
+        "version": "^0.9.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "ngx-slick-carousel",
+        "version": "15.0.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "rxjs",
+        "version": "~7.4.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "slick-carousel",
+        "version": "^1.8.1",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "swiper",
+        "version": "^11.2.1",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "tslib",
+        "version": "^2.3.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       },
       {
         "name": "typescript",
-        "currentVersion": "~4.9.5",
-        "section": "devDependencies",
-        "category": "typescript_runtime_or_compiler_package",
-        "targetVersion": "~5.1.6",
-        "action": "upgrade",
-        "reason": "Package should align with Angular 16.",
-        "confidence": 1,
-        "risk": "low"
+        "version": "~5.5.4",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "xlsx",
+        "version": "^0.18.5",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
+      },
+      {
+        "name": "zone.js",
+        "version": "~0.14.0",
+        "manager": "npm",
+        "ecosystem": "angular",
+        "sourceFile": "package.json"
       }
     ],
-    "notes": [
-      "AI package categorisation unavailable; used conservative fallback."
+    "projects": [
+      {
+        "path": "package.json",
+        "packages": [
+          {
+            "name": "-",
+            "version": "^0.0.1",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular-devkit/build-angular",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular-slider/ngx-slider",
+            "version": "^13.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/animations",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/cdk",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/cli",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/common",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/compiler",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/compiler-cli",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/core",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/forms",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/material",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/platform-browser",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/platform-browser-dynamic",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@angular/router",
+            "version": "^18.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@fortawesome/fontawesome-free",
+            "version": "^6.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@ng-select/ng-option-highlight",
+            "version": "^0.0.7",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@ng-select/ng-select",
+            "version": "^8.3.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@types/jasmine",
+            "version": "~3.10.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@types/jquery",
+            "version": "^3.5.8",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "@types/node",
+            "version": "^12.11.1",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "angular-user-idle",
+            "version": "^4.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "angularx-qrcode",
+            "version": "^13.0.15",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "bootstrap",
+            "version": "^5.0.0-beta3",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "cookieconsent",
+            "version": "^3.1.1",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "jasmine-core",
+            "version": "~3.10.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "jquery",
+            "version": "^3.6.2",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "karma",
+            "version": "~6.3.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "karma-chrome-launcher",
+            "version": "~3.1.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "karma-coverage",
+            "version": "~2.1.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "karma-jasmine",
+            "version": "~4.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "karma-jasmine-html-reporter",
+            "version": "~1.7.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ng-dynamic-breadcrumb",
+            "version": "^6.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ng6-toastr-notifications",
+            "version": "^1.0.4",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-bootstrap",
+            "version": "^11.0.2",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-color-picker",
+            "version": "^16.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-cookie-service",
+            "version": "^13.1.2",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-cookieconsent",
+            "version": "^2.2.3",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-device-detector",
+            "version": "^3.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-image-zoom",
+            "version": "0.6.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-img-zoom",
+            "version": "4.1.2",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-pagination",
+            "version": "^6.0.3",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-pinch-zoom",
+            "version": "npm:@mtnair/ngx-pinch-zoom@2.5.12",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-red-zoom",
+            "version": "^0.9.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "ngx-slick-carousel",
+            "version": "15.0.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "rxjs",
+            "version": "~7.4.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "slick-carousel",
+            "version": "^1.8.1",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "swiper",
+            "version": "^11.2.1",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "tslib",
+            "version": "^2.3.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "typescript",
+            "version": "~5.5.4",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "xlsx",
+            "version": "^0.18.5",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          },
+          {
+            "name": "zone.js",
+            "version": "~0.14.0",
+            "manager": "npm",
+            "ecosystem": "angular",
+            "sourceFile": "package.json"
+          }
+        ]
+      }
     ]
   },
-  "packageVersionRecommendationResults": {
-    "attempted": true,
-    "fallbackUsed": true,
-    "accepted": [],
-    "rejected": [],
-    "manualReview": [],
-    "warnings": [
-      "AI package version recommendation unavailable: codex CLI timed out during remediation planning (idle-timeout): No output for 120 seconds."
-    ]
-  },
-  "installFailureContext": {},
-  "buildFailureContext": {
-    "failureText": "$ npm run build\nexit code: 1\n\r\n\u003E jewelex@0.0.0 build\r\n\u003E ng build --configuration production --aot --build-optimizer --output-hashing=all\r\n\r\nWorkspace extension with invalid name (defaultProject) found.\r\n- Generating browser application bundles (phase: setup)...\r\n    TypeScript compiler options \u0022target\u0022 and \u0022useDefineForClassFields\u0022 are set to \u0022ES2022\u0022 and \u0022false\u0022 respectively by the Angular CLI. To control ECMA version and features use the Browerslist configuration. For more information, see https://angular.io/guide/build#configuring-browser-compatibility\r\n    NOTE: You can set the \u0022target\u0022 to \u0022ES2022\u0022 in the project\u0027s tsconfig to remove this warning.\r\n\u221A Browser application bundle generation complete.\r\n\u221A Browser application bundle generation complete.\r\n\r\n./src/app/customer/product-configurator-detail/product-configurator-detail.component.scss?ngResource - Warning: Module Warning (from ./node_modules/postcss-loader/dist/cjs.js):\r\n(1260:3) from \u0022autoprefixer\u0022 plugin: start value has mixed support, consider using flex-start instead\r\n\r\nCode:\r\n  justify-content: start\r\n\r\n\r\nWarning: D:\\Projects\\AI\\AiMigration\\Output\\src\\app\\customer\\product-configurator-detail\\product-configurator-detail.component.ts depends on \u0027jquery\u0027. CommonJS or AMD dependencies can cause optimization bailouts.\r\nFor more info see: https://angular.io/guide/build#configuring-commonjs-dependencies\r\n\r\n\r\n\r\n./node_modules/ngx-color-picker/fesm2015/ngx-color-picker.js:1231:25-65 - Error: export \u0027ReflectiveInjector\u0027 (imported as \u0027ReflectiveInjector\u0027) was not found in \u0027@angular/core\u0027 (possible exports: ANIMATION_MODULE_TYPE, APP_BOOTSTRAP_LISTENER, APP_ID, APP_INITIALIZER, ApplicationInitStatus, ApplicationModule, ApplicationRef, Attribute, COMPILER_OPTIONS, CSP_NONCE, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectionStrategy, ChangeDetectorRef, Compiler, CompilerFactory, Component, ComponentFactory, ComponentFactoryResolver, ComponentRef, ContentChild, ContentChildren, DEFAULT_CURRENCY_CODE, DebugElement, DebugEventListener, DebugNode, DefaultIterableDiffer, DestroyRef, Directive, ENVIRONMENT_INITIALIZER, ElementRef, EmbeddedViewRef, EnvironmentInjector, ErrorHandler, EventEmitter, Host, HostBinding, HostListener, INJECTOR, Inject, InjectFlags, Injectable, InjectionToken, Injector, Input, IterableDiffers, KeyValueDiffers, LOCALE_ID, MissingTranslationStrategy, ModuleWithComponentFactories, NO_ERRORS_SCHEMA, NgModule, NgModuleFactory, NgModuleRef, NgProbeToken, NgZone, Optional, Output, PACKAGE_ROOT_URL, PLATFORM_ID, PLATFORM_INITIALIZER, Pipe, PlatformRef, Query, QueryList, Renderer2, RendererFactory2, RendererStyleFlags2, Sanitizer, SecurityContext, Self, SimpleChange, SkipSelf, TRANSLATIONS, TRANSLATIONS_FORMAT, TemplateRef, Testability, TestabilityRegistry, TransferState, Type, VERSION, Version, ViewChild, ViewChildren, ViewContainerRef, ViewEncapsulation, ViewRef, afterNextRender, afterRender, asNativeElements, assertInInjectionContext, assertPlatform, booleanAttribute, computed, createComponent, createEnvironmentInjector, createNgModule, createNgModuleRef, createPlatform, createPlatformFactory, defineInjectable, destroyPlatform, effect, enableProdMode, forwardRef, getDebugNode, getModuleFactory, getNgModuleById, getPlatform, importProvidersFrom, inject, isDevMode, isSignal, isStandalone, makeEnvironmentProviders, makeStateKey, mergeApplicationConfig, numberAttribute, platformCore, provideZoneChangeDetection, reflectComponentType, resolveForwardRef, runInInjectionContext, setTestabilityGetter, signal, untracked, \u0275ALLOW_MULTIPLE_PLATFORMS, \u0275AfterRenderEventManager, \u0275ComponentFactory, \u0275Console, \u0275DEFAULT_LOCALE_ID, \u0275ENABLED_SSR_FEATURES, \u0275INJECTOR_SCOPE, \u0275IS_HYDRATION_DOM_REUSE_ENABLED, \u0275InitialRenderPendingTasks, \u0275LContext, \u0275LifecycleHooksFeature, \u0275LocaleDataIndex, \u0275NG_COMP_DEF, \u0275NG_DIR_DEF, \u0275NG_ELEMENT_ID, \u0275NG_INJ_DEF, \u0275NG_MOD_DEF, \u0275NG_PIPE_DEF, \u0275NG_PROV_DEF, \u0275NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR, \u0275NO_CHANGE, \u0275NgModuleFactory, \u0275NoopNgZone, \u0275ReflectionCapabilities, \u0275Render3ComponentFactory, \u0275Render3ComponentRef, \u0275Render3NgModuleRef, \u0275RuntimeError, \u0275SSR_CONTENT_INTEGRITY_MARKER, \u0275TESTABILITY, \u0275TESTABILITY_GETTER, \u0275ViewRef, \u0275XSS_SECURITY_URL, \u0275_sanitizeHtml, \u0275_sanitizeUrl, \u0275allowSanitizationBypassAndThrow, \u0275annotateForHydration, \u0275bypassSanitizationTrustHtml, \u0275bypassSanitizationTrustResourceUrl, \u0275bypassSanitizationTrustScript, \u0275bypassSanitizationTrustStyle, \u0275bypassSanitizationTrustUrl, \u0275clearResolutionOfComponentResourcesQueue, \u0275compileComponent, \u0275compileDirective, \u0275compileNgModule, \u0275compileNgModuleDefs, \u0275compileNgModuleFactory, \u0275compilePipe, \u0275convertToBitFlags, \u0275createInjector, \u0275defaultIterableDiffers, \u0275defaultKeyValueDiffers, \u0275detectChanges, \u0275devModeEqual, \u0275findLocaleData, \u0275flushModuleScopingQueueAsMuchAsPossible, \u0275formatRuntimeError, \u0275getDebugNode, \u0275getDirectives, \u0275getHostElement, \u0275getInjectableDef, \u0275getLContext, \u0275getLocaleCurrencyCode, \u0275getLocalePluralCase, \u0275getSanitizationBypassType, \u0275getUnknownElementStrictMode, \u0275getUnknownPropertyStrictMode, \u0275global, \u0275injectChangeDetectorRef, \u0275internalCreateApplication, \u0275isBoundToModule, \u0275isEnvironmentProviders, \u0275isInjectable, \u0275isNgModule, \u0275isPromise, \u0275isSubscribable, \u0275noSideEffects, \u0275patchComponentDefWithScope, \u0275publishDefaultGlobalUtils, \u0275publishGlobalUtil, \u0275registerLocaleData, \u0275resetCompiledComponents, \u0275resetJitOptions, \u0275resolveComponentResources, \u0275setAllowDuplicateNgModuleIdsForTest, \u0275setAlternateWeakRefImpl, \u0275setClassMetadata, \u0275setCurrentInjector, \u0275setDocument, \u0275setInjectorProfilerContext, \u0275setLocaleId, \u0275setUnknownElementStrictMode, \u0275setUnknownPropertyStrictMode, \u0275store, \u0275stringify, \u0275transitiveScopesFor, \u0275unregisterLocaleData, \u0275unwrapSafeValue, \u0275withDomHydration, \u0275\u0275CopyDefinitionFeature, \u0275\u0275FactoryTarget, \u0275\u0275HostDirectivesFeature, \u0275\u0275InheritDefinitionFeature, \u0275\u0275InputTransformsFeature, \u0275\u0275NgOnChangesFeature, \u0275\u0275ProvidersFeature, \u0275\u0275StandaloneFeature, \u0275\u0275advance, \u0275\u0275attribute, \u0275\u0275attributeInterpolate1, \u0275\u0275attributeInterpolate2, \u0275\u0275attributeInterpolate3, \u0275\u0275attributeInterpolate4, \u0275\u0275attributeInterpolate5, \u0275\u0275attributeInterpolate6, \u0275\u0275attributeInterpolate7, \u0275\u0275attributeInterpolate8, \u0275\u0275attributeInterpolateV, \u0275\u0275classMap, \u0275\u0275classMapInterpolate1, \u0275\u0275classMapInterpolate2, \u0275\u0275classMapInterpolate3, \u0275\u0275classMapInterpolate4, \u0275\u0275classMapInterpolate5, \u0275\u0275classMapInterpolate6, \u0275\u0275classMapInterpolate7, \u0275\u0275classMapInterpolate8, \u0275\u0275classMapInterpolateV, \u0275\u0275classProp, \u0275\u0275contentQuery, \u0275\u0275defer, \u0275\u0275defineComponent, \u0275\u0275defineDirective, \u0275\u0275defineInjectable, \u0275\u0275defineInjector, \u0275\u0275defineNgModule, \u0275\u0275definePipe, \u0275\u0275directiveInject, \u0275\u0275disableBindings, \u0275\u0275element, \u0275\u0275elementContainer, \u0275\u0275elementContainerEnd, \u0275\u0275elementContainerStart, \u0275\u0275elementEnd, \u0275\u0275elementStart, \u0275\u0275enableBindings, \u0275\u0275getCurrentView, \u0275\u0275getInheritedFactory, \u0275\u0275hostProperty, \u0275\u0275i18n, \u0275\u0275i18nApply, \u0275\u0275i18nAttributes, \u0275\u0275i18nEnd, \u0275\u0275i18nExp, \u0275\u0275i18nPostprocess, \u0275\u0275i18nStart, \u0275\u0275inject, \u0275\u0275injectAttribute, \u0275\u0275invalidFactory, \u0275\u0275invalidFactoryDep, \u0275\u0275listener, \u0275\u0275loadQuery, \u0275\u0275namespaceHTML, \u0275\u0275namespaceMathML, \u0275\u0275namespaceSVG, \u0275\u0275nextContext, \u0275\u0275ngDeclareClassMetadata, \u0275\u0275ngDeclareComponent, \u0275\u0275ngDeclareDirective, \u0275\u0275ngDeclareFactory, \u0275\u0275ngDeclareInjectable, \u0275\u0275ngDeclareInjector, \u0275\u0275ngDeclareNgModule, \u0275\u0275ngDeclarePipe, \u0275\u0275pipe, \u0275\u0275pipeBind1, \u0275\u0275pipeBind2, \u0275\u0275pipeBind3, \u0275\u0275pipeBind4, \u0275\u0275pipeBindV, \u0275\u0275projection, \u0275\u0275projectionDef, \u0275\u0275property, \u0275\u0275propertyInterpolate, \u0275\u0275propertyInterpolate1, \u0275\u0275propertyInterpolate2, \u0275\u0275propertyInterpolate3, \u0275\u0275propertyInterpolate4, \u0275\u0275propertyInterpolate5, \u0275\u0275propertyInterpolate6, \u0275\u0275propertyInterpolate7, \u0275\u0275propertyInterpolate8, \u0275\u0275propertyInterpolateV, \u0275\u0275pureFunction0, \u0275\u0275pureFunction1, \u0275\u0275pureFunction2, \u0275\u0275pureFunction3, \u0275\u0275pureFunction4, \u0275\u0275pureFunction5, \u0275\u0275pureFunction6, \u0275\u0275pureFunction7, \u0275\u0275pureFunction8, \u0275\u0275pureFunctionV, \u0275\u0275queryRefresh, \u0275\u0275reference, \u0275\u0275registerNgModuleType, \u0275\u0275resetView, \u0275\u0275resolveBody, \u0275\u0275resolveDocument, \u0275\u0275resolveWindow, \u0275\u0275restoreView, \u0275\u0275sanitizeHtml, \u0275\u0275sanitizeResourceUrl, \u0275\u0275sanitizeScript, \u0275\u0275sanitizeStyle, \u0275\u0275sanitizeUrl, \u0275\u0275sanitizeUrlOrResourceUrl, \u0275\u0275setComponentScope, \u0275\u0275setNgModuleScope, \u0275\u0275styleMap, \u0275\u0275styleMapInterpolate1, \u0275\u0275styleMapInterpolate2, \u0275\u0275styleMapInterpolate3, \u0275\u0275styleMapInterpolate4, \u0275\u0275styleMapInterpolate5, \u0275\u0275styleMapInterpolate6, \u0275\u0275styleMapInterpolate7, \u0275\u0275styleMapInterpolate8, \u0275\u0275styleMapInterpolateV, \u0275\u0275styleProp, \u0275\u0275stylePropInterpolate1, \u0275\u0275stylePropInterpolate2, \u0275\u0275stylePropInterpolate3, \u0275\u0275stylePropInterpolate4, \u0275\u0275stylePropInterpolate5, \u0275\u0275stylePropInterpolate6, \u0275\u0275stylePropInterpolate7, \u0275\u0275stylePropInterpolate8, \u0275\u0275stylePropInterpolateV, \u0275\u0275syntheticHostListener, \u0275\u0275syntheticHostProperty, \u0275\u0275template, \u0275\u0275templateRefExtractor, \u0275\u0275text, \u0275\u0275textInterpolate, \u0275\u0275textInterpolate1, \u0275\u0275textInterpolate2, \u0275\u0275textInterpolate3, \u0275\u0275textInterpolate4, \u0275\u0275textInterpolate5, \u0275\u0275textInterpolate6, \u0275\u0275textInterpolate7, \u0275\u0275textInterpolate8, \u0275\u0275textInterpolateV, \u0275\u0275trustConstantHtml, \u0275\u0275trustConstantResourceUrl, \u0275\u0275validateIframeAttribute, \u0275\u0275viewQuery)\r\n\r\n./node_modules/ng6-toastr-notifications/fesm2015/ng6-toastr-notifications.js:293:39-65 - Error: export \u0027ReflectiveInjector\u0027 (imported as \u0027ReflectiveInjector\u0027) was not found in \u0027@angular/core\u0027 (possible exports: ANIMATION_MODULE_TYPE, APP_BOOTSTRAP_LISTENER, APP_ID, APP_INITIALIZER, ApplicationInitStatus, ApplicationModule, ApplicationRef, Attribute, COMPILER_OPTIONS, CSP_NONCE, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectionStrategy, ChangeDetectorRef, Compiler, CompilerFactory, Component, ComponentFactory, ComponentFactoryResolver, ComponentRef, ContentChild, ContentChildren, DEFAULT_CURRENCY_CODE, DebugElement, DebugEventListener, DebugNode, DefaultIterableDiffer, DestroyRef, Directive, ENVIRONMENT_INITIALIZER, ElementRef, EmbeddedViewRef, EnvironmentInjector, ErrorHandler, EventEmitter, Host, HostBinding, HostListener, INJECTOR, Inject, InjectFlags, Injectable, InjectionToken, Injector, Input, IterableDiffers, KeyValueDiffers, LOCALE_ID, MissingTranslationStrategy, ModuleWithComponentFactories, NO_ERRORS_SCHEMA, NgModule, NgModuleFactory, NgModuleRef, NgProbeToken, NgZone, Optional, Output, PACKAGE_ROOT_URL, PLATFORM_ID, PLATFORM_INITIALIZER, Pipe, PlatformRef, Query, QueryList, Renderer2, RendererFactory2, RendererStyleFlags2, Sanitizer, SecurityContext, Self, SimpleChange, SkipSelf, TRANSLATIONS, TRANSLATIONS_FORMAT, TemplateRef, Testability, TestabilityRegistry, TransferState, Type, VERSION, Version, ViewChild, ViewChildren, ViewContainerRef, ViewEncapsulation, ViewRef, afterNextRender, afterRender, asNativeElements, assertInInjectionContext, assertPlatform, booleanAttribute, computed, createComponent, createEnvironmentInjector, createNgModule, createNgModuleRef, createPlatform, createPlatformFactory, defineInjectable, destroyPlatform, effect, enableProdMode, forwardRef, getDebugNode, getModuleFactory, getNgModuleById, getPlatform, importProvidersFrom, inject, isDevMode, isSignal, isStandalone, makeEnvironmentProviders, makeStateKey, mergeApplicationConfig, numberAttribute, platformCore, provideZoneChangeDetection, reflectComponentType, resolveForwardRef, runInInjectionContext, setTestabilityGetter, signal, untracked, \u0275ALLOW_MULTIPLE_PLATFORMS, \u0275AfterRenderEventManager, \u0275ComponentFactory, \u0275Console, \u0275DEFAULT_LOCALE_ID, \u0275ENABLED_SSR_FEATURES, \u0275INJECTOR_SCOPE, \u0275IS_HYDRATION_DOM_REUSE_ENABLED, \u0275InitialRenderPendingTasks, \u0275LContext, \u0275LifecycleHooksFeature, \u0275LocaleDataIndex, \u0275NG_COMP_DEF, \u0275NG_DIR_DEF, \u0275NG_ELEMENT_ID, \u0275NG_INJ_DEF, \u0275NG_MOD_DEF, \u0275NG_PIPE_DEF, \u0275NG_PROV_DEF, \u0275NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR, \u0275NO_CHANGE, \u0275NgModuleFactory, \u0275NoopNgZone, \u0275ReflectionCapabilities, \u0275Render3ComponentFactory, \u0275Render3ComponentRef, \u0275Render3NgModuleRef, \u0275RuntimeError, \u0275SSR_CONTENT_INTEGRITY_MARKER, \u0275TESTABILITY, \u0275TESTABILITY_GETTER, \u0275ViewRef, \u0275XSS_SECURITY_URL, \u0275_sanitizeHtml, \u0275_sanitizeUrl, \u0275allowSanitizationBypassAndThrow, \u0275annotateForHydration, \u0275bypassSanitizationTrustHtml, \u0275bypassSanitizationTrustResourceUrl, \u0275bypassSanitizationTrustScript, \u0275bypassSanitizationTrustStyle, \u0275bypassSanitizationTrustUrl, \u0275clearResolutionOfComponentResourcesQueue, \u0275compileComponent, \u0275compileDirective, \u0275compileNgModule, \u0275compileNgModuleDefs, \u0275compileNgModuleFactory, \u0275compilePipe, \u0275convertToBitFlags, \u0275createInjector, \u0275defaultIterableDiffers, \u0275defaultKeyValueDiffers, \u0275detectChanges, \u0275devModeEqual, \u0275findLocaleData, \u0275flushModuleScopingQueueAsMuchAsPossible, \u0275formatRuntimeError, \u0275getDebugNode, \u0275getDirectives, \u0275getHostElement, \u0275getInjectableDef, \u0275getLContext, \u0275getLocaleCurrencyCode, \u0275getLocalePluralCase, \u0275getSanitizationBypassType, \u0275getUnknownElementStrictMode, \u0275getUnknownPropertyStrictMode, \u0275global, \u0275injectChangeDetectorRef, \u0275internalCreateApplication, \u0275isBoundToModule, \u0275isEnvironmentProviders, \u0275isInjectable, \u0275isNgModule, \u0275isPromise, \u0275isSubscribable, \u0275noSideEffects, \u0275patchComponentDefWithScope, \u0275publishDefaultGlobalUtils, \u0275publishGlobalUtil, \u0275registerLocaleData, \u0275resetCompiledComponents, \u0275resetJitOptions, \u0275resolveComponentResources, \u0275setAllowDuplicateNgModuleIdsForTest, \u0275setAlternateWeakRefImpl, \u0275setClassMetadata, \u0275setCurrentInjector, \u0275setDocument, \u0275setInjectorProfilerContext, \u0275setLocaleId, \u0275setUnknownElementStrictMode, \u0275setUnknownPropertyStrictMode, \u0275store, \u0275stringify, \u0275transitiveScopesFor, \u0275unregisterLocaleData, \u0275unwrapSafeValue, \u0275withDomHydration, \u0275\u0275CopyDefinitionFeature, \u0275\u0275FactoryTarget, \u0275\u0275HostDirectivesFeature, \u0275\u0275InheritDefinitionFeature, \u0275\u0275InputTransformsFeature, \u0275\u0275NgOnChangesFeature, \u0275\u0275ProvidersFeature, \u0275\u0275StandaloneFeature, \u0275\u0275advance, \u0275\u0275attribute, \u0275\u0275attributeInterpolate1, \u0275\u0275attributeInterpolate2, \u0275\u0275attributeInterpolate3, \u0275\u0275attributeInterpolate4, \u0275\u0275attributeInterpolate5, \u0275\u0275attributeInterpolate6, \u0275\u0275attributeInterpolate7, \u0275\u0275attributeInterpolate8, \u0275\u0275attributeInterpolateV, \u0275\u0275classMap, \u0275\u0275classMapInterpolate1, \u0275\u0275classMapInterpolate2, \u0275\u0275classMapInterpolate3, \u0275\u0275classMapInterpolate4, \u0275\u0275classMapInterpolate5, \u0275\u0275classMapInterpolate6, \u0275\u0275classMapInterpolate7, \u0275\u0275classMapInterpolate8, \u0275\u0275classMapInterpolateV, \u0275\u0275classProp, \u0275\u0275contentQuery, \u0275\u0275defer, \u0275\u0275defineComponent, \u0275\u0275defineDirective, \u0275\u0275defineInjectable, \u0275\u0275defineInjector, \u0275\u0275defineNgModule, \u0275\u0275definePipe, \u0275\u0275directiveInject, \u0275\u0275disableBindings, \u0275\u0275element, \u0275\u0275elementContainer, \u0275\u0275elementContainerEnd, \u0275\u0275elementContainerStart, \u0275\u0275elementEnd, \u0275\u0275elementStart, \u0275\u0275enableBindings, \u0275\u0275getCurrentView, \u0275\u0275getInheritedFactory, \u0275\u0275hostProperty, \u0275\u0275i18n, \u0275\u0275i18nApply, \u0275\u0275i18nAttributes, \u0275\u0275i18nEnd, \u0275\u0275i18nExp, \u0275\u0275i18nPostprocess, \u0275\u0275i18nStart, \u0275\u0275inject, \u0275\u0275injectAttribute, \u0275\u0275invalidFactory, \u0275\u0275invalidFactoryDep, \u0275\u0275listener, \u0275\u0275loadQuery, \u0275\u0275namespaceHTML, \u0275\u0275namespaceMathML, \u0275\u0275namespaceSVG, \u0275\u0275nextContext, \u0275\u0275ngDeclareClassMetadata, \u0275\u0275ngDeclareComponent, \u0275\u0275ngDeclareDirective, \u0275\u0275ngDeclareFactory, \u0275\u0275ngDeclareInjectable, \u0275\u0275ngDeclareInjector, \u0275\u0275ngDeclareNgModule, \u0275\u0275ngDeclarePipe, \u0275\u0275pipe, \u0275\u0275pipeBind1, \u0275\u0275pipeBind2, \u0275\u0275pipeBind3, \u0275\u0275pipeBind4, \u0275\u0275pipeBindV, \u0275\u0275projection, \u0275\u0275projectionDef, \u0275\u0275property, \u0275\u0275propertyInterpolate, \u0275\u0275propertyInterpolate1, \u0275\u0275propertyInterpolate2, \u0275\u0275propertyInterpolate3, \u0275\u0275propertyInterpolate4, \u0275\u0275propertyInterpolate5, \u0275\u0275propertyInterpolate6, \u0275\u0275propertyInterpolate7, \u0275\u0275propertyInterpolate8, \u0275\u0275propertyInterpolateV, \u0275\u0275pureFunction0, \u0275\u0275pureFunction1, \u0275\u0275pureFunction2, \u0275\u0275pureFunction3, \u0275\u0275pureFunction4, \u0275\u0275pureFunction5, \u0275\u0275pureFunction6, \u0275\u0275pureFunction7, \u0275\u0275pureFunction8, \u0275\u0275pureFunctionV, \u0275\u0275queryRefresh, \u0275\u0275reference, \u0275\u0275registerNgModuleType, \u0275\u0275resetView, \u0275\u0275resolveBody, \u0275\u0275resolveDocument, \u0275\u0275resolveWindow, \u0275\u0275restoreView, \u0275\u0275sanitizeHtml, \u0275\u0275sanitizeResourceUrl, \u0275\u0275sanitizeScript, \u0275\u0275sanitizeStyle, \u0275\u0275sanitizeUrl, \u0275\u0275sanitizeUrlOrResourceUrl, \u0275\u0275setComponentScope, \u0275\u0275setNgModuleScope, \u0275\u0275styleMap, \u0275\u0275styleMapInterpolate1, \u0275\u0275styleMapInterpolate2, \u0275\u0275styleMapInterpolate3, \u0275\u0275styleMapInterpolate4, \u0275\u0275styleMapInterpolate5, \u0275\u0275styleMapInterpolate6, \u0275\u0275styleMapInterpolate7, \u0275\u0275styleMapInterpolate8, \u0275\u0275styleMapInterpolateV, \u0275\u0275styleProp, \u0275\u0275stylePropInterpolate1, \u0275\u0275stylePropInterpolate2, \u0275\u0275stylePropInterpolate3, \u0275\u0275stylePropInterpolate4, \u0275\u0275stylePropInterpolate5, \u0275\u0275stylePropInterpolate6, \u0275\u0275stylePropInterpolate7, \u0275\u0275stylePropInterpolate8, \u0275\u0275stylePropInterpolateV, \u0275\u0275syntheticHostListener, \u0275\u0275syntheticHostProperty, \u0275\u0275template, \u0275\u0275templateRefExtractor, \u0275\u0275text, \u0275\u0275textInterpolate, \u0275\u0275textInterpolate1, \u0275\u0275textInterpolate2, \u0275\u0275textInterpolate3, \u0275\u0275textInterpolate4, \u0275\u0275textInterpolate5, \u0275\u0275textInterpolate6, \u0275\u0275textInterpolate7, \u0275\u0275textInterpolate8, \u0275\u0275textInterpolateV, \u0275\u0275trustConstantHtml, \u0275\u0275trustConstantResourceUrl, \u0275\u0275validateIframeAttribute, \u0275\u0275viewQuery)\r\n\r\n./node_modules/ng6-toastr-notifications/fesm2015/ng6-toastr-notifications.js:294:37-77 - Error: export \u0027ReflectiveInjector\u0027 (imported as \u0027ReflectiveInjector\u0027) was not found in \u0027@angular/core\u0027 (possible exports: ANIMATION_MODULE_TYPE, APP_BOOTSTRAP_LISTENER, APP_ID, APP_INITIALIZER, ApplicationInitStatus, ApplicationModule, ApplicationRef, Attribute, COMPILER_OPTIONS, CSP_NONCE, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectionStrategy, ChangeDetectorRef, Compiler, CompilerFactory, Component, ComponentFactory, ComponentFactoryResolver, ComponentRef, ContentChild, ContentChildren, DEFAULT_CURRENCY_CODE, DebugElement, DebugEventListener, DebugNode, DefaultIterableDiffer, DestroyRef, Directive, ENVIRONMENT_INITIALIZER, ElementRef, EmbeddedViewRef, EnvironmentInjector, ErrorHandler, EventEmitter, Host, HostBinding, HostListener, INJECTOR, Inject, InjectFlags, Injectable, InjectionToken, Injector, Input, IterableDiffers, KeyValueDiffers, LOCALE_ID, MissingTranslationStrategy, ModuleWithComponentFactories, NO_ERRORS_SCHEMA, NgModule, NgModuleFactory, NgModuleRef, NgProbeToken, NgZone, Optional, Output, PACKAGE_ROOT_URL, PLATFORM_ID, PLATFORM_INITIALIZER, Pipe, PlatformRef, Query, QueryList, Renderer2, RendererFactory2, RendererStyleFlags2, Sanitizer, SecurityContext, Self, SimpleChange, SkipSelf, TRANSLATIONS, TRANSLATIONS_FORMAT, TemplateRef, Testability, TestabilityRegistry, TransferState, Type, VERSION, Version, ViewChild, ViewChildren, ViewContainerRef, ViewEncapsulation, ViewRef, afterNextRender, afterRender, asNativeElements, assertInInjectionContext, assertPlatform, booleanAttribute, computed, createComponent, createEnvironmentInjector, createNgModule, createNgModuleRef, createPlatform, createPlatformFactory, defineInjectable, destroyPlatform, effect, enableProdMode, forwardRef, getDebugNode, getModuleFactory, getNgModuleById, getPlatform, importProvidersFrom, inject, isDevMode, isSignal, isStandalone, makeEnvironmentProviders, makeStateKey, mergeApplicationConfig, numberAttribute, platformCore, provideZoneChangeDetection, reflectComponentType, resolveForwardRef, runInInjectionContext, setTestabilityGetter, signal, untracked, \u0275ALLOW_MULTIPLE_PLATFORMS, \u0275AfterRenderEventManager, \u0275ComponentFactory, \u0275Console, \u0275DEFAULT_LOCALE_ID, \u0275ENABLED_SSR_FEATURES, \u0275INJECTOR_SCOPE, \u0275IS_HYDRATION_DOM_REUSE_ENABLED, \u0275InitialRenderPendingTasks, \u0275LContext, \u0275LifecycleHooksFeature, \u0275LocaleDataIndex, \u0275NG_COMP_DEF, \u0275NG_DIR_DEF, \u0275NG_ELEMENT_ID, \u0275NG_INJ_DEF, \u0275NG_MOD_DEF, \u0275NG_PIPE_DEF, \u0275NG_PROV_DEF, \u0275NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR, \u0275NO_CHANGE, \u0275NgModuleFactory, \u0275NoopNgZone, \u0275ReflectionCapabilities, \u0275Render3ComponentFactory, \u0275Render3ComponentRef, \u0275Render3NgModuleRef, \u0275RuntimeError, \u0275SSR_CONTENT_INTEGRITY_MARKER, \u0275TESTABILITY, \u0275TESTABILITY_GETTER, \u0275ViewRef, \u0275XSS_SECURITY_URL, \u0275_sanitizeHtml, \u0275_sanitizeUrl, \u0275allowSanitizationBypassAndThrow, \u0275annotateForHydration, \u0275bypassSanitizationTrustHtml, \u0275bypassSanitizationTrustResourceUrl, \u0275bypassSanitizationTrustScript, \u0275bypassSanitizationTrustStyle, \u0275bypassSanitizationTrustUrl, \u0275clearResolutionOfComponentResourcesQueue, \u0275compileComponent, \u0275compileDirective, \u0275compileNgModule, \u0275compileNgModuleDefs, \u0275compileNgModuleFactory, \u0275compilePipe, \u0275convertToBitFlags, \u0275createInjector, \u0275defaultIterableDiffers, \u0275defaultKeyValueDiffers, \u0275detectChanges, \u0275devModeEqual, \u0275findLocaleData, \u0275flushModuleScopingQueueAsMuchAsPossible, \u0275formatRuntimeError, \u0275getDebugNode, \u0275getDirectives, \u0275getHostElement, \u0275getInjectableDef, \u0275getLContext, \u0275getLocaleCurrencyCode, \u0275getLocalePluralCase, \u0275getSanitizationBypassType, \u0275getUnknownElementStrictMode, \u0275getUnknownPropertyStrictMode, \u0275global, \u0275injectChangeDetectorRef, \u0275internalCreateApplication, \u0275isBoundToModule, \u0275isEnvironmentProviders, \u0275isInjectable, \u0275isNgModule, \u0275isPromise, \u0275isSubscribable, \u0275noSideEffects, \u0275patchComponentDefWithScope, \u0275publishDefaultGlobalUtils, \u0275publishGlobalUtil, \u0275registerLocaleData, \u0275resetCompiledComponents, \u0275resetJitOptions, \u0275resolveComponentResources, \u0275setAllowDuplicateNgModuleIdsForTest, \u0275setAlternateWeakRefImpl, \u0275setClassMetadata, \u0275setCurrentInjector, \u0275setDocument, \u0275setInjectorProfilerContext, \u0275setLocaleId, \u0275setUnknownElementStrictMode, \u0275setUnknownPropertyStrictMode, \u0275store, \u0275stringify, \u0275transitiveScopesFor, \u0275unregisterLocaleData, \u0275unwrapSafeValue, \u0275withDomHydration, \u0275\u0275CopyDefinitionFeature, \u0275\u0275FactoryTarget, \u0275\u0275HostDirectivesFeature, \u0275\u0275InheritDefinitionFeature, \u0275\u0275InputTransformsFeature, \u0275\u0275NgOnChangesFeature, \u0275\u0275ProvidersFeature, \u0275\u0275StandaloneFeature, \u0275\u0275advance, \u0275\u0275attribute, \u0275\u0275attributeInterpolate1, \u0275\u0275attributeInterpolate2, \u0275\u0275attributeInterpolate3, \u0275\u0275attributeInterpolate4, \u0275\u0275attributeInterpolate5, \u0275\u0275attributeInterpolate6, \u0275\u0275attributeInterpolate7, \u0275\u0275attributeInterpolate8, \u0275\u0275attributeInterpolateV, \u0275\u0275classMap, \u0275\u0275classMapInterpolate1, \u0275\u0275classMapInterpolate2, \u0275\u0275classMapInterpolate3, \u0275\u0275classMapInterpolate4, \u0275\u0275classMapInterpolate5, \u0275\u0275classMapInterpolate6, \u0275\u0275classMapInterpolate7, \u0275\u0275classMapInterpolate8, \u0275\u0275classMapInterpolateV, \u0275\u0275classProp, \u0275\u0275contentQuery, \u0275\u0275defer, \u0275\u0275defineComponent, \u0275\u0275defineDirective, \u0275\u0275defineInjectable, \u0275\u0275defineInjector, \u0275\u0275defineNgModule, \u0275\u0275definePipe, \u0275\u0275directiveInject, \u0275\u0275disableBindings, \u0275\u0275element, \u0275\u0275elementContainer, \u0275\u0275elementContainerEnd, \u0275\u0275elementContainerStart, \u0275\u0275elementEnd, \u0275\u0275elementStart, \u0275\u0275enableBindings, \u0275\u0275getCurrentView, \u0275\u0275getInheritedFactory, \u0275\u0275hostProperty, \u0275\u0275i18n, \u0275\u0275i18nApply, \u0275\u0275i18nAttributes, \u0275\u0275i18nEnd, \u0275\u0275i18nExp, \u0275\u0275i18nPostprocess, \u0275\u0275i18nStart, \u0275\u0275inject, \u0275\u0275injectAttribute, \u0275\u0275invalidFactory, \u0275\u0275invalidFactoryDep, \u0275\u0275listener, \u0275\u0275loadQuery, \u0275\u0275namespaceHTML, \u0275\u0275namespaceMathML, \u0275\u0275namespaceSVG, \u0275\u0275nextContext, \u0275\u0275ngDeclareClassMetadata, \u0275\u0275ngDeclareComponent, \u0275\u0275ngDeclareDirective, \u0275\u0275ngDeclareFactory, \u0275\u0275ngDeclareInjectable, \u0275\u0275ngDeclareInjector, \u0275\u0275ngDeclareNgModule, \u0275\u0275ngDeclarePipe, \u0275\u0275pipe, \u0275\u0275pipeBind1, \u0275\u0275pipeBind2, \u0275\u0275pipeBind3, \u0275\u0275pipeBind4, \u0275\u0275pipeBindV, \u0275\u0275projection, \u0275\u0275projectionDef, \u0275\u0275property, \u0275\u0275propertyInterpolate, \u0275\u0275propertyInterpolate1, \u0275\u0275propertyInterpolate2, \u0275\u0275propertyInterpolate3, \u0275\u0275propertyInterpolate4, \u0275\u0275propertyInterpolate5, \u0275\u0275propertyInterpolate6, \u0275\u0275propertyInterpolate7, \u0275\u0275propertyInterpolate8, \u0275\u0275propertyInterpolateV, \u0275\u0275pureFunction0, \u0275\u0275pureFunction1, \u0275\u0275pureFunction2, \u0275\u0275pureFunction3, \u0275\u0275pureFunction4, \u0275\u0275pureFunction5, \u0275\u0275pureFunction6, \u0275\u0275pureFunction7, \u0275\u0275pureFunction8, \u0275\u0275pureFunctionV, \u0275\u0275queryRefresh, \u0275\u0275reference, \u0275\u0275registerNgModuleType, \u0275\u0275resetView, \u0275\u0275resolveBody, \u0275\u0275resolveDocument, \u0275\u0275resolveWindow, \u0275\u0275restoreView, \u0275\u0275sanitizeHtml, \u0275\u0275sanitizeResourceUrl, \u0275\u0275sanitizeScript, \u0275\u0275sanitizeStyle, \u0275\u0275sanitizeUrl, \u0275\u0275sanitizeUrlOrResourceUrl, \u0275\u0275setComponentScope, \u0275\u0275setNgModuleScope, \u0275\u0275styleMap, \u0275\u0275styleMapInterpolate1, \u0275\u0275styleMapInterpolate2, \u0275\u0275styleMapInterpolate3, \u0275\u0275styleMapInterpolate4, \u0275\u0275styleMapInterpolate5, \u0275\u0275styleMapInterpolate6, \u0275\u0275styleMapInterpolate7, \u0275\u0275styleMapInterpolate8, \u0275\u0275styleMapInterpolateV, \u0275\u0275styleProp, \u0275\u0275stylePropInterpolate1, \u0275\u0275stylePropInterpolate2, \u0275\u0275stylePropInterpolate3, \u0275\u0275stylePropInterpolate4, \u0275\u0275stylePropInterpolate5, \u0275\u0275stylePropInterpolate6, \u0275\u0275stylePropInterpolate7, \u0275\u0275stylePropInterpolate8, \u0275\u0275stylePropInterpolateV, \u0275\u0275syntheticHostListener, \u0275\u0275syntheticHostProperty, \u0275\u0275template, \u0275\u0275templateRefExtractor, \u0275\u0275text, \u0275\u0275textInterpolate, \u0275\u0275textInterpolate1, \u0275\u0275textInterpolate2, \u0275\u0275textInterpolate3, \u0275\u0275textInterpolate4, \u0275\u0275textInterpolate5, \u0275\u0275textInterpolate6, \u0275\u0275textInterpolate7, \u0275\u0275textInterpolate8, \u0275\u0275textInterpolateV, \u0275\u0275trustConstantHtml, \u0275\u0275trustConstantResourceUrl, \u0275\u0275validateIframeAttribute, \u0275\u0275viewQuery)\r\n\r\nError: node_modules/ngx-bootstrap/component-loader/component-loader.factory.d.ts:19:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n19     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CComponentLoaderFactory, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/focus-trap-manager.d.ts:31:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n31     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CFocusTrapManager, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/focus-trap.d.ts:130:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n130     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CFocusTrapFactory, never\u003E;\r\n                            ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/focus-trap.d.ts:159:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n159     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CFocusTrapDirective, never\u003E;\r\n                            ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/focus-trap.d.ts:160:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275DirectiveDefWithMeta\u0027.\r\n\r\n160     static \u0275dir: \u0275ngcc0.\u0275\u0275DirectiveDefWithMeta\u003CFocusTrapDirective, \u0022[focusTrap]\u0022, [\u0022focusTrap\u0022], { \u0022enabled\u0022: \u0022cdkTrapFocus\u0022; \u0022autoCapture\u0022: \u0022cdkTrapFocusAutoCapture\u0022; }, {}, never\u003E;\r\n                            ~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/focus-trap.module.d.ts:7:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275NgModuleDefWithMeta\u0027.\r\n\r\n7     static \u0275mod: \u0275ngcc0.\u0275\u0275NgModuleDefWithMeta\u003CFocusTrapModule, [typeof \u0275ngcc1.FocusTrapDirective], [typeof \u0275ngcc2.CommonModule], [typeof \u0275ngcc1.FocusTrapDirective]\u003E;\r\n                          ~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/interactivity-checker.d.ts:58:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n58     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CInteractivityChecker, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/focus-trap/platform.d.ts:34:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n34     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CPlatform, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/bs-modal-ref.service.d.ts:28:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n28     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CBsModalRef\u003Cany\u003E, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/bs-modal-ref.service.d.ts:29:26 - error TS2724: \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member named \u0027\u0275\u0275InjectableDef\u0027. Did you mean \u0027\u0275getInjectableDef\u0027?\r\n\r\n29     static \u0275prov: \u0275ngcc0.\u0275\u0275InjectableDef\u003CBsModalRef\u003Cany\u003E\u003E;\r\n                            ~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/bs-modal.service.d.ts:46:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n46     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CBsModalService, [null, null, { optional: true; }]\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/bs-modal.service.d.ts:47:26 - error TS2724: \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member named \u0027\u0275\u0275InjectableDef\u0027. Did you mean \u0027\u0275getInjectableDef\u0027?\r\n\r\n47     static \u0275prov: \u0275ngcc0.\u0275\u0275InjectableDef\u003CBsModalService\u003E;\r\n                            ~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-backdrop.component.d.ts:15:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n15     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CModalBackdropComponent, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-backdrop.component.d.ts:16:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275ComponentDefWithMeta\u0027.\r\n\r\n16     static \u0275cmp: \u0275ngcc0.\u0275\u0275ComponentDefWithMeta\u003CModalBackdropComponent, \u0022bs-modal-backdrop\u0022, never, {}, {}, never, never\u003E;\r\n                           ~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-container.component.d.ts:24:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n24     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CModalContainerComponent, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-container.component.d.ts:25:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275ComponentDefWithMeta\u0027.\r\n\r\n25     static \u0275cmp: \u0275ngcc0.\u0275\u0275ComponentDefWithMeta\u003CModalContainerComponent, \u0022modal-container\u0022, never, {}, {}, never, [\u0022*\u0022]\u003E;\r\n                           ~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-options.class.d.ts:55:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n55     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CModalOptions\u003Cany\u003E, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal-options.class.d.ts:56:26 - error TS2724: \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member named \u0027\u0275\u0275InjectableDef\u0027. Did you mean \u0027\u0275getInjectableDef\u0027?\r\n\r\n56     static \u0275prov: \u0275ngcc0.\u0275\u0275InjectableDef\u003CModalOptions\u003Cany\u003E\u003E;\r\n                            ~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal.directive.d.ts:87:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n87     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CModalDirective, [null, null, null, null, { optional: true; }]\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal.directive.d.ts:88:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275DirectiveDefWithMeta\u0027.\r\n\r\n88     static \u0275dir: \u0275ngcc0.\u0275\u0275DirectiveDefWithMeta\u003CModalDirective, \u0022[bsModal]\u0022, [\u0022bs-modal\u0022], { \u0022config\u0022: \u0022config\u0022; \u0022closeInterceptor\u0022: \u0022closeInterceptor\u0022; }, { \u0022onShow\u0022: \u0022onShow\u0022; \u0022onShown\u0022: \u0022onShown\u0022; \u0022onHide\u0022: \u0022onHide\u0022; \u0022onHidden\u0022: \u0022onHidden\u0022; }, never\u003E;\r\n                           ~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/modal/modal.module.d.ts:12:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275NgModuleDefWithMeta\u0027.\r\n\r\n12     static \u0275mod: \u0275ngcc0.\u0275\u0275NgModuleDefWithMeta\u003CModalModule, [typeof \u0275ngcc1.ModalBackdropComponent, typeof \u0275ngcc2.ModalDirective, typeof \u0275ngcc3.ModalContainerComponent], [typeof \u0275ngcc4.FocusTrapModule], [typeof \u0275ngcc1.ModalBackdropComponent, typeof \u0275ngcc2.ModalDirective]\u003E;\r\n                           ~~~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ngx-bootstrap/positioning/positioning.service.d.ts:46:25 - error TS2694: Namespace \u0027\u0022D:/Projects/AI/AiMigration/Output/node_modules/@angular/core/index\u0022\u0027 has no exported member \u0027\u0275\u0275FactoryDef\u0027.\r\n\r\n46     static \u0275fac: \u0275ngcc0.\u0275\u0275FactoryDef\u003CPositioningService, never\u003E;\r\n                           ~~~~~~~~~~~~\r\n\r\n\r\nError: node_modules/ng6-toastr-notifications/lib/toastr.module.d.ts:3:23 - error TS2314: Generic type \u0027ModuleWithProviders\u003CT\u003E\u0027 requires 1 type argument(s).\r\n\r\n3     static forRoot(): ModuleWithProviders;\r\n                        ~~~~~~~~~~~~~~~~~~~\r\n\r\n\r\nError: src/app/app.module.ts:32:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n32     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/customer/customer.module.ts:37:5 - error NG6002: \u0027SlickCarouselModule\u0027 does not appear to be an NgModule class.\r\n\r\n37     SlickCarouselModule,\r\n       ~~~~~~~~~~~~~~~~~~~\r\n\r\n  node_modules/ngx-slick-carousel/index.d.ts:2:22\r\n    2 export declare class SlickCarouselModule {\r\n                           ~~~~~~~~~~~~~~~~~~~\r\n    This likely means that the library (ngx-slick-carousel) which declares SlickCarouselModule is not compatible with Angular Ivy. Check if a newer version of the library is available, and update if so. Also consider checking with the library\u0027s authors to see if the library is expected to be compatible with Ivy.\r\n\r\n\r\nError: src/app/customer/customer.module.ts:42:5 - error NG6002: \u0027PinchZoomModule\u0027 does not appear to be an NgModule class.\r\n\r\n42     PinchZoomModule,\r\n       ~~~~~~~~~~~~~~~\r\n\r\n  node_modules/ngx-pinch-zoom/lib/pinch-zoom.module.d.ts:1:22\r\n    1 export declare class PinchZoomModule {\r\n                           ~~~~~~~~~~~~~~~\r\n    This likely means that the library (ngx-pinch-zoom) which declares PinchZoomModule is not compatible with Angular Ivy. Check if a newer version of the library is available, and update if so. Also consider checking with the library\u0027s authors to see if the library is expected to be compatible with Ivy.\r\n\r\n\r\nError: src/app/modules/admin/admin.module.ts:15:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n15     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/auth/auth.module.ts:15:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n15     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/article-master/article-master.module.ts:17:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n17     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/attribute-master/attribute-master.module.ts:17:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n17     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/bulk-import/bulk-import.module.ts:14:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n14     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/category-master/category-master.module.ts:18:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n18     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/image-view-master/image-view.module.ts:16:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n16     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/role-master/role-master.module.ts:16:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n16     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/components/user-role-mapping/user-role-mapping.module.ts:15:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n15     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/dashboard.module.ts:20:5 - error NG6002: \u0027SharedModule\u0027 does not appear to be an NgModule class.\r\n\r\n20     SharedModule,\r\n       ~~~~~~~~~~~~\r\n\r\n  src/app/shared/shared.module.ts:58:14\r\n    58 export class SharedModule { }\r\n                    ~~~~~~~~~~~~\r\n    Is it missing an @NgModule annotation?\r\n\r\n\r\nError: src/app/modules/admin/dashboard/dashboard.module.ts:24:5 - error NG6002: \u0027UserIdleModule\u0027 does not appear to be an NgModule class.\r\n\r\n24     UserIdleModule,\r\n       ~~~~~~~~~~~~~~\r\n\r\n  node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:3:22\r\n    3 export declare class UserIdleModule {\r\n                           ~~~~~~~~~~~~~~\r\n    This likely means that the library (angular-user-idle) which declares UserIdleModule is not compatible with Angular Ivy. Check if a newer version of the library is available, and update if so. Also consider checking with the library\u0027s authors to see if the library is expected to be compatible with Ivy.\r\n\r\n\r\n\r\n",
-    "failureReason": "Build verification command returned a non-zero exit code.",
-    "failureCategory": "buildFailed"
-  },
-  "npmLsProblemOutput": {
-    "command": "npm ls typescript",
-    "returncode": 0,
-    "stdout": "jewelex@0.0.0 D:\\Projects\\AI\\AiMigration\\Output\r\n\u002B-- @angular-devkit/build-angular@16.2.16\r\n| \u002B-- @ngtools/webpack@16.2.16\r\n| | \u0060-- typescript@5.1.6 deduped\r\n| \u002B-- guess-parser@0.4.22\r\n| | \u002B-- @wessberg/ts-evaluator@0.0.27\r\n| | | \u0060-- typescript@5.1.6 deduped\r\n| | \u0060-- typescript@5.1.6 deduped\r\n| \u002B-- postcss-loader@7.3.3\r\n| | \u0060-- cosmiconfig@8.3.6\r\n| |   \u0060-- typescript@5.1.6 deduped\r\n| \u0060-- typescript@5.1.6 deduped\r\n\u002B-- @angular/compiler-cli@16.2.12\r\n| \u0060-- typescript@5.1.6 deduped\r\n\u0060-- typescript@5.1.6\r\n\r\n",
-    "stderr": ""
-  },
-  "localPackageMetadata": {
-    "@angular/compiler-cli": {
-      "version": "16.2.12",
-      "peerDependencies": {
-        "@angular/compiler": "16.2.12",
-        "typescript": "\u003E=4.9.3 \u003C5.2"
-      },
-      "dependencies": {
-        "@babel/core": "7.23.2",
-        "@jridgewell/sourcemap-codec": "^1.4.14",
-        "reflect-metadata": "^0.1.2",
-        "chokidar": "^3.0.0",
-        "convert-source-map": "^1.5.1",
-        "semver": "^7.0.0",
-        "tslib": "^2.3.0",
-        "yargs": "^17.2.1"
-      }
-    },
-    "@angular-devkit/build-angular": {
-      "version": "16.2.16",
-      "peerDependencies": {
-        "@angular/compiler-cli": "^16.0.0",
-        "@angular/localize": "^16.0.0",
-        "@angular/platform-server": "^16.0.0",
-        "@angular/service-worker": "^16.0.0",
-        "jest": "^29.5.0",
-        "jest-environment-jsdom": "^29.5.0",
-        "karma": "^6.3.0",
-        "ng-packagr": "^16.0.0",
-        "protractor": "^7.0.0",
-        "tailwindcss": "^2.0.0 || ^3.0.0",
-        "typescript": "\u003E=4.9.3 \u003C5.2"
-      },
-      "dependencies": {
-        "@ampproject/remapping": "2.2.1",
-        "@angular-devkit/architect": "0.1602.16",
-        "@angular-devkit/build-webpack": "0.1602.16",
-        "@angular-devkit/core": "16.2.16",
-        "@babel/core": "7.22.9",
-        "@babel/generator": "7.22.9",
-        "@babel/helper-annotate-as-pure": "7.22.5",
-        "@babel/helper-split-export-declaration": "7.22.6",
-        "@babel/plugin-proposal-async-generator-functions": "7.20.7",
-        "@babel/plugin-transform-async-to-generator": "7.22.5",
-        "@babel/plugin-transform-runtime": "7.22.9",
-        "@babel/preset-env": "7.22.9",
-        "@babel/runtime": "7.22.6",
-        "@babel/template": "7.22.5",
-        "@discoveryjs/json-ext": "0.5.7",
-        "@ngtools/webpack": "16.2.16",
-        "@vitejs/plugin-basic-ssl": "1.0.1",
-        "ansi-colors": "4.1.3",
-        "autoprefixer": "10.4.14",
-        "babel-loader": "9.1.3",
-        "babel-plugin-istanbul": "6.1.1",
-        "browserslist": "^4.21.5",
-        "chokidar": "3.5.3",
-        "copy-webpack-plugin": "11.0.0",
-        "critters": "0.0.20",
-        "css-loader": "6.8.1",
-        "esbuild-wasm": "0.18.17",
-        "fast-glob": "3.3.1",
-        "guess-parser": "0.4.22",
-        "https-proxy-agent": "5.0.1",
-        "inquirer": "8.2.4",
-        "jsonc-parser": "3.2.0",
-        "karma-source-map-support": "1.4.0",
-        "less": "4.1.3",
-        "less-loader": "11.1.0",
-        "license-webpack-plugin": "4.0.2",
-        "loader-utils": "3.2.1",
-        "magic-string": "0.30.1",
-        "mini-css-extract-plugin": "2.7.6",
-        "mrmime": "1.0.1",
-        "open": "8.4.2",
-        "ora": "5.4.1",
-        "parse5-html-rewriting-stream": "7.0.0",
-        "picomatch": "2.3.1",
-        "piscina": "4.0.0",
-        "postcss": "8.4.31",
-        "postcss-loader": "7.3.3",
-        "resolve-url-loader": "5.0.0",
-        "rxjs": "7.8.1",
-        "sass": "1.64.1",
-        "sass-loader": "13.3.2",
-        "semver": "7.5.4",
-        "source-map-loader": "4.0.1",
-        "source-map-support": "0.5.21",
-        "terser": "5.19.2",
-        "text-table": "0.2.0",
-        "tree-kill": "1.2.2",
-        "tslib": "2.6.1",
-        "vite": "4.5.5",
-        "webpack": "5.94.0",
-        "webpack-dev-middleware": "6.1.2",
-        "webpack-dev-server": "4.15.1",
-        "webpack-merge": "5.9.0",
-        "webpack-subresource-integrity": "5.1.0"
-      }
-    },
-    "@ngtools/webpack": {
-      "version": "16.2.16",
-      "peerDependencies": {
-        "@angular/compiler-cli": "^16.0.0",
-        "typescript": "\u003E=4.9.3 \u003C5.2",
-        "webpack": "^5.54.0"
-      },
-      "dependencies": {}
-    },
-    "@angular/cli": {
-      "version": "16.2.16",
-      "peerDependencies": {},
-      "dependencies": {
-        "@angular-devkit/architect": "0.1602.16",
-        "@angular-devkit/core": "16.2.16",
-        "@angular-devkit/schematics": "16.2.16",
-        "@schematics/angular": "16.2.16",
-        "@yarnpkg/lockfile": "1.1.0",
-        "ansi-colors": "4.1.3",
-        "ini": "4.1.1",
-        "inquirer": "8.2.4",
-        "jsonc-parser": "3.2.0",
-        "npm-package-arg": "10.1.0",
-        "npm-pick-manifest": "8.0.1",
-        "open": "8.4.2",
-        "ora": "5.4.1",
-        "pacote": "15.2.0",
-        "resolve": "1.22.2",
-        "semver": "7.5.4",
-        "symbol-observable": "4.0.0",
-        "yargs": "17.7.2"
-      }
-    },
-    "@angular/core": {
-      "version": "16.2.12",
-      "peerDependencies": {
-        "rxjs": "^6.5.3 || ^7.4.0",
-        "zone.js": "~0.13.0"
-      },
-      "dependencies": {
-        "tslib": "^2.3.0"
-      }
-    }
-  },
-  "angularTypeScriptPeerRanges": {
-    "ranges": [
-      {
-        "packageName": "@angular/compiler-cli",
-        "packageVersion": "16.2.12",
-        "typescriptPeerRange": "\u003E=4.9.3 \u003C5.2",
-        "source": "localPackageMetadata"
-      },
-      {
-        "packageName": "@angular-devkit/build-angular",
-        "packageVersion": "16.2.16",
-        "typescriptPeerRange": "\u003E=4.9.3 \u003C5.2",
-        "source": "localPackageMetadata"
-      },
-      {
-        "packageName": "@ngtools/webpack",
-        "packageVersion": "16.2.16",
-        "typescriptPeerRange": "\u003E=4.9.3 \u003C5.2",
-        "source": "localPackageMetadata"
-      }
-    ],
-    "intersection": "\u003E=4.9.3 \u003C5.2",
-    "recommendedVersionFromIntersection": "~5.1.5",
-    "npmLsInvalid": false
-  },
-  "frameworkCriticalPackagesInPackageJson": [
-    {
-      "packageName": "@angular/animations",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/cdk",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/common",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/compiler",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/core",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/forms",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/material",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/platform-browser",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/platform-browser-dynamic",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular/router",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "rxjs",
-      "currentVersion": "~7.4.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "tslib",
-      "currentVersion": "^2.3.0",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "zone.js",
-      "currentVersion": "~0.13.3",
-      "dependencySection": "dependencies"
-    },
-    {
-      "packageName": "@angular-devkit/build-angular",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "devDependencies"
-    },
-    {
-      "packageName": "@angular/cli",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "devDependencies"
-    },
-    {
-      "packageName": "@angular/compiler-cli",
-      "currentVersion": "^16.0.0",
-      "dependencySection": "devDependencies"
-    },
-    {
-      "packageName": "typescript",
-      "currentVersion": "~5.1.6",
-      "dependencySection": "devDependencies"
-    }
+  "alreadyAppliedMigrationChanges": [],
+  "attempt": 1,
+  "maxAttempts": 3,
+  "rules": [
+    "Fix only the cause shown in the validation/build failure.",
+    "Prefer structural/config/package/script fixes over source-code edits.",
+    "Angular Unknown argument: prod should update package.json scripts from ng build --prod to ng build --configuration production.",
+    "Angular Ivy/Angular 16\u002B no longer uses entryComponents; remove only the entryComponents metadata property when the compiler points at NgModule metadata.",
+    "For ModuleWithProviders\u003CT\u003E requires 1 type argument in node_modules, do not edit node_modules. Treat the owning package as incompatible with the target Angular version and propose a package upgrade or replacement.",
+    "For NG6002/NG6003 in node_modules, do not edit node_modules. Propose only package.json changes and minimal Angular module import/wiring changes needed for an equivalent Angular module setup.",
+    "For NG6002 on a local module that already has @NgModule, classify it as cascading from earlier incompatible imported Angular libraries instead of claiming @NgModule is missing.",
+    "Use legacy-peer-deps only as install fallback, not as the only remediation if package version alignment is clearly needed.",
+    ".NET fixes should prefer csproj/package/framework/config changes.",
+    "Never make broad refactors, change business rules, or edit files unrelated to the failure.",
+    "Source edits are allowed only when the validation output points to the exact file and symbol.",
+    "For CSS/SCSS package import failures, extract only unresolved imports from Can\u0027t resolve \u0027\u003Cpath\u003E\u0027 diagnostics.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, first try direct tilde removal when that exact normalized target is confirmed resolvable.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, if direct tilde removal is not resolvable, an import may be changed to a verified equivalent installed package style asset when it keeps the same npm package and same theme/asset basename.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, do not move imports between files, add imports to styles.scss, add sibling package assets, change package versions, or edit TypeScript.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, changes are limited to style_import_update entries in .css, .scss, .sass, or .less files.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, do not change TypeScript files, package versions, dependencies, dependency removals, Angular modules, or business logic.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, reject AI plans unless the replacement is confirmed direct tilde removal or a package-verified equivalent style asset path.",
+    "For css_dependency_import or dependency_asset_import_resolution failures, include the original unresolved import, direct normalized import attempted, whether it was confirmed, selected package asset path, and changed style files in reportNotes or change metadata when available.",
+    "After install/build/test validation proves a third-party package blocks the hop, package_update is allowed for that proven blocker package.",
+    "Project-owned .d.ts compatibility shims are allowed for third-party declaration failures when no runtime behavior changes.",
+    "tsconfig/angular.json/package config updates are allowed when minimal and tied to the validation failure.",
+    "Angular module import/export wiring is allowed only for compiler-proven package visibility errors and must not change business behavior.",
+    "Do not execute commands.",
+    "Do not inspect the filesystem.",
+    "Do not run build/test/install.",
+    "Return only JSON.",
+    "The migration agent will apply changes and run commands."
   ],
   "requiredResponseShape": {
-    "sourceAngularMajor": 15,
-    "targetAngularMajor": 16,
-    "recommendations": [],
-    "warnings": []
-  }
+    "summary": "Short explanation of detected failure cause",
+    "confidence": 0,
+    "risk": "low|medium|high",
+    "requiresManualCorrection": false,
+    "manualCorrectionReason": null,
+    "failureCategory": "script|dependency|type_declaration|css_dependency_import|dependency_asset_import_resolution|third_party_angular_incompatibility|compiler|config|test|unknown",
+    "businessLogicChanged": false,
+    "changes": [
+      {
+        "file": "package.json",
+        "type": "script_update|package_update|config_update|type_shim|source_update|style_import_update|test_config_update",
+        "reason": "exact reason tied to validation failure",
+        "packageName": "package name for package remediations",
+        "oldImport": "old Angular module import when replacement wiring is needed",
+        "newImport": "new Angular module import when replacement wiring is needed",
+        "before": "exact text to replace",
+        "after": "replacement text"
+      }
+    ],
+    "commandsToRunAfter": [],
+    "reportNotes": []
+  },
+  "stdoutStderr": "$ npm run build\nexit code: 1\n\r\n\u003E jewelex@0.0.0 build\r\n\u003E ng build --configuration production --aot --build-optimizer --output-hashing=all\r\n\r\n\u001B[1m\u001B[33mWorkspace extension with invalid name (defaultProject) found.\u001B[39m\u001B[22m\r\n- Generating browser application bundles (phase: setup)...\r\n\u001B[1m\u001B[33m    TypeScript compiler options \u0022target\u0022 and \u0022useDefineForClassFields\u0022 are set to \u0022ES2022\u0022 and \u0022false\u0022 respectively by the Angular CLI. To control ECMA version and features use the Browserslist configuration. For more information, see https://angular.dev/tools/cli/build#configuring-browser-compatibility\r\n    NOTE: You can set the \u0022target\u0022 to \u0022ES2022\u0022 in the project\u0027s tsconfig to remove this warning.\u001B[39m\u001B[22m\r\n\u221A Browser application bundle generation complete.\r\n\u221A Browser application bundle generation complete.\r\n\u001B[1m\u001B[33m\r\nWarning: D:\\Projects\\AI\\AiMigration\\Output\\src\\app\\customer\\product-configurator-detail\\product-configurator-detail.component.ts depends on \u0027jquery\u0027. CommonJS or AMD dependencies can cause optimization bailouts.\r\nFor more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies\r\n\r\n\u001B[39m\u001B[22m\r\n\u001B[1m\u001B[31m\r\n./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\r\nUndefined function.\r\n   \u2577\r\n16 \u2502 $jewelex-primary: mat.define-palette(mat.$indigo-palette);\r\n   \u2502                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n   \u2575\r\n  src\\styles.scss 16:19  root stylesheet\r\n\r\n./src/styles.scss?ngGlobalStyle - Error: Module build failed (from ./node_modules/mini-css-extract-plugin/dist/loader.js):\r\nHookWebpackError: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\r\nUndefined function.\r\n   \u2577\r\n16 \u2502 $jewelex-primary: mat.define-palette(mat.$indigo-palette);\r\n   \u2502                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n   \u2575\r\n  src\\styles.scss 16:19  root stylesheet\r\n\r\n\u001B[39m\u001B[22m\r\n",
+  "logTail": "$ npm run build\r\nexit code: 1\r\n\r\n\u003E jewelex@0.0.0 build\r\n\u003E ng build --configuration production --aot --build-optimizer --output-hashing=all\r\n\r\n\u001B[1m\u001B[33mWorkspace extension with invalid name (defaultProject) found.\u001B[39m\u001B[22m\r\n- Generating browser application bundles (phase: setup)...\r\n\u001B[1m\u001B[33m    TypeScript compiler options \u0022target\u0022 and \u0022useDefineForClassFields\u0022 are set to \u0022ES2022\u0022 and \u0022false\u0022 respectively by the Angular CLI. To control ECMA version and features use the Browserslist configuration. For more information, see https://angular.dev/tools/cli/build#configuring-browser-compatibility\r\n    NOTE: You can set the \u0022target\u0022 to \u0022ES2022\u0022 in the project\u0027s tsconfig to remove this warning.\u001B[39m\u001B[22m\r\n\u221A Browser application bundle generation complete.\r\n\u221A Browser application bundle generation complete.\r\n\u001B[1m\u001B[33m\r\nWarning: D:\\Projects\\AI\\AiMigration\\Output\\src\\app\\customer\\product-configurator-detail\\product-configurator-detail.component.ts depends on \u0027jquery\u0027. CommonJS or AMD dependencies can cause optimization bailouts.\r\nFor more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies\r\n\r\n\u001B[39m\u001B[22m\r\n\u001B[1m\u001B[31m\r\n./src/styles.scss - Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\r\nUndefined function.\r\n   \u2577\r\n16 \u2502 $jewelex-primary: mat.define-palette(mat.$indigo-palette);\r\n   \u2502                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n   \u2575\r\n  src\\styles.scss 16:19  root stylesheet\r\n\r\n./src/styles.scss?ngGlobalStyle - Error: Module build failed (from ./node_modules/mini-css-extract-plugin/dist/loader.js):\r\nHookWebpackError: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\r\nUndefined function.\r\n   \u2577\r\n16 \u2502 $jewelex-primary: mat.define-palette(mat.$indigo-palette);\r\n   \u2502                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n   \u2575\r\n  src\\styles.scss 16:19  root stylesheet\r\n\r\n\u001B[39m\u001B[22m\r\n",
+  "manifestFilesInvolved": [
+    "package-lock.json",
+    "package.json"
+  ],
+  "lockfilesPresent": [
+    "package-lock.json"
+  ],
+  "projectFiles": {
+    "angular.json": "{\r\n  \u0022$schema\u0022: \u0022./node_modules/@angular/cli/lib/config/schema.json\u0022,\r\n  \u0022cli\u0022: {\r\n    \u0022analytics\u0022: false\r\n  },\r\n  \u0022version\u0022: 1,\r\n  \u0022newProjectRoot\u0022: \u0022projects\u0022,\r\n  \u0022projects\u0022: {\r\n    \u0022jewelex\u0022: {\r\n      \u0022projectType\u0022: \u0022application\u0022,\r\n      \u0022schematics\u0022: {\r\n        \u0022@schematics/angular:component\u0022: {\r\n          \u0022style\u0022: \u0022scss\u0022\r\n        },\r\n        \u0022@schematics/angular:application\u0022: {\r\n          \u0022strict\u0022: true\r\n        }\r\n      },\r\n      \u0022root\u0022: \u0022\u0022,\r\n      \u0022sourceRoot\u0022: \u0022src\u0022,\r\n      \u0022prefix\u0022: \u0022app\u0022,\r\n      \u0022architect\u0022: {\r\n        \u0022build\u0022: {\r\n          \u0022builder\u0022: \u0022@angular-devkit/build-angular:browser\u0022,\r\n          \u0022options\u0022: {\r\n            \u0022outputPath\u0022: \u0022dist/jewelex\u0022,\r\n            \u0022index\u0022: \u0022src/index.html\u0022,\r\n            \u0022main\u0022: \u0022src/main.ts\u0022,\r\n            \u0022polyfills\u0022: \u0022src/polyfills.ts\u0022,\r\n            \u0022tsConfig\u0022: \u0022tsconfig.app.json\u0022,\r\n            \u0022inlineStyleLanguage\u0022: \u0022scss\u0022,\r\n            \u0022allowedCommonJsDependencies\u0022: [\r\n              \u0022@cordobo/qrcode\u0022\r\n            ],\r\n            \u0022assets\u0022: [\r\n              \u0022src/favicon.png\u0022,\r\n              \u0022src/assets\u0022,\r\n              {\r\n                \u0022glob\u0022: \u0022.htaccess\u0022,\r\n                \u0022input\u0022: \u0022src/\u0022,\r\n                \u0022output\u0022: \u0022/\u0022\r\n              }\r\n            ],\r\n            \u0022styles\u0022: [\r\n              \u0022src/styles.scss\u0022,\r\n              {\r\n                \u0022input\u0022: \u0022src/assets/css/style.css\u0022,\r\n                \u0022bundleName\u0022: \u0022style\u0022,\r\n                \u0022inject\u0022: false\r\n              },\r\n              {\r\n                \u0022input\u0022: \u0022src/assets/css/responsive.css\u0022,\r\n                \u0022bundleName\u0022: \u0022responsive\u0022,\r\n                \u0022inject\u0022: false\r\n              },\r\n              \u0022./node_modules/bootstrap/dist/css/bootstrap.min.css\u0022,\r\n              \u0022node_modules/slick-carousel/slick/slick.scss\u0022,\r\n              \u0022node_modules/slick-carousel/slick/slick-theme.scss\u0022,\r\n              \u0022node_modules/ngx-red-zoom/styles/_base.scss\u0022,\r\n              \u0022node_modules/ngx-red-zoom/styles/_style-magnifier.scss\u0022,\r\n              \u0022node_modules/ngx-red-zoom/styles/_style-window.scss\u0022,\r\n              \u0022node_modules/ngx-red-zoom/styles/_style-overlay.scss\u0022,\r\n              \u0022node_modules/ngx-red-zoom/styles/mixins/_common.scss\u0022\r\n            ],\r\n            \u0022scripts\u0022: [\r\n              \u0022./node_modules/bootstrap/dist/js/bootstrap.min.js\u0022,\r\n              \u0022./node_modules/jquery/dist/jquery.min.js\u0022,\r\n              \u0022./node_modules/slick-carousel/slick/slick.min.js\u0022\r\n            ]\r\n          },\r\n          \u0022configurations\u0022: {\r\n            \u0022production\u0022: {\r\n              \u0022budgets\u0022: [\r\n                {\r\n                  \u0022type\u0022: \u0022initial\u0022,\r\n                  \u0022maximumWarning\u0022: \u002210mb\u0022,\r\n                  \u0022maximumError\u0022: \u002210mb\u0022\r\n                },\r\n                {\r\n                  \u0022type\u0022: \u0022anyComponentStyle\u0022,\r\n                  \u0022maximumWarning\u0022: \u002210mb\u0022,\r\n                  \u0022maximumError\u0022: \u002210mb\u0022\r\n                }\r\n              ],\r\n              \u0022fileReplacements\u0022: [\r\n                {\r\n                  \u0022replace\u0022: \u0022src/environments/environment.ts\u0022,\r\n                  \u0022with\u0022: \u0022src/environments/environment.prod.ts\u0022\r\n                }\r\n              ],\r\n              \u0022outputHashing\u0022: \u0022all\u0022\r\n            },\r\n            \u0022development\u0022: {\r\n              \u0022buildOptimizer\u0022: false,\r\n              \u0022optimization\u0022: false,\r\n              \u0022vendorChunk\u0022: true,\r\n              \u0022extractLicenses\u0022: false,\r\n              \u0022sourceMap\u0022: true,\r\n              \u0022namedChunks\u0022: true\r\n            }\r\n          },\r\n          \u0022defaultConfiguration\u0022: \u0022production\u0022\r\n        },\r\n        \u0022serve\u0022: {\r\n          \u0022builder\u0022: \u0022@angular-devkit/build-angular:dev-server\u0022,\r\n          \u0022configurations\u0022: {\r\n            \u0022production\u0022: {\r\n              \u0022browserTarget\u0022: \u0022jewelex:build:production\u0022\r\n            },\r\n            \u0022development\u0022: {\r\n              \u0022browserTarget\u0022: \u0022jewelex:build:development\u0022\r\n            }\r\n          },\r\n          \u0022defaultConfiguration\u0022: \u0022development\u0022\r\n        },\r\n        \u0022extract-i18n\u0022: {\r\n          \u0022builder\u0022: \u0022@angular-devkit/build-angular:extract-i18n\u0022,\r\n          \u0022options\u0022: {\r\n            \u0022browserTarget\u0022: \u0022jewelex:build\u0022\r\n          }\r\n        },\r\n        \u0022test\u0022: {\r\n          \u0022builder\u0022: \u0022@angular-devkit/build-angular:karma\u0022,\r\n          \u0022options\u0022: {\r\n            \u0022main\u0022: \u0022src/test.ts\u0022,\r\n            \u0022polyfills\u0022: \u0022src/polyfills.ts\u0022,\r\n            \u0022tsConfig\u0022: \u0022tsconfig.spec.json\u0022,\r\n            \u0022karmaConfig\u0022: \u0022karma.conf.js\u0022,\r\n            \u0022inlineStyleLanguage\u0022: \u0022scss\u0022,\r\n            \u0022assets\u0022: [\r\n              \u0022src/favicon.ico\u0022,\r\n              \u0022src/assets\u0022\r\n            ],\r\n            \u0022styles\u0022: [\r\n              \u0022src/styles.scss\u0022\r\n            ],\r\n            \u0022scripts\u0022: []\r\n          }\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \u0022defaultProject\u0022: \u0022jewelex\u0022\r\n}\r\n",
+    "karma.conf.js": "// Karma configuration file, see link for more information\r\n// https://karma-runner.github.io/1.0/config/configuration-file.html\r\n\r\nmodule.exports = function (config) {\r\n  config.set({\r\n    basePath: \u0027\u0027,\r\n    frameworks: [\u0027jasmine\u0027, \u0027@angular-devkit/build-angular\u0027],\r\n    plugins: [\r\n      require(\u0027karma-jasmine\u0027),\r\n      require(\u0027karma-chrome-launcher\u0027),\r\n      require(\u0027karma-jasmine-html-reporter\u0027),\r\n      require(\u0027karma-coverage\u0027),\r\n      require(\u0027@angular-devkit/build-angular/plugins/karma\u0027)\r\n    ],\r\n    client: {\r\n      jasmine: {\r\n        // you can add configuration options for Jasmine here\r\n        // the possible options are listed at https://jasmine.github.io/api/edge/Configuration.html\r\n        // for example, you can disable the random execution with \u0060random: false\u0060\r\n        // or set a specific seed with \u0060seed: 4321\u0060\r\n      },\r\n      clearContext: false // leave Jasmine Spec Runner output visible in browser\r\n    },\r\n    jasmineHtmlReporter: {\r\n      suppressAll: true // removes the duplicated traces\r\n    },\r\n    coverageReporter: {\r\n      dir: require(\u0027path\u0027).join(__dirname, \u0027./coverage/jewelex\u0027),\r\n      subdir: \u0027.\u0027,\r\n      reporters: [\r\n        { type: \u0027html\u0027 },\r\n        { type: \u0027text-summary\u0027 }\r\n      ]\r\n    },\r\n    reporters: [\u0027progress\u0027, \u0027kjhtml\u0027],\r\n    port: 9876,\r\n    colors: true,\r\n    logLevel: config.LOG_INFO,\r\n    autoWatch: true,\r\n    browsers: [\u0027Chrome\u0027],\r\n    singleRun: false,\r\n    restartOnFileChange: true\r\n  });\r\n};\r\n",
+    "package-lock.json": "{\r\n  \u0022name\u0022: \u0022jewelex\u0022,\r\n  \u0022version\u0022: \u00220.0.0\u0022,\r\n  \u0022lockfileVersion\u0022: 3,\r\n  \u0022requires\u0022: true,\r\n  \u0022packages\u0022: {\r\n    \u0022\u0022: {\r\n      \u0022name\u0022: \u0022jewelex\u0022,\r\n      \u0022version\u0022: \u00220.0.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022-\u0022: \u0022^0.0.1\u0022,\r\n        \u0022@angular-slider/ngx-slider\u0022: \u0022^13.0.0\u0022,\r\n        \u0022@angular/animations\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/cdk\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/common\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/compiler\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/core\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/forms\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/material\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/platform-browser\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/platform-browser-dynamic\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/router\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@fortawesome/fontawesome-free\u0022: \u0022^6.0.0\u0022,\r\n        \u0022@ng-select/ng-option-highlight\u0022: \u0022^0.0.7\u0022,\r\n        \u0022@ng-select/ng-select\u0022: \u0022^8.3.0\u0022,\r\n        \u0022angular-user-idle\u0022: \u0022^4.0.0\u0022,\r\n        \u0022angularx-qrcode\u0022: \u0022^13.0.15\u0022,\r\n        \u0022bootstrap\u0022: \u0022^5.0.0-beta3\u0022,\r\n        \u0022cookieconsent\u0022: \u0022^3.1.1\u0022,\r\n        \u0022jquery\u0022: \u0022^3.6.2\u0022,\r\n        \u0022ng-dynamic-breadcrumb\u0022: \u0022^6.0.0\u0022,\r\n        \u0022ng6-toastr-notifications\u0022: \u0022^1.0.4\u0022,\r\n        \u0022ngx-bootstrap\u0022: \u0022^11.0.2\u0022,\r\n        \u0022ngx-color-picker\u0022: \u0022^16.0.0\u0022,\r\n        \u0022ngx-cookie-service\u0022: \u0022^13.1.2\u0022,\r\n        \u0022ngx-cookieconsent\u0022: \u0022^2.2.3\u0022,\r\n        \u0022ngx-device-detector\u0022: \u0022^3.0.0\u0022,\r\n        \u0022ngx-image-zoom\u0022: \u00220.6.0\u0022,\r\n        \u0022ngx-img-zoom\u0022: \u00224.1.2\u0022,\r\n        \u0022ngx-pagination\u0022: \u0022^6.0.3\u0022,\r\n        \u0022ngx-pinch-zoom\u0022: \u0022npm:@mtnair/ngx-pinch-zoom@2.5.12\u0022,\r\n        \u0022ngx-red-zoom\u0022: \u0022^0.9.0\u0022,\r\n        \u0022ngx-slick-carousel\u0022: \u002215.0.0\u0022,\r\n        \u0022rxjs\u0022: \u0022~7.4.0\u0022,\r\n        \u0022slick-carousel\u0022: \u0022^1.8.1\u0022,\r\n        \u0022swiper\u0022: \u0022^11.2.1\u0022,\r\n        \u0022tslib\u0022: \u0022^2.3.0\u0022,\r\n        \u0022xlsx\u0022: \u0022^0.18.5\u0022,\r\n        \u0022zone.js\u0022: \u0022~0.14.0\u0022\r\n      },\r\n      \u0022devDependencies\u0022: {\r\n        \u0022@angular-devkit/build-angular\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/cli\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/compiler-cli\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@types/jasmine\u0022: \u0022~3.10.0\u0022,\r\n        \u0022@types/jquery\u0022: \u0022^3.5.8\u0022,\r\n        \u0022@types/node\u0022: \u0022^12.11.1\u0022,\r\n        \u0022jasmine-core\u0022: \u0022~3.10.0\u0022,\r\n        \u0022karma\u0022: \u0022~6.3.0\u0022,\r\n        \u0022karma-chrome-launcher\u0022: \u0022~3.1.0\u0022,\r\n        \u0022karma-coverage\u0022: \u0022~2.1.0\u0022,\r\n        \u0022karma-jasmine\u0022: \u0022~4.0.0\u0022,\r\n        \u0022karma-jasmine-html-reporter\u0022: \u0022~1.7.0\u0022,\r\n        \u0022typescript\u0022: \u0022~5.5.4\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/-\u0022: {\r\n      \u0022version\u0022: \u00220.0.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/-/-/--0.0.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-3HfneK3DGAm05fpyj20sT3apkNcvPpCuccOThOPdzz8sY7GgQGe0l93XH9bt\u002BYzibcTIgUAIMoyVJI740RtgyQ==\u0022,\r\n      \u0022license\u0022: \u0022UNLICENSED\u0022\r\n    },\r\n    \u0022node_modules/@ampproject/remapping\u0022: {\r\n      \u0022version\u0022: \u00222.3.0\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@ampproject/remapping/-/remapping-2.3.0.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-30iZtAPgz\u002BLTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@jridgewell/gen-mapping\u0022: \u0022^0.3.5\u0022,\r\n        \u0022@jridgewell/trace-mapping\u0022: \u0022^0.3.24\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022\u003E=6.0.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/architect\u0022: {\r\n      \u0022version\u0022: \u00220.1802.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-devkit/architect/-/architect-0.1802.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-\u002BLl\u002BxtpKwZ3iLWN/YypvnCZV/F0MVbP\u002B/7ZpMR\u002BXv/uB0OmribhBVj9WGaCd9I/bGgoYBw8wBV/NFNCKkf0k3Q==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@angular-devkit/core\u0022: \u002218.2.21\u0022,\r\n        \u0022rxjs\u0022: \u00227.8.1\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/architect/node_modules/rxjs\u0022: {\r\n      \u0022version\u0022: \u00227.8.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/rxjs/-/rxjs-7.8.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-AA3TVj\u002B0A2iuIoQkWEK/tqFjBq2j\u002B6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.1.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/build-angular\u0022: {\r\n      \u0022version\u0022: \u002218.2.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-devkit/build-angular/-/build-angular-18.2.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-0pJfURFpEUV2USgZ2TL3nNAaJmF9bICx9OVddBoC\u002BF9FeOpVKxkcVIb\u002Bc8Km5zHFo1iyVtPZ6Rb25vFk9Zm/ug==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@ampproject/remapping\u0022: \u00222.3.0\u0022,\r\n        \u0022@angular-devkit/architect\u0022: \u00220.1802.21\u0022,\r\n        \u0022@angular-devkit/build-webpack\u0022: \u00220.1802.21\u0022,\r\n        \u0022@angular-devkit/core\u0022: \u002218.2.21\u0022,\r\n        \u0022@angular/build\u0022: \u002218.2.21\u0022,\r\n        \u0022@babel/core\u0022: \u00227.26.10\u0022,\r\n        \u0022@babel/generator\u0022: \u00227.26.10\u0022,\r\n        \u0022@babel/helper-annotate-as-pure\u0022: \u00227.25.9\u0022,\r\n        \u0022@babel/helper-split-export-declaration\u0022: \u00227.24.7\u0022,\r\n        \u0022@babel/plugin-transform-async-generator-functions\u0022: \u00227.26.8\u0022,\r\n        \u0022@babel/plugin-transform-async-to-generator\u0022: \u00227.25.9\u0022,\r\n        \u0022@babel/plugin-transform-runtime\u0022: \u00227.26.10\u0022,\r\n        \u0022@babel/preset-env\u0022: \u00227.26.9\u0022,\r\n        \u0022@babel/runtime\u0022: \u00227.26.10\u0022,\r\n        \u0022@discoveryjs/json-ext\u0022: \u00220.6.1\u0022,\r\n        \u0022@ngtools/webpack\u0022: \u002218.2.21\u0022,\r\n        \u0022ansi-colors\u0022: \u00224.1.3\u0022,\r\n        \u0022autoprefixer\u0022: \u002210.4.20\u0022,\r\n        \u0022babel-loader\u0022: \u00229.1.3\u0022,\r\n        \u0022browserslist\u0022: \u0022^4.21.5\u0022,\r\n        \u0022copy-webpack-plugin\u0022: \u002212.0.2\u0022,\r\n        \u0022critters\u0022: \u00220.0.24\u0022,\r\n        \u0022css-loader\u0022: \u00227.1.2\u0022,\r\n        \u0022esbuild-wasm\u0022: \u00220.23.0\u0022,\r\n        \u0022fast-glob\u0022: \u00223.3.2\u0022,\r\n        \u0022http-proxy-middleware\u0022: \u00223.0.5\u0022,\r\n        \u0022https-proxy-agent\u0022: \u00227.0.5\u0022,\r\n        \u0022istanbul-lib-instrument\u0022: \u00226.0.3\u0022,\r\n        \u0022jsonc-parser\u0022: \u00223.3.1\u0022,\r\n        \u0022karma-source-map-support\u0022: \u00221.4.0\u0022,\r\n        \u0022less\u0022: \u00224.2.0\u0022,\r\n        \u0022less-loader\u0022: \u002212.2.0\u0022,\r\n        \u0022license-webpack-plugin\u0022: \u00224.0.2\u0022,\r\n        \u0022loader-utils\u0022: \u00223.3.1\u0022,\r\n        \u0022magic-string\u0022: \u00220.30.11\u0022,\r\n        \u0022mini-css-extract-plugin\u0022: \u00222.9.0\u0022,\r\n        \u0022mrmime\u0022: \u00222.0.0\u0022,\r\n        \u0022open\u0022: \u002210.1.0\u0022,\r\n        \u0022ora\u0022: \u00225.4.1\u0022,\r\n        \u0022parse5-html-rewriting-stream\u0022: \u00227.0.0\u0022,\r\n        \u0022picomatch\u0022: \u00224.0.2\u0022,\r\n        \u0022piscina\u0022: \u00224.6.1\u0022,\r\n        \u0022postcss\u0022: \u00228.4.41\u0022,\r\n        \u0022postcss-loader\u0022: \u00228.1.1\u0022,\r\n        \u0022resolve-url-loader\u0022: \u00225.0.0\u0022,\r\n        \u0022rxjs\u0022: \u00227.8.1\u0022,\r\n        \u0022sass\u0022: \u00221.77.6\u0022,\r\n        \u0022sass-loader\u0022: \u002216.0.0\u0022,\r\n        \u0022semver\u0022: \u00227.6.3\u0022,\r\n        \u0022source-map-loader\u0022: \u00225.0.0\u0022,\r\n        \u0022source-map-support\u0022: \u00220.5.21\u0022,\r\n        \u0022terser\u0022: \u00225.31.6\u0022,\r\n        \u0022tree-kill\u0022: \u00221.2.2\u0022,\r\n        \u0022tslib\u0022: \u00222.6.3\u0022,\r\n        \u0022watchpack\u0022: \u00222.4.1\u0022,\r\n        \u0022webpack\u0022: \u00225.94.0\u0022,\r\n        \u0022webpack-dev-middleware\u0022: \u00227.4.2\u0022,\r\n        \u0022webpack-dev-server\u0022: \u00225.2.2\u0022,\r\n        \u0022webpack-merge\u0022: \u00226.0.1\u0022,\r\n        \u0022webpack-subresource-integrity\u0022: \u00225.1.0\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      },\r\n      \u0022optionalDependencies\u0022: {\r\n        \u0022esbuild\u0022: \u00220.23.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022@angular/compiler-cli\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/localize\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/platform-server\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/service-worker\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@web/test-runner\u0022: \u0022^0.18.0\u0022,\r\n        \u0022browser-sync\u0022: \u0022^3.0.2\u0022,\r\n        \u0022jest\u0022: \u0022^29.5.0\u0022,\r\n        \u0022jest-environment-jsdom\u0022: \u0022^29.5.0\u0022,\r\n        \u0022karma\u0022: \u0022^6.3.0\u0022,\r\n        \u0022ng-packagr\u0022: \u0022^18.0.0\u0022,\r\n        \u0022protractor\u0022: \u0022^7.0.0\u0022,\r\n        \u0022tailwindcss\u0022: \u0022^2.0.0 || ^3.0.0\u0022,\r\n        \u0022typescript\u0022: \u0022\u003E=5.4 \u003C5.6\u0022\r\n      },\r\n      \u0022peerDependenciesMeta\u0022: {\r\n        \u0022@angular/localize\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022@angular/platform-server\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022@angular/service-worker\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022@web/test-runner\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022browser-sync\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022jest\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022jest-environment-jsdom\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022karma\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022ng-packagr\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022protractor\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022tailwindcss\u0022: {\r\n          \u0022optional\u0022: true\r\n        }\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/build-angular/node_modules/rxjs\u0022: {\r\n      \u0022version\u0022: \u00227.8.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/rxjs/-/rxjs-7.8.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-AA3TVj\u002B0A2iuIoQkWEK/tqFjBq2j\u002B6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.1.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/build-angular/node_modules/tslib\u0022: {\r\n      \u0022version\u0022: \u00222.6.3\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/tslib/-/tslib-2.6.3.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u00220BSD\u0022\r\n    },\r\n    \u0022node_modules/@angular-devkit/build-webpack\u0022: {\r\n      \u0022version\u0022: \u00220.1802.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-devkit/build-webpack/-/build-webpack-0.1802.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-2jSVRhA3N4Elg8OLcBktgi\u002BCMSjlAm/bBQJE6TQYbdQWnniuT7JAWUHA/iPf7MYlQE5qj4rnAni1CI/c1Bk4HQ==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@angular-devkit/architect\u0022: \u00220.1802.21\u0022,\r\n        \u0022rxjs\u0022: \u00227.8.1\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022webpack\u0022: \u0022^5.30.0\u0022,\r\n        \u0022webpack-dev-server\u0022: \u0022^5.0.2\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/build-webpack/node_modules/rxjs\u0022: {\r\n      \u0022version\u0022: \u00227.8.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/rxjs/-/rxjs-7.8.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-AA3TVj\u002B0A2iuIoQkWEK/tqFjBq2j\u002B6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.1.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/core\u0022: {\r\n      \u0022version\u0022: \u002218.2.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-devkit/core/-/core-18.2.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-Lno6GNbJME85wpc/uqn\u002BwamBxvfZJZFYSH8\u002BoAkkyjU/hk8r5\u002BX8DuyqsKAa0m8t46zSTUsonHsQhVe5vgrZeQ==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022ajv\u0022: \u00228.17.1\u0022,\r\n        \u0022ajv-formats\u0022: \u00223.0.1\u0022,\r\n        \u0022jsonc-parser\u0022: \u00223.3.1\u0022,\r\n        \u0022picomatch\u0022: \u00224.0.2\u0022,\r\n        \u0022rxjs\u0022: \u00227.8.1\u0022,\r\n        \u0022source-map\u0022: \u00220.7.4\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022chokidar\u0022: \u0022^3.5.2\u0022\r\n      },\r\n      \u0022peerDependenciesMeta\u0022: {\r\n        \u0022chokidar\u0022: {\r\n          \u0022optional\u0022: true\r\n        }\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/core/node_modules/rxjs\u0022: {\r\n      \u0022version\u0022: \u00227.8.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/rxjs/-/rxjs-7.8.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-AA3TVj\u002B0A2iuIoQkWEK/tqFjBq2j\u002B6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.1.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/schematics\u0022: {\r\n      \u0022version\u0022: \u002218.2.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-devkit/schematics/-/schematics-18.2.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-yuC2vN4VL48JhnsaOa9J/o0Jl\u002BcxOklRNQp5J2/ypMuRROaVCrZAPiX\u002BChSHh\u002B\u002BkHYMpj8\u002BggNrrUwRNfMKACQ==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@angular-devkit/core\u0022: \u002218.2.21\u0022,\r\n        \u0022jsonc-parser\u0022: \u00223.3.1\u0022,\r\n        \u0022magic-string\u0022: \u00220.30.11\u0022,\r\n        \u0022ora\u0022: \u00225.4.1\u0022,\r\n        \u0022rxjs\u0022: \u00227.8.1\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-devkit/schematics/node_modules/rxjs\u0022: {\r\n      \u0022version\u0022: \u00227.8.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/rxjs/-/rxjs-7.8.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-AA3TVj\u002B0A2iuIoQkWEK/tqFjBq2j\u002B6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022Apache-2.0\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.1.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular-slider/ngx-slider\u0022: {\r\n      \u0022version\u0022: \u002213.0.0\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular-slider/ngx-slider/-/ngx-slider-13.0.0.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-hVrXgQDNnMrYHR6miqEYOOXqHOUYsdqFZisvf8J567o\u002BWuPfbqtCeOz/vb1ly/bnnU3oKFxC5tOHMrkESlbBxQ==\u0022,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022detect-passive-events\u0022: \u0022^2.0.3\u0022,\r\n        \u0022rxjs\u0022: \u0022~7.4.0\u0022,\r\n        \u0022tslib\u0022: \u0022^2.3.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022@angular/common\u0022: \u0022^13.0.0\u0022,\r\n        \u0022@angular/core\u0022: \u0022^13.0.0\u0022,\r\n        \u0022@angular/forms\u0022: \u0022^13.0.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/animations\u0022: {\r\n      \u0022version\u0022: \u002218.2.14\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular/animations/-/animations-18.2.14.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-Kp/MWShoYYO\u002BR3lrrZbZgszbbLGVXHB\u002B39mdJZwnIuZMDkeL3JsIBlSOzyJRTnpS1vITc\u002B9jgHvP/6uKbMrW1Q==\u0022,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.3.0\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022@angular/core\u0022: \u002218.2.14\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/build\u0022: {\r\n      \u0022version\u0022: \u002218.2.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular/build/-/build-18.2.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-uvq3qP4cByJrUkV1ri0v3x6LxOFt4fDKiQdNwbQAqdxtfRs3ssEIoCGns4t89sTWXv6VZWBNDcDIKK9/Fa9mmg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@ampproject/remapping\u0022: \u00222.3.0\u0022,\r\n        \u0022@angular-devkit/architect\u0022: \u00220.1802.21\u0022,\r\n        \u0022@babel/core\u0022: \u00227.25.2\u0022,\r\n        \u0022@babel/helper-annotate-as-pure\u0022: \u00227.24.7\u0022,\r\n        \u0022@babel/helper-split-export-declaration\u0022: \u00227.24.7\u0022,\r\n        \u0022@babel/plugin-syntax-import-attributes\u0022: \u00227.24.7\u0022,\r\n        \u0022@inquirer/confirm\u0022: \u00223.1.22\u0022,\r\n        \u0022@vitejs/plugin-basic-ssl\u0022: \u00221.1.0\u0022,\r\n        \u0022browserslist\u0022: \u0022^4.23.0\u0022,\r\n        \u0022critters\u0022: \u00220.0.24\u0022,\r\n        \u0022esbuild\u0022: \u00220.23.0\u0022,\r\n        \u0022fast-glob\u0022: \u00223.3.2\u0022,\r\n        \u0022https-proxy-agent\u0022: \u00227.0.5\u0022,\r\n        \u0022listr2\u0022: \u00228.2.4\u0022,\r\n        \u0022lmdb\u0022: \u00223.0.13\u0022,\r\n        \u0022magic-string\u0022: \u00220.30.11\u0022,\r\n        \u0022mrmime\u0022: \u00222.0.0\u0022,\r\n        \u0022parse5-html-rewriting-stream\u0022: \u00227.0.0\u0022,\r\n        \u0022picomatch\u0022: \u00224.0.2\u0022,\r\n        \u0022piscina\u0022: \u00224.6.1\u0022,\r\n        \u0022rollup\u0022: \u00224.22.4\u0022,\r\n        \u0022sass\u0022: \u00221.77.6\u0022,\r\n        \u0022semver\u0022: \u00227.6.3\u0022,\r\n        \u0022vite\u0022: \u0022~5.4.17\u0022,\r\n        \u0022watchpack\u0022: \u00222.4.1\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022^18.19.1 || ^20.11.1 || \u003E=22.0.0\u0022,\r\n        \u0022npm\u0022: \u0022^6.11.0 || ^7.5.6 || \u003E=8.0.0\u0022,\r\n        \u0022yarn\u0022: \u0022\u003E= 1.13.0\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022@angular/compiler-cli\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/localize\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/platform-server\u0022: \u0022^18.0.0\u0022,\r\n        \u0022@angular/service-worker\u0022: \u0022^18.0.0\u0022,\r\n        \u0022less\u0022: \u0022^4.2.0\u0022,\r\n        \u0022postcss\u0022: \u0022^8.4.0\u0022,\r\n        \u0022tailwindcss\u0022: \u0022^2.0.0 || ^3.0.0\u0022,\r\n        \u0022typescript\u0022: \u0022\u003E=5.4 \u003C5.6\u0022\r\n      },\r\n      \u0022peerDependenciesMeta\u0022: {\r\n        \u0022@angular/localize\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022@angular/platform-server\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022@angular/service-worker\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022less\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022postcss\u0022: {\r\n          \u0022optional\u0022: true\r\n        },\r\n        \u0022tailwindcss\u0022: {\r\n          \u0022optional\u0022: true\r\n        }\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/build/node_modules/@babel/core\u0022: {\r\n      \u0022version\u0022: \u00227.25.2\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@babel/core/-/core-7.25.2.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-BBt3opiCOxUr9euZ5/ro/Xv8/V7yJ5bjYMqG/C1YAo8MIKAnumZalCN\u002Bmsbci3Pigy4lIQfPUpfMM27HMGaYEA==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@ampproject/remapping\u0022: \u0022^2.2.0\u0022,\r\n        \u0022@babel/code-frame\u0022: \u0022^7.24.7\u0022,\r\n        \u0022@babel/generator\u0022: \u0022^7.25.0\u0022,\r\n        \u0022@babel/helper-compilation-targets\u0022: \u0022^7.25.2\u0022,\r\n        \u0022@babel/helper-module-transforms\u0022: \u0022^7.25.2\u0022,\r\n        \u0022@babel/helpers\u0022: \u0022^7.25.0\u0022,\r\n        \u0022@babel/parser\u0022: \u0022^7.25.0\u0022,\r\n        \u0022@babel/template\u0022: \u0022^7.25.0\u0022,\r\n        \u0022@babel/traverse\u0022: \u0022^7.25.2\u0022,\r\n        \u0022@babel/types\u0022: \u0022^7.25.2\u0022,\r\n        \u0022convert-source-map\u0022: \u0022^2.0.0\u0022,\r\n        \u0022debug\u0022: \u0022^4.1.0\u0022,\r\n        \u0022gensync\u0022: \u0022^1.0.0-beta.2\u0022,\r\n        \u0022json5\u0022: \u0022^2.2.3\u0022,\r\n        \u0022semver\u0022: \u0022^6.3.1\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022\u003E=6.9.0\u0022\r\n      },\r\n      \u0022funding\u0022: {\r\n        \u0022type\u0022: \u0022opencollective\u0022,\r\n        \u0022url\u0022: \u0022https://opencollective.com/babel\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/build/node_modules/@babel/core/node_modules/semver\u0022: {\r\n      \u0022version\u0022: \u00226.3.1\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/semver/-/semver-6.3.1.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-BR7VvDCVHO\u002Bq2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd\u002BKl0mmq/MprG9yArRkyrQxTO6XjMzA==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022ISC\u0022,\r\n      \u0022bin\u0022: {\r\n        \u0022semver\u0022: \u0022bin/semver.js\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/build/node_modules/@babel/helper-annotate-as-pure\u0022: {\r\n      \u0022version\u0022: \u00227.24.7\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@babel/helper-annotate-as-pure/-/helper-annotate-as-pure-7.24.7.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-BaDeOonYvhdKw\u002BJoMVkAixAAJzG2jVPIwWoKBPdYuY9b452e2rPuI9QPYh3KpofZ3pW2akOmwZLOiOsHMiqRAg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@babel/types\u0022: \u0022^7.24.7\u0022\r\n      },\r\n      \u0022engines\u0022: {\r\n        \u0022node\u0022: \u0022\u003E=6.9.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/build/node_modules/convert-source-map\u0022: {\r\n      \u0022version\u0022: \u00222.0.0\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/convert-source-map/-/convert-source-map-2.0.0.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-Kvp459HrV2FEJ1CAsi1Ku\u002BMY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ\u002BQ61m0xktWwt\u002B1HSYf3JZsTms3aRJg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022\r\n    },\r\n    \u0022node_modules/@angular/cdk\u0022: {\r\n      \u0022version\u0022: \u002218.2.14\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular/cdk/-/cdk-18.2.14.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-vDyOh1lwjfVk9OqoroZAP8pf3xxKUvyl\u002BTVR8nJxL4c5fOfUFkD7l94HaanqKSRwJcI2xiztuu92IVoHn8T33Q==\u0022,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022tslib\u0022: \u0022^2.3.0\u0022\r\n      },\r\n      \u0022optionalDependencies\u0022: {\r\n        \u0022parse5\u0022: \u0022^7.1.2\u0022\r\n      },\r\n      \u0022peerDependencies\u0022: {\r\n        \u0022@angular/common\u0022: \u0022^18.0.0 || ^19.0.0\u0022,\r\n        \u0022@angular/core\u0022: \u0022^18.0.0 || ^19.0.0\u0022,\r\n        \u0022rxjs\u0022: \u0022^6.5.3 || ^7.4.0\u0022\r\n      }\r\n    },\r\n    \u0022node_modules/@angular/cli\u0022: {\r\n      \u0022version\u0022: \u002218.2.21\u0022,\r\n      \u0022resolved\u0022: \u0022https://registry.npmjs.org/@angular/cli/-/cli-18.2.21.tgz\u0022,\r\n      \u0022integrity\u0022: \u0022sha512-efweY4p8awRTbHs\u002BHKdg6s44hl7Y0gdVlXYi3HeY8Z5JDC0abbka0K6sA/MrV9AXvn/5ovxYbxiL3AsOApjTpg==\u0022,\r\n      \u0022dev\u0022: true,\r\n      \u0022license\u0022: \u0022MIT\u0022,\r\n      \u0022dependencies\u0022: {\r\n        \u0022@angular-devkit/architect\u0022: \u00220.1802.21\u0022,\r\n        \u0022@angular-devkit/core\u0022: \u002218.2.21\u0022,\r\n        \u0022@angular-devkit/schematics\u0022: \u002218.2.21\u0022,\r\n        \u0022@inquirer/prompts\u0022: \u00225.3.8\u0022,\r\n        \u0022@listr2/prompt-adapter-inquirer\u0022: \u00222.0.15\u0022,\r\n        \u0022@schematics/angular\u0022: \u002218.2.21\u0022,\r\n        \u0022@yarnpkg/lockfile\u0022: \u00221.1.0\u0022,\r\n        \u0022ini\u0022: \u00224.1.3\u0022,\r\n        \u0022jsonc-parser\u0022: \u00223.3.1\u0022,\r\n        \u0022listr2\u0022: \u00228.2.4\u0022,\r\n        \u0022npm-package-arg\u0022: \u002211.0.3\u0022,\r\n        \u0022npm-pick-manifest\u0022: \u00229.1.0\u0022,\r",
+    "package.json": "{\r\n  \u0022name\u0022: \u0022jewelex\u0022,\r\n  \u0022version\u0022: \u00220.0.0\u0022,\r\n  \u0022scripts\u0022: {\r\n    \u0022ng\u0022: \u0022ng\u0022,\r\n    \u0022start\u0022: \u0022ng serve --live-reload=true --port 4201\u0022,\r\n    \u0022build\u0022: \u0022ng build --configuration production --aot --build-optimizer --output-hashing=all\u0022,\r\n    \u0022watch\u0022: \u0022ng build --watch --configuration development\u0022,\r\n    \u0022test\u0022: \u0022ng test\u0022,\r\n    \u0022build-compress\u0022: \u0022ng build \\u0026\\u0026 gzipper c ./dist --include js,css,html --output-file-format [filename].[ext] ./dist-compressed/\u0022\r\n  },\r\n  \u0022private\u0022: true,\r\n  \u0022dependencies\u0022: {\r\n    \u0022-\u0022: \u0022^0.0.1\u0022,\r\n    \u0022@angular-slider/ngx-slider\u0022: \u0022^13.0.0\u0022,\r\n    \u0022@angular/animations\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/cdk\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/common\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/compiler\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/core\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/forms\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/material\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/platform-browser\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/platform-browser-dynamic\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/router\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@fortawesome/fontawesome-free\u0022: \u0022^6.0.0\u0022,\r\n    \u0022@ng-select/ng-option-highlight\u0022: \u0022^0.0.7\u0022,\r\n    \u0022@ng-select/ng-select\u0022: \u0022^8.3.0\u0022,\r\n    \u0022angular-user-idle\u0022: \u0022^4.0.0\u0022,\r\n    \u0022angularx-qrcode\u0022: \u0022^13.0.15\u0022,\r\n    \u0022bootstrap\u0022: \u0022^5.0.0-beta3\u0022,\r\n    \u0022cookieconsent\u0022: \u0022^3.1.1\u0022,\r\n    \u0022jquery\u0022: \u0022^3.6.2\u0022,\r\n    \u0022ng-dynamic-breadcrumb\u0022: \u0022^6.0.0\u0022,\r\n    \u0022ng6-toastr-notifications\u0022: \u0022^1.0.4\u0022,\r\n    \u0022ngx-bootstrap\u0022: \u0022^11.0.2\u0022,\r\n    \u0022ngx-color-picker\u0022: \u0022^16.0.0\u0022,\r\n    \u0022ngx-cookie-service\u0022: \u0022^13.1.2\u0022,\r\n    \u0022ngx-cookieconsent\u0022: \u0022^2.2.3\u0022,\r\n    \u0022ngx-device-detector\u0022: \u0022^3.0.0\u0022,\r\n    \u0022ngx-image-zoom\u0022: \u00220.6.0\u0022,\r\n    \u0022ngx-img-zoom\u0022: \u00224.1.2\u0022,\r\n    \u0022ngx-pagination\u0022: \u0022^6.0.3\u0022,\r\n    \u0022ngx-pinch-zoom\u0022: \u0022npm:@mtnair/ngx-pinch-zoom@2.5.12\u0022,\r\n    \u0022ngx-red-zoom\u0022: \u0022^0.9.0\u0022,\r\n    \u0022ngx-slick-carousel\u0022: \u002215.0.0\u0022,\r\n    \u0022rxjs\u0022: \u0022~7.4.0\u0022,\r\n    \u0022slick-carousel\u0022: \u0022^1.8.1\u0022,\r\n    \u0022swiper\u0022: \u0022^11.2.1\u0022,\r\n    \u0022tslib\u0022: \u0022^2.3.0\u0022,\r\n    \u0022xlsx\u0022: \u0022^0.18.5\u0022,\r\n    \u0022zone.js\u0022: \u0022~0.14.0\u0022\r\n  },\r\n  \u0022devDependencies\u0022: {\r\n    \u0022@angular-devkit/build-angular\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/cli\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@angular/compiler-cli\u0022: \u0022^18.0.0\u0022,\r\n    \u0022@types/jasmine\u0022: \u0022~3.10.0\u0022,\r\n    \u0022@types/jquery\u0022: \u0022^3.5.8\u0022,\r\n    \u0022@types/node\u0022: \u0022^12.11.1\u0022,\r\n    \u0022jasmine-core\u0022: \u0022~3.10.0\u0022,\r\n    \u0022karma\u0022: \u0022~6.3.0\u0022,\r\n    \u0022karma-chrome-launcher\u0022: \u0022~3.1.0\u0022,\r\n    \u0022karma-coverage\u0022: \u0022~2.1.0\u0022,\r\n    \u0022karma-jasmine\u0022: \u0022~4.0.0\u0022,\r\n    \u0022karma-jasmine-html-reporter\u0022: \u0022~1.7.0\u0022,\r\n    \u0022typescript\u0022: \u0022~5.5.4\u0022\r\n  }\r\n}\r\n",
+    "tsconfig.app.json": "/* To learn more about this file see: https://angular.io/config/tsconfig. */\r\n{\r\n  \u0022extends\u0022: \u0022./tsconfig.json\u0022,\r\n  \u0022compilerOptions\u0022: {\r\n    \u0022outDir\u0022: \u0022./out-tsc/app\u0022,\r\n    \u0022types\u0022: []\r\n  },\r\n  \u0022files\u0022: [\r\n    \u0022src/main.ts\u0022,\r\n    \u0022src/polyfills.ts\u0022\r\n  ],\r\n  \u0022include\u0022: [\r\n    \u0022src/**/*.d.ts\u0022\r\n  ]\r\n}\r\n",
+    "tsconfig.json": "{\r\n  \u0022compileOnSave\u0022: false,\r\n  \u0022compilerOptions\u0022: {\r\n    \u0022baseUrl\u0022: \u0022./\u0022,\r\n    \u0022paths\u0022: {\r\n      \u0022@app/*\u0022: [\r\n        \u0022app/*\u0022\r\n      ],\r\n      \u0022@env\u0022: [\r\n        \u0022environments/environment\u0022\r\n      ],\r\n      \u0022@shared/*\u0022: [\r\n        \u0022app/shared/*\u0022\r\n      ],\r\n      \u0022@core/*\u0022: [\r\n        \u0022app/core/*\u0022\r\n      ],\r\n      \u0022@modules/*\u0022: [\r\n        \u0022app/modules/*\u0022\r\n      ],\r\n      \u0022ng6-toastr-notifications\u0022: [\r\n        \u0022src/app/compat/ng6-toastr-notifications\u0022\r\n      ]\r\n    },\r\n    \u0022outDir\u0022: \u0022./dist/out-tsc\u0022,\r\n    \u0022forceConsistentCasingInFileNames\u0022: true,\r\n    \u0022strict\u0022: true,\r\n    \u0022noImplicitOverride\u0022: true,\r\n    \u0022noPropertyAccessFromIndexSignature\u0022: false,\r\n    \u0022noImplicitReturns\u0022: false,\r\n    \u0022noFallthroughCasesInSwitch\u0022: true,\r\n    \u0022sourceMap\u0022: true,\r\n    \u0022declaration\u0022: false,\r\n    \u0022downlevelIteration\u0022: true,\r\n    \u0022experimentalDecorators\u0022: true,\r\n    \u0022moduleResolution\u0022: \u0022node\u0022,\r\n    \u0022importHelpers\u0022: true,\r\n    \u0022target\u0022: \u0022es2017\u0022,\r\n    \u0022module\u0022: \u0022es2020\u0022,\r\n    \u0022lib\u0022: [\r\n      \u0022es2020\u0022,\r\n      \u0022dom\u0022\r\n    ]\r\n  },\r\n  \u0022include\u0022: [\r\n    \u0022src/**/*\u0022,\r\n    \u0022index.d.ts\u0022\r\n  ],\r\n  \u0022angularCompilerOptions\u0022: {\r\n    \u0022enableI18nLegacyMessageIdFormat\u0022: false,\r\n    \u0022strictInjectionParameters\u0022: true,\r\n    \u0022strictInputAccessModifiers\u0022: true,\r\n    \u0022strictTemplates\u0022: true\r\n  }\r\n}\r\n",
+    "tsconfig.spec.json": "/* To learn more about this file see: https://angular.io/config/tsconfig. */\r\n{\r\n  \u0022extends\u0022: \u0022./tsconfig.json\u0022,\r\n  \u0022compilerOptions\u0022: {\r\n    \u0022outDir\u0022: \u0022./out-tsc/spec\u0022,\r\n    \u0022types\u0022: [\r\n      \u0022jasmine\u0022\r\n    ]\r\n  },\r\n  \u0022files\u0022: [\r\n    \u0022src/test.ts\u0022,\r\n    \u0022src/polyfills.ts\u0022\r\n  ],\r\n  \u0022include\u0022: [\r\n    \u0022src/**/*.spec.ts\u0022,\r\n    \u0022src/**/*.d.ts\u0022\r\n  ]\r\n}\r\n"
+  },
+  "cssDependencyImportFailures": {
+    "detected": false,
+    "failures": []
+  },
+  "contextMode": "full"
 }
 codex
-{"sourceAngularMajor":15,"targetAngularMajor":16,"recommendations":[{"packageName":"@angular/animations","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/cdk","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/common","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/compiler","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/core","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16 target major; local metadata confirms Angular core 16 peer support for rxjs ^6.5.3 || ^7.4.0 and zone.js ~0.13.0.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/forms","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/material","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/platform-browser","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/platform-browser-dynamic","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/router","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":0.95,"risk":"low","reason":"Already aligned to Angular 16 target major using the existing caret range style.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"rxjs","currentVersion":"~7.4.0","recommendedVersion":"~7.4.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing rxjs range satisfies Angular 16 core peer range ^6.5.3 || ^7.4.0 from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"tslib","currentVersion":"^2.3.0","recommendedVersion":"^2.3.0","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing tslib range satisfies Angular 16 core/compiler support dependency requirements from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"zone.js","currentVersion":"~0.13.3","recommendedVersion":"~0.13.3","dependencySection":"dependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing zone.js range is compatible with Angular 16 core peer range ~0.13.0 from local metadata.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular-devkit/build-angular","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16; local metadata confirms build-angular 16 peer compatibility with compiler-cli ^16.0.0 and TypeScript >=4.9.3 <5.2.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/cli","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16 target major; local metadata shows installed Angular CLI 16 tooling.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"@angular/compiler-cli","currentVersion":"^16.0.0","recommendedVersion":"^16.0.0","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Already aligned to Angular 16; local metadata confirms compiler-cli 16 peer compatibility with TypeScript >=4.9.3 <5.2.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false},{"packageName":"typescript","currentVersion":"~5.1.6","recommendedVersion":"~5.1.6","dependencySection":"devDependencies","action":"preserve","criticality":"required","confidence":1,"risk":"low","reason":"Existing TypeScript version is within the Angular 16 compiler-cli/build-angular peer range >=4.9.3 <5.2, and npm ls reports it valid.","blocksInstall":false,"blocksBuild":false,"manualReviewRequired":false,"requiresRegistryVerification":false}],"warnings":[]}
+{"summary":"The build fails while compiling src/styles.scss because Angular Material 18 no longer exposes the Sass theming function mat.define-palette used at line 16. The supplied context only includes the failing line, not the surrounding Material theming setup, so a safe automatic style migration cannot be chosen without inspecting the full stylesheet.","confidence":0.78,"risk":"high","requiresManualCorrection":true,"manualCorrectionReason":"The failure points to src/styles.scss line 16, but the full stylesheet content is not supplied. Updating Angular Material Sass theming APIs safely may require coordinated changes to related palette/theme function and variable names, and the allowed automatic remediation types do not cover a non-import SCSS theming API edit with incomplete before content.","failureCategory":"compiler","businessLogicChanged":false,"changes":[],"commandsToRunAfter":[],"reportNotes":[],"safetyDecision":{"canApplyAutomatically":false,"requiresManualReview":true,"reason":"Manual review is required to update the project-owned Angular Material SCSS theming API usage in src/styles.scss while preserving the existing theme behavior."}}
 tokens used
-28,770
+30,585

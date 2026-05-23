@@ -1639,7 +1639,14 @@ export class SharedModule {}
         var buildRuns = 0;
         var runner = new RecordingRunner(command =>
         {
-            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6","17.0.2","4.0.0"]""" };
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                var spec = command[2];
+                if (spec.StartsWith("ngx-slick-carousel@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["15.0.0"]""" };
+                if (spec.StartsWith("angular-user-idle@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["4.0.0"]""" };
+                if (spec.StartsWith("@mtnair/ngx-pinch-zoom@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["2.5.12"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6","17.0.2"]""" };
+            }
             if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
             if (command.SequenceEqual(["npm", "run", "build"]))
             {
@@ -1650,7 +1657,7 @@ export class SharedModule {}
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
 
-        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2 }, null, null);
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2, SourceCompatibilityRemediation = true }, null, null);
         var report = new MarkdownReportWriter().GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular16" }, [new MigrationHop(15, 16, "Angular 15 to 16")], [result], new ValidationResult { Passed = true });
 
         Assert.True(result.StringValue("status") == "done", result.ToJsonString(JsonHelpers.SerializerOptions));
@@ -1659,6 +1666,7 @@ export class SharedModule {}
         Assert.DoesNotContain("ngx-toastr", await File.ReadAllTextAsync(Path.Combine(root, "package.json")));
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCategory") == "obsolete_angular_metadata");
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "package_update");
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "compatibility_shim" && c.BoolValue("manualReviewRequired"));
         Assert.Empty(result["manualCorrectionRequests"]!.AsArray());
         Assert.Contains(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
         Assert.Contains("## AI Remediation Root Cause Analysis", report);
@@ -1800,7 +1808,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         var buildRuns = 0;
         var runner = new RecordingRunner(command =>
         {
-            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["0.7.0"]""" : """["16.2.12","5.1.6"]""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["15.0.0"]""" : """["16.2.12","5.1.6"]""" };
             if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
             if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG6002: SlickCarouselModule does not appear to be an NgModule class." } : new CommandResult { ReturnCode = 0 };
             return new CommandResult { ReturnCode = 0 };
@@ -1810,9 +1818,9 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^0.7.0", deps["ngx-slick-carousel"]!.ToString());
+        Assert.Equal("15.0.0", deps["ngx-slick-carousel"]!.ToString());
         Assert.Contains(result["thirdPartyValidationBlockers"]!.AsArray().OfType<JsonObject>(), b => b.StringValue("package") == "ngx-slick-carousel");
-        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCause") == "validation_proven_third_party_blocker" && c.StringValue("finalSelected") == "^0.7.0");
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCause") == "validation_proven_third_party_blocker" && c.StringValue("finalSelected") == "15.0.0");
     }
 
     [Fact]
@@ -1848,14 +1856,8 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         });
 
         await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
-        var requestIndex = ai.SystemPrompts.FindIndex(p => p.Contains("validation-proven third-party blockers", StringComparison.OrdinalIgnoreCase));
-        Assert.True(requestIndex >= 0);
-        var request = ai.Users[requestIndex];
-
-        Assert.Contains("\"package\": \"ngx-bootstrap\"", request);
-        Assert.Contains("\"ngx-bootstrap\": \"^6.0.0\"", request);
-        Assert.DoesNotContain("ngx-slick-carousel", request);
-        Assert.DoesNotContain("lodash", request);
+        Assert.DoesNotContain(ai.SystemPrompts, p => p.Contains("validation-proven third-party blockers", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^11.0.2", "version", "--json"]));
     }
 
     [Fact]
@@ -1902,7 +1904,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         var buildRuns = 0;
         var runner = new RecordingRunner(command =>
         {
-            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["0.7.0"]""" : """["16.2.12","5.1.6"]""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("ngx-slick-carousel@", StringComparison.Ordinal) ? """["15.0.0"]""" : """["16.2.12","5.1.6"]""" };
             if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
             if (command.SequenceEqual(["npm", "run", "build"]))
             {
@@ -1915,7 +1917,7 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 2 }, null, null);
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "view", "ngx-slick-carousel@^0.7.0", "version", "--json"])));
+        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "view", "ngx-slick-carousel@15.0.0", "version", "--json"])));
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("status") == "rejected" && c.StringValue("rejectedReason").Contains("already attempted", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -2093,6 +2095,106 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         Assert.DoesNotContain("~@ng-select/ng-select/themes/material.theme.css", css);
         Assert.DoesNotContain("@ng-select/ng-select/scss/material.theme", css);
         Assert.Contains("reapplied", result["persistentCssRemediationState"]!["records"]!.AsArray().OfType<JsonObject>().Select(r => r.StringValue("status")));
+    }
+
+    [Fact]
+    public async Task Ng6Toastr_Runtime_Compatibility_Shim_Is_Blocked_By_Default()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ng6-toastr-notifications"":""^1.0.4""");
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ng6-toastr-notifications/fesm2015/ng6-toastr-notifications.js:293:39-65 - Error: export 'ReflectiveInjector' was not found in '@angular/core'." };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.False(File.Exists(Path.Combine(root, "src", "app", "compat", "ng6-toastr-notifications.ts")));
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("selectedRemediation") == "compatibility_shim" && c.StringValue("status") == "rejected");
+    }
+
+    [Fact]
+    public async Task Ng6Toastr_Runtime_Compatibility_Shim_Is_Applied_When_Explicitly_Enabled()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ng6-toastr-notifications"":""^1.0.4""");
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{"baseUrl":"./","paths":{}}}""");
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1
+                ? new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ng6-toastr-notifications/fesm2015/ng6-toastr-notifications.js:293:39-65 - Error: export 'ReflectiveInjector' was not found in '@angular/core'." }
+                : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 1, SourceCompatibilityRemediation = true }, null, null);
+        var tsconfig = await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.json"));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(File.Exists(Path.Combine(root, "src", "app", "compat", "ng6-toastr-notifications.ts")));
+        Assert.Contains("\"ng6-toastr-notifications\"", tsconfig);
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("type") == "compatibility_shim" && c.BoolValue("manualReviewRequired") && c.BoolValue("sourceCodeImpact"));
+    }
+
+    [Fact]
+    public async Task NgxPinchZoom_Ivy_Failure_Uses_Verified_Npm_Alias()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ngx-pinch-zoom"":""^2.6.2""");
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2].StartsWith("@mtnair/ngx-pinch-zoom@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["2.5.12"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            }
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1
+                ? new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-pinch-zoom/lib/ngx-pinch-zoom.module.d.ts:1:22 - error NG6002: PinchZoomModule does not appear to be an NgModule class." }
+                : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 1 }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!.AsObject()["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("npm:@mtnair/ngx-pinch-zoom@2.5.12", deps["ngx-pinch-zoom"]!.ToString());
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("selectedRemediation") == "npm_alias_replacement" && c.BoolValue("manualReviewRequired"));
+    }
+
+    [Theory]
+    [InlineData("angular-user-idle", "^2.2.7", "^4.0.0", "Error: node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:1:22 - error NG6002: UserIdleModule does not appear to be an NgModule class.", """["4.0.0"]""")]
+    [InlineData("ngx-color-picker", "^9.1.0", "^16.0.0", "Error: node_modules/ngx-color-picker/fesm2015/ngx-color-picker.js:1231:25-65 - Error: export 'ReflectiveInjector' was not found in '@angular/core'.", """["16.0.0"]""")]
+    [InlineData("ngx-bootstrap", "^7.1.0", "^11.0.2", "Error: node_modules/ngx-bootstrap/modal/modal.module.d.ts:12:25 - error TS2694: Namespace '@angular/core' has no exported member 'ɵɵNgModuleDefWithMeta'.", """["11.0.2"]""")]
+    [InlineData("ngx-pagination", "^5.1.1", "^6.0.3", "Error: src/app/shared/shared.module.ts:33:5 - error NG6002: 'NgxPaginationModule' does not appear to be an NgModule class. node_modules/ngx-pagination/dist/ngx-pagination.module.d.ts:6:22", """["6.0.3"]""")]
+    public async Task Known_Angular16_Blockers_Select_Verified_Same_Package_Upgrade(string packageName, string fromVersion, string expectedVersion, string error, string packageVersions)
+    {
+        var root = await AngularWorkspace(extraDependencies: $@", ""{packageName}"": ""{fromVersion}""");
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2].StartsWith(packageName + "@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = packageVersions };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            }
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = error } : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 1 }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!.AsObject()["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal(expectedVersion, deps[packageName]!.ToString());
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("selectedRemediation") == "same_package_upgrade" && c.BoolValue("requiresVersionVerification"));
     }
 
     private static JsonObject InstallContext(bool hasPackageLock = false, bool packageJsonChanged = false, bool nodeModulesExists = true) => new()

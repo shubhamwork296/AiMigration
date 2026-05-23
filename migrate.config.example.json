@@ -44,6 +44,7 @@
     "npmLookupIdleTimeoutSeconds": 20,
     "npmLookupTimeoutSeconds": 45,
     "skipPreflightDependencyCompatibility": false,
+    "sourceCompatibilityRemediation": false,
     "preflightRemediationMode": "suggest",
     "maxAiRemediationRetries": 3,
     "verbosity": "default"

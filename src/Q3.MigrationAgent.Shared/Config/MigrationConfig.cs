@@ -28,6 +28,7 @@ public sealed record MigrationConfig
     public int MaxAiRemediationRetries { get; init; } = 3;
     public string RollbackMode { get; init; } = "manual";
     public bool AllowBusinessLogicChanges { get; init; }
+    public bool SourceCompatibilityRemediation { get; init; }
     public bool PreferNgUpdate { get; init; } = true;
     public bool AvoidFullVersionScans { get; init; } = true;
     public bool DirectDependenciesOnlyPreflight { get; init; } = true;

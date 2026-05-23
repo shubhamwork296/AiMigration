@@ -33,7 +33,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         int attempt,
         CancellationToken cancellationToken = default)
     {
-        var deterministic = await TryApplyDeterministicRemediationAsync(outputPath, validation, attempt, config.MaxAiRemediationRetries, cancellationToken);
+        var deterministic = await TryApplyDeterministicRemediationAsync(outputPath, validation, attempt, config.MaxAiRemediationRetries, config.SourceCompatibilityRemediation, cancellationToken);
         if (deterministic is not null) return RemediationAttempt.AppliedResult([deterministic]);
 
         if (!config.Ai.UseAi)
@@ -421,13 +421,15 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         return false;
     }
 
-    public static async Task<JsonObject?> TryApplyDeterministicRemediationAsync(string outputPath, ValidationResult validation, int attempt, int maxAttempts, CancellationToken cancellationToken = default)
+    public static async Task<JsonObject?> TryApplyDeterministicRemediationAsync(string outputPath, ValidationResult validation, int attempt, int maxAttempts, bool sourceCompatibilityRemediation = false, CancellationToken cancellationToken = default)
     {
         var cssImportRemediation = await TryApplyCssPackageImportRemediationAsync(outputPath, validation, attempt, maxAttempts, cancellationToken);
         if (cssImportRemediation is not null) return cssImportRemediation;
 
         var failureText = $"{validation.Output}\n{validation.Errors}";
-        var entryComponentsRemediation = await TryRemoveEntryComponentsAsync(outputPath, validation, failureText, attempt, maxAttempts, cancellationToken);
+        var entryComponentsRemediation = sourceCompatibilityRemediation
+            ? await TryRemoveEntryComponentsAsync(outputPath, validation, failureText, attempt, maxAttempts, cancellationToken)
+            : null;
         if (entryComponentsRemediation is not null) return entryComponentsRemediation;
 
         if (!failureText.Contains("Unknown argument: prod", StringComparison.OrdinalIgnoreCase)) return null;

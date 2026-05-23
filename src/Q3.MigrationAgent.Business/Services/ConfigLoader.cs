@@ -51,6 +51,7 @@ public sealed class ConfigLoader : IConfigLoader
             MaxAiRemediationRetries = raw.IntValue("maxAiRemediationRetries", 3),
             RollbackMode = raw.StringValue("rollbackMode", "manual"),
             AllowBusinessLogicChanges = raw.BoolValue("allowBusinessLogicChanges"),
+            SourceCompatibilityRemediation = raw.BoolValue("sourceCompatibilityRemediation"),
             PreferNgUpdate = raw.BoolValue("preferNgUpdate", true),
             AvoidFullVersionScans = raw.BoolValue("avoidFullVersionScans", true),
             DirectDependenciesOnlyPreflight = raw.BoolValue("directDependenciesOnlyPreflight", true),
