@@ -116,7 +116,14 @@ public sealed class MarkdownReportWriter
         lines.AddRange(blockers.Length == 0 ? ["- No issues recorded"] : blockers.Select(b => $"- {b.StringValue("package", "unknown")}: {b.StringValue("reason", b.StringValue("issueType", "dependency compatibility issue"))}"));
         lines.AddRange(["", "## Dependency Compatibility Remediations"]);
         var remediations = hopResults.SelectMany(r => r["preflightDependencyAnalysis"]?["remediations"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray();
-        lines.AddRange(remediations.Length == 0 ? ["- No remediations recorded"] : remediations.Select(r => $"- {r.StringValue("package", "unknown")}: {r.StringValue("toVersion", "unknown")} ({r.StringValue("reason", r.StringValue("status"))})"));
+        var validationPackageRemediations = hopResults
+            .SelectMany(r => r["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            .Where(r => r.StringValue("type") == "package_update" && r.StringValue("failureCause") == "validation_proven_third_party_blocker")
+            .ToArray();
+        lines.AddRange(remediations.Length == 0 && validationPackageRemediations.Length == 0
+            ? ["- No remediations recorded"]
+            : remediations.Select(r => $"- {r.StringValue("package", "unknown")}: {r.StringValue("toVersion", "unknown")} ({r.StringValue("reason", r.StringValue("status"))})")
+                .Concat(validationPackageRemediations.Select(r => $"- {r.StringValue("packageName", "unknown")}: {r.StringValue("targetVersionRange", "unknown")} ({r.StringValue("reason", r.StringValue("status"))})")));
         lines.AddRange(["", "## AI Remediation Changes"]);
         lines.AddRange(FormatAiRemediation(hopResults.SelectMany(r => r["aiRemediationChanges"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray()));
         lines.AddRange(["", "## AI Remediation Root Cause Analysis"]);
@@ -477,6 +484,14 @@ public sealed class MarkdownReportWriter
                 }
                 lines.Add($"- Change type: {item.StringValue("type")}");
                 lines.Add($"- Change: {item.StringValue("change", item.StringValue("type"))}");
+                if (!string.IsNullOrWhiteSpace(item.StringValue("safetyRepairReason"))) lines.Add($"- Safety repair: {item.StringValue("safetyRepairReason")}");
+                if (item["safetyRepairs"] is JsonArray safetyRepairs)
+                {
+                    foreach (var repair in safetyRepairs.OfType<JsonObject>())
+                    {
+                        lines.Add($"  Repair: {repair.StringValue("file")} before {repair.StringValue("property")}");
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(item.StringValue("rootCause"))) lines.Add($"- Root cause: {item.StringValue("rootCause")}");
                 if (!string.IsNullOrWhiteSpace(item.StringValue("packageName"))) lines.Add($"- Package: {item.StringValue("packageName")}");
                 if (!string.IsNullOrWhiteSpace(item.StringValue("installedVersion"))) lines.Add($"- Installed version: {item.StringValue("installedVersion")}");
@@ -613,7 +628,7 @@ public sealed class MarkdownReportWriter
                 var package = blocker.StringValue("package", blocker.StringValue("packageName", "unknown"));
                 var remediation = changes.LastOrDefault(c => c.StringValue("packageName").Equals(package, StringComparison.OrdinalIgnoreCase));
                 var evidence = string.Join(" | ", blocker["evidence"]?.AsArray()?.Select(x => x?.ToString()).Where(s => !string.IsNullOrWhiteSpace(s)).Take(3) ?? []);
-                lines.Add($"- {label}: package={package}; current={blocker.StringValue("currentVersion", "unknown")}; errorCategory={blocker.StringValue("errorCategory", "unknown")}; evidence={evidence}; selectedRemediation={remediation?.StringValue("action", "not selected") ?? "not selected"}; target={remediation?.StringValue("targetPackageName", package) ?? package}@{remediation?.StringValue("targetVersionRange", "not selected") ?? "not selected"}; installResult={remediation?.StringValue("installResult", "not run") ?? "not run"}; buildRetryResult={remediation?.StringValue("buildRetryResult", "not run") ?? "not run"}");
+                lines.Add($"- {label}: package={package}; moduleSymbol={blocker.StringValue("moduleSymbol", "unknown")}; nodeModulesPath={blocker.StringValue("nodeModulesPath", "unknown")}; errorCode={blocker.StringValue("errorCode", "unknown")}; decision={blocker.StringValue("decision", "validation-proven Angular build blocker")}; current={blocker.StringValue("currentVersion", "unknown")}; errorCategory={blocker.StringValue("errorCategory", "unknown")}; evidence={evidence}; selectedRemediation={remediation?.StringValue("action", "not selected") ?? "not selected"}; target={remediation?.StringValue("targetPackageName", package) ?? package}@{remediation?.StringValue("targetVersionRange", "not selected") ?? "not selected"}; installResult={remediation?.StringValue("installResult", "not run") ?? "not run"}; buildRetryResult={remediation?.StringValue("buildRetryResult", "not run") ?? "not run"}");
             }
         }
         return lines.Count == 0 ? ["- None"] : lines;

@@ -856,6 +856,71 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
+    public async Task Unresolved_NonCritical_AngularAdjacent_Target_Is_Discarded_And_Preserved()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {
+    "@angular/core": "~14.2.0",
+    "@angular/common": "~14.2.0",
+    "@angular/compiler": "~14.2.0",
+    "@angular/flex-layout": "^14.0.0-beta.41"
+  },
+  "devDependencies": {
+    "@angular/cli": "~14.2.0",
+    "@angular/compiler-cli": "~14.2.0",
+    "@angular-devkit/build-angular": "~14.2.0",
+    "typescript": "~4.8.4"
+  }
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        var ai = new SequenceAi(new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "~14.2.0", "dependencies", "angular_framework_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular/common", "~14.2.0", "dependencies", "angular_framework_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular/compiler", "~14.2.0", "dependencies", "angular_framework_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular/flex-layout", "^14.0.0-beta.41", "dependencies", "angular_ui_or_extension_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular/cli", "~14.2.0", "devDependencies", "angular_tooling_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "~14.2.0", "devDependencies", "angular_tooling_package", "^15.0.0", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "~14.2.0", "devDependencies", "angular_tooling_package", "^15.0.0", "upgrade"),
+                PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~4.9.5", "upgrade")),
+            ["notes"] = new JsonArray()
+        }, VersionRecommendations(
+            VersionRecommendation("@angular/flex-layout", "^14.0.0-beta.41", "^15.0.0", "AI selected an unavailable Angular-adjacent package target.")),
+            EmptyCriticalAlignment(14, 15),
+            EmptyConfigPlan());
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2] == "@angular/flex-layout@^15.0.0") return new CommandResult { ReturnCode = 1, Stderr = "npm ERR! code E404" };
+                if (command[2].StartsWith("typescript@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 0, Stdout = """["4.9.5"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["15.0.0"]""" };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "14"), To = new RuntimeSpec("angular", "15"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, PackageVersionVerificationMode = "strict-npm-view" }, null, null);
+        var packageJson = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!.AsObject();
+        var discarded = result["packageTargetValidation"]!["discarded"]!.AsArray().OfType<JsonObject>().Single(i => i.StringValue("packageName") == "@angular/flex-layout");
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^14.0.0-beta.41", packageJson["dependencies"]!["@angular/flex-layout"]!.ToString());
+        Assert.Equal("^14.0.0-beta.41", discarded.StringValue("finalAcceptedVersion"));
+        Assert.True(discarded.BoolValue("discardedInvalidRecommendation"));
+        Assert.Empty(result["packageTargetValidation"]!["invalid"]!.AsArray());
+        Assert.Contains(result["packageTargetValidation"]!["warnings"]!.AsArray().Select(w => w!.ToString()), w => w.Contains("@angular/flex-layout@^15.0.0"));
+        Assert.Contains(result["packagesPreserved"]!.AsArray().OfType<JsonObject>(), p => p.StringValue("name") == "@angular/flex-layout" && p.StringValue("version") == "^14.0.0-beta.41");
+        Assert.Contains(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
+        Assert.Equal(1, ai.SystemPrompts.Count(IsPackageVersionPrompt));
+    }
+
+    [Fact]
     public async Task Peer_Conflict_Can_Fallback_But_PackageVersionNotFound_Targets_Do_Not_Install()
     {
         var peerRoot = await Angular13Workspace();
@@ -1676,6 +1741,99 @@ export class SharedModule {}
         Assert.Contains("@NgModule present=True", report);
     }
 
+    [Theory]
+    [InlineData(
+        "  imports: [CommonModule],\n  entryComponents: [SomeComponent],\n  schemas: [CUSTOM_ELEMENTS_SCHEMA]\n",
+        "  imports: [CommonModule],\n  schemas: [CUSTOM_ELEMENTS_SCHEMA]\n")]
+    [InlineData(
+        "  declarations: [SomeComponent],\n  entryComponents: [DialogComponent],\n  imports: [CommonModule]\n",
+        "  declarations: [SomeComponent],\n  imports: [CommonModule]\n")]
+    [InlineData(
+        "  imports: [CommonModule],\n  entryComponents: [SomeComponent]\n",
+        "  imports: [CommonModule]\n")]
+    [InlineData(
+        "  entryComponents: [SomeComponent],\n  schemas: [CUSTOM_ELEMENTS_SCHEMA]\n",
+        "  schemas: [CUSTOM_ELEMENTS_SCHEMA]\n")]
+    [InlineData(
+        "  entryComponents: [SomeComponent]\n",
+        "")]
+    public async Task EntryComponents_Removal_Preserves_NgModule_Metadata_Commas(string metadataBefore, string metadataAfter)
+    {
+        var root = TestWorkspace.Create();
+        var moduleFile = Path.Combine(root, "src", "app", "app.module.ts");
+        Directory.CreateDirectory(Path.GetDirectoryName(moduleFile)!);
+        var before = "import { NgModule } from '@angular/core';\n@NgModule({\n" + metadataBefore + "})\nexport class AppModule {}\n";
+        var expected = "import { NgModule } from '@angular/core';\n@NgModule({\n" + metadataAfter + "})\nexport class AppModule {}\n";
+        await File.WriteAllTextAsync(moduleFile, before);
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            Output = "Error: src/app/app.module.ts:3:3 - error TS2345: Object literal may only specify known properties, and 'entryComponents' does not exist in type 'NgModule'."
+        };
+
+        var change = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, validation, 1, 3, sourceCompatibilityRemediation: true);
+        var after = await File.ReadAllTextAsync(moduleFile);
+
+        Assert.NotNull(change);
+        Assert.Equal(expected, after);
+        Assert.DoesNotContain("entryComponents", after);
+        Assert.DoesNotContain("]\nschemas:", after);
+        Assert.DoesNotContain("]\nproviders:", after);
+        Assert.DoesNotContain("]\ndeclarations:", after);
+        Assert.DoesNotContain("]\nimports:", after);
+        Assert.DoesNotContain("]\nexports:", after);
+        Assert.DoesNotContain("]\nbootstrap:", after);
+    }
+
+    [Fact]
+    public async Task EntryComponents_Cleanup_Does_Not_Block_NgxPagination_Package_Remediation()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""ngx-pagination"":""^5.1.1""");
+        Directory.CreateDirectory(Path.Combine(root, "src", "app"));
+        await File.WriteAllTextAsync(Path.Combine(root, "src", "app", "app.module.ts"), """
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
+@NgModule({
+  imports: [],
+  entryComponents: [SomeComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+})
+export class AppModule {}
+""");
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2].StartsWith("ngx-pagination@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["6.0.3"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            }
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildRuns++;
+                return buildRuns switch
+                {
+                    1 => new CommandResult { ReturnCode = 1, Stderr = "Error: src/app/app.module.ts:4:3 - error TS2345: Object literal may only specify known properties, and 'entryComponents' does not exist in type 'NgModule'." },
+                    2 => new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/ngx-pagination/dist/ngx-pagination.module.d.ts:6:22 - error NG6002: NgxPaginationModule does not appear to be an NgModule class. This likely means that the library (ngx-pagination) which declares NgxPaginationModule is not compatible with Angular Ivy." },
+                    _ => new CommandResult { ReturnCode = 0 }
+                };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 3, SourceCompatibilityRemediation = true }, null, null);
+        var packageJson = await File.ReadAllTextAsync(Path.Combine(root, "package.json"));
+        var appModule = await File.ReadAllTextAsync(Path.Combine(root, "src", "app", "app.module.ts"));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Contains("\"ngx-pagination\": \"^6.0.3\"", packageJson);
+        Assert.Contains("imports: [],\n  schemas:", appModule);
+        Assert.DoesNotContain("entryComponents", appModule);
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCategory") == "obsolete_angular_metadata");
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("packageName") == "ngx-pagination" && c.StringValue("selectedRemediation") == "same_package_upgrade");
+        Assert.Contains(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]) && c.Command.Contains("--legacy-peer-deps"));
+    }
+
     [Fact]
     public void Angular_15_To_16_Third_Party_Blocker_Parser_Classifies_NodeModules_Errors_And_SharedModule_As_Cascading()
     {
@@ -1733,6 +1891,34 @@ Error: node_modules/ngx-color-picker/lib/color-picker.service.d.ts:1:10 - error 
         Assert.Equal(packageName, blocker.StringValue("package"));
         Assert.Equal("validation_proven_third_party_blocker", blocker.StringValue("classification"));
         Assert.Equal("third_party_angular_library_incompatibility", blocker.StringValue("errorCategory"));
+    }
+
+    [Fact]
+    public void Ng600x_NodeModules_Errors_Classify_Unknown_ThirdParty_Packages_As_Validation_Blockers()
+    {
+        var root = TestWorkspace.Create();
+        File.WriteAllText(Path.Combine(root, "package.json"), """
+{"dependencies":{"@ng-idle/keepalive":"^11.0.3","ngx-spinner":"^11.0.2","ngx-order-pipe":"^2.2.0"}}
+""");
+        var output = """
+Error: src/app/app.module.ts:148:5 - error NG6002: 'NgIdleKeepaliveModule' does not appear to be an NgModule class.
+node_modules/@ng-idle/keepalive/lib/module.d.ts:1:22
+This likely means that the library (@ng-idle/keepalive) which declares NgIdleKeepaliveModule is not compatible with Angular Ivy.
+Error: src/app/app.module.ts:149:5 - error NG6002: 'NgxSpinnerModule' does not appear to be an NgModule class.
+node_modules/ngx-spinner/lib/ngx-spinner.module.d.ts:1:22
+This likely means that the library (ngx-spinner) which declares NgxSpinnerModule is not compatible with Angular Ivy.
+Error: src/app/app.module.ts:150:5 - error NG6003: 'OrderModule' does not appear to be an NgModule, Component, Directive, or Pipe class.
+node_modules/ngx-order-pipe/src/app/order-pipe/ngx-order.module.d.ts:1:22
+This likely means that the library (ngx-order-pipe) which declares OrderModule is not compatible with Angular Ivy.
+""";
+
+        var blockers = AngularAdapter.DetectThirdPartyValidationBlockersForTesting(root, output, new MigrationHop(15, 16, "Angular 15 to 16"));
+
+        Assert.Equal(["@ng-idle/keepalive", "ngx-order-pipe", "ngx-spinner"], blockers.Select(b => b.StringValue("package")).Order(StringComparer.OrdinalIgnoreCase).ToArray());
+        Assert.Contains(blockers, b => b.StringValue("package") == "@ng-idle/keepalive" && b.StringValue("nodeModulesPath") == "node_modules/@ng-idle/keepalive/lib/module.d.ts" && b.StringValue("moduleSymbol") == "NgIdleKeepaliveModule" && b.StringValue("errorCode") == "NG6002");
+        Assert.Contains(blockers, b => b.StringValue("package") == "ngx-spinner" && b.StringValue("nodeModulesPath") == "node_modules/ngx-spinner/lib/ngx-spinner.module.d.ts" && b.StringValue("moduleSymbol") == "NgxSpinnerModule" && b.StringValue("errorCode") == "NG6002");
+        Assert.Contains(blockers, b => b.StringValue("package") == "ngx-order-pipe" && b.StringValue("nodeModulesPath") == "node_modules/ngx-order-pipe/src/app/order-pipe/ngx-order.module.d.ts" && b.StringValue("moduleSymbol") == "OrderModule" && b.StringValue("errorCode") == "NG6003");
+        Assert.All(blockers, b => Assert.Equal("validation-proven Angular build blocker", b.StringValue("decision")));
     }
 
     [Fact]
@@ -1858,6 +2044,122 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
         Assert.DoesNotContain(ai.SystemPrompts, p => p.Contains("validation-proven third-party blockers", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^11.0.2", "version", "--json"]));
+    }
+
+    [Fact]
+    public async Task Validation_Driven_Remediation_Asks_Ai_For_All_Ng600x_NodeModules_Blockers_In_One_Pass()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""@ng-idle/keepalive"":""^11.0.3"",""ngx-spinner"":""^11.0.2"",""ngx-order-pipe"":""^2.2.0""");
+        CreateLocalAngularCli(root);
+        var ai = new SequenceAi(
+            new JsonObject
+            {
+                ["packages"] = new JsonArray(
+                    PackageDecision("@angular/core", "14.2.0", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                    PackageDecision("@angular/cli", "14.2.0", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                    PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                    PackageDecision("@ng-idle/keepalive", "^11.0.3", "dependencies", "business_or_unknown_package", null, "manual_review"),
+                    PackageDecision("ngx-spinner", "^11.0.2", "dependencies", "business_or_unknown_package", null, "manual_review"),
+                    PackageDecision("ngx-order-pipe", "^2.2.0", "dependencies", "business_or_unknown_package", null, "manual_review")),
+                ["notes"] = new JsonArray()
+            },
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "14.2.0", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "14.2.0", "^16.2.12", "Angular CLI aligned."),
+                VersionRecommendation("typescript", "~4.8.4", "~5.1.6", "TypeScript aligned.")),
+            EmptyCriticalAlignment(15, 16),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+            new JsonObject
+            {
+                ["packageUpdates"] = new JsonArray(
+                    ThirdPartyPackageUpdate("@ng-idle/keepalive", "^11.0.3", "^16.0.0"),
+                    ThirdPartyPackageUpdate("ngx-spinner", "^11.0.2", "^16.0.2"),
+                    ThirdPartyPackageUpdate("ngx-order-pipe", "^2.2.0", "^3.0.0")),
+                ["manualReview"] = new JsonArray()
+            });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2].StartsWith("@ng-idle/keepalive@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["16.0.0"]""" };
+                if (command[2].StartsWith("ngx-spinner@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["16.0.2"]""" };
+                if (command[2].StartsWith("ngx-order-pipe@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["3.0.0"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            }
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                CreateLocalAngularCli(root);
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = Ng600xThirdPartyFailureSample() } : new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual([LocalNgCommand(), "build"])) return ++buildRuns == 2 ? new CommandResult { ReturnCode = 0 } : new CommandResult { ReturnCode = 1, Stderr = Ng600xThirdPartyFailureSample() };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+        var remediationPayload = ai.Users.Last(u => u.Contains("validationProvenBlockers", StringComparison.Ordinal));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^16.0.0", deps["@ng-idle/keepalive"]!.ToString());
+        Assert.Equal("^16.0.2", deps["ngx-spinner"]!.ToString());
+        Assert.Equal("^3.0.0", deps["ngx-order-pipe"]!.ToString());
+        Assert.Contains("@ng-idle/keepalive", remediationPayload);
+        Assert.Contains("ngx-spinner", remediationPayload);
+        Assert.Contains("ngx-order-pipe", remediationPayload);
+        Assert.Contains("\"packageUpdates\"", remediationPayload);
+        Assert.DoesNotContain("\"remediations\"", remediationPayload);
+        Assert.DoesNotContain("\"targetVersionRange\"", remediationPayload);
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "install", "--legacy-peer-deps", "--no-audit", "--no-fund", "--prefer-offline"]));
+        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "run", "build"])));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual([LocalNgCommand(), "build"]));
+    }
+
+    [Fact]
+    public async Task Third_Party_Remediation_Legacy_TargetVersionRange_Is_Normalized_With_Warning()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""@ng-idle/keepalive"":""^11.0.3""");
+        var ai = Angular15To16AiWithThirdPartyResponse(new JsonObject
+        {
+            ["remediations"] = new JsonArray(ThirdPartyRemediation("@ng-idle/keepalive", "^11.0.3", "^16.0.0"))
+        });
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = command[2].StartsWith("@ng-idle/keepalive@", StringComparison.Ordinal) ? """["16.0.0"]""" : """["16.2.12","5.1.6"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) return new CommandResult { ReturnCode = 0 };
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1 ? new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/@ng-idle/keepalive/lib/module.d.ts:1:22 - error NG6002: NgIdleKeepaliveModule does not appear to be an NgModule class." } : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("schemaWarning").Contains("legacy remediations schema", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Third_Party_Remediation_Rejects_Package_Not_In_Detected_Blockers()
+    {
+        var root = await AngularWorkspace(extraDependencies: @",""@ng-idle/keepalive"":""^11.0.3"",""lodash"":""^4.17.21""");
+        var ai = Angular15To16AiWithThirdPartyResponse(new JsonObject
+        {
+            ["packageUpdates"] = new JsonArray(ThirdPartyPackageUpdate("lodash", "^4.17.21", "^4.17.22")),
+            ["manualReview"] = new JsonArray()
+        });
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 1, Stderr = "Error: node_modules/@ng-idle/keepalive/lib/module.d.ts:1:22 - error NG6002: NgIdleKeepaliveModule does not appear to be an NgModule class." };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("packageName") == "lodash" && c.StringValue("rejectedReason").Contains("validation-detected blockers", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -2197,6 +2499,59 @@ Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear t
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("selectedRemediation") == "same_package_upgrade" && c.BoolValue("requiresVersionVerification"));
     }
 
+    [Fact]
+    public async Task Validation_Remediation_Verifies_Installed_Package_And_Targets_Stale_NgPackage_Before_Build_Rerun()
+    {
+        var root = await AngularWorkspace(extraDependencies: @", ""ngx-pagination"": ""^5.1.1""");
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view")
+            {
+                if (command[2].StartsWith("ngx-pagination@", StringComparison.Ordinal)) return new CommandResult { ReturnCode = 0, Stdout = """["6.0.3"]""" };
+                return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6"]""" };
+            }
+            if (command.SequenceEqual(["npm", "install", "ngx-pagination@^6.0.3", "--legacy-peer-deps", "--no-audit", "--no-fund"]))
+            {
+                Directory.CreateDirectory(Path.Combine(root, "node_modules", "ngx-pagination"));
+                File.WriteAllText(Path.Combine(root, "node_modules", "ngx-pagination", "package.json"), """{"name":"ngx-pagination","version":"6.0.3"}""");
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                if (buildRuns > 0)
+                {
+                    File.WriteAllText(Path.Combine(root, "package-lock.json"), """
+{"packages":{"":{"dependencies":{"ngx-pagination":"^5.1.1"}},"node_modules/ngx-pagination":{"version":"5.1.1"}}}
+""");
+                    Directory.CreateDirectory(Path.Combine(root, "node_modules", "ngx-pagination"));
+                    File.WriteAllText(Path.Combine(root, "node_modules", "ngx-pagination", "package.json"), """{"name":"ngx-pagination","version":"5.1.1"}""");
+                }
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return ++buildRuns == 1
+                ? new CommandResult { ReturnCode = 1, Stderr = "Error: src/app/shared/shared.module.ts:33:5 - error NG6002: 'NgxPaginationModule' does not appear to be an NgModule class. node_modules/ngx-pagination/dist/ngx-pagination.module.d.ts:6:22" }
+                : new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), MaxAiRemediationRetries = 1 }, null, null);
+        var targetedIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["npm", "install", "ngx-pagination@^6.0.3", "--legacy-peer-deps", "--no-audit", "--no-fund"]));
+        var secondBuildIndex = runner.Calls.FindIndex(targetedIndex + 1, c => c.Command.SequenceEqual(["npm", "run", "build"]));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(targetedIndex >= 0);
+        Assert.True(secondBuildIndex > targetedIndex);
+        Assert.DoesNotContain(runner.Calls[targetedIndex].Command, arg => arg == "--prefer-offline");
+        Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c =>
+            c.StringValue("packageName") == "ngx-pagination" &&
+            c.StringValue("packageJsonValueAfterUpdate") == "^6.0.3" &&
+            c.StringValue("installedVersionAfterNpmInstall") == "6.0.3" &&
+            c.BoolValue("installedVersionSatisfiesTargetRange") &&
+            c.BoolValue("targetedInstallNeeded") &&
+            !c.BoolValue("packageLockRefreshed"));
+    }
+
     private static JsonObject InstallContext(bool hasPackageLock = false, bool packageJsonChanged = false, bool nodeModulesExists = true) => new()
     {
         ["packageManager"] = "npm",
@@ -2222,6 +2577,20 @@ Error: node_modules/ngx-slick-carousel/slick/slick.module.d.ts:1:22 - error NG60
 Error: node_modules/ngx-pinch-zoom/lib/ngx-pinch-zoom.module.d.ts:1:22 - error NG6002: PinchZoomModule does not appear to be an NgModule class.
 Error: node_modules/angular-user-idle/lib/angular-user-idle.module.d.ts:1:22 - error NG6002: UserIdleModule does not appear to be an NgModule class.
 Error: src/app/app.module.ts:36:5 - error NG6002: SharedModule does not appear to be an NgModule class.
+""";
+
+    private static string Ng600xThirdPartyFailureSample() => """
+$ npm run build
+exit code: 1
+Error: src/app/app.module.ts:148:5 - error NG6002: 'NgIdleKeepaliveModule' does not appear to be an NgModule class.
+node_modules/@ng-idle/keepalive/lib/module.d.ts:1:22
+This likely means that the library (@ng-idle/keepalive) which declares NgIdleKeepaliveModule is not compatible with Angular Ivy.
+Error: src/app/app.module.ts:149:5 - error NG6002: 'NgxSpinnerModule' does not appear to be an NgModule class.
+node_modules/ngx-spinner/lib/ngx-spinner.module.d.ts:1:22
+This likely means that the library (ngx-spinner) which declares NgxSpinnerModule is not compatible with Angular Ivy.
+Error: src/app/app.module.ts:150:5 - error NG6003: 'OrderModule' does not appear to be an NgModule, Component, Directive, or Pipe class.
+node_modules/ngx-order-pipe/src/app/order-pipe/ngx-order.module.d.ts:1:22
+This likely means that the library (ngx-order-pipe) which declares OrderModule is not compatible with Angular Ivy.
 """;
 
     private static string NgxPinchZoomVisibilityStateError() => """
@@ -2492,6 +2861,37 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["confidence"] = 0.91,
         ["validationCommand"] = "npm run build"
     };
+
+    private static JsonObject ThirdPartyPackageUpdate(string name, string current, string target) => new()
+    {
+        ["package"] = name,
+        ["currentVersion"] = current,
+        ["version"] = target,
+        ["reason"] = "Validation proved this direct third-party Angular package blocks the hop.",
+        ["errorCategory"] = "third_party_angular_library_incompatibility",
+        ["expectedCodeImpact"] = "none"
+    };
+
+    private static SequenceAi Angular15To16AiWithThirdPartyResponse(JsonObject thirdPartyResponse) => new(
+        new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "14.2.0", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular/cli", "14.2.0", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                PackageDecision("typescript", "~4.8.4", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                PackageDecision("ngx-slick-carousel", "^0.6.0", "dependencies", "angular_ui_or_extension_package", null, "preserve"),
+                PackageDecision("@ng-idle/keepalive", "^11.0.3", "dependencies", "business_or_unknown_package", null, "manual_review"),
+                PackageDecision("lodash", "^4.17.21", "dependencies", "third_party_runtime_package", null, "preserve")),
+            ["notes"] = new JsonArray()
+        },
+        VersionRecommendations(
+            VersionRecommendation("@angular/core", "14.2.0", "^16.2.12", "Angular framework package aligned."),
+            VersionRecommendation("@angular/cli", "14.2.0", "^16.2.12", "Angular CLI aligned."),
+            VersionRecommendation("typescript", "~4.8.4", "~5.1.6", "TypeScript aligned.")),
+        EmptyCriticalAlignment(15, 16),
+        EmptyConfigPlan(),
+        InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"),
+        thirdPartyResponse);
 
     private static JsonObject EmptyConfigPlan() => new()
     {

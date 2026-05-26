@@ -147,25 +147,60 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
-    public void ParseJsonObject_Rejects_Json_With_Trailing_Cli_Text()
+    public void ParseJsonObject_Pure_Json_Response_Parses()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
-            I can fix this.
-            {
-              "summary": "replace deprecated flag",
-              "changes": [
-                {
-                  "file": "package.json",
-                  "before": "ng build --prod",
-                  "after": "ng build --configuration production"
-                }
-              ]
-            }
+        var parsed = AiProviderResolver.ParseJsonObject(ValidRemediationJson(), "codex");
 
-            Verified locally.
-            """, "codex"));
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+    }
 
-        Assert.Contains("strict JSON", ex.Message);
+    [Fact]
+    public void ParseJsonObject_Parses_Json_With_Trailing_Cli_Text()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject($$"""
+            {{ValidRemediationJson()}}
+
+            OpenAI Codex v0.133.0
+            --------
+            workdir: D:\Projects\AI\AiMigration
+            model: gpt-5-codex
+            user
+            Return strict JSON only.
+            """, "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Parses_Json_With_Leading_Cli_Text()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject($$"""
+            OpenAI Codex v0.133.0
+            --------
+            workdir: D:\Projects\AI\AiMigration
+            model: gpt-5-codex
+
+            {{ValidRemediationJson()}}
+            """, "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Parses_Json_With_Echoed_Prompt_Before_And_After()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            user
+            Return strict JSON only.
+            {"requiredResponseShape":{"summary":"Short explanation","changes":[]}}
+
+            """ + ValidRemediationJson() + """
+            user
+            Return strict JSON only.
+            {"runtime":"angular","rules":["Return only JSON."]}
+            """, "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
     }
 
     [Fact]
@@ -180,51 +215,167 @@ public sealed class AiProviderResolverTests
             Done.
             """, "codex"));
 
-        Assert.Contains("strict JSON", ex.Message);
+        Assert.Contains("no-parseable-json-object", ex.Message);
     }
 
     [Fact]
     public void ParseJsonObject_Ignores_Braces_Inside_Json_Strings()
     {
         var parsed = AiProviderResolver.ParseJsonObject("""
-            {"summary":"replace {placeholder} and escaped \"quote\"","changes":[]}
+            {
+              "summary": "replace {placeholder} and escaped \"quote\"",
+              "confidence": 0.91,
+              "risk": "low",
+              "requiresManualCorrection": false,
+              "failureCategory": "script",
+              "businessLogicChanged": false,
+              "changes": [
+                {
+                  "file": "package.json",
+                  "type": "script_update",
+                  "reason": "replace {deprecated} flag",
+                  "before": "ng build --prod",
+                  "after": "ng build --configuration production"
+                }
+              ],
+              "commandsToRunAfter": []
+            }
             """, "codex");
 
         Assert.Equal("replace {placeholder} and escaped \"quote\"", parsed["summary"]?.ToString());
     }
 
     [Fact]
-    public void ParseJsonObject_Rejects_Command_Logs_Around_Json()
+    public void ParseJsonObject_Rejects_Truncated_Json()
     {
         var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
-            OpenAI Codex v0.125.0
-            $ npm run build
-            An unhandled exception occurred: spawn EPERM
-            ```diff
-            +not json
-            ```
             {
-              "summary": "add third-party type shim",
+              "summary": "replace deprecated flag",
               "confidence": 0.91,
               "risk": "low",
               "requiresManualCorrection": false,
-              "failureCategory": "type_declaration",
-              "businessLogicChanged": false,
+              "failureCategory": "script",
               "changes": [
-                {
-                  "file": "src/ngx-pinch-zoom-compat.d.ts",
-                  "type": "type_shim",
-                  "reason": "VisibilityState is missing",
-                  "before": null,
-                  "after": "declare type VisibilityState = 'hidden' | 'visible';\n"
-                }
-              ],
-              "commandsToRunAfter": []
-            }
-            tokens used: 999
             """, "codex"));
 
-        Assert.Contains("strict JSON", ex.Message);
+        Assert.Contains("truncated-json", ex.Message);
+    }
+
+    [Fact]
+    public void ParseJsonObject_Rejects_Wrong_Schema_Json()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+            {"hello":"world"}
+            """, "codex"));
+
+        Assert.Contains("schema-validation-failed", ex.Message);
+        Assert.Contains("Expected top-level fields", ex.Message);
+        Assert.Contains("Actual top-level fields", ex.Message);
+        Assert.Contains("Missing fields", ex.Message);
+        Assert.Contains("Unexpected fields", ex.Message);
+        Assert.Contains("Failed field path", ex.Message);
+    }
+
+    [Fact]
+    public void ParseJsonObject_Accepts_ThirdParty_PackageUpdates_Schema()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            {
+              "packageUpdates": [
+                {
+                  "package": "ngx-spinner",
+                  "currentVersion": "^11.0.2",
+                  "version": "^16.0.2",
+                  "reason": "Validation proved this package blocks the Angular hop.",
+                  "errorCategory": "third_party_angular_library_incompatibility",
+                  "expectedCodeImpact": "none"
+                }
+              ],
+              "manualReview": []
+            }
+            """, "codex");
+
+        Assert.Single(parsed["packageUpdates"]!.AsArray());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Rejects_ThirdParty_PackageUpdates_Missing_With_Clear_Message()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+            {"manualReview":[]}
+            """, "codex"));
+
+        Assert.Contains("schema-validation-failed", ex.Message);
+        Assert.Contains("packageUpdates", ex.Message);
+        Assert.Contains("Failed field path: $.packageUpdates", ex.Message);
+    }
+
+    [Fact]
+    public void ParseJsonObject_Accepts_Legacy_ThirdParty_Remediations_For_Defensive_Fallback()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            {
+              "remediations": [
+                {
+                  "packageName": "ngx-spinner",
+                  "currentVersion": "^11.0.2",
+                  "detectedErrorCategory": "third_party_angular_library_incompatibility",
+                  "targetVersionRange": "^16.0.2"
+                }
+              ]
+            }
+            """, "codex");
+
+        Assert.Single(parsed["remediations"]!.AsArray());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Chooses_First_Schema_Valid_Object()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject($$"""
+            {"hello":"world"}
+            {{ValidRemediationJson()}}
+            """, "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Does_Not_Parse_Jsonl_Stream_As_Remediation_Schema()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+            {"type":"turn.started"}
+            {"type":"turn.completed","message":{"role":"assistant","content":"not json"}}
+            """, "codex"));
+
+        Assert.Contains("schema-validation-failed", ex.Message);
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Extracts_Final_Assistant_Message_From_Jsonl()
+    {
+        var stdout = "{\"type\":\"turn.started\"}\n" +
+                     "{\"type\":\"turn.completed\",\"message\":{\"role\":\"assistant\",\"content\":" + JsonString(ValidRemediationJson()) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Codex_Provider_Parses_Stdout_Json_When_Stderr_Has_Cli_Diagnostics()
+    {
+        var runner = new FakeCommandRunner(command => new CommandResult
+        {
+            ReturnCode = 0,
+            Stdout = ValidRemediationJson(),
+            Stderr = "OpenAI Codex v0.133.0\r\nworkdir: D:\\Projects\\AI\\AiMigration\r\n"
+        });
+        var provider = new CodexCliProvider(runner, new PromptLoader());
+
+        var parsed = await provider.AskAsync(new AiConfig { UseAi = true, CliCommand = ["codex", "exec"] }, "system", "user");
+
+        Assert.Equal("replace deprecated flag", parsed?["summary"]?.ToString());
     }
 
     [Fact]
@@ -269,6 +420,30 @@ public sealed class AiProviderResolverTests
     private static CommandResult Success(string stdout) => new() { ReturnCode = 0, Stdout = stdout };
 
     private static CommandResult Failure() => new() { ReturnCode = 1, Stderr = "not found" };
+
+    private static string ValidRemediationJson() => """
+        {
+          "summary": "replace deprecated flag",
+          "confidence": 0.91,
+          "risk": "low",
+          "requiresManualCorrection": false,
+          "failureCategory": "script",
+          "businessLogicChanged": false,
+          "changes": [
+            {
+              "file": "package.json",
+              "type": "script_update",
+              "reason": "Angular CLI no longer supports --prod",
+              "before": "ng build --prod",
+              "after": "ng build --configuration production"
+            }
+          ],
+          "commandsToRunAfter": [],
+          "reportNotes": []
+        }
+        """;
+
+    private static string JsonString(string value) => JsonValue.Create(value)!.ToJsonString();
 
     private sealed class FakeCommandRunner(Func<IReadOnlyList<string>, CommandResult> handler) : ICommandRunner
     {

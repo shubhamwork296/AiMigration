@@ -1,5 +1,7 @@
-{"strategy":"manualReview","command":"","reason":"Previous npm install failed with ERESOLVE because a third-party package declares a peer range on Angular common that is incompatible with Angular 18; this involves an Angular framework-critical package, so legacy peer deps should not be used to hide it.","confidence":0.95,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
+--- stdout ---
+{"strategy":"manualReview","command":"","reason":"Previous install failed with ETARGET/no matching version found, which indicates a packageVersionNotFound condition and requires manual review rather than retrying or changing install flags.","confidence":0.98,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"packageVersionNotFound"}
 
+--- stderr ---
 OpenAI Codex v0.133.0
 --------
 workdir: D:\Projects\AI\AiMigration
@@ -9,7 +11,7 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: none
 reasoning summaries: none
-session id: 019e5460-d69b-73c1-a08f-b001415f50e3
+session id: 019e6315-f576-7632-99ee-12b630d57cdb
 --------
 user
 Return strict JSON only.
@@ -217,82 +219,93 @@ Use numbers as numbers and booleans as booleans.
 If no safe recommendation can be made, return the schema's empty or manual-review JSON response.
 
 {
-  "currentAngularVersion": 17,
-  "targetAngularVersion": 18,
+  "currentAngularVersion": 18,
+  "targetAngularVersion": 19,
   "packageManager": "npm",
   "dependencies": {
-    "-": "^0.0.1",
-    "@angular-slider/ngx-slider": "^13.0.0",
-    "@angular/animations": "^18.0.0",
-    "@angular/cdk": "^18.0.0",
-    "@angular/common": "^18.0.0",
-    "@angular/compiler": "^18.0.0",
-    "@angular/core": "^18.0.0",
-    "@angular/forms": "^18.0.0",
-    "@angular/material": "^18.0.0",
-    "@angular/platform-browser": "^18.0.0",
-    "@angular/platform-browser-dynamic": "^18.0.0",
-    "@angular/router": "^18.0.0",
-    "@fortawesome/fontawesome-free": "^6.0.0",
-    "@ng-select/ng-option-highlight": "^0.0.7",
-    "@ng-select/ng-select": "^8.3.0",
-    "angular-user-idle": "^4.0.0",
-    "angularx-qrcode": "^13.0.15",
-    "bootstrap": "^5.0.0-beta3",
-    "cookieconsent": "^3.1.1",
-    "jquery": "^3.6.2",
-    "ng-dynamic-breadcrumb": "^6.0.0",
-    "ng6-toastr-notifications": "^1.0.4",
-    "ngx-bootstrap": "^11.0.2",
-    "ngx-color-picker": "^16.0.0",
-    "ngx-cookie-service": "^13.1.2",
-    "ngx-cookieconsent": "^2.2.3",
-    "ngx-device-detector": "^3.0.0",
-    "ngx-image-zoom": "0.6.0",
-    "ngx-img-zoom": "4.1.2",
+    "@angular/animations": "^19.0.0",
+    "@angular/cdk": "^19.0.0",
+    "@angular/cli": "^19.0.0",
+    "@angular/common": "^19.0.0",
+    "@angular/compiler": "^19.0.0",
+    "@angular/core": "^19.0.0",
+    "@angular/forms": "^19.0.0",
+    "@angular/localize": "^19.0.0",
+    "@angular/material": "^19.0.0",
+    "@angular/material-moment-adapter": "^19.0.0",
+    "@angular/platform-browser": "^19.0.0",
+    "@angular/platform-browser-dynamic": "^19.0.0",
+    "@angular/router": "^19.0.0",
+    "@babel/runtime": "^7.28.6",
+    "@ng-bootstrap/ng-bootstrap": "^17.0.0",
+    "@ng-idle/core": "^16.0.0",
+    "@ng-idle/keepalive": "^16.0.0",
+    "@ngbracket/ngx-layout": "^16.0.0",
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.2",
+    "crypto-js": "^4.1.1",
+    "express": "^4.18.2",
+    "force": "^0.0.3",
+    "guid-typescript": "^1.0.9",
+    "hammerjs": "^2.0.8",
+    "html2canvas": "^1.4.1",
+    "jsbarcode": "^3.11.6",
+    "jspdf": "^2.5.1",
+    "lz-string": "^1.5.0",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.42",
+    "ngx-barcode6": "^1.0.25",
+    "ngx-cookie-service": "^18.0.0",
+    "ngx-device-detector": "^8.0.0",
+    "ngx-logger": "^5.0.12",
+    "ngx-moment": "^6.0.0",
+    "ngx-order-pipe": "^3.0.0",
     "ngx-pagination": "^6.0.3",
-    "ngx-pinch-zoom": "npm:@mtnair/ngx-pinch-zoom@2.5.12",
-    "ngx-red-zoom": "^0.9.0",
-    "ngx-slick-carousel": "15.0.0",
-    "rxjs": "~7.4.0",
-    "slick-carousel": "^1.8.1",
-    "swiper": "^11.2.1",
-    "tslib": "^2.3.0",
-    "xlsx": "^0.18.5",
-    "zone.js": "~0.14.0"
+    "ngx-spinner": "^16.0.0",
+    "rxjs": "^7.4.0",
+    "rxjs-compat": "^6.0.0",
+    "smoothscroll-polyfill": "^0.4.4",
+    "tslib": "^2.6.2",
+    "zone.js": "~0.15.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^18.0.0",
-    "@angular/cli": "^18.0.0",
-    "@angular/compiler-cli": "^18.0.0",
-    "@types/jasmine": "~3.10.0",
-    "@types/jquery": "^3.5.8",
-    "@types/node": "^12.11.1",
-    "jasmine-core": "~3.10.0",
-    "karma": "~6.3.0",
-    "karma-chrome-launcher": "~3.1.0",
-    "karma-coverage": "~2.1.0",
-    "karma-jasmine": "~4.0.0",
-    "karma-jasmine-html-reporter": "~1.7.0",
-    "typescript": "~5.5.4"
+    "@angular-devkit/build-angular": "^19.0.0",
+    "@angular/compiler-cli": "^19.0.0",
+    "@angular/language-service": "^19.0.0",
+    "@types/jasmine": "^4.3.1",
+    "@types/jasminewd2": "^2.0.13",
+    "@types/node": "^20.0.0",
+    "codelyzer": "^6.0.2",
+    "eslint": "^8.51.0",
+    "jasmine-core": "^5.5.0",
+    "jasmine-spec-reporter": "~6.0.0",
+    "karma": "^6.4.3",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage-istanbul-reporter": "^3.0.3",
+    "karma-jasmine": "^5.0.0",
+    "karma-jasmine-html-reporter": "^2.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "\u003E=5.5.0 \u003C5.9.0",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "lockfile": "",
   "hasPackageLock": false,
   "packageLockVersion": null,
   "nodeModulesExists": false,
   "packageJsonChanged": true,
-  "previousInstallFailureOutput": "\nnpm error code ERESOLVE\r\nnpm error ERESOLVE unable to resolve dependency tree\r\nnpm error\r\nnpm error While resolving: jewelex@0.0.0\r\nnpm error Found: @angular/common@18.2.14\r\nnpm error node_modules/@angular/common\r\nnpm error   @angular/common@\u0022^18.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Could not resolve dependency:\r\nnpm error peer @angular/common@\u0022^13.0.0\u0022 from @angular-slider/ngx-slider@13.0.0\r\nnpm error node_modules/@angular-slider/ngx-slider\r\nnpm error   @angular-slider/ngx-slider@\u0022^13.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Fix the upstream dependency conflict, or retry\r\nnpm error this command with --force or --legacy-peer-deps\r\nnpm error to accept an incorrect (and potentially broken) dependency resolution.\r\nnpm error\r\nnpm error\r\nnpm error For a full report see:\r\nnpm error C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-05-23T10_28_10_783Z-eresolve-report.txt\r\nnpm error A complete log of this run can be found in: C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-05-23T10_28_10_783Z-debug-0.log\r\n",
+  "previousInstallFailureOutput": "\nnpm error code ETARGET\r\nnpm error notarget No matching version found for @angular-devkit/build-webpack@0.1902.26.\r\nnpm error notarget In most cases you or one of your dependencies are requesting\r\nnpm error notarget a package version that doesn\u0027t exist.\r\nnpm error A complete log of this run can be found in: C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-05-26T07_00_05_188Z-debug-0.log\r\n",
   "previousAttemptedCommand": [
     "npm",
     "install",
+    "--legacy-peer-deps",
     "--no-audit",
     "--no-fund",
     "--prefer-offline"
   ],
-  "previousFailureClassification": "peerDependencyConflict",
-  "npmErrorClassification": "peerDependencyConflict",
+  "previousFailureClassification": "packageVersionNotFound",
+  "npmErrorClassification": "packageVersionNotFound",
   "peerDependencyPreflight": {
-    "targetAngularMajor": 18,
+    "targetAngularMajor": 19,
     "status": "skipped",
     "checked": [],
     "blockers": [],
@@ -300,10 +313,10 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
       "Preflight dependency compatibility check skipped by configuration."
     ]
   },
-  "nodeModulesDeleted": true,
+  "nodeModulesDeleted": false,
   "packageLockDeleted": true,
   "cleanDeleteCompleted": true,
-  "installAttemptKind": "retryOrFallbackAfterNormalInstall",
+  "installAttemptKind": "retryOrFallbackAfterLegacyPeerDepsInstall",
   "config": {
     "useAi": true,
     "aiCli": "codex",
@@ -316,11 +329,11 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
   },
   "isFirstAttempt": false,
   "isRetry": true,
-  "attempt": 2,
+  "attempt": 3,
   "npmVersion": "10.8.2",
   "nodeVersion": "v18.20.6"
 }
 codex
-{"strategy":"manualReview","command":"","reason":"Previous npm install failed with ERESOLVE because a third-party package declares a peer range on Angular common that is incompatible with Angular 18; this involves an Angular framework-critical package, so legacy peer deps should not be used to hide it.","confidence":0.95,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
+{"strategy":"manualReview","command":"","reason":"Previous install failed with ETARGET/no matching version found, which indicates a packageVersionNotFound condition and requires manual review rather than retrying or changing install flags.","confidence":0.98,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"packageVersionNotFound"}
 tokens used
-9,391
+4,632

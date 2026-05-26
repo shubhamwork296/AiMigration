@@ -1,0 +1,31 @@
+{
+  "from": "angular19",
+  "to": "angular20",
+  "sourceMajor": 19,
+  "targetMajor": 20,
+  "preferredOperation": "angular-cli-update",
+  "migrationCommand": ["npx", "--yes", "@angular/cli@20", "update", "@angular/core@20", "@angular/cli@20"],
+  "requiredPackageChanges": [
+    {"name": "@angular/core", "fromVersion": "19.x", "toVersion": "20.x", "manager": "npm", "ecosystem": "angular"},
+    {"name": "@angular/cli", "fromVersion": "19.x", "toVersion": "20.x", "manager": "npm", "ecosystem": "angular"}
+  ],
+  "validationCommands": ["install", "build", "test-if-present"],
+  "knownStructuralFiles": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "angular.json",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.spec.json",
+    "karma.conf.js",
+    "jest.config.js",
+    "eslint.config.js",
+    ".eslintrc.json",
+    "browserslist",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "optionalMigrations": []
+}

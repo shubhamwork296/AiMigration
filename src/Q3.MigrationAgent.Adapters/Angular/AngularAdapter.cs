@@ -275,8 +275,10 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 if (RemediationRequiresNpmInstall(remediation.Changes))
                 {
                     progress?.Stage(stage, "AI remediation changed Angular package dependencies. Running npm install before validation rerun.");
-                    var installDecision = DeterministicDecision("normalInstall", "Package remediation changed package.json; reinstall dependencies before rerunning Angular validation.", "low", false, false, "validationPackageRemediation");
-                    var installAttempt = await RunInstallAttemptAsync(projectPath, NormalNpmInstallCommand, installDecision, "validation-remediation", false, false, 0, remediation.Changes.Any(c => string.Equals(c.StringValue("mode"), "ai", StringComparison.OrdinalIgnoreCase)), true, "", false, config, progress, stage, logPath, cancellationToken);
+                    var useLegacyPeerDeps = IsValidationProvenThirdPartyPackageRemediation(remediation.Changes);
+                    var installDecision = DeterministicDecision(useLegacyPeerDeps ? "legacyPeerDepsInstall" : "normalInstall", "Package remediation changed package.json; reinstall dependencies before rerunning Angular validation.", useLegacyPeerDeps ? "medium" : "low", useLegacyPeerDeps, false, "validationPackageRemediation");
+                    var installCommand = useLegacyPeerDeps ? LegacyPeerDepsNpmInstallCommand : NormalNpmInstallCommand;
+                    var installAttempt = await RunInstallAttemptAsync(projectPath, installCommand, installDecision, "validation-remediation", useLegacyPeerDeps, false, 0, remediation.Changes.Any(c => string.Equals(c.StringValue("mode"), "ai", StringComparison.OrdinalIgnoreCase)), true, "", false, config, progress, stage, logPath, cancellationToken);
                     commands.Add(InstallCommandObject(installAttempt));
                     if (installAttempt.Result.ReturnCode != 0 && IsPeerDependencyConflict(installAttempt.Result) && config.AllowLegacyPeerDepsFallback)
                     {
@@ -304,13 +306,35 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                         validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: true));
                         break;
                     }
+                    var verificationChanges = aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt).ToArray();
+                    var verification = await VerifyValidationRemediationInstalledPackagesAsync(projectPath, verificationChanges, commands, config, progress, stage, logPath, cancellationToken);
+                    if (!verification.BoolValue("satisfied"))
+                    {
+                        validation = new JsonObject
+                        {
+                            ["passed"] = false,
+                            ["output"] = verification.ToJsonString(JsonHelpers.SerializerOptions),
+                            ["errors"] = "Installed package versions did not satisfy validation remediation target ranges.",
+                            ["buildVerificationAttempted"] = false,
+                            ["buildVerificationCommand"] = "package install verification",
+                            ["buildVerificationExecutor"] = "npm-install-verification",
+                            ["buildVerificationPassed"] = false,
+                            ["buildVerificationSkipped"] = true,
+                            ["buildVerificationFailureReason"] = "Installed package versions did not satisfy validation remediation target ranges.",
+                            ["buildVerificationFailureCategory"] = "dependency",
+                            ["nextHopStartedOnlyAfterBuildVerificationPassed"] = false
+                        };
+                        validationFailures.Add(ValidationFailureObject(validation, hop, true, remediationApplied: true));
+                        break;
+                    }
                     foreach (var change in aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt && c.StringValue("installResult") == "pending"))
                     {
                         change["installResult"] = "passed";
                     }
                 }
 
-                validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, attempt < config.MaxAiRemediationRetries, cancellationToken);
+                var preferLocalAngularCliBuild = IsValidationProvenThirdPartyPackageRemediation(remediation.Changes);
+                validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, attempt < config.MaxAiRemediationRetries, cancellationToken, preferLocalAngularCliBuild);
                 var rerunPassed = validation.BoolValue("passed");
                 foreach (var change in aiRemediationChanges.OfType<JsonObject>().Where(c => c.IntValue("attempt") == attempt))
                 {
@@ -594,6 +618,14 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         }
 
         var validation = await ValidateAndResolvePackageTargetsAsync(pendingUpdates, hop, data, config, projectPath, logPath, cancellationToken);
+        foreach (var item in validation["discarded"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            if (!preserved.OfType<JsonObject>().Any(p => p.StringValue("name").Equals(item.StringValue("packageName"), StringComparison.OrdinalIgnoreCase)))
+            {
+                preserved.Add(new JsonObject { ["name"] = item.StringValue("packageName"), ["version"] = item.StringValue("fromVersion"), ["section"] = item.StringValue("section"), ["reason"] = item.StringValue("warning") });
+            }
+            progress?.Stage(stage, $"[Package Resolution] Warning: {item.StringValue("warning")}");
+        }
         if (validation.IntValue("upfrontNpmViewSkippedCount") > 0)
         {
             progress?.Stage(stage, $"[Package Resolution] install-first mode enabled; skipping upfront npm view verification for {validation.IntValue("upfrontNpmViewSkippedCount")} AI-recommended packages.");
@@ -895,6 +927,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     {
         var resolved = new JsonArray();
         var invalid = new JsonArray();
+        var discarded = new JsonArray();
+        var warnings = new JsonArray();
         var mode = NormalizePackageVersionVerificationMode(config.PackageVersionVerificationMode);
         var upfrontSkipped = 0;
         foreach (var update in updates)
@@ -920,7 +954,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             }
             if (!shouldVerify) upfrontSkipped++;
             JsonObject? alternative = null;
-            if (resolution.ValidationResult == "E404" && update.Source == "ai-package-version-recommendation" && ai is not null && promptLoader is not null)
+            var canDiscardInvalidTarget = CanDiscardInvalidPackageTarget(update);
+            if (!canDiscardInvalidTarget && resolution.ValidationResult == "E404" && update.Source == "ai-package-version-recommendation" && ai is not null && promptLoader is not null)
             {
                 alternative = await RequestAiPackageVersionAlternativeAsync(update, hop, packageJson, resolution, config, cancellationToken);
                 if (alternative is not null)
@@ -973,7 +1008,19 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 item["failureReason"] = resolution.ValidationResult is "timeout" or "inconclusive"
                     ? $"Npm verification was {resolution.ValidationResult} for {update.Name}@{update.NormalizedTargetVersion}; no broad version discovery was attempted."
                     : $"Could not verify a published npm version for {update.Name}@{update.NormalizedTargetVersion} in target major {hop.ToVersion}.";
-                invalid.Add(item);
+                if (canDiscardInvalidTarget)
+                {
+                    var warning = $"Discarded invalid non-critical package target {update.Name}@{update.NormalizedTargetVersion}; preserving existing version {update.FromVersion}.";
+                    item["warning"] = warning;
+                    item["finalAcceptedVersion"] = update.FromVersion;
+                    item["discardedInvalidRecommendation"] = true;
+                    warnings.Add(warning);
+                    discarded.Add(item);
+                }
+                else
+                {
+                    invalid.Add(item);
+                }
             }
             else
             {
@@ -981,8 +1028,11 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             }
         }
 
-        return new JsonObject { ["resolved"] = resolved, ["invalid"] = invalid, ["verificationMode"] = mode, ["upfrontNpmViewSkippedCount"] = upfrontSkipped };
+        return new JsonObject { ["resolved"] = resolved, ["invalid"] = invalid, ["discarded"] = discarded, ["warnings"] = warnings, ["verificationMode"] = mode, ["upfrontNpmViewSkippedCount"] = upfrontSkipped };
     }
+
+    private static bool CanDiscardInvalidPackageTarget(PendingPackageUpdate update) =>
+        !AngularCriticalDependencyPolicy.IsCriticalPackage(update.Name);
 
     private async Task<JsonObject?> RequestAiPackageVersionAlternativeAsync(PendingPackageUpdate update, MigrationHop hop, JsonObject packageJson, NpmPackageTargetResolution resolution, MigrationConfig config, CancellationToken cancellationToken)
     {
@@ -1455,10 +1505,10 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                output.Contains("version not found");
     }
 
-    private async Task<JsonObject> RunValidationsAsync(string projectPath, MigrationHop hop, int? timeoutSeconds, int? idleTimeoutSeconds, IProgressReporter? progress, string stage, string? logPath, bool remediationAvailable, CancellationToken cancellationToken)
+    private async Task<JsonObject> RunValidationsAsync(string projectPath, MigrationHop hop, int? timeoutSeconds, int? idleTimeoutSeconds, IProgressReporter? progress, string stage, string? logPath, bool remediationAvailable, CancellationToken cancellationToken, bool preferLocalAngularCliBuild = false)
     {
         var manifest = await ParseManifestAsync(projectPath, cancellationToken);
-        var build = await RunBuildVerificationCommandAsync(projectPath, manifest, progress, stage, logPath, timeoutSeconds, idleTimeoutSeconds, cancellationToken);
+        var build = await RunBuildVerificationCommandAsync(projectPath, manifest, progress, stage, logPath, timeoutSeconds, idleTimeoutSeconds, cancellationToken, preferLocalAngularCliBuild);
         if (build.Passed)
         {
             progress?.Stage(stage, $"Build verification passed for Angular {hop.FromVersion} -> {hop.ToVersion}.");
@@ -1581,46 +1631,6 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private async Task<RemediationAttempt> TryRemediateValidationProvenThirdPartyPackagesAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject validation, IReadOnlyList<JsonObject> blockers, int attempt, HashSet<string> failedPackagePlans, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
     {
         var packageJsonPath = Path.Combine(projectPath, "package.json");
-        var packageJson = ReadJson(packageJsonPath);
-        var blockerNamesForPayload = blockers.Select(b => b.StringValue("package")).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var payload = new JsonObject
-        {
-            ["targetAngularMajor"] = hop.ToVersion,
-            ["targetAngularHop"] = $"{hop.FromVersion}->{hop.ToVersion}",
-            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
-            ["validationProvenBlockers"] = new JsonArray(blockers.Select(b => (JsonNode?)b.DeepClone()).ToArray()),
-            ["exactTypeScriptErrors"] = new JsonArray(ExtractTypeScriptErrorLines(validation.StringValue("output", validation.StringValue("errors"))).Select(e => (JsonNode?)JsonValue.Create(e)).ToArray()),
-            ["packageJson"] = PackageJsonSubset(packageJson, blockerNamesForPayload),
-            ["rules"] = new JsonArray(
-                "Return remediation only for validationProvenBlockers; do not include unrelated third-party packages.",
-                "For declaration-only TS2304 missing type errors in node_modules .d.ts files, prefer a project-owned declaration shim before package upgrades.",
-                "For declaration-only TS2304 errors, a project-owned type shim is allowed only when no runtime/source behavior changes are required.",
-                "For Angular library incompatibilities, package.json changes are allowed only for packages present in validationProvenBlockers.",
-                "Do not treat SharedModule NG6002 as root cause while node_modules package errors are present; it is cascading unless it still fails after third-party blockers are resolved.",
-                "Use manual_review only when neither same-package upgrade nor declaration-only shim is safe.",
-                "Do not edit business logic or node_modules.",
-                "Return strict JSON only."),
-            ["allowedActions"] = new JsonArray("upgrade_same_package", "upgrade", "shim_types_only", "manual_review"),
-            ["requiredResponseShape"] = new JsonObject
-            {
-                ["remediations"] = new JsonArray(new JsonObject
-                {
-                    ["packageName"] = "blocked package",
-                    ["currentVersion"] = "current package.json version",
-                    ["detectedErrorCategory"] = "third_party_angular_library_incompatibility",
-                    ["action"] = "upgrade | replace | remove_if_unused | shim_types_only | manual_review",
-                    ["targetPackageName"] = "same package or replacement package",
-                    ["targetVersionRange"] = "safe npm version/range",
-                    ["reason"] = "evidence-tied reason",
-                    ["expectedCodeImpact"] = "none | imports | module wiring | unknown",
-                    ["requiresSourceChanges"] = false,
-                    ["sourceChangeScope"] = "package_json_only",
-                    ["confidence"] = 0.0,
-                    ["validationCommand"] = "npm run build"
-                })
-            }
-        };
-
         var changes = new List<JsonObject>();
         var shimRejectedReason = "";
         if (TryApplyVisibilityStateTypeShim(projectPath, validation, blockers, attempt, out var shimChange, out shimRejectedReason))
@@ -1633,8 +1643,16 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         if (deterministicChanges.Count > 0)
         {
             changes.AddRange(deterministicChanges);
+        }
+
+        var blockersRequiringAi = blockers
+            .Where(b => DeterministicThirdPartyCandidate(b, hop.ToVersion) is null)
+            .Where(b => !changes.Any(c => c.StringValue("packageName").Equals(b.StringValue("package"), StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        if (blockersRequiringAi.Length == 0)
+        {
             if (changes.Any(c => c.StringValue("status") == "applied")) return RemediationAttempt.AppliedResult(changes);
-            return RemediationAttempt.Manual(new JsonObject
+            if (changes.Count > 0) return RemediationAttempt.Manual(new JsonObject
             {
                 ["requiresHumanReview"] = true,
                 ["reason"] = "No deterministic validation-driven third-party remediation could be safely applied.",
@@ -1642,6 +1660,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
                 ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
             }, changes);
+            return RemediationAttempt.NotAttempted();
         }
 
         if (!config.Ai.UseAi || ai is null || promptLoader is null)
@@ -1663,12 +1682,47 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             return changes.Count == 0 ? RemediationAttempt.NotAttempted() : RemediationAttempt.Manual(new JsonObject
             {
                 ["requiresHumanReview"] = true,
-                ["reason"] = "No deterministic validation-driven third-party remediation could be safely applied.",
+                ["reason"] = "No deterministic validation-driven third-party remediation could be safely applied for unresolved blockers.",
                 ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
                 ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+                ["unresolvedPackages"] = new JsonArray(blockersRequiringAi.Select(b => (JsonNode?)JsonValue.Create(b.StringValue("package"))).ToArray()),
                 ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
             }, changes);
         }
+
+        var packageJson = ReadJson(packageJsonPath);
+        var blockerNamesForPayload = blockersRequiringAi.Select(b => b.StringValue("package")).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var payload = new JsonObject
+        {
+            ["targetAngularMajor"] = hop.ToVersion,
+            ["targetAngularHop"] = $"{hop.FromVersion}->{hop.ToVersion}",
+            ["validationCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
+            ["validationProvenBlockers"] = new JsonArray(blockersRequiringAi.Select(b => (JsonNode?)b.DeepClone()).ToArray()),
+            ["exactTypeScriptErrors"] = new JsonArray(ExtractTypeScriptErrorLines(validation.StringValue("output", validation.StringValue("errors"))).Select(e => (JsonNode?)JsonValue.Create(e)).ToArray()),
+            ["packageJson"] = PackageJsonSubset(packageJson, blockerNamesForPayload),
+            ["rules"] = new JsonArray(
+                "Return remediation only for validationProvenBlockers; do not include unrelated third-party packages.",
+                "For declaration-only TS2304 missing type errors in node_modules .d.ts files, prefer a project-owned declaration shim before package upgrades.",
+                "For declaration-only TS2304 errors, a project-owned type shim is allowed only when no runtime/source behavior changes are required.",
+                "For Angular library incompatibilities, package.json changes are allowed only for packages present in validationProvenBlockers.",
+                "Do not treat SharedModule NG6002 as root cause while node_modules package errors are present; it is cascading unless it still fails after third-party blockers are resolved.",
+                "Use manual_review only when neither same-package upgrade nor declaration-only shim is safe.",
+                "Do not edit business logic or node_modules.",
+                "Return strict JSON only."),
+            ["requiredResponseShape"] = new JsonObject
+            {
+                ["packageUpdates"] = new JsonArray(new JsonObject
+                {
+                    ["package"] = "blocked package",
+                    ["currentVersion"] = "current package.json version",
+                    ["version"] = "bounded npm version/range",
+                    ["reason"] = "evidence-tied reason",
+                    ["errorCategory"] = "third_party_angular_library_incompatibility",
+                    ["expectedCodeImpact"] = "none"
+                }),
+                ["manualReview"] = new JsonArray()
+            }
+        };
 
         JsonObject? plan;
         try
@@ -1681,18 +1735,36 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         }
 
         var blockerNames = blockerNamesForPayload;
-        foreach (var item in plan?["remediations"]?.AsArray()?.OfType<JsonObject>() ?? PlanItems(plan))
+        var packageJsonChanged = false;
+        foreach (var item in ThirdPartyPackageUpdateItems(plan, changes, attempt))
         {
-            var packageName = item.StringValue("packageName");
-            if (!blockerNames.Contains(packageName)) continue;
-            var action = NormalizeThirdPartyAction(item.StringValue("action"));
-            if (action is "manual_review" or "shim_types_only") continue;
-            if (action == "remove_if_unused" && IsPackageUsedInProject(projectPath, packageName)) continue;
-            var targetPackage = item.StringValue("targetPackageName", packageName);
-            var targetRange = item.StringValue("targetVersionRange");
-            if (string.IsNullOrWhiteSpace(targetRange) || string.IsNullOrWhiteSpace(targetPackage))
+            var packageName = item.StringValue("package");
+            if (!blockerNames.Contains(packageName))
             {
-                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation did not include a target package and version range."));
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, $"AI package remediation package '{packageName}' is not one of the validation-detected blockers."));
+                continue;
+            }
+            var action = "upgrade";
+            var targetPackage = packageName;
+            var targetRange = item.StringValue("version");
+            if (!item.StringValue("errorCategory").Equals("third_party_angular_library_incompatibility", StringComparison.Ordinal))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation errorCategory must be third_party_angular_library_incompatibility."));
+                continue;
+            }
+            if (!item.StringValue("expectedCodeImpact").Equals("none", StringComparison.Ordinal))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation expectedCodeImpact must be none."));
+                continue;
+            }
+            if (!IsBoundedThirdPartyVersion(targetRange))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation version must be a bounded version/range and must not be latest, *, x, empty, or unbounded."));
+                continue;
+            }
+            if (IsAngularOwnedPackageName(targetPackage) && !IsAngularOwnedPackageName(packageName))
+            {
+                changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, "AI package remediation cannot update Angular framework packages for a third-party blocker."));
                 continue;
             }
             var signature = $"{packageName}|{action}|{targetPackage}|{targetRange}";
@@ -1714,7 +1786,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 changes.Add(RejectedThirdPartyChange(item, blockers, attempt, packageName, $"Package.json did not contain {packageName} in a supported dependency section."));
                 continue;
             }
-            File.WriteAllText(packageJsonPath, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+            packageJsonChanged = true;
             var change = ThirdPartyBlockerChange(item, blockers, attempt, "applied", verified, packageName, targetPackage, verified.FinalTarget);
             change["file"] = "package.json";
             change["type"] = "package_update";
@@ -1723,6 +1795,10 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             change["businessLogicChanged"] = false;
             change["businessFile"] = false;
             changes.Add(change);
+        }
+        if (packageJsonChanged)
+        {
+            File.WriteAllText(packageJsonPath, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         }
 
         var applied = changes.Any(c => c.StringValue("status") == "applied");
@@ -1740,17 +1816,22 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 ["rejectedReason"] = shimRejectedReason
             });
         }
-        if (!applied && changes.Count == 0)
-        {
-            return RemediationAttempt.NotAttempted();
-        }
-        if (applied) return RemediationAttempt.AppliedResult(changes);
+        var unresolvedAfterAi = blockersRequiringAi
+            .Where(b => !changes.Any(c =>
+                c.StringValue("status") == "applied" &&
+                c.StringValue("packageName").Equals(b.StringValue("package"), StringComparison.OrdinalIgnoreCase)))
+            .Select(b => b.StringValue("package"))
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (applied && unresolvedAfterAi.Length == 0) return RemediationAttempt.AppliedResult(changes);
         return RemediationAttempt.Manual(new JsonObject
         {
             ["requiresHumanReview"] = true,
-            ["reason"] = "No validation-proven third-party remediation could be safely applied.",
+            ["reason"] = "No validation-proven third-party remediation could be safely applied for unresolved blocker packages.",
             ["failedCommand"] = validation.StringValue("buildVerificationCommand", "npm run build"),
             ["lastError"] = Tail(validation.StringValue("output", validation.StringValue("errors"))),
+            ["unresolvedPackages"] = new JsonArray(unresolvedAfterAi.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
             ["rejectedChanges"] = new JsonArray(changes.Select(c => (JsonNode?)c.DeepClone()).ToArray())
         }, changes);
     }
@@ -2083,6 +2164,60 @@ export class ToastrModule {
 
     private static IEnumerable<JsonObject> PlanItems(JsonObject? plan) => plan is null ? [] : plan["packageRemediations"]?.AsArray()?.OfType<JsonObject>() ?? [];
 
+    private static IEnumerable<JsonObject> ThirdPartyPackageUpdateItems(JsonObject? plan, List<JsonObject> changes, int attempt)
+    {
+        if (plan?["packageUpdates"] is JsonArray updates)
+        {
+            return updates.OfType<JsonObject>().Select(NormalizeThirdPartyPackageUpdate).ToArray();
+        }
+
+        if (plan?["remediations"] is JsonArray remediations)
+        {
+            var normalized = remediations.OfType<JsonObject>().Select(NormalizeLegacyThirdPartyRemediation).ToArray();
+            if (normalized.Length > 0)
+            {
+                changes.Add(new JsonObject
+                {
+                    ["attempt"] = attempt,
+                    ["mode"] = "ai",
+                    ["status"] = "warning",
+                    ["schemaWarning"] = "AI returned legacy remediations schema; normalized defensive fallback fields to packageUpdates schema."
+                });
+            }
+            return normalized;
+        }
+
+        return PlanItems(plan).Select(NormalizeLegacyThirdPartyRemediation).ToArray();
+    }
+
+    private static JsonObject NormalizeThirdPartyPackageUpdate(JsonObject item) => new()
+    {
+        ["package"] = item.StringValue("package"),
+        ["currentVersion"] = item.StringValue("currentVersion"),
+        ["version"] = item.StringValue("version"),
+        ["reason"] = item.StringValue("reason"),
+        ["errorCategory"] = item.StringValue("errorCategory"),
+        ["expectedCodeImpact"] = item.StringValue("expectedCodeImpact")
+    };
+
+    private static JsonObject NormalizeLegacyThirdPartyRemediation(JsonObject item) => new()
+    {
+        ["package"] = item.StringValue("packageName", item.StringValue("targetPackageName")),
+        ["currentVersion"] = item.StringValue("currentVersion"),
+        ["version"] = item.StringValue("version", item.StringValue("targetVersionRange")),
+        ["reason"] = item.StringValue("reason"),
+        ["errorCategory"] = item.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility")),
+        ["expectedCodeImpact"] = item.StringValue("expectedCodeImpact", "none")
+    };
+
+    private static bool IsBoundedThirdPartyVersion(string version)
+    {
+        var trimmed = version.Trim();
+        if (trimmed is "" or "*" || trimmed.Equals("latest", StringComparison.OrdinalIgnoreCase)) return false;
+        if (Regex.IsMatch(trimmed, @"(^|[.\s])(?:x|X|\*)($|[.\s])")) return false;
+        return Regex.IsMatch(trimmed, @"^[~^]?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$");
+    }
+
     private static JsonObject ThirdPartyBlockerChange(JsonObject item, IReadOnlyList<JsonObject> blockers, int attempt, string status, NpmPackageTargetResolution verified, string packageName, string targetPackage, string selectedTarget)
     {
         var blocker = blockers.FirstOrDefault(b => b.StringValue("package").Equals(packageName, StringComparison.OrdinalIgnoreCase));
@@ -2095,8 +2230,8 @@ export class ToastrModule {
             ["failureCause"] = "validation_proven_third_party_blocker",
             ["packageName"] = packageName,
             ["currentVersion"] = item.StringValue("currentVersion", blocker?.StringValue("currentVersion") ?? ""),
-            ["detectedErrorCategory"] = item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility"),
-            ["action"] = item.StringValue("action"),
+            ["detectedErrorCategory"] = item.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility")),
+            ["action"] = item.StringValue("action", "upgrade"),
             ["targetPackageName"] = targetPackage,
             ["targetVersionRange"] = selectedTarget,
             ["reason"] = item.StringValue("reason"),
@@ -2123,14 +2258,14 @@ export class ToastrModule {
             ["attempt"] = attempt,
             ["mode"] = "ai",
             ["status"] = "rejected",
-            ["failureCategory"] = blocker?.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility")) ?? item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility"),
+            ["failureCategory"] = blocker?.StringValue("errorCategory", item.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility"))) ?? item.StringValue("errorCategory", item.StringValue("detectedErrorCategory", "third_party_angular_library_incompatibility")),
             ["failureCause"] = "validation_proven_third_party_blocker",
             ["packageName"] = packageName,
             ["currentVersion"] = item.StringValue("currentVersion", blocker?.StringValue("currentVersion") ?? ""),
-            ["detectedErrorCategory"] = item.StringValue("detectedErrorCategory", blocker?.StringValue("errorCategory", "") ?? ""),
-            ["action"] = item.StringValue("action"),
-            ["targetPackageName"] = item.StringValue("targetPackageName", packageName),
-            ["targetVersionRange"] = item.StringValue("targetVersionRange"),
+            ["detectedErrorCategory"] = item.StringValue("errorCategory", item.StringValue("detectedErrorCategory", blocker?.StringValue("errorCategory", "") ?? "")),
+            ["action"] = item.StringValue("action", "upgrade"),
+            ["targetPackageName"] = item.StringValue("targetPackageName", item.StringValue("package", packageName)),
+            ["targetVersionRange"] = item.StringValue("version", item.StringValue("targetVersionRange")),
             ["reason"] = item.StringValue("reason"),
             ["rejectedReason"] = reason,
             ["validationCommand"] = item.StringValue("validationCommand", "npm run build"),
@@ -2316,8 +2451,8 @@ export class ToastrModule {
 
     private static string ThirdPartyPackageRemediationPrompt() => """
 Return strict JSON only. You are selecting package remediation for Angular validation-proven third-party blockers.
-Schema: {"remediations":[{"packageName":"","currentVersion":"","detectedErrorCategory":"third_party_declaration_type_missing | third_party_angular_library_incompatibility","action":"upgrade | shim_types_only | manual_review","targetPackageName":"","targetVersionRange":"","reason":"","expectedCodeImpact":"none | unknown","requiresSourceChanges":false,"sourceChangeScope":"package_json_only | project_owned_type_shim | none","confidence":0.0,"validationCommand":"npm run build"}]}
-Only include packages listed in validationProvenBlockers. Prefer a project-owned type shim for declaration-only TS2304 missing type errors from node_modules .d.ts files. Prefer upgrading the same package for Angular library incompatibilities. Do not edit business logic. Do not edit node_modules. Do not propose unrelated dependencies.
+Schema: {"packageUpdates":[{"package":"","currentVersion":"","version":"","reason":"","errorCategory":"third_party_angular_library_incompatibility","expectedCodeImpact":"none"}],"manualReview":[]}
+Only include packages listed in validationProvenBlockers. For each Angular library incompatibility, upgrade the same package only. version must be a bounded npm version/range, not latest, *, x, empty, or unbounded. expectedCodeImpact must be none. Do not edit business logic. Do not edit source files. Do not edit node_modules. Do not propose unrelated dependencies. Do not use remediations, packageName, targetPackageName, or targetVersionRange.
 """;
 
     private IReadOnlyList<JsonObject> ValidationCommands(JsonObject manifest)
@@ -2330,10 +2465,10 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
         return commands;
     }
 
-    private async Task<BuildVerificationResult> RunBuildVerificationCommandAsync(string projectPath, JsonObject manifest, IProgressReporter? progress, string? stage, string? logPath, int? timeoutSeconds, int? idleTimeoutSeconds, CancellationToken cancellationToken)
+    private async Task<BuildVerificationResult> RunBuildVerificationCommandAsync(string projectPath, JsonObject manifest, IProgressReporter? progress, string? stage, string? logPath, int? timeoutSeconds, int? idleTimeoutSeconds, CancellationToken cancellationToken, bool preferLocalAngularCliBuild = false)
     {
         progress?.Stage(stage ?? "Validation", "Running build verification before next Angular hop.");
-        var command = ResolveBuildVerificationCommand(projectPath, manifest);
+        var command = ResolveBuildVerificationCommand(projectPath, manifest, preferLocalAngularCliBuild);
         if (command is null)
         {
             const string unavailableReason = "Build verification could not run because no build script or local Angular CLI was available.";
@@ -2365,11 +2500,17 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
         return new BuildVerificationResult(true, false, commandText, command.Executor, reason, category, output, failedCommand);
     }
 
-    private static BuildVerificationCommand? ResolveBuildVerificationCommand(string projectPath, JsonObject manifest)
+    private static BuildVerificationCommand? ResolveBuildVerificationCommand(string projectPath, JsonObject manifest, bool preferLocalAngularCliBuild = false)
     {
         var scripts = manifest["scripts"]?.AsObject() ?? new JsonObject();
+        var localCli = LocalAngularCliBuildCommand(projectPath);
+        if (preferLocalAngularCliBuild && localCli is not null) return localCli;
         if (scripts.ContainsKey("build")) return new BuildVerificationCommand(["npm", "run", "build"], "npm-script");
+        return localCli;
+    }
 
+    private static BuildVerificationCommand? LocalAngularCliBuildCommand(string projectPath)
+    {
         var nodeModules = Path.Combine(projectPath, "node_modules");
         var cliPackage = Path.Combine(nodeModules, "@angular", "cli", "package.json");
         var ngRelative = OperatingSystem.IsWindows() ? Path.Combine("node_modules", ".bin", "ng.cmd") : "node_modules/.bin/ng";
@@ -2482,10 +2623,172 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
         return $"AI validation remediation result: attempted={remediation.Attempted}; applied={remediation.Applied}; changes={remediation.Changes.Count}; manualCorrection={remediation.ManualCorrection is not null}.{reasonText}{fileText}";
     }
 
+    private async Task<JsonObject> VerifyValidationRemediationInstalledPackagesAsync(string projectPath, IEnumerable<JsonObject> changes, JsonArray commands, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        var records = new JsonArray();
+        var allSatisfied = true;
+        foreach (var change in ValidationRemediationPackageUpdates(changes))
+        {
+            var packageName = change.StringValue("packageName");
+            var targetRange = change.StringValue("targetVersionRange");
+            var record = InstalledPackageVerificationRecord(projectPath, change, packageName, targetRange);
+            records.Add(record);
+            if (record.BoolValue("verificationSkipped")) continue;
+            if (record.BoolValue("satisfiesTargetRange")) continue;
+
+            var packageSatisfied = false;
+            progress?.Stage(stage, $"Installed {packageName}@{record.StringValue("installedVersion", "missing")} does not satisfy {targetRange}; running targeted npm install.");
+            change["targetedInstallNeeded"] = true;
+            var targeted = await RunValidationRemediationTargetedInstallAsync(projectPath, packageName, targetRange, config, progress, stage, logPath, cancellationToken);
+            commands.Add(InstallCommandObject(targeted));
+            record["targetedInstallNeeded"] = true;
+            record["targetedInstallCommand"] = new JsonArray(targeted.Command.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
+            record["targetedInstallSucceeded"] = targeted.Result.ReturnCode == 0;
+
+            var afterTargeted = InstalledPackageVerificationRecord(projectPath, change, packageName, targetRange);
+            record["installedVersionAfterTargetedInstall"] = afterTargeted.StringValue("installedVersion");
+            record["satisfiesAfterTargetedInstall"] = afterTargeted.BoolValue("satisfiesTargetRange");
+            if (targeted.Result.ReturnCode == 0 && afterTargeted.BoolValue("satisfiesTargetRange"))
+            {
+                packageSatisfied = true;
+                ApplyPackageVerificationToChange(change, record, afterTargeted);
+                allSatisfied = allSatisfied && packageSatisfied;
+                continue;
+            }
+
+            var refreshed = RefreshPackageLockAndInstalledPackage(projectPath, packageName);
+            record["packageLockRefreshed"] = refreshed.BoolValue("packageLockRefreshed");
+            record["packageNodeModulesRemoved"] = refreshed.BoolValue("packageNodeModulesRemoved");
+            change["packageLockRefreshed"] = refreshed.BoolValue("packageLockRefreshed");
+            var reinstall = await RunValidationRemediationPlainInstallAsync(projectPath, config, progress, stage, logPath, cancellationToken);
+            commands.Add(InstallCommandObject(reinstall));
+            record["reinstallAfterLockRefreshCommand"] = new JsonArray(reinstall.Command.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
+            record["reinstallAfterLockRefreshSucceeded"] = reinstall.Result.ReturnCode == 0;
+
+            var afterRefresh = InstalledPackageVerificationRecord(projectPath, change, packageName, targetRange);
+            record["installedVersionAfterLockRefresh"] = afterRefresh.StringValue("installedVersion");
+            record["satisfiesAfterLockRefresh"] = afterRefresh.BoolValue("satisfiesTargetRange");
+            ApplyPackageVerificationToChange(change, record, afterRefresh);
+            packageSatisfied = reinstall.Result.ReturnCode == 0 && afterRefresh.BoolValue("satisfiesTargetRange");
+            allSatisfied = allSatisfied && packageSatisfied;
+        }
+
+        return new JsonObject { ["satisfied"] = allSatisfied, ["packages"] = records };
+    }
+
+    private static IEnumerable<JsonObject> ValidationRemediationPackageUpdates(IEnumerable<JsonObject> changes) =>
+        changes.Where(c =>
+            c.StringValue("status") == "applied" &&
+            string.Equals(Path.GetFileName(c.StringValue("file")), "package.json", StringComparison.OrdinalIgnoreCase) &&
+            c.StringValue("type") == "package_update" &&
+            !string.IsNullOrWhiteSpace(c.StringValue("packageName")) &&
+            !string.IsNullOrWhiteSpace(c.StringValue("targetVersionRange")));
+
+    private JsonObject InstalledPackageVerificationRecord(string projectPath, JsonObject change, string packageName, string targetRange)
+    {
+        var packageJsonValue = PackageJsonDependencyValue(projectPath, packageName);
+        var installedVersion = InstalledPackageVersion(projectPath, packageName);
+        var comparisonRange = ComparableNpmTargetRange(targetRange);
+        var hasInstalledPackage = Directory.Exists(NodeModulesPackagePath(projectPath, packageName));
+        var hasPackageLock = File.Exists(Path.Combine(projectPath, "package-lock.json"));
+        var verificationSkipped = !hasInstalledPackage && !hasPackageLock;
+        var satisfied = verificationSkipped || !string.IsNullOrWhiteSpace(installedVersion) && NpmVersionRange.Satisfies(installedVersion, comparisonRange);
+        var record = new JsonObject
+        {
+            ["packageName"] = packageName,
+            ["targetRange"] = targetRange,
+            ["packageJsonValueAfterUpdate"] = packageJsonValue,
+            ["installedVersion"] = installedVersion,
+            ["satisfiesTargetRange"] = satisfied,
+            ["verificationSkipped"] = verificationSkipped,
+            ["verificationSkipReason"] = verificationSkipped ? "No local package-lock.json or node_modules package entry exists to verify in the current workspace." : "",
+            ["targetedInstallNeeded"] = false,
+            ["packageLockRefreshed"] = false
+        };
+        ApplyPackageVerificationToChange(change, record, record);
+        return record;
+    }
+
+    private static void ApplyPackageVerificationToChange(JsonObject change, JsonObject record, JsonObject latest)
+    {
+        change["packageJsonValueAfterUpdate"] = record.StringValue("packageJsonValueAfterUpdate");
+        change["installedVersionAfterNpmInstall"] = latest.StringValue("installedVersion");
+        change["installedVersionSatisfiesTargetRange"] = latest.BoolValue("satisfiesTargetRange");
+        change["targetedInstallNeeded"] = record.BoolValue("targetedInstallNeeded");
+        change["packageLockRefreshed"] = record.BoolValue("packageLockRefreshed");
+    }
+
+    private async Task<InstallAttemptResult> RunValidationRemediationTargetedInstallAsync(string projectPath, string packageName, string targetRange, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        var command = new[] { "npm", "install", $"{packageName}@{targetRange}", "--legacy-peer-deps", "--no-audit", "--no-fund" };
+        var decision = DeterministicDecision("legacyPeerDepsInstall", $"Targeted validation remediation install for {packageName}@{targetRange}.", "medium", true, true, "validationPackageVersionMismatch", string.Join(" ", command));
+        decision = decision with { Flags = decision.Flags with { PreferOffline = false } };
+        return await RunInstallAttemptAsync(projectPath, command, decision, "validation-remediation-targeted-install", true, true, 1, false, false, "", false, config, progress, stage, logPath, cancellationToken);
+    }
+
+    private async Task<InstallAttemptResult> RunValidationRemediationPlainInstallAsync(string projectPath, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        var command = new[] { "npm", "install", "--legacy-peer-deps", "--no-audit", "--no-fund" };
+        var decision = DeterministicDecision("legacyPeerDepsInstall", "Reinstall after refreshing stale validation remediation lock/package entry.", "medium", true, true, "validationPackageVersionMismatch", string.Join(" ", command));
+        decision = decision with { Flags = decision.Flags with { PreferOffline = false } };
+        return await RunInstallAttemptAsync(projectPath, command, decision, "validation-remediation-lock-refresh-install", true, true, 2, false, false, "", false, config, progress, stage, logPath, cancellationToken);
+    }
+
+    private static JsonObject RefreshPackageLockAndInstalledPackage(string projectPath, string packageName)
+    {
+        var result = new JsonObject { ["packageLockRefreshed"] = false, ["packageNodeModulesRemoved"] = false };
+        var lockPath = Path.Combine(projectPath, "package-lock.json");
+        if (File.Exists(lockPath))
+        {
+            File.Delete(lockPath);
+            result["packageLockRefreshed"] = true;
+        }
+
+        var packagePath = NodeModulesPackagePath(projectPath, packageName);
+        if (Directory.Exists(packagePath) && IsUnderRoot(packagePath, Path.Combine(projectPath, "node_modules")))
+        {
+            Directory.Delete(packagePath, recursive: true);
+            result["packageNodeModulesRemoved"] = true;
+        }
+
+        return result;
+    }
+
+    private static string PackageJsonDependencyValue(string projectPath, string packageName)
+    {
+        var path = Path.Combine(projectPath, "package.json");
+        if (!File.Exists(path)) return "";
+        var data = ReadJson(path);
+        return AllDependencies(data).GetValueOrDefault(packageName, "");
+    }
+
+    private static string InstalledPackageVersion(string projectPath, string packageName)
+    {
+        var path = Path.Combine(NodeModulesPackagePath(projectPath, packageName), "package.json");
+        if (!File.Exists(path)) return "";
+        try { return ReadJson(path).StringValue("version"); }
+        catch { return ""; }
+    }
+
+    private static string NodeModulesPackagePath(string projectPath, string packageName) =>
+        Path.Combine([projectPath, "node_modules", .. packageName.Split('/', StringSplitOptions.RemoveEmptyEntries)]);
+
+    private static string ComparableNpmTargetRange(string targetRange)
+    {
+        var alias = Regex.Match(targetRange, @"^npm:(?:@[^/\s]+/)?[^@\s]+@(?<range>.+)$", RegexOptions.IgnoreCase);
+        return alias.Success ? alias.Groups["range"].Value : targetRange;
+    }
+
     private static bool RemediationRequiresNpmInstall(IEnumerable<JsonObject> changes) =>
         changes.Any(c =>
             string.Equals(Path.GetFileName(c.StringValue("file")), "package.json", StringComparison.OrdinalIgnoreCase) &&
             c.StringValue("type") is "package_update" or "package" or "dependency");
+
+    private static bool IsValidationProvenThirdPartyPackageRemediation(IEnumerable<JsonObject> changes) =>
+        changes.Any(c =>
+            string.Equals(Path.GetFileName(c.StringValue("file")), "package.json", StringComparison.OrdinalIgnoreCase) &&
+            c.StringValue("type") == "package_update" &&
+            c.StringValue("failureCause") == "validation_proven_third_party_blocker");
 
     private static JsonObject BuildAngularValidationRootCauseAnalysis(string projectPath, JsonObject validation, MigrationHop hop)
     {
@@ -2644,14 +2947,15 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
             if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
             var evidence = EvidenceLinesForPackage(output, packageName);
             if (!EvidenceIsThirdPartyAngularLibraryIncompatibility(evidence)) continue;
-            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, evidence, validation.StringValue("buildVerificationCommand", "npm run build"));
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, evidence, validation.StringValue("buildVerificationCommand", "npm run build"), file, Ng600xCodeForNodeModuleFile(output, file), ModuleSymbolForPackageEvidence(evidence));
         }
 
         foreach (var match in Regex.Matches(output, @"library\s+\((?<pkg>@?[\w.-]+(?:/[\w.-]+)?)\)\s+which\s+declares\s+(?<symbol>\w+Module)\s+is\s+not\s+compatible\s+with\s+Angular\s+Ivy", RegexOptions.IgnoreCase).OfType<Match>())
         {
             var packageName = match.Groups["pkg"].Value;
             if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
-            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, EvidenceLinesForPackage(output, packageName), validation.StringValue("buildVerificationCommand", "npm run build"));
+            var evidence = EvidenceLinesForPackage(output, packageName);
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, evidence, validation.StringValue("buildVerificationCommand", "npm run build"), ExtractNodeModuleFilesForPackage(output, packageName).FirstOrDefault() ?? "", Ng600xCodeForPackage(output, packageName), match.Groups["symbol"].Value);
         }
 
         foreach (var match in Regex.Matches(output, @"(?<symbol>\w+Module)\s+does not appear to be an NgModule class", RegexOptions.IgnoreCase).OfType<Match>())
@@ -2659,13 +2963,14 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
             var symbol = match.Groups["symbol"].Value;
             if (!TryMapThirdPartyModuleSymbol(output, symbol, out var packageName)) continue;
             if (string.IsNullOrWhiteSpace(PackageVersion(packageJson, packageName))) continue;
-            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, EvidenceLinesForPackage(output, packageName).Concat([match.Value]).Distinct().ToArray(), validation.StringValue("buildVerificationCommand", "npm run build"));
+            var evidence = EvidenceLinesForPackage(output, packageName).Concat([match.Value]).Distinct().ToArray();
+            result[packageName] = ThirdPartyBlockerObject(packageJson, packageName, hop, evidence, validation.StringValue("buildVerificationCommand", "npm run build"), ExtractNodeModuleFilesForPackage(output, packageName).FirstOrDefault() ?? "", Ng600xCodeForPackage(output, packageName), symbol);
         }
 
         return result.Values.OrderBy(v => v.StringValue("package"), StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
-    private static JsonObject ThirdPartyBlockerObject(JsonObject packageJson, string packageName, MigrationHop hop, IReadOnlyList<string> evidence, string validationCommand)
+    private static JsonObject ThirdPartyBlockerObject(JsonObject packageJson, string packageName, MigrationHop hop, IReadOnlyList<string> evidence, string validationCommand, string nodeModulesPath = "", string errorCode = "", string moduleSymbol = "")
     {
         var errorCategory = ThirdPartyErrorCategory(packageName, evidence);
         return new JsonObject
@@ -2675,10 +2980,14 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
             ["rootPackage"] = packageName,
             ["currentVersion"] = PackageVersion(packageJson, packageName),
             ["hop"] = $"{hop.FromVersion} -> {hop.ToVersion}",
+            ["moduleSymbol"] = moduleSymbol,
+            ["nodeModulesPath"] = nodeModulesPath,
+            ["errorCode"] = errorCode,
             ["failureCategory"] = "third_party_angular_incompatibility",
             ["errorCategory"] = errorCategory,
             ["detectedErrorCategory"] = errorCategory,
             ["classification"] = "validation_proven_third_party_blocker",
+            ["decision"] = "validation-proven Angular build blocker",
             ["validationCommand"] = validationCommand,
             ["evidence"] = new JsonArray(evidence.Take(8).Select(e => (JsonNode?)JsonValue.Create(e)).ToArray()),
             ["preservePolicy"] = "do_not_preserve_after_validation_proof"
@@ -2815,6 +3124,46 @@ Only include packages listed in validationProvenBlockers. Prefer a project-owned
             .Where(f => f.StartsWith($"node_modules/{packageName}/", StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+    private static string Ng600xCodeForPackage(string output, string packageName)
+    {
+        foreach (var file in ExtractNodeModuleFilesForPackage(output, packageName))
+        {
+            var code = Ng600xCodeForNodeModuleFile(output, file);
+            if (!string.IsNullOrWhiteSpace(code)) return code;
+        }
+        var evidence = EvidenceLinesForPackage(output, packageName);
+        return Regex.Match(string.Join("\n", evidence), @"\b(?<code>NG600[23])\b", RegexOptions.IgnoreCase) is { Success: true } match ? match.Groups["code"].Value.ToUpperInvariant() : "";
+    }
+
+    private static string Ng600xCodeForNodeModuleFile(string output, string file)
+    {
+        var lines = output.Split(["\r\n", "\n"], StringSplitOptions.None);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (!NormalizeRelativePath(lines[i]).Contains(file, StringComparison.OrdinalIgnoreCase)) continue;
+            for (var j = i; j >= Math.Max(0, i - 6); j--)
+            {
+                var match = Regex.Match(lines[j], @"\b(?<code>NG600[23])\b", RegexOptions.IgnoreCase);
+                if (match.Success) return match.Groups["code"].Value.ToUpperInvariant();
+            }
+            for (var j = i + 1; j < Math.Min(lines.Length, i + 6); j++)
+            {
+                var match = Regex.Match(lines[j], @"\b(?<code>NG600[23])\b", RegexOptions.IgnoreCase);
+                if (match.Success) return match.Groups["code"].Value.ToUpperInvariant();
+            }
+        }
+        return "";
+    }
+
+    private static string ModuleSymbolForPackageEvidence(IReadOnlyList<string> evidence)
+    {
+        var text = string.Join("\n", evidence);
+        var declared = Regex.Match(text, @"declares\s+(?<symbol>\w+Module)", RegexOptions.IgnoreCase);
+        if (declared.Success) return declared.Groups["symbol"].Value;
+        var ngModuleClass = Regex.Match(text, @"['""]?(?<symbol>\w+Module)['""]?\s+does not appear to be an NgModule", RegexOptions.IgnoreCase);
+        return ngModuleClass.Success ? ngModuleClass.Groups["symbol"].Value : "";
+    }
 
     private static IReadOnlyList<(string Symbol, string File)> ExtractLocalNg600xModules(string output)
     {

@@ -22,14 +22,11 @@ public abstract class CliAiProviderBase(ICommandRunner commandRunner, IPromptLoa
             var detail = string.IsNullOrWhiteSpace(completed.FailureReason) ? completed.Stderr : completed.FailureReason;
             throw new TimeoutException($"{Name} CLI timed out during remediation planning ({completed.TimeoutKind}): {detail}");
         }
-        var output = (completed.Stdout + "\n" + completed.Stderr).Trim();
-        try
+        if (completed.ReturnCode != 0)
         {
-            return AiProviderResolver.ParseJsonObject(output, Name);
-        }
-        catch (InvalidOperationException) when (completed.ReturnCode != 0)
-        {
+            var output = (completed.Stdout + "\n" + completed.Stderr).Trim();
             throw new InvalidOperationException($"{Name} CLI failed: {output[..Math.Min(output.Length, 1000)]}");
         }
+        return AiProviderResolver.ParseCodexResponse(completed.Stdout, completed.Stderr, command, Name);
     }
 }

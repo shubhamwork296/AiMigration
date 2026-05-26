@@ -538,6 +538,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             .Where(f => ValidationMentionsFile(validation, f))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        var changedFiles = new JsonArray();
+        var safetyRepairs = new JsonArray();
+        var firstFile = "";
         foreach (var file in files)
         {
             var full = Path.GetFullPath(Path.Combine(outputPath, file));
@@ -545,21 +548,31 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             var before = await File.ReadAllTextAsync(full, cancellationToken);
             if (!before.Contains("@NgModule", StringComparison.Ordinal) || !before.Contains("entryComponents", StringComparison.Ordinal)) continue;
 
-            var after = Regex.Replace(before, @"\s*,?\s*entryComponents\s*:\s*\[[^\]]*\]\s*,?", match =>
-            {
-                var value = match.Value;
-                return value.TrimStart().StartsWith(",", StringComparison.Ordinal) ? "" : Environment.NewLine;
-            }, RegexOptions.Singleline);
-            after = Regex.Replace(after, @",\s*(\r?\n\s*})", "$1");
+            var after = RemoveEntryComponentsMetadata(before);
             if (after == before) continue;
 
+            var repaired = RepairMissingNgModuleMetadataCommas(after, out var repairedProperties);
+            if (ContainsBrokenNgModuleMetadataComma(repaired))
+            {
+                continue;
+            }
+
+            after = repaired;
             await File.WriteAllTextAsync(full, after, cancellationToken);
+            firstFile = string.IsNullOrWhiteSpace(firstFile) ? file : firstFile;
+            changedFiles.Add(file);
+            foreach (var property in repairedProperties) safetyRepairs.Add(new JsonObject { ["file"] = file, ["property"] = property });
+        }
+
+        if (changedFiles.Count > 0)
+        {
             return new JsonObject
             {
                 ["attempt"] = attempt,
                 ["maxAttempts"] = maxAttempts,
                 ["type"] = "source_update",
-                ["file"] = file,
+                ["file"] = firstFile,
+                ["files"] = changedFiles,
                 ["reason"] = "Angular Ivy/Angular 16 no longer supports entryComponents in NgModule metadata.",
                 ["change"] = "removed entryComponents from NgModule metadata",
                 ["mode"] = "deterministic",
@@ -571,12 +584,48 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
                 ["businessLogicChanged"] = false,
                 ["businessFile"] = true,
                 ["rootCause"] = "entryComponents is obsolete under Ivy and invalid in Angular 16 NgModule metadata",
-                ["reviewNote"] = "Only Angular metadata was changed; component/service business logic was not modified."
+                ["reviewNote"] = "Only Angular metadata was changed; component/service business logic was not modified.",
+                ["safetyRepairReason"] = safetyRepairs.Count > 0 ? "entryComponents removal safety repair" : "",
+                ["safetyRepairs"] = safetyRepairs
             };
         }
 
         return null;
     }
+
+    private static string RemoveEntryComponentsMetadata(string content)
+    {
+        var after = Regex.Replace(
+            content,
+            @"(?m)^[ \t]*entryComponents\s*:\s*\[[^\]]*\]\s*,?[ \t]*(?:\r?\n|$)",
+            "",
+            RegexOptions.Singleline);
+
+        return Regex.Replace(after, @",\s*(\r?\n\s*})", "$1");
+    }
+
+    private static string RepairMissingNgModuleMetadataCommas(string content, out IReadOnlyList<string> repairedProperties)
+    {
+        var properties = new List<string>();
+        var repaired = Regex.Replace(
+            content,
+            @"\](?<newline>\r?\n[ \t]*)(?<property>schemas|providers|declarations|imports|exports|bootstrap|entryComponents)\s*:",
+            match =>
+            {
+                properties.Add(match.Groups["property"].Value);
+                return $"],{match.Groups["newline"].Value}{match.Groups["property"].Value}:";
+            },
+            RegexOptions.IgnoreCase);
+
+        repairedProperties = properties;
+        return repaired;
+    }
+
+    private static bool ContainsBrokenNgModuleMetadataComma(string content) =>
+        Regex.IsMatch(
+            content,
+            @"\](?:\r?\n[ \t]*)(?:schemas|providers|declarations|imports|exports|bootstrap|entryComponents)\s*:",
+            RegexOptions.IgnoreCase);
 
     private static async Task<JsonObject?> TryApplyCssPackageImportRemediationAsync(string outputPath, ValidationResult validation, int attempt, int maxAttempts, CancellationToken cancellationToken)
     {

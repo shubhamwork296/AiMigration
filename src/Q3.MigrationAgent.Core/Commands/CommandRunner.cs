@@ -29,11 +29,22 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
             return new CommandResult { ReturnCode = 127, Stderr = "No command specified." };
         }
 
-        var resolved = ResolveCommand(command);
+        var started = Stopwatch.StartNew();
+        IReadOnlyList<string> resolved;
+        try
+        {
+            resolved = ResolveCommand(command, workingDirectory);
+        }
+        catch (FileNotFoundException ex)
+        {
+            started.Stop();
+            _runLog.Append(logPath, $"ERROR: {ex.Message}\nelapsed: {FormatElapsed(started.Elapsed.TotalSeconds)}");
+            progress?.Error(stage ?? "Command", $"{description ?? "command"} failed. Full log: {logPath}");
+            return new CommandResult { ReturnCode = 127, Stderr = ex.Message, ResolvedCommand = command.ToArray(), DurationSeconds = started.Elapsed.TotalSeconds };
+        }
         var commandText = string.Join(" ", command);
         var resolvedText = string.Join(" ", resolved);
         _runLog.Append(logPath, $"$ {commandText}\nresolved: {resolvedText}\ncwd: {workingDirectory ?? Directory.GetCurrentDirectory()}");
-        var started = Stopwatch.StartNew();
         if (progress is not null && stage is not null && description is not null)
         {
             progress.Stage(stage, $"Starting {description}...");
@@ -60,9 +71,20 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
         }
     }
 
-    public static IReadOnlyList<string> ResolveCommand(IReadOnlyList<string> command)
+    public static IReadOnlyList<string> ResolveCommand(IReadOnlyList<string> command, string? workingDirectory = null)
     {
         if (command.Count == 0) return command;
+        if (OperatingSystem.IsWindows() && IsWindowsCommandScript(command[0]))
+        {
+            var fullPath = Path.GetFullPath(command[0], workingDirectory ?? Directory.GetCurrentDirectory());
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"Command script not found: {fullPath}");
+            }
+
+            return ["cmd.exe", "/d", "/s", "/c", BuildCmdInvocation(fullPath, command.Skip(1))];
+        }
+
         var executable = ResolveExecutable(command[0]) ?? command[0];
         return [executable, .. command.Skip(1)];
     }
@@ -103,7 +125,14 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
             RedirectStandardInput = input is not null,
             UseShellExecute = false
         };
-        foreach (var arg in command.Skip(1)) psi.ArgumentList.Add(arg);
+        if (IsCmdWrapper(command))
+        {
+            psi.Arguments = string.Join(" ", command.Skip(1));
+        }
+        else
+        {
+            foreach (var arg in command.Skip(1)) psi.ArgumentList.Add(arg);
+        }
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         if (!process.Start())
@@ -216,6 +245,36 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
             if (File.Exists(candidate)) return candidate;
         }
         return null;
+    }
+
+    private static bool IsWindowsCommandScript(string executable)
+    {
+        var extension = Path.GetExtension(executable);
+        return string.Equals(extension, ".cmd", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(extension, ".bat", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsCmdWrapper(IReadOnlyList<string> command) =>
+        command.Count == 5 &&
+        string.Equals(Path.GetFileName(command[0]), "cmd.exe", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(command[1], "/d", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(command[2], "/s", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(command[3], "/c", StringComparison.OrdinalIgnoreCase);
+
+    private static string BuildCmdInvocation(string scriptPath, IEnumerable<string> args)
+    {
+        var invocation = $@"""{scriptPath}""";
+        var argText = string.Join(" ", args.Select(QuoteCmdArgument));
+        return string.IsNullOrWhiteSpace(argText)
+            ? $@"""{invocation}"""
+            : $@"""{invocation} {argText}""";
+    }
+
+    private static string QuoteCmdArgument(string arg)
+    {
+        if (arg.Length == 0) return "\"\"";
+        var escaped = arg.Replace("\"", "\\\"");
+        return escaped.Any(char.IsWhiteSpace) ? $@"""{escaped}""" : escaped;
     }
 
     private static string FormatElapsed(double seconds) => seconds >= 60 ? $"{(int)(seconds / 60)}m" : $"{(int)seconds}s";
