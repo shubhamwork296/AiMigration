@@ -136,6 +136,17 @@ ANGULAR-SPECIFIC GUIDANCE:
 - Do not force-upgrade third-party packages before validation.
   Third-party package remediation is allowed only after install/build proves the package blocks the hop.
 
+- Preserve Angular architecture:
+  If a component, pipe, or directive is declared in an NgModule, it is NgModule-managed.
+  For NgModule-managed classes, do not add standalone: true.
+  Do not add @Component imports: [].
+  Do not move declarations into NgModule imports.
+  Do not remove declarations from NgModules.
+  For NG8001/NG8002/NG8004 in NgModule-managed components, fix the declaring NgModule scope instead:
+  add missing modules to NgModule imports, add shared declarations/exports to SharedModule, or import the module that already exports the selector/pipe.
+  Only use @Component imports when the component was already standalone before remediation.
+  Never switch architecture during validation remediation.
+
 - NG6002 / does not appear to be an NgModule class:
   If node_modules package errors exist, treat app module errors like SharedModule/AppModule as cascading.
   Fix the root third-party package first.

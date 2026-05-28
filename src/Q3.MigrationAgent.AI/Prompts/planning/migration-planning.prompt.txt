@@ -43,7 +43,7 @@ STRICT SAFETY RULES:
 7. Do not suggest component, controller, service, repository, model, job, worker, handler, route, template, or UI behavior changes.
 8. Do not suggest changes that alter application behavior.
 9. Do not modify test source code unless explicitly allowed by the caller.
-10. If a required migration task needs source-code changes, do not include it as an automatic plan step. Put it in manualFollowUps as sourceCodeChangeRequired=true.
+10. If a required migration task needs source-code changes, do not include it as an automatic change. Put it in manualReview.
 11. If unsure whether a file is structural or business logic, treat it as business logic and do not plan automatic changes.
 12. If confidence is low, prefer manualReview over automatic migration.
 
@@ -122,84 +122,65 @@ Every migration plan should include validation steps appropriate for the ecosyst
 
 If validation fails:
 - Do not proceed to the next hop.
-- Mark follow-up remediation as validationDriven.
+- Put validation-driven follow-up remediation guidance in recommendations.
 - Keep source-code remediation out of this structural plan.
 - Escalate to manualReview if the failure requires source-code changes.
 
 OUTPUT SCHEMA:
-Return exactly this JSON shape:
+Return ONLY strict JSON using this exact top-level contract:
 
 {
-  "migrationSummary": {
-    "sourceEcosystem": "",
-    "targetEcosystem": "",
-    "sourceRuntimeOrFramework": "",
-    "targetRuntimeOrFramework": "",
-    "sourceVersion": "",
-    "targetVersion": "",
-    "packageManager": "",
-    "confidence": 0.0
-  },
-  "hops": [
-    {
-      "fromVersion": "",
-      "toVersion": "",
-      "reason": "",
-      "risk": "low",
-      "requiresValidationBeforeNextHop": true
-    }
-  ],
-  "plan": [
-    {
-      "step": 1,
-      "hop": "",
-      "title": "",
-      "action": "analyze",
-      "affectedFiles": [],
-      "commands": [],
-      "dependencies": [],
-      "reason": "",
-      "confidence": 0.0,
-      "risk": "low",
-      "safeToApplyAutomatically": false,
-      "requiresVersionVerification": false,
-      "validationDriven": false,
-      "manualReviewRequired": false
-    }
-  ],
-  "validationCommands": [
-    {
-      "hop": "",
-      "command": "",
-      "purpose": "",
-      "required": true,
-      "blocksNextHopOnFailure": true
-    }
-  ],
-  "manualFollowUps": [
-    {
-      "title": "",
-      "reason": "",
-      "affectedFilesOrAreas": [],
-      "sourceCodeChangeRequired": false,
-      "businessLogicRisk": false,
-      "manualReviewRequired": true
-    }
-  ],
-  "warnings": [
-    {
-      "type": "compatibility",
-      "message": "",
-      "risk": "medium",
-      "blocksMigration": false
-    }
-  ],
-  "safetyDecision": {
-    "canProceedWithStructuralMigration": false,
-    "requiresManualReview": false,
-    "reason": ""
-  }
+  "summary": "string",
+  "confidence": 0,
+  "risk": "low|medium|high",
+  "packageUpdates": [],
+  "manualReview": [],
+  "changes": [],
+  "recommendations": []
 }
+
+Do not return top-level fields named:
+- migrationSummary
+- hops
+- plan
+- validationCommands
+- manualFollowUps
+- warnings
+- safetyDecision
+- ecosystem
+- detectedRuntime
+- structuralFiles
+- findings
+- migrationPlan
+
+Map planning concepts into the existing schema:
+- migrationSummary becomes summary.
+- plan items become changes.
+- manualFollowUps become manualReview.
+- warnings and validation advice become recommendations.
+- package/dependency updates become packageUpdates.
+- risk becomes top-level risk.
+- confidence becomes top-level confidence.
+
+For .NET 6 -> .NET 8:
+- TargetFramework changes must appear in changes.
+- PackageReference upgrades must appear in packageUpdates.
+- Business/source-code changes must not be suggested unless validation/build errors require them.
+- Keep validation commands and warnings inside recommendations; do not return validationCommands or warnings as top-level fields.
+
+For Angular:
+- package.json dependency and devDependency upgrades belong in packageUpdates.
+- Angular-owned framework/tooling packages should be aligned to the target Angular major using concrete installable versions.
+- TypeScript, RxJS, and zone.js should be treated as compiler/runtime-critical compatibility packages, not random third-party packages.
+- Third-party packages must not be blindly upgraded to the Angular target major.
+- angular.json, tsconfig.json, browserslist, polyfills, and builder/config changes belong in changes.
+- Peer dependency conflicts and compatibility concerns belong in manualReview or recommendations.
+- Validation/build commands or warnings must not be returned as top-level fields; put them in recommendations.
+
+If no package updates exist, return "packageUpdates": [].
+If no manual review is needed, return "manualReview": [].
+If no changes exist, return "changes": [].
+If no recommendations exist, return "recommendations": [].
 
 ENUM RULES:
 action must be one of:
@@ -238,9 +219,13 @@ Use [] for empty arrays.
 Use only the allowed enum values.
 Do not return combined enum strings.
 Use numbers as numbers and booleans as booleans.
+Do not output markdown.
+Do not wrap JSON in code fences.
+Do not include comments.
+Do not include explanation outside JSON.
 
 If no safe structural migration plan can be created, return a valid JSON response with:
-- plan: []
-- validationCommands: []
-- safetyDecision.canProceedWithStructuralMigration: false
-- safetyDecision.requiresManualReview: true
+- changes: []
+- packageUpdates: []
+- manualReview: []
+- recommendations containing the reason manual review is required

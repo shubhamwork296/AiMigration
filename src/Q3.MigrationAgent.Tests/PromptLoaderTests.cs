@@ -78,6 +78,75 @@ public sealed class PromptLoaderTests
         Assert.Contains("Do not use skipLibCheck to hide Angular template, compiler, module", prompt);
     }
 
+    [Fact]
+    public void Structural_Analysis_Prompt_Uses_Existing_App_Response_Contract()
+    {
+        var prompt = new PromptLoader().Load("analysis/structural-analysis");
+        var responseShape = prompt[(prompt.IndexOf("Use this exact top-level response shape:", StringComparison.Ordinal)..)];
+
+        foreach (var field in new[] { "summary", "confidence", "risk", "packageUpdates", "manualReview", "changes", "recommendations" })
+        {
+            Assert.Contains($"\"{field}\"", responseShape);
+        }
+
+        foreach (var field in InvalidGenericTopLevelFields())
+        {
+            Assert.DoesNotContain($"\"{field}\"", responseShape);
+            Assert.Contains(field, prompt);
+        }
+
+        Assert.Contains("Do not return top-level fields named:", prompt);
+    }
+
+    [Fact]
+    public void Migration_Planning_Prompt_Uses_Existing_App_Response_Contract()
+    {
+        var prompt = new PromptLoader().Load("planning/migration-planning");
+        var responseShape = prompt[(prompt.IndexOf("Return ONLY strict JSON using this exact top-level contract:", StringComparison.Ordinal)..)];
+
+        foreach (var field in new[] { "summary", "confidence", "risk", "packageUpdates", "manualReview", "changes", "recommendations" })
+        {
+            Assert.Contains($"\"{field}\"", responseShape);
+        }
+
+        foreach (var field in InvalidGenericTopLevelFields())
+        {
+            Assert.DoesNotContain($"\"{field}\"", responseShape);
+            Assert.Contains(field, prompt);
+        }
+
+        Assert.Contains("Do not return top-level fields named:", prompt);
+    }
+
+    [Fact]
+    public void Fixed_Generic_Prompts_Map_Angular_Structural_Work_To_Common_Response_Contract()
+    {
+        foreach (var prompt in FixedGenericPrompts())
+        {
+            Assert.Contains("package.json dependency and devDependency upgrades belong in packageUpdates", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Angular-owned framework/tooling packages should be aligned to the target Angular major using concrete installable versions", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("TypeScript, RxJS, and zone.js should be treated as compiler/runtime-critical compatibility packages", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Third-party packages must not be blindly upgraded to the Angular target major", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("angular.json, tsconfig.json, browserslist, polyfills, and builder/config changes belong in changes", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Peer dependency conflicts and compatibility concerns belong in manualReview or recommendations", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Validation/build commands or warnings must not be returned as top-level fields", prompt, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Fixed_Generic_Prompts_Are_Not_DotNet_Only()
+    {
+        foreach (var prompt in FixedGenericPrompts())
+        {
+            Assert.Contains("Angular", prompt);
+            Assert.Contains("package.json", prompt);
+            Assert.Contains("angular.json", prompt);
+            Assert.Contains("tsconfig", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("packageUpdates", prompt);
+            Assert.Contains("changes", prompt);
+        }
+    }
+
     private static string LocatePromptRoot()
     {
         var current = new DirectoryInfo(Directory.GetCurrentDirectory());
@@ -92,4 +161,27 @@ public sealed class PromptLoaderTests
 
         throw new DirectoryNotFoundException("Prompt root could not be located.");
     }
+
+    private static IEnumerable<string> FixedGenericPrompts()
+    {
+        var loader = new PromptLoader();
+        yield return loader.Load("analysis/structural-analysis");
+        yield return loader.Load("planning/migration-planning");
+    }
+
+    private static string[] InvalidGenericTopLevelFields() =>
+    [
+        "migrationSummary",
+        "hops",
+        "plan",
+        "validationCommands",
+        "manualFollowUps",
+        "warnings",
+        "safetyDecision",
+        "ecosystem",
+        "detectedRuntime",
+        "structuralFiles",
+        "findings",
+        "migrationPlan"
+    ];
 }

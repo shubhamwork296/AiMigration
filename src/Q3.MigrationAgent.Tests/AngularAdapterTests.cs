@@ -41,13 +41,26 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
-    public void Migrate_Only_Command_Uses_Version_Pinned_Npx()
+    public void Migrate_Only_Command_Uses_Ng_From_Path()
     {
         var adapter = new AngularAdapter(new CommandRunner());
 
         var command = adapter.AngularMigrateOnlyCommand("@angular/core", 14, 15, "15.2.10");
 
-        Assert.Equal(["npx", "--yes", "-p", "@angular/cli@15.2.10", "ng", "update", "@angular/core", "--migrate-only", "--from", "14", "--to", "15"], command);
+        Assert.Equal(["ng", "update", "@angular/core@15.2.10", "--migrate-only", "--from", "14", "--to", "15"], command);
+    }
+
+    [Fact]
+    public void Official_Migrate_Only_Commands_Use_Ng_From_Path_Full_Update_Command()
+    {
+        var adapter = new AngularAdapter(new CommandRunner());
+
+        var commands = adapter.OfficialAngularMigrateOnlyCommands(18, 19, ["@angular/core", "@angular/cli"]);
+
+        Assert.Equal(
+        [
+            ["ng", "update", "@angular/cli@19", "@angular/core@19"]
+        ], commands);
     }
 
     [Fact]
@@ -1095,6 +1108,138 @@ public sealed class AngularAdapterTests
         Assert.False(Directory.Exists(Path.Combine(root, "node_modules")));
         Assert.False(File.Exists(Path.Combine(root, "package-lock.json")));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx") || c.Command.Contains("-g") || c.Command.Contains("--migrate-only"));
+    }
+
+    [Fact]
+    public async Task Angular_18_To_19_Runs_Official_Migrate_Only_After_Install_Using_Ng_From_Path()
+    {
+        var root = await Angular18Workspace();
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            return new CommandResult { ReturnCode = 0, Stdout = "ok" };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+
+        var installIndex = runner.Calls.FindIndex(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
+        var officialUpdateIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        var buildIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["npm", "run", "build"]));
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyRequired"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.False(result.BoolValue("migrateOnlySkipped"));
+        Assert.True(installIndex >= 0);
+        Assert.True(officialUpdateIndex > installIndex);
+        Assert.True(buildIndex > officialUpdateIndex);
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public async Task Angular_18_To_19_Uses_Long_Timeouts_Only_For_Ng_From_Path()
+    {
+        var root = await Angular18Workspace();
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            return new CommandResult { ReturnCode = 0, Stdout = "ok" };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, CommandTimeoutSeconds = 99, CommandIdleTimeoutSeconds = 6 }, null, null);
+
+        var ngUpdate = runner.Calls.Single(c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        var install = runner.Calls.First(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
+        var build = runner.Calls.First(c => c.Command.SequenceEqual(["npm", "run", "build"]));
+
+        Assert.Equal(600, ngUpdate.TimeoutSeconds);
+        Assert.Equal(60, ngUpdate.IdleTimeoutSeconds);
+        Assert.Equal(99, install.TimeoutSeconds);
+        Assert.Equal(6, install.IdleTimeoutSeconds);
+        Assert.Equal(99, build.TimeoutSeconds);
+        Assert.Equal(6, build.IdleTimeoutSeconds);
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public async Task Angular_18_To_19_Stops_With_Clear_Message_When_Official_Update_From_Path_Times_Out()
+    {
+        var root = await Angular18Workspace();
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            if (command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"])) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (idle-timeout).", TimeoutKind = "idle-timeout", FailureCategory = "idle-timeout" };
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Equal("Angular CLI command timed out while running from PATH.", result.StringValue("failureReason"));
+        Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+    }
+
+    [Fact]
+    public async Task Angular_18_To_19_Stops_With_Clear_Message_When_Official_Migrate_Only_Times_Out()
+    {
+        var root = await Angular18Workspace();
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var officialUpdateCommand = new[] { "ng", "update", "@angular/cli@19", "@angular/core@19" };
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            if (command.SequenceEqual(officialUpdateCommand)) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (total-timeout).", TimeoutKind = "total-timeout", FailureCategory = "total-timeout" };
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Equal("Angular CLI command timed out while running from PATH.", result.StringValue("failureReason"));
+        Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(officialUpdateCommand));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+    }
+
+    [Fact]
+    public async Task Angular_18_To_19_Stops_When_Ng_Is_Not_On_Path()
+    {
+        var root = await Angular18Workspace();
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            if (command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"])) return new CommandResult { ReturnCode = 1, Stderr = "ng not found", FailureCategory = "command-not-found" };
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyRequired"));
+        Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
     }
 
     [Fact]
@@ -2647,6 +2792,21 @@ Optimization error [main.123.js]: Unexpected token: punc ({)
         return root;
     }
 
+    private static async Task<string> Angular18Workspace(string extraDependencies = "", bool hasBuildScript = true)
+    {
+        var root = TestWorkspace.Create();
+        var scripts = hasBuildScript ? @"""scripts"": {""build"":""ng build""}," : @"""scripts"": {},";
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  SCRIPTS
+  "dependencies": {"@angular/core":"18.2.13","@angular/common":"18.2.13","@angular/cli":"18.2.12","rxjs":"7.8.1","zone.js":"0.14.10"EXTRA_DEPENDENCIES},
+  "devDependencies": {"typescript":"~5.5.2","@angular/compiler-cli":"18.2.13","@angular-devkit/build-angular":"18.2.12"}
+}
+""".Replace("SCRIPTS", scripts).Replace("EXTRA_DEPENDENCIES", extraDependencies));
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        return root;
+    }
+
     private static async Task<string> Angular13Workspace(string extraDependencies = "")
     {
         var root = TestWorkspace.Create();
@@ -2794,6 +2954,20 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["notes"] = new JsonArray()
     };
 
+    private static JsonObject PackagePlan19() => new()
+    {
+        ["packages"] = new JsonArray(
+            PackageDecision("@angular/core", "18.2.13", "dependencies", "angular_framework_package", "^19.0.0", "upgrade"),
+            PackageDecision("@angular/common", "18.2.13", "dependencies", "angular_framework_package", "^19.0.0", "upgrade"),
+            PackageDecision("@angular/cli", "18.2.12", "dependencies", "angular_tooling_package", "^19.0.0", "upgrade"),
+            PackageDecision("@angular/compiler-cli", "18.2.13", "devDependencies", "angular_tooling_package", "^19.0.0", "upgrade"),
+            PackageDecision("@angular-devkit/build-angular", "18.2.12", "devDependencies", "angular_tooling_package", "^19.0.0", "upgrade"),
+            PackageDecision("rxjs", "7.8.1", "dependencies", "third_party_runtime_package", null, "preserve"),
+            PackageDecision("zone.js", "0.14.10", "dependencies", "angular_runtime_support_package", "~0.15.0", "upgrade"),
+            PackageDecision("typescript", "~5.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~5.5.4", "upgrade")),
+        ["notes"] = new JsonArray()
+    };
+
     private static JsonObject PackageDecision(string name, string current, string section, string category, string? target, string action) => new()
     {
         ["name"] = name,
@@ -2818,6 +2992,20 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
                 VersionRecommendation("typescript", "~4.8.4", "~4.9.5", "TypeScript version compatible with Angular 15.")
             }
             : recommendations).Select(r => (JsonNode?)r).ToArray()),
+        ["warnings"] = new JsonArray()
+    };
+
+    private static JsonObject VersionRecommendations19() => new()
+    {
+        ["targetAngularMajor"] = 19,
+        ["recommendations"] = new JsonArray(
+            VersionRecommendation("@angular/core", "18.2.13", "^19.0.0", "Angular framework package aligned to Angular 19."),
+            VersionRecommendation("@angular/common", "18.2.13", "^19.0.0", "Angular framework package aligned to Angular 19."),
+            VersionRecommendation("@angular/cli", "18.2.12", "^19.0.0", "Angular CLI package aligned to Angular 19."),
+            VersionRecommendation("@angular/compiler-cli", "18.2.13", "^19.0.0", "Angular compiler package aligned to Angular 19."),
+            VersionRecommendation("@angular-devkit/build-angular", "18.2.12", "^19.0.0", "Angular build package aligned to Angular 19."),
+            VersionRecommendation("zone.js", "0.14.10", "~0.15.0", "Zone.js version compatible with Angular 19."),
+            VersionRecommendation("typescript", "~5.5.2", "~5.5.4", "TypeScript version compatible with Angular 19.")),
         ["warnings"] = new JsonArray()
     };
 

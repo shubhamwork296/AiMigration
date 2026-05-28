@@ -30,9 +30,15 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static readonly HashSet<string> AngularAiPackageActions = ["upgrade", "preserve", "remove", "manual_review"];
     private static readonly HashSet<string> AngularAiConfigFiles = ["angular.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.spec.json", "package.json"];
     private static readonly HashSet<string> AngularAiConfigChangeTypes = ["update_builder", "update_option", "remove_deprecated_option", "update_tsconfig", "manual_review"];
+    private static readonly IReadOnlyDictionary<(int From, int To), OfficialAngularMigrateOnlyPolicy> OfficialMigrateOnlyPolicies = new Dictionary<(int From, int To), OfficialAngularMigrateOnlyPolicy>
+    {
+        [(18, 19)] = new(true, ["@angular/cli", "@angular/core"])
+    };
     private const double MinimumInstallDecisionConfidence = 0.70;
     private const double MinimumAiPackageConfidence = 0.80;
     private const double MinimumAiConfigConfidence = 0.80;
+    private const int AngularCliMinimumTimeoutSeconds = 600;
+    private const int AngularCliMinimumIdleTimeoutSeconds = 60;
     private readonly Dictionary<(string Package, string Field, string Range), JsonObject> _npmViewCache = [];
     public string RuntimeName => "angular";
 
@@ -189,6 +195,20 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             var failure = ClassifyFailure(install.Command, install.Result, target);
             var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
             AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
+            AddOfficialMigrateOnlyDetails(failed, OfficialAngularMigrateOnlySkipped(hop, "dependency install failed before official Angular update could run.", OfficialMigrateOnlyPolicies.ContainsKey((hop.FromVersion, hop.ToVersion))));
+            return failed;
+        }
+
+        var officialMigrateOnly = await RunOfficialAngularMigrateOnlyIfRequiredAsync(projectPath, hop, config, progress, stage, logPath, cancellationToken);
+        foreach (var command in officialMigrateOnly["commands"]?.AsArray()?.OfType<JsonObject>() ?? []) commands.Add(command.DeepClone());
+        if (officialMigrateOnly.BoolValue("required") && !officialMigrateOnly.BoolValue("executed"))
+        {
+            var reason = officialMigrateOnly.StringValue("failureReason", officialMigrateOnly.StringValue("skippedReason", "Official Angular update could not run."));
+            var command = officialMigrateOnly["command"]?.AsArray()?.Select(x => x?.ToString() ?? "").Where(s => s.Length > 0).ToArray() ?? [];
+            var failure = new FailureInfo("official Angular update failed", "Angular CLI update", command, reason, officialMigrateOnly.StringValue("suggestedNextAction", "Review the Angular CLI update output and rerun migration."), false, true);
+            var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
+            AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = reason });
+            AddOfficialMigrateOnlyDetails(failed, officialMigrateOnly);
             return failed;
         }
 
@@ -389,6 +409,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         };
         if (postFailureCriticalAlignment is not null) result["postFailureAngularCriticalDependencyAlignment"] = postFailureCriticalAlignment.DeepClone();
         AddAngularAiHopDetails(result, packageUpdate, configUpdate, cleanInstall, installAttempts, validation);
+        AddOfficialMigrateOnlyDetails(result, officialMigrateOnly);
         return result;
     }
 
@@ -408,13 +429,27 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     };
 
     public IReadOnlyList<IReadOnlyList<string>> AngularMigrateOnlyCommands(int sourceMajor, int targetMajor, string? cliVersion = null) =>
-        new[] { "@angular/core", "@angular/cli" }.Select(pkg => AngularMigrateOnlyCommand(pkg, sourceMajor, targetMajor, cliVersion)).ToArray();
+        [AngularMigrateOnlyCommand("@angular/core", sourceMajor, targetMajor, cliVersion)];
 
     public IReadOnlyList<string> AngularMigrateOnlyCommand(string packageName, int sourceMajor, int targetMajor, string? cliVersion = null)
     {
         var version = cliVersion ?? $"{targetMajor}";
-        return ["npx", "--yes", "-p", $"@angular/cli@{version}", "ng", "update", packageName, "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
+        return ["ng", "update", $"{packageName}@{version}", "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
     }
+
+    public IReadOnlyList<IReadOnlyList<string>> OfficialAngularMigrateOnlyCommands(int sourceMajor, int targetMajor, IReadOnlyList<string>? packages = null)
+    {
+        var migrationPackages = packages is { Count: > 0 } ? packages : ["@angular/cli", "@angular/core"];
+        if (targetMajor == 19 && migrationPackages.Contains("@angular/cli") && migrationPackages.Contains("@angular/core"))
+        {
+            migrationPackages = ["@angular/cli", "@angular/core"];
+        }
+
+        return [OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, migrationPackages)];
+    }
+
+    public IReadOnlyList<string> OfficialAngularMigrateOnlyCommand(int sourceMajor, int targetMajor, IReadOnlyList<string> packages) =>
+        ["ng", "update", .. packages.Select(packageName => $"{packageName}@{targetMajor}")];
 
     public IReadOnlyList<string> SafeAngularMigrationCommand(IReadOnlyList<string> command, int targetMajor)
     {
@@ -3827,6 +3862,94 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         }
     }
 
+    private async Task<JsonObject> RunOfficialAngularMigrateOnlyIfRequiredAsync(string projectPath, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        if (!OfficialMigrateOnlyPolicies.TryGetValue((hop.FromVersion, hop.ToVersion), out var policy) || !policy.RequiresOfficialMigrateOnly)
+        {
+            return OfficialAngularMigrateOnlySkipped(hop, "not required by Angular hop policy");
+        }
+
+        var migrateOnlyCommands = OfficialAngularMigrateOnlyCommands(hop.FromVersion, hop.ToVersion, policy.Packages);
+        var commands = new JsonArray();
+        var angularCliTimeoutSeconds = AngularCliTimeoutSeconds(config.CommandTimeoutSeconds);
+        var angularCliIdleTimeoutSeconds = AngularCliIdleTimeoutSeconds(config.CommandIdleTimeoutSeconds);
+
+        IReadOnlyList<string> lastCommand = [];
+        foreach (var command in migrateOnlyCommands)
+        {
+            lastCommand = command;
+            progress?.Stage(stage, $"Running official Angular update using ng from PATH: {string.Join(" ", command)}");
+            var result = await commandRunner.RunAsync(command, projectPath, timeoutSeconds: angularCliTimeoutSeconds, progress: progress, stage: stage, description: "Angular update", logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: angularCliIdleTimeoutSeconds, cancellationToken: cancellationToken);
+            commands.Add(CommandObject(command, result));
+            if (result.ReturnCode != 0)
+            {
+                var failure = ClassifyFailure(command, result, hop.ToVersion);
+                var timedOut = IsTimeoutResult(result);
+                return new JsonObject
+                {
+                    ["required"] = true,
+                    ["attempted"] = true,
+                    ["executed"] = false,
+                    ["skipped"] = false,
+                    ["failureReason"] = timedOut ? "Angular CLI command timed out while running from PATH." : failure.Reason,
+                    ["failureCategory"] = timedOut ? "timeout" : failure.Category,
+                    ["suggestedNextAction"] = timedOut ? "Inspect the migration log and rerun migration after Angular CLI responds from PATH." : failure.SuggestedNextAction,
+                    ["source"] = "PATH",
+                    ["command"] = new JsonArray(command.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
+                    ["commands"] = commands
+                };
+            }
+        }
+
+        return new JsonObject
+        {
+            ["required"] = true,
+            ["attempted"] = true,
+            ["executed"] = true,
+            ["skipped"] = false,
+            ["skippedReason"] = "",
+            ["source"] = "PATH",
+            ["message"] = $"Official Angular update executed for Angular {hop.FromVersion} -> {hop.ToVersion} using ng from PATH.",
+            ["command"] = new JsonArray(lastCommand.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
+            ["commands"] = commands
+        };
+    }
+
+    private static int AngularCliTimeoutSeconds(int? configuredTimeoutSeconds) =>
+        Math.Max(configuredTimeoutSeconds.GetValueOrDefault(), AngularCliMinimumTimeoutSeconds);
+
+    private static int AngularCliIdleTimeoutSeconds(int? configuredIdleTimeoutSeconds) =>
+        Math.Max(configuredIdleTimeoutSeconds.GetValueOrDefault(), AngularCliMinimumIdleTimeoutSeconds);
+
+    private static bool IsTimeoutResult(CommandResult result) =>
+        result.TimeoutKind is not null ||
+        string.Equals(result.FailureCategory, "timeout", StringComparison.OrdinalIgnoreCase) ||
+        result.FailureCategory?.Contains("timeout", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static JsonObject OfficialAngularMigrateOnlySkipped(MigrationHop hop, string reason, bool required = false) => new()
+    {
+        ["required"] = required,
+        ["attempted"] = false,
+        ["executed"] = false,
+        ["skipped"] = true,
+        ["skippedReason"] = reason,
+        ["source"] = "not required",
+        ["command"] = new JsonArray(),
+        ["commands"] = new JsonArray(),
+        ["message"] = $"Official Angular update skipped for Angular {hop.FromVersion} -> {hop.ToVersion}: {reason}."
+    };
+
+    private static void AddOfficialMigrateOnlyDetails(JsonObject result, JsonObject officialMigrateOnly)
+    {
+        result["officialAngularMigrateOnly"] = officialMigrateOnly.DeepClone();
+        result["officialAngularMigrateOnlyRequired"] = officialMigrateOnly.BoolValue("required");
+        result["officialAngularMigrateOnlyExecuted"] = officialMigrateOnly.BoolValue("executed");
+        result["officialAngularMigrateOnlySource"] = officialMigrateOnly.StringValue("source");
+        result["officialAngularMigrateOnlyCommand"] = officialMigrateOnly["command"]?.DeepClone() ?? new JsonArray();
+        result["migrateOnlySkipped"] = officialMigrateOnly.BoolValue("skipped", !officialMigrateOnly.BoolValue("executed"));
+        result["migrateOnlySkippedReason"] = officialMigrateOnly.StringValue("skippedReason");
+    }
+
     private static JsonObject InstallCommandObject(InstallAttemptResult attempt)
     {
         var commandObject = CommandObject(attempt.Command, attempt.Result, attempt.FallbackUsed);
@@ -3920,7 +4043,13 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             ["failureReason"] = result.ReturnCode == 0 ? null : classified.Reason,
             ["suggestedNextAction"] = result.ReturnCode == 0 ? null : classified.SuggestedNextAction,
             ["legacyPeerDepsFallbackUsed"] = legacyPeerDepsFallbackUsed,
-            ["angularCliPolicy"] = new JsonObject { ["commandSource"] = command.FirstOrDefault() == "npx" ? "npx" : command.FirstOrDefault() ?? "unknown", ["angularCliSource"] = command.Contains("-p") ? "version-pinned npx package" : "not applicable", ["globalAngularCli"] = "not used", ["globalInstallUpdate"] = "not performed" }
+            ["angularCliPolicy"] = new JsonObject
+            {
+                ["commandSource"] = command.FirstOrDefault() == "npx" ? "npx" : command.FirstOrDefault() ?? "unknown",
+                ["angularCliSource"] = command.FirstOrDefault() == "ng" ? "PATH" : command.Contains("-p") ? "version-pinned npx package" : "not applicable",
+                ["globalAngularCli"] = command.FirstOrDefault() == "ng" ? "used from PATH" : "not used",
+                ["globalInstallUpdate"] = "not performed"
+            }
         };
     }
 
@@ -4042,6 +4171,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
 
     private sealed record PendingPackageUpdate(string Name, string Section, string FromVersion, string OriginalSuggestedVersion, string NormalizedTargetVersion, string Category, string Reason, string Source, double Confidence, bool RequiresVersionVerification = false);
     private sealed record NpmViewResult(JsonNode? Value, string Status, string Error, int AttemptCount);
+    private sealed record OfficialAngularMigrateOnlyPolicy(bool RequiresOfficialMigrateOnly, IReadOnlyList<string> Packages);
     private sealed record NpmPackageTargetResolution(
         string? FinalTarget,
         string ValidationResult,

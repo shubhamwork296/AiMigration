@@ -96,10 +96,10 @@ public sealed class MarkdownReportWriter
             $"- angular.json: {manifest["hasAngularJson"]}",
             $"- tsconfig.json: {manifest["hasTsconfig"]}",
             "- Global Angular CLI was not modified.",
-            "- Angular CLI migrate-only is skipped by default.",
-            "- Command source: project-local npm scripts and node_modules binaries only",
-            "- Angular CLI source: project-local dependency when validation scripts invoke it",
-            "- Global Angular CLI: not used",
+            "- Angular CLI migrate-only runs only for policy-required hops.",
+            "- Command source: project-local npm scripts for validation; PATH ng only for policy-required official migrate-only",
+            "- Angular CLI source: PATH ng for official migrate-only; project-local dependency when validation scripts invoke it",
+            "- Global Angular CLI: used from PATH only for policy-required official migrate-only",
             "- Global install/update: not performed",
             "",
             "## Planned Migration Hops"
@@ -168,7 +168,7 @@ public sealed class MarkdownReportWriter
         lines.AddRange(["", "## Build Verification"]);
         lines.AddRange(FormatBuildVerification(hopResults));
         lines.AddRange(["", "## Angular CLI Migrate-only Status"]);
-        lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: skipped={r.BoolValue("migrateOnlySkipped")}; reason={r.StringValue("migrateOnlySkippedReason", "disabled by new default flow")}"));
+        lines.AddRange(FormatOfficialMigrateOnlyStatus(hopResults));
         lines.AddRange(["", "## Preflight Dependency Compatibility Analysis"]);
         foreach (var hop in hops)
         {
@@ -237,6 +237,24 @@ public sealed class MarkdownReportWriter
             var rejected = r.StringValue("aiInstallStrategyRejectedReason");
             var rejectedText = string.IsNullOrWhiteSpace(rejected) ? "" : $"; AI install strategy rejected reason={rejected}";
             return $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: AI install strategy used={r.BoolValue("aiInstallStrategyUsed")}; AI install strategy accepted={r.BoolValue("aiInstallStrategyAccepted")}{rejectedText}; transient network retries used={r.IntValue("transientNetworkRetriesUsed")}; peer dependency fallback used={r.BoolValue("peerDependencyFallbackUsed")}; manual action required={r.BoolValue("manualActionRequired")}";
+        });
+    }
+
+    private static IEnumerable<string> FormatOfficialMigrateOnlyStatus(IReadOnlyList<JsonObject> hopResults)
+    {
+        if (hopResults.Count == 0) return ["- None"];
+        return hopResults.Select(r =>
+        {
+            var label = $"Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}";
+            var command = string.Join(" ", r["officialAngularMigrateOnlyCommand"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+            if (r.BoolValue("officialAngularMigrateOnlyExecuted"))
+            {
+                return $"- {label}: Official Angular migrate-only executed for {label} using ng from PATH. Command=`{command}`";
+            }
+
+            var required = r.BoolValue("officialAngularMigrateOnlyRequired");
+            var reason = r.StringValue("migrateOnlySkippedReason", required ? "required migrate-only did not run" : "not required by Angular hop policy");
+            return $"- {label}: skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
         });
     }
 
