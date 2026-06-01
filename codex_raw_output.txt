@@ -1,5 +1,5 @@
 --- stdout ---
-{"strategy":"manualReview","command":"","reason":"Previous normal npm install failed with ERESOLVE because @angular-slider/ngx-slider@13.0.0 requires peer @angular/common ^13.0.0 while the planned Angular framework package is @angular/common 18.x; this involves an Angular framework-critical package, so --legacy-peer-deps is not safe to hide it.","confidence":0.94,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
+{"strategy":"legacyPeerDepsInstall","command":"npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline","reason":"Previous normal install failed with ERESOLVE caused by a third-party peer range from @angular-slider/ngx-slider requiring Angular 13 while the planned target is Angular 14; no Angular framework-critical package mismatch is indicated.","confidence":0.82,"risk":"medium","isRetry":false,"isFallback":true,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
 
 --- stderr ---
 OpenAI Codex v0.133.0
@@ -11,7 +11,7 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: none
 reasoning summaries: none
-session id: 019e6a6a-8af3-77d2-b35f-6538dcaf33a2
+session id: 019e8280-eb46-7631-9252-c9e5a0abb66d
 --------
 user
 Return strict JSON only.
@@ -219,54 +219,54 @@ Use numbers as numbers and booleans as booleans.
 If no safe recommendation can be made, return the schema's empty or manual-review JSON response.
 
 {
-  "currentAngularVersion": 17,
-  "targetAngularVersion": 18,
+  "currentAngularVersion": 13,
+  "targetAngularVersion": 14,
   "packageManager": "npm",
   "dependencies": {
     "-": "^0.0.1",
     "@angular-slider/ngx-slider": "^13.0.0",
-    "@angular/animations": "^18.0.0",
-    "@angular/cdk": "^18.0.0",
-    "@angular/common": "^18.0.0",
-    "@angular/compiler": "^18.0.0",
-    "@angular/core": "^18.0.0",
-    "@angular/forms": "^18.0.0",
-    "@angular/material": "^18.0.0",
-    "@angular/platform-browser": "^18.0.0",
-    "@angular/platform-browser-dynamic": "^18.0.0",
-    "@angular/router": "^18.0.0",
+    "@angular/animations": "~14.0.0",
+    "@angular/cdk": "^14.0.0",
+    "@angular/common": "~14.0.0",
+    "@angular/compiler": "~14.0.0",
+    "@angular/core": "~14.0.0",
+    "@angular/forms": "~14.0.0",
+    "@angular/material": "^14.0.0",
+    "@angular/platform-browser": "~14.0.0",
+    "@angular/platform-browser-dynamic": "~14.0.0",
+    "@angular/router": "~14.0.0",
     "@fortawesome/fontawesome-free": "^6.0.0",
     "@ng-select/ng-option-highlight": "^0.0.7",
     "@ng-select/ng-select": "^8.3.0",
-    "angular-user-idle": "^4.0.0",
+    "angular-user-idle": "^2.2.6",
     "angularx-qrcode": "^13.0.15",
     "bootstrap": "^5.0.0-beta3",
     "cookieconsent": "^3.1.1",
     "jquery": "^3.6.2",
     "ng-dynamic-breadcrumb": "^6.0.0",
     "ng6-toastr-notifications": "^1.0.4",
-    "ngx-bootstrap": "^11.0.2",
-    "ngx-color-picker": "^16.0.0",
+    "ngx-bootstrap": "^7.1.0",
+    "ngx-color-picker": "^11.0.0",
     "ngx-cookie-service": "^13.1.2",
     "ngx-cookieconsent": "^2.2.3",
     "ngx-device-detector": "^3.0.0",
     "ngx-image-zoom": "0.6.0",
     "ngx-img-zoom": "4.1.2",
-    "ngx-pagination": "^6.0.3",
-    "ngx-pinch-zoom": "npm:@mtnair/ngx-pinch-zoom@2.5.12",
+    "ngx-pagination": "^5.1.1",
+    "ngx-pinch-zoom": "^2.5.6",
     "ngx-red-zoom": "^0.9.0",
-    "ngx-slick-carousel": "15.0.0",
+    "ngx-slick-carousel": "^0.5.1",
     "rxjs": "~7.4.0",
     "slick-carousel": "^1.8.1",
     "swiper": "^11.2.1",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.5",
-    "zone.js": "~0.14.10"
+    "zone.js": "~0.11.4"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^18.0.0",
-    "@angular/cli": "^18.0.0",
-    "@angular/compiler-cli": "^18.0.0",
+    "@angular-devkit/build-angular": "^14.0.0",
+    "@angular/cli": "~14.0.0",
+    "@angular/compiler-cli": "~14.0.0",
     "@types/jasmine": "~3.10.0",
     "@types/jquery": "^3.5.8",
     "@types/node": "^12.11.1",
@@ -276,14 +276,14 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
     "karma-coverage": "~2.1.0",
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "~1.7.0",
-    "typescript": "~5.4.5"
+    "typescript": "~4.8.4"
   },
   "lockfile": "",
   "hasPackageLock": false,
   "packageLockVersion": null,
   "nodeModulesExists": false,
   "packageJsonChanged": true,
-  "previousInstallFailureOutput": "\nnpm error code ERESOLVE\r\nnpm error ERESOLVE unable to resolve dependency tree\r\nnpm error\r\nnpm error While resolving: jewelex@0.0.0\r\nnpm error Found: @angular/common@18.2.14\r\nnpm error node_modules/@angular/common\r\nnpm error   @angular/common@\u0022^18.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Could not resolve dependency:\r\nnpm error peer @angular/common@\u0022^13.0.0\u0022 from @angular-slider/ngx-slider@13.0.0\r\nnpm error node_modules/@angular-slider/ngx-slider\r\nnpm error   @angular-slider/ngx-slider@\u0022^13.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Fix the upstream dependency conflict, or retry\r\nnpm error this command with --force or --legacy-peer-deps\r\nnpm error to accept an incorrect (and potentially broken) dependency resolution.\r\nnpm error\r\nnpm error\r\nnpm error For a full report see:\r\nnpm error C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-05-27T17_10_25_573Z-eresolve-report.txt\r\nnpm error A complete log of this run can be found in: C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-05-27T17_10_25_573Z-debug-0.log\r\n",
+  "previousInstallFailureOutput": "\nnpm error code ERESOLVE\r\nnpm error ERESOLVE unable to resolve dependency tree\r\nnpm error\r\nnpm error While resolving: jewelex@0.0.0\r\nnpm error Found: @angular/common@14.0.7\r\nnpm error node_modules/@angular/common\r\nnpm error   @angular/common@\u0022~14.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Could not resolve dependency:\r\nnpm error peer @angular/common@\u0022^13.0.0\u0022 from @angular-slider/ngx-slider@13.0.0\r\nnpm error node_modules/@angular-slider/ngx-slider\r\nnpm error   @angular-slider/ngx-slider@\u0022^13.0.0\u0022 from the root project\r\nnpm error\r\nnpm error Fix the upstream dependency conflict, or retry\r\nnpm error this command with --force or --legacy-peer-deps\r\nnpm error to accept an incorrect (and potentially broken) dependency resolution.\r\nnpm error\r\nnpm error\r\nnpm error For a full report see:\r\nnpm error C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-06-01T09_25_44_243Z-eresolve-report.txt\r\nnpm error A complete log of this run can be found in: C:\\Users\\shubham.yadav\\AppData\\Local\\npm-cache\\_logs\\2026-06-01T09_25_44_243Z-debug-0.log\r\n",
   "previousAttemptedCommand": [
     "npm",
     "install",
@@ -294,7 +294,7 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
   "previousFailureClassification": "peerDependencyConflict",
   "npmErrorClassification": "peerDependencyConflict",
   "peerDependencyPreflight": {
-    "targetAngularMajor": 18,
+    "targetAngularMajor": 14,
     "status": "skipped",
     "checked": [],
     "blockers": [],
@@ -302,7 +302,7 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
       "Preflight dependency compatibility check skipped by configuration."
     ]
   },
-  "nodeModulesDeleted": true,
+  "nodeModulesDeleted": false,
   "packageLockDeleted": true,
   "cleanDeleteCompleted": true,
   "installAttemptKind": "retryOrFallbackAfterNormalInstall",
@@ -323,6 +323,6 @@ If no safe recommendation can be made, return the schema's empty or manual-revie
   "nodeVersion": "v18.20.6"
 }
 codex
-{"strategy":"manualReview","command":"","reason":"Previous normal npm install failed with ERESOLVE because @angular-slider/ngx-slider@13.0.0 requires peer @angular/common ^13.0.0 while the planned Angular framework package is @angular/common 18.x; this involves an Angular framework-critical package, so --legacy-peer-deps is not safe to hide it.","confidence":0.94,"risk":"high","isRetry":false,"isFallback":false,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
+{"strategy":"legacyPeerDepsInstall","command":"npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline","reason":"Previous normal install failed with ERESOLVE caused by a third-party peer range from @angular-slider/ngx-slider requiring Angular 13 while the planned target is Angular 14; no Angular framework-critical package mismatch is indicated.","confidence":0.82,"risk":"medium","isRetry":false,"isFallback":true,"maxRetries":0,"failureClassification":"peerDependencyConflict"}
 tokens used
-9,397
+12,484

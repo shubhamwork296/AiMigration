@@ -47,20 +47,19 @@ public sealed class AngularAdapterTests
 
         var command = adapter.AngularMigrateOnlyCommand("@angular/core", 14, 15, "15.2.10");
 
-        Assert.Equal(["ng", "update", "@angular/core@15.2.10", "--migrate-only", "--from", "14", "--to", "15"], command);
+        Assert.Equal(["ng", "update", "@angular/core", "--migrate-only", "--from", "14", "--to", "15"], command);
     }
 
     [Fact]
-    public void Official_Migrate_Only_Commands_Use_Ng_From_Path_Full_Update_Command()
+    public void Official_Migrate_Only_Commands_Use_Local_Cli_Migrate_Only_Command()
     {
         var adapter = new AngularAdapter(new CommandRunner());
 
-        var commands = adapter.OfficialAngularMigrateOnlyCommands(18, 19, ["@angular/core", "@angular/cli"]);
+        var commands = adapter.OfficialAngularMigrateOnlyCommands(18, 19, ["@angular/cli", "@angular/core"]);
 
-        Assert.Equal(
-        [
-            ["ng", "update", "@angular/cli@19", "@angular/core@19"]
-        ], commands);
+        Assert.Equal(2, commands.Count);
+        Assert.Equal(["update", "@angular/cli", "--migrate-only", "--from", "18", "--to", "19"], commands[0].Skip(1));
+        Assert.Equal(["update", "@angular/core", "--migrate-only", "--from", "18", "--to", "19"], commands[1].Skip(1));
     }
 
     [Fact]
@@ -1052,7 +1051,7 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
-    public async Task Safe_Ai_Config_Update_Is_Applied_Before_Npm_Install()
+    public async Task Safe_Ai_Config_Update_Is_Applied_Before_Validation()
     {
         var root = await AngularWorkspace();
         await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{"target":"ES2020","paths":{"@app/*":["src/app/*"]}}}""");
@@ -1075,8 +1074,12 @@ public sealed class AngularAdapterTests
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
             if (command.Take(2).SequenceEqual(["npm", "install"]))
             {
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
                 var tsconfig = File.ReadAllText(Path.Combine(root, "tsconfig.json"));
-                return new CommandResult { ReturnCode = tsconfig.Contains("\"target\":\"ES2022\"") ? 0 : 1, Stderr = "config was not updated before install" };
+                return new CommandResult { ReturnCode = tsconfig.Contains("\"target\":\"ES2022\"") ? 0 : 1, Stderr = "config was not updated before validation" };
             }
             return new CommandResult { ReturnCode = 0 };
         });
@@ -1118,6 +1121,7 @@ public sealed class AngularAdapterTests
         var runner = new RecordingRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 19);
             return new CommandResult { ReturnCode = 0, Stdout = "ok" };
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
@@ -1125,8 +1129,10 @@ public sealed class AngularAdapterTests
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
 
         var installIndex = runner.Calls.FindIndex(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
-        var officialUpdateIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        var officialUpdateIndex = runner.Calls.FindIndex(c => c.Command.Contains("--migrate-only"));
+        var lastOfficialUpdateIndex = runner.Calls.FindLastIndex(c => c.Command.Contains("--migrate-only"));
         var buildIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["npm", "run", "build"]));
+        var officialUpdates = runner.Calls.Where(c => c.Command.Contains("--migrate-only")).Select(c => c.Command).ToArray();
 
         Assert.Equal("done", result.StringValue("status"));
         Assert.True(result.BoolValue("officialAngularMigrateOnlyRequired"));
@@ -1134,10 +1140,133 @@ public sealed class AngularAdapterTests
         Assert.False(result.BoolValue("migrateOnlySkipped"));
         Assert.True(installIndex >= 0);
         Assert.True(officialUpdateIndex > installIndex);
-        Assert.True(buildIndex > officialUpdateIndex);
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.True(buildIndex > lastOfficialUpdateIndex);
+        Assert.Equal(2, officialUpdates.Length);
+        Assert.Contains("@angular/cli", officialUpdates[0]);
+        Assert.Contains("@angular/core", officialUpdates[1]);
+        Assert.DoesNotContain("@angular/cli@19", officialUpdates[0]);
+        Assert.DoesNotContain("@angular/core@19", officialUpdates[1]);
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public async Task Official_Migration_Metadata_Triggers_Local_Migrate_Only_After_Install()
+    {
+        var root = await AngularWorkspace();
+        var ai = new SequenceAi(PackagePlan(), VersionRecommendations(), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 15, withMigrationMetadata: true);
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+
+        var installIndex = runner.Calls.FindIndex(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
+        var migrateIndex = runner.Calls.FindIndex(c => c.Command.Contains("--migrate-only"));
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.True(migrateIndex > installIndex);
+    }
+
+    [Fact]
+    public async Task Manual_Review_Config_Change_Triggers_Migrate_Only_And_Is_Auto_Applied()
+    {
+        var root = await AngularWorkspace();
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{"target":"ES2020"}}""");
+        var ai = new SequenceAi(PackagePlan(), VersionRecommendations(), new JsonObject
+        {
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["filePath"] = "tsconfig.json",
+                ["changeType"] = "manual_review",
+                ["targetAngularHop"] = "14->15",
+                ["reason"] = "manual framework migration config change",
+                ["confidence"] = 0.95,
+                ["risk"] = "medium",
+                ["patch"] = new JsonObject { ["before"] = "\"target\":\"ES2020\"", ["after"] = "\"target\":\"ES2022\"" }
+            }),
+            ["manualRecommendations"] = new JsonArray()
+        }, InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 15);
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" }, ManualReviewAutoAccept = true }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.True(result.BoolValue("manualReviewAutoAcceptEnabled"));
+        Assert.Equal(1, result.IntValue("manualReviewItemsReceived"));
+        Assert.Single(result["manualReviewAppliedChanges"]!.AsArray());
+        Assert.Contains("\"target\":\"ES2022\"", await File.ReadAllTextAsync(Path.Combine(root, "tsconfig.json")));
+    }
+
+    [Fact]
+    public async Task Failed_Manual_Review_Patch_Is_Reported()
+    {
+        var root = await AngularWorkspace();
+        await File.WriteAllTextAsync(Path.Combine(root, "tsconfig.json"), """{"compilerOptions":{"target":"ES2020"}}""");
+        var ai = new SequenceAi(PackagePlan(), VersionRecommendations(), new JsonObject
+        {
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["filePath"] = "tsconfig.json",
+                ["changeType"] = "manual_review",
+                ["targetAngularHop"] = "14->15",
+                ["reason"] = "manual framework migration config change",
+                ["confidence"] = 0.95,
+                ["risk"] = "medium",
+                ["patch"] = new JsonObject { ["before"] = "\"target\":\"ES2017\"", ["after"] = "\"target\":\"ES2022\"" }
+            }),
+            ["manualRecommendations"] = new JsonArray()
+        }, InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 15);
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" }, ManualReviewAutoAccept = true }, null, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Single(result["manualReviewFailedChanges"]!.AsArray());
+        Assert.Contains("failed to apply", result.StringValue("failureReason"));
+    }
+
+    [Fact]
+    public async Task Validation_Failure_Can_Trigger_Migrate_Only_And_Rerun_Validation()
+    {
+        var root = await AngularWorkspace();
+        var buildRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 15);
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                buildRuns++;
+                return buildRuns == 1
+                    ? new CommandResult { ReturnCode = 1, Stderr = "Build failed; run ng update to apply required Angular migration changes." }
+                    : new CommandResult { ReturnCode = 0 };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { MaxAiRemediationRetries = 0 }, null, null);
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.Equal(2, buildRuns);
+        Assert.True(runner.Calls.FindIndex(c => c.Command.Contains("--migrate-only")) > runner.Calls.FindIndex(c => c.Command.SequenceEqual(["npm", "run", "build"])));
     }
 
     [Fact]
@@ -1148,25 +1277,30 @@ public sealed class AngularAdapterTests
         var runner = new RecordingRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 19);
             return new CommandResult { ReturnCode = 0, Stdout = "ok" };
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
 
         await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, CommandTimeoutSeconds = 99, CommandIdleTimeoutSeconds = 6 }, null, null);
 
-        var ngUpdate = runner.Calls.Single(c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
+        var ngUpdates = runner.Calls.Where(c => c.Command.Contains("--migrate-only")).ToArray();
         var install = runner.Calls.First(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
         var build = runner.Calls.First(c => c.Command.SequenceEqual(["npm", "run", "build"]));
 
-        Assert.Equal(600, ngUpdate.TimeoutSeconds);
-        Assert.Equal(60, ngUpdate.IdleTimeoutSeconds);
+        Assert.Equal(2, ngUpdates.Length);
+        Assert.All(ngUpdates, ngUpdate =>
+        {
+            Assert.Equal(600, ngUpdate.TimeoutSeconds);
+            Assert.Equal(60, ngUpdate.IdleTimeoutSeconds);
+        });
         Assert.Equal(99, install.TimeoutSeconds);
         Assert.Equal(6, install.IdleTimeoutSeconds);
         Assert.Equal(99, build.TimeoutSeconds);
         Assert.Equal(6, build.IdleTimeoutSeconds);
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.Contains(runner.Calls, c => c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -1177,7 +1311,8 @@ public sealed class AngularAdapterTests
         var runner = new RecordingRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
-            if (command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"])) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (idle-timeout).", TimeoutKind = "idle-timeout", FailureCategory = "idle-timeout" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 19);
+            if (command.Contains("--migrate-only")) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (idle-timeout).", TimeoutKind = "idle-timeout", FailureCategory = "idle-timeout" };
             return new CommandResult { ReturnCode = 0 };
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
@@ -1185,10 +1320,9 @@ public sealed class AngularAdapterTests
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Equal("Angular CLI command timed out while running from PATH.", result.StringValue("failureReason"));
+        Assert.Equal("Angular CLI command timed out while running from local node_modules.", result.StringValue("failureReason"));
         Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.Contains(runner.Calls, c => c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
     }
@@ -1198,11 +1332,11 @@ public sealed class AngularAdapterTests
     {
         var root = await Angular18Workspace();
         var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
-        var officialUpdateCommand = new[] { "ng", "update", "@angular/cli@19", "@angular/core@19" };
         var runner = new RecordingRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
-            if (command.SequenceEqual(officialUpdateCommand)) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (total-timeout).", TimeoutKind = "total-timeout", FailureCategory = "total-timeout" };
+            if (command.Take(2).SequenceEqual(["npm", "install"])) CreateLocalAngularCli(root, 19);
+            if (command.Contains("--migrate-only")) return new CommandResult { ReturnCode = 124, Stderr = "Command timed out (total-timeout).", TimeoutKind = "total-timeout", FailureCategory = "total-timeout" };
             return new CommandResult { ReturnCode = 0 };
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
@@ -1210,23 +1344,21 @@ public sealed class AngularAdapterTests
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Equal("Angular CLI command timed out while running from PATH.", result.StringValue("failureReason"));
+        Assert.Equal("Angular CLI command timed out while running from local node_modules.", result.StringValue("failureReason"));
         Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(officialUpdateCommand));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.Contains(runner.Calls, c => c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
     }
 
     [Fact]
-    public async Task Angular_18_To_19_Stops_When_Ng_Is_Not_On_Path()
+    public async Task Angular_18_To_19_Stops_When_Local_Ng_Is_Missing()
     {
         var root = await Angular18Workspace();
         var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --no-audit --no-fund --prefer-offline", "safe install"));
         var runner = new RecordingRunner(command =>
         {
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.22"]""" };
-            if (command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"])) return new CommandResult { ReturnCode = 1, Stderr = "ng not found", FailureCategory = "command-not-found" };
             return new CommandResult { ReturnCode = 0 };
         });
         var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
@@ -1236,7 +1368,6 @@ public sealed class AngularAdapterTests
         Assert.Equal("failed", result.StringValue("status"));
         Assert.True(result.BoolValue("officialAngularMigrateOnlyRequired"));
         Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["ng", "update", "@angular/cli@19", "@angular/core@19"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
@@ -1266,7 +1397,18 @@ public sealed class AngularAdapterTests
                 ["installElapsedSeconds"] = 12.0
             }),
             ["preflightDependencyAnalysis"] = new JsonObject { ["warnings"] = new JsonArray(), ["blockers"] = new JsonArray(), ["remediations"] = new JsonArray() },
-            ["validation"] = new JsonObject { ["passed"] = true }
+            ["validation"] = new JsonObject { ["passed"] = true },
+            ["officialAngularMigrateOnlyExecuted"] = true,
+            ["officialAngularMigrateOnlyTriggered"] = true,
+            ["officialAngularMigrateOnlyTriggerReason"] = "manual_review changes",
+            ["officialAngularMigrateOnlySource"] = "local node_modules",
+            ["officialAngularMigrateOnlyCommand"] = new JsonArray("node_modules/.bin/ng", "update", "@angular/core", "@angular/cli", "--migrate-only", "--from", "14", "--to", "15"),
+            ["officialAngularMigrateOnlyChangedFiles"] = new JsonArray("angular.json"),
+            ["manualReviewAutoAcceptEnabled"] = true,
+            ["manualReviewItemsReceived"] = 1,
+            ["manualReviewAppliedChanges"] = new JsonArray(new JsonObject { ["filePath"] = "tsconfig.json", ["reason"] = "manual" }),
+            ["manualReviewFailedChanges"] = new JsonArray(),
+            ["manualReviewChangedFiles"] = new JsonArray("tsconfig.json")
         };
 
         var report = writer.GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular15" }, [hop], [result], new ValidationResult { Passed = true });
@@ -1274,6 +1416,9 @@ public sealed class AngularAdapterTests
         Assert.Contains("## Install Strategy Decisions", report);
         Assert.Contains("Source=AI; strategy=normal", report);
         Assert.Contains("lockfile compatible", report);
+        Assert.Contains("migrate-only triggered=yes", report);
+        Assert.Contains("manual_review auto-accept enabled: True", report);
+        Assert.Contains("manual_review changes were auto-applied because intervention UI is not implemented yet.", report);
     }
 
     [Fact]
@@ -1972,7 +2117,7 @@ export class AppModule {}
 
         Assert.Equal("done", result.StringValue("status"));
         Assert.Contains("\"ngx-pagination\": \"^6.0.3\"", packageJson);
-        Assert.Contains("imports: [],\n  schemas:", appModule);
+        Assert.Contains("imports: [],\n  schemas:", appModule.Replace("\r\n", "\n"));
         Assert.DoesNotContain("entryComponents", appModule);
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("failureCategory") == "obsolete_angular_metadata");
         Assert.Contains(result["aiRemediationChanges"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("packageName") == "ngx-pagination" && c.StringValue("selectedRemediation") == "same_package_upgrade");
@@ -2805,6 +2950,22 @@ Optimization error [main.123.js]: Unexpected token: punc ({)
 """.Replace("SCRIPTS", scripts).Replace("EXTRA_DEPENDENCIES", extraDependencies));
         await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
         return root;
+    }
+
+    private static void CreateLocalAngularCli(string root, int major, bool withMigrationMetadata = false)
+    {
+        var bin = Path.Combine(root, "node_modules", ".bin");
+        var cli = Path.Combine(root, "node_modules", "@angular", "cli");
+        Directory.CreateDirectory(bin);
+        Directory.CreateDirectory(cli);
+        File.WriteAllText(Path.Combine(bin, OperatingSystem.IsWindows() ? "ng.cmd" : "ng"), "");
+        File.WriteAllText(Path.Combine(cli, "package.json"), withMigrationMetadata
+            ? "{\"name\":\"@angular/cli\",\"version\":\"" + major + ".0.0\",\"ng-update\":{\"migrations\":\"./migrations.json\"}}"
+            : "{\"name\":\"@angular/cli\",\"version\":\"" + major + ".0.0\"}");
+        if (withMigrationMetadata)
+        {
+            File.WriteAllText(Path.Combine(cli, "migrations.json"), "{\"migrations\":{\"sample\":{\"version\":\"" + major + ".0.0\",\"description\":\"test migration\",\"factory\":\"./sample\"}}}");
+        }
     }
 
     private static async Task<string> Angular13Workspace(string extraDependencies = "")

@@ -249,14 +249,17 @@ public sealed class MarkdownReportWriter
             var command = string.Join(" ", r["officialAngularMigrateOnlyCommand"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
             if (r.BoolValue("officialAngularMigrateOnlyExecuted"))
             {
-                return $"- {label}: Official Angular migrate-only executed for {label} using ng from PATH. Command=`{command}`";
+                var files = string.Join(", ", r["officialAngularMigrateOnlyChangedFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                return $"- {label}: migrate-only triggered=yes; reason={r.StringValue("officialAngularMigrateOnlyTriggerReason")}; source={r.StringValue("officialAngularMigrateOnlySource")}; command=`{command}`; Angular CLI generated changes={FilesText(files)}";
             }
 
             var required = r.BoolValue("officialAngularMigrateOnlyRequired");
             var reason = r.StringValue("migrateOnlySkippedReason", required ? "required migrate-only did not run" : "not required by Angular hop policy");
-            return $"- {label}: skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
+            return $"- {label}: migrate-only triggered={r.BoolValue("officialAngularMigrateOnlyTriggered")}; skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
         });
     }
+
+    private static string FilesText(string files) => string.IsNullOrWhiteSpace(files) ? "none" : files;
 
     private static IEnumerable<string> FormatPeerDependencyConflicts(IReadOnlyList<JsonObject> hopResults)
     {
@@ -300,6 +303,11 @@ public sealed class MarkdownReportWriter
         foreach (var hop in hopResults)
         {
             var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            var manualChanged = string.Join(", ", hop["manualReviewChangedFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+            lines.Add($"- {label}: manual_review auto-accept enabled: {hop.BoolValue("manualReviewAutoAcceptEnabled")}; received={hop.IntValue("manualReviewItemsReceived")}; applied={hop["manualReviewAppliedChanges"]?.AsArray()?.Count ?? 0}; failed={hop["manualReviewFailedChanges"]?.AsArray()?.Count ?? 0}; files changed by auto-accepted manual_review items={FilesText(manualChanged)}");
+            if (hop.BoolValue("manualReviewAutoAcceptEnabled") && hop.IntValue("manualReviewItemsReceived") > 0) lines.Add("- Warning: manual_review changes were auto-applied because intervention UI is not implemented yet.");
+            foreach (var item in hop["manualReviewAppliedChanges"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: manual_review auto-accepted config {item.StringValue("filePath", "unknown")} ({item.StringValue("reason", "manual review")})");
+            foreach (var item in hop["manualReviewFailedChanges"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: manual_review failed config {item.StringValue("filePath", "unknown")} ({item.StringValue("rejectionReason", item.StringValue("reason", "manual review failed"))})");
             foreach (var item in hop["packagesManualReview"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: package {item.StringValue("name", "unknown")} ({item.StringValue("reason", "manual review")})");
             foreach (var item in hop["manualAngularConfigRecommendations"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: config {item.StringValue("filePath", "unknown")} ({item.StringValue("reason", item.ToString())})");
         }

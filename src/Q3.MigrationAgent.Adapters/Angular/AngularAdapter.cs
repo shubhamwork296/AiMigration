@@ -176,13 +176,13 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             return failed;
         }
 
-        var configUpdate = await ApplyAiStructuralConfigPlanAsync(projectPath, hop, config, progress, stage, cancellationToken);
+        var configPlan = await PlanAngularStructuralConfigChangesAsync(projectPath, hop, config, progress, stage, cancellationToken);
         var cleanInstall = CleanInstallInputs(projectPath, DetectPackageManager(projectPath).Manager, progress, stage);
         if (cleanInstall.BoolValue("manualActionRequired"))
         {
             var failure = new FailureInfo("clean install cleanup failed", stage, [], cleanInstall.StringValue("reason", "node_modules or package-lock.json could not be deleted safely."), cleanInstall.StringValue("suggestedAction", "Close processes locking node_modules and rerun migration."), false, true);
             var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
-            AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, [], new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
+            AddAngularAiHopDetails(failed, packageUpdate, configPlan, cleanInstall, [], new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
             return failed;
         }
         var manifest = await ParseManifestAsync(projectPath, cancellationToken);
@@ -194,18 +194,29 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         {
             var failure = ClassifyFailure(install.Command, install.Result, target);
             var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
-            AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
+            AddAngularAiHopDetails(failed, packageUpdate, configPlan, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
             AddOfficialMigrateOnlyDetails(failed, OfficialAngularMigrateOnlySkipped(hop, "dependency install failed before official Angular update could run.", OfficialMigrateOnlyPolicies.ContainsKey((hop.FromVersion, hop.ToVersion))));
             return failed;
         }
 
-        var officialMigrateOnly = await RunOfficialAngularMigrateOnlyIfRequiredAsync(projectPath, hop, config, progress, stage, logPath, cancellationToken);
+        var officialMigrateOnly = await RunOfficialAngularMigrateOnlyIfRequiredAsync(projectPath, hop, config, configPlan, progress, stage, logPath, cancellationToken);
         foreach (var command in officialMigrateOnly["commands"]?.AsArray()?.OfType<JsonObject>() ?? []) commands.Add(command.DeepClone());
         if (officialMigrateOnly.BoolValue("required") && !officialMigrateOnly.BoolValue("executed"))
         {
             var reason = officialMigrateOnly.StringValue("failureReason", officialMigrateOnly.StringValue("skippedReason", "Official Angular update could not run."));
             var command = officialMigrateOnly["command"]?.AsArray()?.Select(x => x?.ToString() ?? "").Where(s => s.Length > 0).ToArray() ?? [];
             var failure = new FailureInfo("official Angular update failed", "Angular CLI update", command, reason, officialMigrateOnly.StringValue("suggestedNextAction", "Review the Angular CLI update output and rerun migration."), false, true);
+            var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
+            AddAngularAiHopDetails(failed, packageUpdate, configPlan, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = reason });
+            AddOfficialMigrateOnlyDetails(failed, officialMigrateOnly);
+            return failed;
+        }
+
+        var configUpdate = ApplyAngularStructuralConfigPlan(projectPath, configPlan, config);
+        if (configUpdate["manualReviewFailedChanges"] is JsonArray failedManual && failedManual.Count > 0)
+        {
+            var reason = "One or more auto-accepted manual_review changes failed to apply cleanly.";
+            var failure = new FailureInfo("manual review auto-accept failed", stage, [], reason, "Review failed manual_review patches in the migration report.", false, true);
             var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
             AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = reason });
             AddOfficialMigrateOnlyDetails(failed, officialMigrateOnly);
@@ -221,6 +232,24 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var thirdPartyValidationBlockers = new JsonArray();
         var failedPackagePlans = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, false));
+        if (!validation.BoolValue("passed") && !officialMigrateOnly.BoolValue("executed") && IsLikelyMissingAngularOfficialMigrationFailure(validation))
+        {
+            officialMigrateOnly = await RunOfficialAngularMigrateOnlyIfRequiredAsync(projectPath, hop, config, configPlan, progress, stage, logPath, cancellationToken, forceReason: "validation failed and appears caused by missing Angular official migration changes");
+            foreach (var command in officialMigrateOnly["commands"]?.AsArray()?.OfType<JsonObject>() ?? []) commands.Add(command.DeepClone());
+            if (officialMigrateOnly.BoolValue("required") && !officialMigrateOnly.BoolValue("executed"))
+            {
+                var reason = officialMigrateOnly.StringValue("failureReason", officialMigrateOnly.StringValue("skippedReason", "Official Angular migrate-only could not run."));
+                var command = officialMigrateOnly["command"]?.AsArray()?.Select(x => x?.ToString() ?? "").Where(s => s.Length > 0).ToArray() ?? [];
+                var failure = new FailureInfo("official Angular migrate-only failed", "Angular CLI migrate-only", command, reason, officialMigrateOnly.StringValue("suggestedNextAction", "Review the Angular CLI migrate-only output and rerun migration."), false, true);
+                var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
+                AddAngularAiHopDetails(failed, packageUpdate, configUpdate, cleanInstall, installAttempts, new JsonObject { ["passed"] = false, ["errors"] = reason });
+                AddOfficialMigrateOnlyDetails(failed, officialMigrateOnly);
+                return failed;
+            }
+            validation = await RunValidationsAsync(projectPath, hop, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, progress, stage, logPath, config.MaxAiRemediationRetries > 0, cancellationToken);
+            if (validation["buildVerificationCommandResult"] is JsonObject postMigrateBuildCommandResult) commands.Add(postMigrateBuildCommandResult.DeepClone());
+            if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, false));
+        }
         if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0)
         {
             for (var attempt = 1; attempt <= config.MaxAiRemediationRetries && !validation.BoolValue("passed"); attempt++)
@@ -433,23 +462,23 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
     public IReadOnlyList<string> AngularMigrateOnlyCommand(string packageName, int sourceMajor, int targetMajor, string? cliVersion = null)
     {
-        var version = cliVersion ?? $"{targetMajor}";
-        return ["ng", "update", $"{packageName}@{version}", "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
+        return ["ng", "update", packageName, "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
     }
 
     public IReadOnlyList<IReadOnlyList<string>> OfficialAngularMigrateOnlyCommands(int sourceMajor, int targetMajor, IReadOnlyList<string>? packages = null)
     {
         var migrationPackages = packages is { Count: > 0 } ? packages : ["@angular/cli", "@angular/core"];
-        if (targetMajor == 19 && migrationPackages.Contains("@angular/cli") && migrationPackages.Contains("@angular/core"))
-        {
-            migrationPackages = ["@angular/cli", "@angular/core"];
-        }
-
-        return [OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, migrationPackages)];
+        return OfficialAngularMigrateOnlyCommands(sourceMajor, targetMajor, migrationPackages, LocalAngularCliPath(Environment.CurrentDirectory));
     }
 
     public IReadOnlyList<string> OfficialAngularMigrateOnlyCommand(int sourceMajor, int targetMajor, IReadOnlyList<string> packages) =>
-        ["ng", "update", .. packages.Select(packageName => $"{packageName}@{targetMajor}")];
+        OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, packages, "ng");
+
+    private static IReadOnlyList<string> OfficialAngularMigrateOnlyCommand(int sourceMajor, int targetMajor, IReadOnlyList<string> packages, string ngExecutable) =>
+        [ngExecutable, "update", .. packages, "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
+
+    private static IReadOnlyList<IReadOnlyList<string>> OfficialAngularMigrateOnlyCommands(int sourceMajor, int targetMajor, IReadOnlyList<string> packages, string ngExecutable) =>
+        packages.Select(packageName => OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, [packageName], ngExecutable)).ToArray();
 
     public IReadOnlyList<string> SafeAngularMigrationCommand(IReadOnlyList<string> command, int targetMajor)
     {
@@ -1230,13 +1259,13 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return true;
     }
 
-    private async Task<JsonObject> ApplyAiStructuralConfigPlanAsync(string projectPath, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, CancellationToken cancellationToken)
+    private async Task<JsonObject> PlanAngularStructuralConfigChangesAsync(string projectPath, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, CancellationToken cancellationToken)
     {
         progress?.Stage(stage, config.Ai.UseAi ? "Planning safe Angular structural config updates with AI..." : "Skipping AI structural config planning.");
         var before = AngularAiConfigFiles.Where(f => File.Exists(Path.Combine(projectPath, f))).ToDictionary(f => f, f => File.ReadAllText(Path.Combine(projectPath, f)));
-        var accepted = new JsonArray();
-        var rejected = new JsonArray();
+        var changes = new JsonArray();
         var manual = new JsonArray();
+        var unavailable = new JsonArray();
         if (config.Ai.UseAi && ai is not null)
         {
             var payload = new JsonObject
@@ -1247,30 +1276,69 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             try
             {
                 var plan = await ai.AskAsync(config.Ai, LoadPrompt("angular/angular-structural-config"), payload.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
-                foreach (var change in plan?["changes"]?.AsArray()?.OfType<JsonObject>() ?? [])
-                {
-                    var validation = ValidateAngularConfigSuggestion(projectPath, change);
-                    if (!validation.Valid)
-                    {
-                        rejected.Add(RejectedConfigSuggestion(change, validation.Reason));
-                        manual.Add(new JsonObject { ["filePath"] = change.StringValue("filePath"), ["reason"] = validation.Reason });
-                        continue;
-                    }
-                    if (ApplySnippetPatch(projectPath, change))
-                    {
-                        accepted.Add(change.DeepClone());
-                    }
-                    else
-                    {
-                        rejected.Add(RejectedConfigSuggestion(change, "Patch before snippet was not found exactly once."));
-                        manual.Add(new JsonObject { ["filePath"] = change.StringValue("filePath"), ["reason"] = "Patch requires manual review because the before snippet did not match." });
-                    }
-                }
+                foreach (var change in plan?["changes"]?.AsArray()?.OfType<JsonObject>() ?? []) changes.Add(change.DeepClone());
                 foreach (var recommendation in plan?["manualRecommendations"]?.AsArray() ?? []) manual.Add(recommendation?.DeepClone());
             }
             catch
             {
-                rejected.Add(new JsonObject { ["reason"] = "AI config plan was unavailable or invalid." });
+                unavailable.Add(new JsonObject { ["reason"] = "AI config plan was unavailable or invalid." });
+            }
+        }
+
+        return new JsonObject
+        {
+            ["changes"] = changes,
+            ["rejectedAiConfigSuggestions"] = unavailable,
+            ["manualAngularConfigRecommendations"] = manual,
+            ["angularJsonChanged"] = false,
+            ["tsconfigChanged"] = false
+        };
+    }
+
+    private static JsonObject ApplyAngularStructuralConfigPlan(string projectPath, JsonObject plan, MigrationConfig config)
+    {
+        var before = AngularAiConfigFiles.Where(f => File.Exists(Path.Combine(projectPath, f))).ToDictionary(f => f, f => File.ReadAllText(Path.Combine(projectPath, f)));
+        var accepted = new JsonArray();
+        var rejected = new JsonArray(plan["rejectedAiConfigSuggestions"]?.AsArray()?.Select(x => x?.DeepClone()).ToArray() ?? []);
+        var manual = plan["manualAngularConfigRecommendations"]?.DeepClone() as JsonArray ?? new JsonArray();
+        var manualApplied = new JsonArray();
+        var manualFailed = new JsonArray();
+        var manualChangedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var aiChangedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var change in plan["changes"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var isManualReview = string.Equals(change.StringValue("changeType"), "manual_review", StringComparison.OrdinalIgnoreCase);
+            var validation = ValidateAngularConfigSuggestion(projectPath, change, config.ManualReviewAutoAccept);
+            if (!validation.Valid)
+            {
+                var rejectedChange = RejectedConfigSuggestion(change, validation.Reason);
+                rejected.Add(rejectedChange);
+                if (isManualReview) manualFailed.Add(rejectedChange.DeepClone());
+                else manual.Add(new JsonObject { ["filePath"] = change.StringValue("filePath"), ["reason"] = validation.Reason });
+                continue;
+            }
+            if (ApplySnippetPatch(projectPath, change))
+            {
+                var clone = change.DeepClone().AsObject();
+                if (isManualReview)
+                {
+                    clone["autoAccepted"] = true;
+                    manualApplied.Add(clone.DeepClone());
+                    manualChangedFiles.Add(NormalizeRelativePath(clone.StringValue("filePath")));
+                }
+                else
+                {
+                    accepted.Add(clone.DeepClone());
+                    aiChangedFiles.Add(NormalizeRelativePath(clone.StringValue("filePath")));
+                }
+            }
+            else
+            {
+                var rejectedChange = RejectedConfigSuggestion(change, "Patch before snippet was not found exactly once.");
+                rejected.Add(rejectedChange);
+                if (isManualReview) manualFailed.Add(rejectedChange.DeepClone());
+                else manual.Add(new JsonObject { ["filePath"] = change.StringValue("filePath"), ["reason"] = "Patch requires manual review because the before snippet did not match." });
             }
         }
 
@@ -1280,12 +1348,18 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             ["changes"] = accepted,
             ["rejectedAiConfigSuggestions"] = rejected,
             ["manualAngularConfigRecommendations"] = manual,
+            ["manualReviewAutoAcceptEnabled"] = config.ManualReviewAutoAccept,
+            ["manualReviewItemsReceived"] = (plan["changes"]?.AsArray()?.OfType<JsonObject>().Count(c => string.Equals(c.StringValue("changeType"), "manual_review", StringComparison.OrdinalIgnoreCase)) ?? 0) + manual.Count,
+            ["manualReviewAppliedChanges"] = manualApplied,
+            ["manualReviewFailedChanges"] = manualFailed,
+            ["manualReviewChangedFiles"] = new JsonArray(manualChangedFiles.Order().Select(f => (JsonNode?)JsonValue.Create(f)).ToArray()),
+            ["aiStructuralChangedFiles"] = new JsonArray(aiChangedFiles.Order().Select(f => (JsonNode?)JsonValue.Create(f)).ToArray()),
             ["angularJsonChanged"] = before.GetValueOrDefault("angular.json") != after.GetValueOrDefault("angular.json"),
             ["tsconfigChanged"] = new[] { "tsconfig.json", "tsconfig.app.json", "tsconfig.spec.json" }.Any(f => before.GetValueOrDefault(f) != after.GetValueOrDefault(f))
         };
     }
 
-    private static (bool Valid, string Reason) ValidateAngularConfigSuggestion(string projectPath, JsonObject change)
+    private static (bool Valid, string Reason) ValidateAngularConfigSuggestion(string projectPath, JsonObject change, bool allowManualReviewAutoAccept = false)
     {
         var file = NormalizeRelativePath(change.StringValue("filePath"));
         var type = change.StringValue("changeType");
@@ -1295,8 +1369,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var after = patch?.StringValue("after") ?? "";
         if (!AngularAiConfigFiles.Contains(file)) return (false, "AI config plan may only touch Angular structural config files.");
         if (!AngularAiConfigChangeTypes.Contains(type)) return (false, "AI config change type is not allowlisted.");
-        if (type == "manual_review") return (false, "Manual review suggestions are not applied automatically.");
-        if (risk != "low") return (false, "Only low-risk config changes are applied automatically.");
+        if (type == "manual_review" && !allowManualReviewAutoAccept) return (false, "Manual review suggestions are not applied automatically.");
+        if (type != "manual_review" && risk != "low") return (false, "Only low-risk config changes are applied automatically.");
         if (DoubleValue(change, "confidence", 0) < MinimumAiConfigConfidence) return (false, "Config suggestion confidence is below the high-confidence threshold.");
         if (string.IsNullOrWhiteSpace(before)) return (false, "Patch before snippet is required.");
         if (after.Contains("src/app", StringComparison.OrdinalIgnoreCase) || before.Contains("src/app", StringComparison.OrdinalIgnoreCase)) return (false, "AI config plan must not touch business source paths.");
@@ -3564,6 +3638,12 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         result["angularStructuralConfigChanges"] = configUpdate["changes"]?.DeepClone() ?? new JsonArray();
         result["rejectedAiConfigSuggestions"] = configUpdate["rejectedAiConfigSuggestions"]?.DeepClone() ?? new JsonArray();
         result["manualAngularConfigRecommendations"] = configUpdate["manualAngularConfigRecommendations"]?.DeepClone() ?? new JsonArray();
+        result["manualReviewAutoAcceptEnabled"] = configUpdate.BoolValue("manualReviewAutoAcceptEnabled");
+        result["manualReviewItemsReceived"] = configUpdate.IntValue("manualReviewItemsReceived");
+        result["manualReviewAppliedChanges"] = configUpdate["manualReviewAppliedChanges"]?.DeepClone() ?? new JsonArray();
+        result["manualReviewFailedChanges"] = configUpdate["manualReviewFailedChanges"]?.DeepClone() ?? new JsonArray();
+        result["manualReviewChangedFiles"] = configUpdate["manualReviewChangedFiles"]?.DeepClone() ?? new JsonArray();
+        result["aiStructuralChangedFiles"] = configUpdate["aiStructuralChangedFiles"]?.DeepClone() ?? new JsonArray();
         result["angularJsonChanged"] = configUpdate.BoolValue("angularJsonChanged");
         result["tsconfigChanged"] = configUpdate.BoolValue("tsconfigChanged");
         result["cleanInstallSummary"] = cleanInstall.DeepClone();
@@ -3862,24 +3942,47 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         }
     }
 
-    private async Task<JsonObject> RunOfficialAngularMigrateOnlyIfRequiredAsync(string projectPath, MigrationHop hop, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    private async Task<JsonObject> RunOfficialAngularMigrateOnlyIfRequiredAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject configPlan, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken, string? forceReason = null)
     {
-        if (!OfficialMigrateOnlyPolicies.TryGetValue((hop.FromVersion, hop.ToVersion), out var policy) || !policy.RequiresOfficialMigrateOnly)
+        var trigger = DetermineOfficialMigrateOnlyTrigger(projectPath, hop, configPlan, forceReason);
+        if (!trigger.Required)
         {
-            return OfficialAngularMigrateOnlySkipped(hop, "not required by Angular hop policy");
+            return OfficialAngularMigrateOnlySkipped(hop, trigger.Reason);
         }
 
-        var migrateOnlyCommands = OfficialAngularMigrateOnlyCommands(hop.FromVersion, hop.ToVersion, policy.Packages);
+        var cli = ValidateLocalAngularCli(projectPath, hop.ToVersion);
+        if (!cli.Valid)
+        {
+            return new JsonObject
+            {
+                ["required"] = true,
+                ["attempted"] = true,
+                ["executed"] = false,
+                ["skipped"] = false,
+                ["triggered"] = true,
+                ["triggerReason"] = trigger.Reason,
+                ["failureReason"] = cli.Reason,
+                ["failureCategory"] = "local-angular-cli-invalid",
+                ["suggestedNextAction"] = "Run npm install successfully and verify local @angular/cli matches the target Angular major.",
+                ["source"] = "local node_modules",
+                ["command"] = new JsonArray(),
+                ["commands"] = new JsonArray(),
+                ["filesChangedByAngularCli"] = new JsonArray()
+            };
+        }
+
+        var migrateOnlyCommands = OfficialAngularMigrateOnlyCommands(hop.FromVersion, hop.ToVersion, trigger.Packages, cli.NgPath);
         var commands = new JsonArray();
         var angularCliTimeoutSeconds = AngularCliTimeoutSeconds(config.CommandTimeoutSeconds);
         var angularCliIdleTimeoutSeconds = AngularCliIdleTimeoutSeconds(config.CommandIdleTimeoutSeconds);
+        var beforeFiles = StructuralFileContents(projectPath);
 
         IReadOnlyList<string> lastCommand = [];
         foreach (var command in migrateOnlyCommands)
         {
             lastCommand = command;
-            progress?.Stage(stage, $"Running official Angular update using ng from PATH: {string.Join(" ", command)}");
-            var result = await commandRunner.RunAsync(command, projectPath, timeoutSeconds: angularCliTimeoutSeconds, progress: progress, stage: stage, description: "Angular update", logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: angularCliIdleTimeoutSeconds, cancellationToken: cancellationToken);
+            progress?.Stage(stage, $"Running official Angular migrate-only using local Angular CLI: {string.Join(" ", command)}");
+            var result = await commandRunner.RunAsync(command, projectPath, timeoutSeconds: angularCliTimeoutSeconds, progress: progress, stage: stage, description: "Angular migrate-only", logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: angularCliIdleTimeoutSeconds, cancellationToken: cancellationToken);
             commands.Add(CommandObject(command, result));
             if (result.ReturnCode != 0)
             {
@@ -3891,12 +3994,15 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
                     ["attempted"] = true,
                     ["executed"] = false,
                     ["skipped"] = false,
-                    ["failureReason"] = timedOut ? "Angular CLI command timed out while running from PATH." : failure.Reason,
+                    ["triggered"] = true,
+                    ["triggerReason"] = trigger.Reason,
+                    ["failureReason"] = timedOut ? "Angular CLI command timed out while running from local node_modules." : failure.Reason,
                     ["failureCategory"] = timedOut ? "timeout" : failure.Category,
-                    ["suggestedNextAction"] = timedOut ? "Inspect the migration log and rerun migration after Angular CLI responds from PATH." : failure.SuggestedNextAction,
-                    ["source"] = "PATH",
+                    ["suggestedNextAction"] = timedOut ? "Inspect the migration log and rerun migration after Angular CLI responds from local node_modules." : failure.SuggestedNextAction,
+                    ["source"] = "local node_modules",
                     ["command"] = new JsonArray(command.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
-                    ["commands"] = commands
+                    ["commands"] = commands,
+                    ["filesChangedByAngularCli"] = new JsonArray(ChangedStructuralFiles(projectPath, beforeFiles).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray())
                 };
             }
         }
@@ -3907,11 +4013,14 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             ["attempted"] = true,
             ["executed"] = true,
             ["skipped"] = false,
+            ["triggered"] = true,
+            ["triggerReason"] = trigger.Reason,
             ["skippedReason"] = "",
-            ["source"] = "PATH",
-            ["message"] = $"Official Angular update executed for Angular {hop.FromVersion} -> {hop.ToVersion} using ng from PATH.",
+            ["source"] = "local node_modules",
+            ["message"] = $"Official Angular migrate-only executed for Angular {hop.FromVersion} -> {hop.ToVersion} using local Angular CLI.",
             ["command"] = new JsonArray(lastCommand.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
-            ["commands"] = commands
+            ["commands"] = commands,
+            ["filesChangedByAngularCli"] = new JsonArray(ChangedStructuralFiles(projectPath, beforeFiles).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray())
         };
     }
 
@@ -3926,16 +4035,93 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         string.Equals(result.FailureCategory, "timeout", StringComparison.OrdinalIgnoreCase) ||
         result.FailureCategory?.Contains("timeout", StringComparison.OrdinalIgnoreCase) == true;
 
+    private static (bool Required, string Reason, IReadOnlyList<string> Packages) DetermineOfficialMigrateOnlyTrigger(string projectPath, MigrationHop hop, JsonObject configPlan, string? forceReason)
+    {
+        var hasPolicy = OfficialMigrateOnlyPolicies.TryGetValue((hop.FromVersion, hop.ToVersion), out var policy);
+        IReadOnlyList<string> packages = hasPolicy ? policy!.Packages : ["@angular/core", "@angular/cli"];
+        if (!string.IsNullOrWhiteSpace(forceReason)) return (true, forceReason, packages);
+        if (HasAngularOfficialMigrationMetadata(projectPath, hop.FromVersion, hop.ToVersion)) return (true, "Angular official migration metadata contains migrations for this source-to-target range.", packages);
+        if (hasPolicy && policy!.RequiresOfficialMigrateOnly) return (true, "Adapter policy marks this hop as requiring official structural migrations.", packages);
+        if (HasAngularFrameworkManualMigrationChanges(configPlan)) return (true, "Analysis/planning reported Angular framework or manual migration changes.", packages);
+        if (HasManualReviewChanges(configPlan)) return (true, "Analysis/planning returned manual_review changes for this hop.", packages);
+        return (false, "not required by conservative Angular migrate-only policy", packages);
+    }
+
+    private static bool HasAngularFrameworkManualMigrationChanges(JsonObject configPlan) =>
+        configPlan["changes"]?.AsArray()?.OfType<JsonObject>().Any(c =>
+            c.StringValue("category").Contains("framework", StringComparison.OrdinalIgnoreCase) ||
+            c.StringValue("reason").Contains("Angular migration", StringComparison.OrdinalIgnoreCase) ||
+            c.StringValue("changeType").Contains("manual", StringComparison.OrdinalIgnoreCase)) == true;
+
+    private static bool HasManualReviewChanges(JsonObject configPlan) =>
+        configPlan["manualAngularConfigRecommendations"] is JsonArray { Count: > 0 } ||
+        configPlan["changes"]?.AsArray()?.OfType<JsonObject>().Any(c => string.Equals(c.StringValue("changeType"), "manual_review", StringComparison.OrdinalIgnoreCase)) == true;
+
+    private static bool HasAngularOfficialMigrationMetadata(string projectPath, int sourceMajor, int targetMajor)
+    {
+        var cliPackageJson = Path.Combine(projectPath, "node_modules", "@angular", "cli", "package.json");
+        if (!File.Exists(cliPackageJson)) return false;
+        try
+        {
+            var package = ReadJson(cliPackageJson);
+            var migrationPath = package["ng-update"]?["migrations"]?.ToString();
+            if (string.IsNullOrWhiteSpace(migrationPath)) return false;
+            var full = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(cliPackageJson)!, migrationPath.Replace('/', Path.DirectorySeparatorChar)));
+            if (!File.Exists(full)) return false;
+            var migrations = ReadJson(full)["migrations"]?.AsObject();
+            if (migrations is null) return false;
+            foreach (var migration in migrations.Select(kvp => kvp.Value).OfType<JsonObject>())
+            {
+                var version = VersionTuple(migration.StringValue("version"));
+                if (version is not null && version[0] > sourceMajor && version[0] <= targetMajor) return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+        return false;
+    }
+
+    private static (bool Valid, string NgPath, string Reason) ValidateLocalAngularCli(string projectPath, int targetMajor)
+    {
+        var nodeModules = Path.Combine(projectPath, "node_modules");
+        if (!Directory.Exists(nodeModules)) return (false, "", "node_modules does not exist after install.");
+        var ng = LocalAngularCliPath(projectPath);
+        if (!File.Exists(ng)) return (false, ng, $"Local Angular CLI executable was not found: {ng}");
+        var cliPackageJson = Path.Combine(nodeModules, "@angular", "cli", "package.json");
+        if (!File.Exists(cliPackageJson)) return (false, ng, "node_modules/@angular/cli/package.json does not exist.");
+        var version = VersionTuple(ReadJson(cliPackageJson).StringValue("version"));
+        if (version is null || version[0] != targetMajor) return (false, ng, $"Installed local @angular/cli major does not match target Angular major {targetMajor}.");
+        return (true, ng, "");
+    }
+
+    private static string LocalAngularCliPath(string projectPath) =>
+        Path.Combine(projectPath, "node_modules", ".bin", OperatingSystem.IsWindows() ? "ng.cmd" : "ng");
+
+    private static bool IsLikelyMissingAngularOfficialMigrationFailure(JsonObject validation)
+    {
+        var text = $"{validation.StringValue("output")} {validation.StringValue("errors")} {validation.StringValue("buildVerificationFailureReason")}";
+        return text.Contains("standalone", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("application builder", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("run ng update", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("requires an Angular migration", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("@angular/core: cannot find migration", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static JsonObject OfficialAngularMigrateOnlySkipped(MigrationHop hop, string reason, bool required = false) => new()
     {
         ["required"] = required,
         ["attempted"] = false,
         ["executed"] = false,
+        ["triggered"] = false,
+        ["triggerReason"] = reason,
         ["skipped"] = true,
         ["skippedReason"] = reason,
         ["source"] = "not required",
         ["command"] = new JsonArray(),
         ["commands"] = new JsonArray(),
+        ["filesChangedByAngularCli"] = new JsonArray(),
         ["message"] = $"Official Angular update skipped for Angular {hop.FromVersion} -> {hop.ToVersion}: {reason}."
     };
 
@@ -3946,6 +4132,9 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         result["officialAngularMigrateOnlyExecuted"] = officialMigrateOnly.BoolValue("executed");
         result["officialAngularMigrateOnlySource"] = officialMigrateOnly.StringValue("source");
         result["officialAngularMigrateOnlyCommand"] = officialMigrateOnly["command"]?.DeepClone() ?? new JsonArray();
+        result["officialAngularMigrateOnlyTriggered"] = officialMigrateOnly.BoolValue("triggered");
+        result["officialAngularMigrateOnlyTriggerReason"] = officialMigrateOnly.StringValue("triggerReason", officialMigrateOnly.StringValue("skippedReason"));
+        result["officialAngularMigrateOnlyChangedFiles"] = officialMigrateOnly["filesChangedByAngularCli"]?.DeepClone() ?? new JsonArray();
         result["migrateOnlySkipped"] = officialMigrateOnly.BoolValue("skipped", !officialMigrateOnly.BoolValue("executed"));
         result["migrateOnlySkippedReason"] = officialMigrateOnly.StringValue("skippedReason");
     }

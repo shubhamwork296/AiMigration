@@ -43,6 +43,7 @@
     "npmLookupRetries": 0,
     "npmLookupIdleTimeoutSeconds": 20,
     "npmLookupTimeoutSeconds": 45,
+    "manualReviewAutoAccept": true,
     "skipPreflightDependencyCompatibility": false,
     "sourceCompatibilityRemediation": false,
     "preflightRemediationMode": "suggest",

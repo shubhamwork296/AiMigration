@@ -370,7 +370,12 @@ public sealed class MigrationOrchestrator(
 
     private static bool ShouldResolveAiCli(MigrationConfig config) => config.Ai.Provider is null && (config.Ai.UseAi || config.Ai.AiCli == "none");
     private static bool Confirm(string prompt) { Console.Write($"{prompt} [y/N] "); var answer = Console.ReadLine()?.Trim().ToLowerInvariant(); return answer is "y" or "yes"; }
-    private static void PrintManualRollbackOptions(string snapshot) { Console.WriteLine("[Rollback] Automatic rollback disabled."); Console.WriteLine($"[Rollback] Snapshot available at: {snapshot}"); Console.WriteLine("[Rollback] Review output manually or run rollback command."); }
+    private static void PrintManualRollbackOptions(string snapshot)
+    {
+        ConsoleFormatter.WriteLine(ConsoleLabel.Warn, "[Rollback] Automatic rollback disabled.");
+        ConsoleFormatter.WriteLine(ConsoleLabel.Info, $"[Rollback] Snapshot available at: {snapshot}");
+        ConsoleFormatter.WriteLine(ConsoleLabel.Info, "[Rollback] Review output manually or run rollback command.");
+    }
     private static void RecordValidationFailure(ValidationResult validation, string runtime, string? hop, int attempt, bool remediationAttempted)
     {
         validation.ValidationFailures.Add(new JsonObject

@@ -53,6 +53,7 @@ public sealed class ConfigLoader : IConfigLoader
             AllowBusinessLogicChanges = raw.BoolValue("allowBusinessLogicChanges"),
             SourceCompatibilityRemediation = raw.BoolValue("sourceCompatibilityRemediation"),
             PreferNgUpdate = raw.BoolValue("preferNgUpdate", true),
+            ManualReviewAutoAccept = raw.BoolValue("manualReviewAutoAccept", true),
             AvoidFullVersionScans = raw.BoolValue("avoidFullVersionScans", true),
             DirectDependenciesOnlyPreflight = raw.BoolValue("directDependenciesOnlyPreflight", true),
             PackageVersionVerificationMode = raw.StringValue("packageVersionVerificationMode", "install-first"),
