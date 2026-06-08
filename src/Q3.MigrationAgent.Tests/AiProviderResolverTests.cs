@@ -352,14 +352,37 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
-    public void ParseCodexResponse_Extracts_Final_Assistant_Message_From_Jsonl()
+    public void ParseCodexResponse_Extracts_Agent_Message_Text_From_Jsonl()
     {
-        var stdout = "{\"type\":\"turn.started\"}\n" +
-                     "{\"type\":\"turn.completed\",\"message\":{\"role\":\"assistant\",\"content\":" + JsonString(ValidRemediationJson()) + "}}\n";
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"turn.started\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidMigrationAnalysisJson()) + "}}\n";
 
         var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
 
-        Assert.Equal("replace deprecated flag", parsed["summary"]?.ToString());
+        Assert.Equal("ok", parsed["summary"]?.ToString());
+        Assert.Equal(80, parsed["confidence"]?.GetValue<int>());
+        Assert.Empty(parsed["packageUpdates"]!.AsArray());
+    }
+
+    [Fact]
+    public void CodexUsageParser_Uses_Latest_Jsonl_Usage_Event()
+    {
+        var stdout = """
+            {"type":"turn.started","model":"gpt-5-codex","usage":{"input_tokens":10,"cached_input_tokens":2,"output_tokens":3,"reasoning_tokens":1,"total_tokens":13}}
+            {"type":"turn.completed","model":"gpt-5-codex","usage":{"input_tokens":40,"input_tokens_details":{"cached_tokens":8},"output_tokens":12,"output_tokens_details":{"reasoning_tokens":5},"total_tokens":52}}
+            """;
+
+        var usage = CodexUsageParser.Parse(stdout, "");
+
+        Assert.NotNull(usage);
+        Assert.True(usage!.Available);
+        Assert.Equal("gpt-5-codex", usage.Model);
+        Assert.Equal(40, usage.InputTokens);
+        Assert.Equal(8, usage.CachedInputTokens);
+        Assert.Equal(12, usage.OutputTokens);
+        Assert.Equal(5, usage.ReasoningTokens);
+        Assert.Equal(52, usage.TotalTokens);
     }
 
     [Fact]
@@ -440,6 +463,18 @@ public sealed class AiProviderResolverTests
           ],
           "commandsToRunAfter": [],
           "reportNotes": []
+        }
+        """;
+
+    private static string ValidMigrationAnalysisJson() => """
+        {
+          "summary": "ok",
+          "confidence": 80,
+          "risk": "low",
+          "packageUpdates": [],
+          "manualReview": [],
+          "changes": [],
+          "recommendations": []
         }
         """;
 

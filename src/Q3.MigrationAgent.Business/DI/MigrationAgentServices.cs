@@ -32,9 +32,10 @@ public sealed class MigrationAgentServices
     {
         rulesRoot ??= LocateRulesRoot();
         var runLog = new RunLog();
+        var aiUsage = new AiUsageTracker(runLog);
         ICommandRunner commandRunner = new CommandRunner(runLog);
         var promptLoader = new PromptLoader();
-        var providers = new IAiProvider[] { new CodexCliProvider(commandRunner, promptLoader), new ClaudeCliProvider(commandRunner, promptLoader) };
+        var providers = new IAiProvider[] { new CodexCliProvider(commandRunner, promptLoader, aiUsage), new ClaudeCliProvider(commandRunner, promptLoader, aiUsage) };
         var aiResolver = new AiProviderResolver(commandRunner, providers);
         var dotnet = new DotNetAdapter(commandRunner);
         var analyzer = new ProjectAnalyzer(aiResolver, promptLoader);
@@ -52,7 +53,8 @@ public sealed class MigrationAgentServices
             new RollbackService(),
             new MarkdownReportWriter(),
             runLog,
-            aiResolver);
+            aiResolver,
+            aiUsage);
         return new MigrationAgentServices { ConfigLoader = new ConfigLoader(), Orchestrator = orchestrator };
     }
 

@@ -1858,7 +1858,8 @@ public sealed class AngularAdapterTests
             new RollbackService(),
             new MarkdownReportWriter(),
             new RunLog(),
-            ai);
+            ai,
+            new AiUsageTracker());
 
         var result = await orchestrator.RunMigrationAsync(Config(root) with { OutputPath = output, To = new RuntimeSpec("angular", "16") });
 

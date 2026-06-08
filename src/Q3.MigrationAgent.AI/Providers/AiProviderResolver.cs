@@ -86,25 +86,8 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         }
 
         var scan = ScanJsonObjects(source);
-        foreach (var candidate in scan.Candidates)
-        {
-            if (IsInsideMarkdownFence(source, candidate.Start)) continue;
-            JsonObject? parsed;
-            try
-            {
-                parsed = JsonNode.Parse(candidate.Text) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
-
-            scan.ParsedAny = true;
-            if (parsed is not null && IsExpectedResponseSchema(parsed))
-            {
-                return parsed;
-            }
-        }
+        var parsedResponse = TryParseExpectedResponse(source, scan);
+        if (parsedResponse is not null) return parsedResponse;
 
         WriteRawOutput(rawStdout ?? text, rawStderr ?? "");
         throw ParseFailure(provider, FailureKind(source, scan), scan.Candidates.Count > 0, scan.ParsedAny, scan.Truncated, rawStdout ?? text, rawStderr ?? "");
@@ -112,10 +95,18 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
 
     public static JsonObject ParseCodexResponse(string stdout, string stderr, IReadOnlyList<string> command, string provider)
     {
-        var parseSource = UsesJsonLines(command)
-            ? ExtractFinalJsonLineMessage(stdout) ?? ""
-            : stdout;
-        return ParseJsonObject(parseSource, provider, stdout, stderr);
+        if (!UsesJsonLines(command)) return ParseJsonObject(stdout, provider, stdout, stderr);
+
+        var eventResponse = ExtractFinalJsonLineAgentMessage(stdout);
+        if (eventResponse is not null) return eventResponse;
+
+        if (LooksLikeCodexEventStream(stdout))
+        {
+            WriteRawOutput(stdout, stderr);
+            throw ParseFailure(provider, "no-valid-agent-message-json", false, false, false, stdout, stderr);
+        }
+
+        return ParseJsonObject(stdout, provider, stdout, stderr);
     }
 
     private static JsonObject? ParseJsonLine(string line)
@@ -130,51 +121,34 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         }
     }
 
-    private static string? ExtractFinalJsonLineMessage(string stdout)
+    private static JsonObject? ExtractFinalJsonLineAgentMessage(string stdout)
     {
-        var messages = new List<string>();
+        JsonObject? latest = null;
         foreach (var line in stdout.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries))
         {
             var evt = ParseJsonLine(line.Trim());
             if (evt is null) continue;
-            var type = evt.StringValue("type", evt.StringValue("event", evt.StringValue("msg_type")));
-            if (!type.Contains("assistant", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("agent", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("turn", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("message", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
 
-            var text = ExtractMessageText(evt);
-            if (!string.IsNullOrWhiteSpace(text)) messages.Add(text);
+            if (!string.Equals(evt.StringValue("type"), "item.completed", StringComparison.OrdinalIgnoreCase)) continue;
+            if (evt["item"] is not JsonObject item) continue;
+            if (!string.Equals(item.StringValue("type"), "agent_message", StringComparison.OrdinalIgnoreCase)) continue;
+            if (item["text"] is not JsonValue textValue || !textValue.TryGetValue<string>(out var text) || string.IsNullOrWhiteSpace(text)) continue;
+
+            var parsed = TryParseExpectedResponse(text, ScanJsonObjects(text));
+            if (parsed is not null) latest = parsed;
         }
-        return messages.LastOrDefault();
+        return latest;
     }
 
-    private static string? ExtractMessageText(JsonNode? node)
+    private static bool LooksLikeCodexEventStream(string stdout)
     {
-        if (node is null) return null;
-        if (node is JsonValue value)
+        foreach (var line in stdout.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries))
         {
-            return value.TryGetValue<string>(out var text) ? text : null;
+            var evt = ParseJsonLine(line.Trim());
+            var type = evt?.StringValue("type");
+            if (type is "thread.started" or "turn.started" or "turn.completed" or "item.completed") return true;
         }
-        if (node is JsonArray array)
-        {
-            var parts = array.Select(ExtractMessageText).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
-            return parts.Length == 0 ? null : string.Join("\n", parts);
-        }
-        if (node is not JsonObject obj) return null;
-
-        foreach (var key in new[] { "message", "content", "text", "output", "response", "final_response" })
-        {
-            if (obj.TryGetPropertyValue(key, out var child))
-            {
-                var text = ExtractMessageText(child);
-                if (!string.IsNullOrWhiteSpace(text)) return text;
-            }
-        }
-        return null;
+        return false;
     }
 
     private static bool UsesJsonLines(IReadOnlyList<string> command) =>
@@ -231,6 +205,31 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
             if (depth > 0) scan.Truncated = true;
         }
         return scan;
+    }
+
+    private static JsonObject? TryParseExpectedResponse(string source, JsonObjectScan scan)
+    {
+        foreach (var candidate in scan.Candidates)
+        {
+            if (IsInsideMarkdownFence(source, candidate.Start)) continue;
+            JsonObject? parsed;
+            try
+            {
+                parsed = JsonNode.Parse(candidate.Text) as JsonObject;
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            scan.ParsedAny = true;
+            if (parsed is not null && IsExpectedResponseSchema(parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return null;
     }
 
     private static bool IsExpectedResponseSchema(JsonObject obj) =>
@@ -420,7 +419,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     }
 
     private static IReadOnlyList<string> CliCommandFor(string name, string? path) => name == "codex"
-        ? [path ?? name, "exec", "--skip-git-repo-check"]
+        ? [path ?? name, "exec", "--json", "--skip-git-repo-check"]
         : [path ?? name, "-p"];
 
     private static string? FirstOutputLine(dynamic result)

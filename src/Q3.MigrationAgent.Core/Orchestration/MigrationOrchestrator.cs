@@ -32,15 +32,19 @@ public sealed class MigrationOrchestrator(
     RollbackService rollback,
     MarkdownReportWriter reporter,
     RunLog runLog,
-    IAiCliResolver aiResolver)
+    IAiCliResolver aiResolver,
+    AiUsageTracker aiUsage)
 {
     public async Task<MigrationRunResult> RunMigrationAsync(MigrationConfig config, CancellationToken cancellationToken = default)
     {
         var progress = new ProgressReporter(config.Verbosity);
         var logPath = runLog.CreateRunLogPath(config.OutputPath);
-        progress.LogFile(logPath);
-        runLog.Append(logPath, "Migration run started.");
-        var warnings = new List<string>();
+        aiUsage.Start(logPath);
+        try
+        {
+            progress.LogFile(logPath);
+            runLog.Append(logPath, "Migration run started.");
+            var warnings = new List<string>();
 
         var timing = new TimingRecorder();
         if (ShouldResolveAiCli(config))
@@ -271,7 +275,12 @@ public sealed class MigrationOrchestrator(
         progress.FinalReport(finalReportPath);
         if (validationResult.Passed == false) PrintFailedValidationSummary(progress, "Validation", validationResult, finalReportPath);
         if (config.ShowTimingSummary) timing.Write(config.OutputPath);
-        return new MigrationRunResult { Success = validationResult.Passed != false, ReportPath = finalReportPath, LogPath = logPath, ValidationPassed = validationResult.Passed, Warnings = warnings, Errors = validationResult.Passed == false ? [validationResult.Errors] : [] };
+            return new MigrationRunResult { Success = validationResult.Passed != false, ReportPath = finalReportPath, LogPath = logPath, ValidationPassed = validationResult.Passed, Warnings = warnings, Errors = validationResult.Passed == false ? [validationResult.Errors] : [] };
+        }
+        finally
+        {
+            aiUsage.WriteSummary();
+        }
     }
 
     private async Task<MigrationRunResult> RunAdapterHopMigrationAsync(MigrationConfig config, IMigrationAdapter adapter, IReadOnlyList<MigrationHop> hops, IProgressReporter progress, string logPath, List<string> warnings, TimingRecorder timing, CancellationToken cancellationToken)
