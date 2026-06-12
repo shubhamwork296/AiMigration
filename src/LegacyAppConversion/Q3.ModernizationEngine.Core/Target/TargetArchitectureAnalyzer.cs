@@ -36,8 +36,9 @@ public sealed class TargetArchitectureAnalyzer : ITargetArchitectureAnalyzer
     {
         var roots = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Blazor"] = MatchFolder(folders, ["blazor", "ui", "presentation", "web"]) ?? "Blazor",
-            ["BusinessLogic"] = MatchFolder(folders, ["business", "application", "core", "services", "domain"]) ?? "BusinessLogic"
+            ["Blazor"] = InferRoot(folders, ["components", "pages", "layout", "wwwroot"]) ?? MatchFolder(folders, ["blazor", "ui", "presentation", "web"]) ?? "Blazor",
+            ["BusinessLogic"] = MatchFolder(folders, ["business", "application", "core", "services", "domain"]) ?? "BusinessLogic",
+            ["Api"] = InferRoot(folders, ["controllers", "endpoints", "services", "repositories", "validators", "di", "middleware", "contracts"]) ?? MatchFolder(folders, ["api", "backend", "server"]) ?? "Api"
         };
 
         return roots;
@@ -51,7 +52,12 @@ public sealed class TargetArchitectureAnalyzer : ITargetArchitectureAnalyzer
             ["UI/Components"] = MatchFolder(folders, ["components", "shared/components", "ui/components"]) ?? "UI/Components",
             ["UI/Layout"] = MatchFolder(folders, ["layout", "shared/layout", "ui/layout"]) ?? "UI/Layout",
             ["Infrastructure/Configuration"] = MatchFolder(folders, ["configuration", "infrastructure/configuration", "config"]) ?? "Infrastructure/Configuration",
-            ["Application/SupportingCode"] = MatchFolder(folders, ["application", "services", "core", "shared"]) ?? "Application/SupportingCode"
+            ["Application/SupportingCode"] = MatchFolder(folders, ["application", "services", "core", "shared"]) ?? "Application/SupportingCode",
+            ["API/Controllers"] = MatchFolder(folders, ["controllers", "endpoints"]) ?? "Controllers",
+            ["API/Services"] = MatchFolder(folders, ["services", "application/services"]) ?? "Services",
+            ["API/Contracts"] = MatchFolder(folders, ["contracts", "models", "dto"]) ?? "Contracts",
+            ["API/Repositories"] = MatchFolder(folders, ["repositories", "data", "infrastructure"]) ?? "Repositories",
+            ["API/DI"] = MatchFolder(folders, ["di", "dependencyinjection"]) ?? "DI"
         };
 
         return hints;
@@ -89,4 +95,36 @@ public sealed class TargetArchitectureAnalyzer : ITargetArchitectureAnalyzer
 
     private static string? MatchFolder(IReadOnlyList<string> folders, IReadOnlyList<string> patterns) =>
         folders.FirstOrDefault(folder => patterns.Any(pattern => folder.Contains(pattern, StringComparison.OrdinalIgnoreCase)));
+
+    private static string? InferRoot(IReadOnlyList<string> folders, IReadOnlyList<string> anchorPatterns)
+    {
+        var matched = folders
+            .Where(folder => anchorPatterns.Any(pattern => folder.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        if (matched.Length == 0)
+        {
+            return null;
+        }
+
+        var segments = matched
+            .Select(path => path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+            .ToArray();
+        var commonLength = segments.Min(parts => parts.Length);
+        var prefix = new List<string>();
+
+        for (var index = 0; index < commonLength; index++)
+        {
+            var candidate = segments[0][index];
+            if (segments.All(parts => string.Equals(parts[index], candidate, StringComparison.OrdinalIgnoreCase)))
+            {
+                prefix.Add(candidate);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return prefix.Count == 0 ? null : string.Join("/", prefix);
+    }
 }

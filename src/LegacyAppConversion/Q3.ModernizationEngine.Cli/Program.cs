@@ -22,20 +22,29 @@ var outputPath = Option(args, "--output");
 var architecturePath = Option(args, "--architecture");
 var targetMode = Option(args, "--target-mode");
 var aiProvider = Option(args, "--ai-provider");
+var moduleSelection = Option(args, "--module");
+var executionPhase = Option(args, "--phase");
+var listModulesOnly = args.Contains("--list-modules", StringComparer.OrdinalIgnoreCase);
 var useAi = args.Contains("--use-ai", StringComparer.OrdinalIgnoreCase);
 
 if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(outputPath) || string.IsNullOrWhiteSpace(architecturePath))
 {
-    Console.WriteLine("Usage: --source <legacy-app-path> --output <modernization-output-path> --architecture <target-architecture-path> [--target-mode blazor-only|api-only|blazor-and-api] [--use-ai] [--ai-provider codex|claude]");
+    Console.WriteLine("Usage: --source <legacy-app-path> --output <modernization-output-path> --architecture <target-architecture-path> [--target-mode blazor-only|api-only|blazor-and-api] [--phase full|api|ui] [--module <module-id|module-path|module-name>] [--list-modules] [--use-ai] [--ai-provider codex|claude]");
     return 1;
 }
+
+var normalizedPhase = NormalizePhase(executionPhase);
+var effectiveTargetMode = ResolveTargetMode(targetMode, normalizedPhase);
 
 var request = new ModernizationRequest
 {
     SourcePath = Path.GetFullPath(sourcePath),
     OutputPath = Path.GetFullPath(outputPath),
     TargetArchitecturePath = Path.GetFullPath(architecturePath),
-    TargetMode = string.IsNullOrWhiteSpace(targetMode) ? "blazor-and-api" : targetMode,
+    TargetMode = effectiveTargetMode,
+    ModuleSelection = moduleSelection ?? "",
+    ExecutionPhase = normalizedPhase,
+    ListModulesOnly = listModulesOnly,
     Ai = new ModernizationAiOptions
     {
         UseAi = useAi,
@@ -58,6 +67,8 @@ var result = await orchestrator.RunAsync(request);
 
 Console.WriteLine($"Workspace path: {result.WorkspacePath}");
 Console.WriteLine($"Report path: {result.ReportPath}");
+Console.WriteLine($"Graph path: {result.GraphPath}");
+Console.WriteLine($"Status path: {result.StatusPath}");
 Console.WriteLine($"Target architecture report: {result.TargetArchitectureReportPath}");
 Console.WriteLine($"Workspace plan: {result.WorkspacePlanPath}");
 Console.WriteLine($"Module plans: {result.ModulePlansPath}");
@@ -65,3 +76,23 @@ Console.WriteLine($"Execution results: {result.ExecutionResultsPath}");
 Console.WriteLine($"Discovered units: {result.TotalUnits}");
 Console.WriteLine($"Manual review items: {result.ManualReviewCount}");
 return 0;
+
+static string NormalizePhase(string? phase) =>
+    string.IsNullOrWhiteSpace(phase) ? "full" : phase.Trim().ToLowerInvariant() switch
+    {
+        "api" => "api",
+        "ui" => "ui",
+        "full" => "full",
+        _ => throw new InvalidOperationException("Invalid phase. Use full, api, or ui.")
+    };
+
+static string ResolveTargetMode(string? targetMode, string normalizedPhase)
+{
+    var baseMode = string.IsNullOrWhiteSpace(targetMode) ? "blazor-and-api" : targetMode.Trim().ToLowerInvariant();
+    return normalizedPhase switch
+    {
+        "api" => "api-phase",
+        "ui" => "ui-only",
+        _ => baseMode
+    };
+}

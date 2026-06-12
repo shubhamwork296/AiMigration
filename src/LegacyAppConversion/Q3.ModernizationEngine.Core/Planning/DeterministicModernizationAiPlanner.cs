@@ -94,7 +94,7 @@ public sealed class DeterministicModernizationAiPlanner : IModernizationAiPlanne
                 steps.Add("Expose business capabilities through API contracts for downstream consumers.");
             }
         }
-        else
+        else if (IncludesBlazor(targetMode))
         {
             steps.Add("Map legacy UI flow into Blazor components/pages.");
             if (IncludesApi(targetMode))
@@ -105,6 +105,16 @@ public sealed class DeterministicModernizationAiPlanner : IModernizationAiPlanne
             {
                 steps.Add("Keep Blazor migration aligned with reusable business logic contracts.");
             }
+        }
+
+        if (IsApiPhaseOnly(targetMode))
+        {
+            steps.Add("Stop after API/service generation; do not generate UI artifacts in this phase.");
+        }
+
+        if (IsUiPhaseOnly(targetMode))
+        {
+            steps.Add("Use existing API/service contracts and focus only on UI migration in this phase.");
         }
 
         if (unit.Signals.Contains("session-state", StringComparer.OrdinalIgnoreCase))
@@ -163,8 +173,14 @@ public sealed class DeterministicModernizationAiPlanner : IModernizationAiPlanne
     }
 
     private static bool IncludesBlazor(string targetMode) =>
-        targetMode is "blazor-only" or "blazor-and-api";
+        targetMode is "blazor-only" or "blazor-and-api" or "ui-only";
 
     private static bool IncludesApi(string targetMode) =>
-        targetMode is "api-only" or "blazor-and-api";
+        targetMode is "api-only" or "blazor-and-api" or "api-phase";
+
+    private static bool IsApiPhaseOnly(string targetMode) =>
+        targetMode is "api-only" or "api-phase";
+
+    private static bool IsUiPhaseOnly(string targetMode) =>
+        targetMode is "ui-only";
 }

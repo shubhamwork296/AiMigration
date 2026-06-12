@@ -19,28 +19,21 @@ public sealed class WorkspacePlanner : IWorkspacePlanner
         var placements = new List<WorkspacePlacement>();
         foreach (var unit in plan.Units)
         {
-            var trackRoot = architecture.TrackRoots.TryGetValue(unit.Track, out var configuredTrackRoot)
-                ? configuredTrackRoot
-                : unit.Track;
-            var mappedArea = architecture.PlacementHints.TryGetValue(unit.TargetArea, out var hint)
-                ? hint
-                : unit.TargetArea;
-            var relativeArea = NormalizeRelativeArea(trackRoot, mappedArea);
-            var relativeModulePath = unit.ModulePath.Replace('/', Path.DirectorySeparatorChar);
-
+            var (trackRoot, relativeArea, moduleFolderSuffix) = ResolvePlacement(request, architecture, unit);
             var unitFolder = Path.Combine(
                 root,
                 trackRoot.Replace('/', Path.DirectorySeparatorChar),
                 relativeArea.Replace('/', Path.DirectorySeparatorChar),
-                relativeModulePath);
+                moduleFolderSuffix.Replace('/', Path.DirectorySeparatorChar));
             EnsureWithinOutput(unitFolder, outputRoot);
-            Directory.CreateDirectory(unitFolder);
 
             var notes = new List<string>
             {
                 $"Track: {unit.Track}",
                 $"Source category: {unit.Category}",
-                $"Signals: {string.Join(", ", unit.Signals)}"
+                $"Signals: {string.Join(", ", unit.Signals)}",
+                $"Resolved workspace root: {trackRoot}",
+                $"Resolved relative area: {relativeArea}"
             };
 
             if (unit.RequiresManualReview)
@@ -80,6 +73,34 @@ public sealed class WorkspacePlanner : IWorkspacePlanner
         var cleaned = new string(name.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray());
         return string.IsNullOrWhiteSpace(cleaned) ? "UnnamedUnit" : cleaned;
     }
+
+    private static (string TrackRoot, string RelativeArea, string ModuleFolderSuffix) ResolvePlacement(
+        ModernizationRequest request,
+        TargetArchitectureProfile architecture,
+        MigrationUnit unit)
+    {
+        if (IsApiPhase(request))
+        {
+            var apiRoot = architecture.TrackRoots.TryGetValue("Api", out var configuredApiRoot)
+                ? configuredApiRoot
+                : "Api";
+            return (apiRoot, string.Empty, string.Empty);
+        }
+
+        var trackRoot = architecture.TrackRoots.TryGetValue(unit.Track, out var configuredTrackRoot)
+            ? configuredTrackRoot
+            : unit.Track;
+        var mappedArea = architecture.PlacementHints.TryGetValue(unit.TargetArea, out var hint)
+            ? hint
+            : unit.TargetArea;
+        var relativeArea = NormalizeRelativeArea(trackRoot, mappedArea);
+        var relativeModulePath = unit.ModulePath;
+        return (trackRoot, relativeArea, relativeModulePath);
+    }
+
+    private static bool IsApiPhase(ModernizationRequest request) =>
+        request.ExecutionPhase.Equals("api", StringComparison.OrdinalIgnoreCase) ||
+        request.TargetMode is "api-only" or "api-phase";
 
     private static string NormalizeRelativeArea(string trackRoot, string mappedArea)
     {

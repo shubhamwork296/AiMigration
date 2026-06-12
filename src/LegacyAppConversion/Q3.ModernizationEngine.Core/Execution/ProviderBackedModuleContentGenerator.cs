@@ -77,7 +77,7 @@ public sealed class ProviderBackedModuleContentGenerator : IModuleContentGenerat
         foreach (var file in response["files"]?.AsArray()?.OfType<JsonObject>() ?? [])
         {
             var relative = file.StringValue("relativePath");
-            if (!IsSafeRelativePath(relative))
+            if (!IsSafeRelativePath(relative) || !IsAllowedForTargetMode(relative, plan.TargetMode))
             {
                 warnings.Add($"Skipped unsafe AI file path: {relative}");
                 continue;
@@ -170,6 +170,28 @@ public sealed class ProviderBackedModuleContentGenerator : IModuleContentGenerat
         return !normalized.Contains("../", StringComparison.Ordinal) &&
                !normalized.StartsWith("..", StringComparison.Ordinal) &&
                !normalized.Contains(':', StringComparison.Ordinal);
+    }
+
+    private static bool IsAllowedForTargetMode(string path, string targetMode)
+    {
+        var normalized = path.Replace('\\', '/');
+        if (targetMode is "api-only" or "api-phase")
+        {
+            return !normalized.EndsWith(".razor", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/components/", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/pages/", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/layout/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (targetMode == "ui-only")
+        {
+            return !normalized.EndsWith("Controller.cs", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/services/", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/repositories/", StringComparison.OrdinalIgnoreCase) &&
+                   !normalized.Contains("/di/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return true;
     }
 
     private static void EnsureWithinWorkspace(string fullPath, string workspaceFolder, string outputRoot)

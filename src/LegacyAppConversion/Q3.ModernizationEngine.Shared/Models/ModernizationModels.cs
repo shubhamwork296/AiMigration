@@ -10,6 +10,9 @@ public sealed record ModernizationRequest
     public string TargetRuntime { get; init; } = "dotnet";
     public string TargetVersion { get; init; } = "10.0";
     public string TargetMode { get; init; } = "blazor-and-api";
+    public string ModuleSelection { get; init; } = "";
+    public string ExecutionPhase { get; init; } = "full";
+    public bool ListModulesOnly { get; init; }
     public ModernizationAiOptions Ai { get; init; } = new();
 }
 
@@ -120,12 +123,35 @@ public sealed record WorkspacePlacement
     public required IReadOnlyList<string> Notes { get; init; }
 }
 
+public sealed record GraphNode
+{
+    public required string Id { get; init; }
+    public required string Label { get; init; }
+    public required string Kind { get; init; }
+    public required IReadOnlyList<string> Tags { get; init; }
+}
+
+public sealed record GraphEdge
+{
+    public required string From { get; init; }
+    public required string To { get; init; }
+    public required string Kind { get; init; }
+}
+
+public sealed record LegacyGraph
+{
+    public required IReadOnlyList<GraphNode> Nodes { get; init; }
+    public required IReadOnlyList<GraphEdge> Edges { get; init; }
+}
+
 public sealed record ModernizationRunResult
 {
     public required string WorkspacePath { get; init; }
     public required string ReportPath { get; init; }
     public required int TotalUnits { get; init; }
     public required int ManualReviewCount { get; init; }
+    public required string GraphPath { get; init; }
+    public required string StatusPath { get; init; }
     public required string TargetArchitectureReportPath { get; init; }
     public required string WorkspacePlanPath { get; init; }
     public required string ModulePlansPath { get; init; }
