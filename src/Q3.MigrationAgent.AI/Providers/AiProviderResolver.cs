@@ -234,7 +234,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     }
 
     private static bool IsExpectedResponseSchema(JsonObject obj) =>
-        IsRemediationPlanSchema(obj) || IsRecommendationSchema(obj) || IsPackageClassificationSchema(obj) || IsThirdPartyPackageRemediationSchema(obj);
+        IsRemediationPlanSchema(obj) || IsRecommendationSchema(obj) || IsPackageClassificationSchema(obj) || IsThirdPartyPackageRemediationSchema(obj) || IsModernizationGenerationSchema(obj) || IsModernizationModulePlanSchema(obj);
 
     private static bool IsRemediationPlanSchema(JsonObject obj)
     {
@@ -288,6 +288,31 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         }
 
         return false;
+    }
+
+    private static bool IsModernizationGenerationSchema(JsonObject obj)
+    {
+        if (obj["summary"] is null || obj["files"] is not JsonArray files) return false;
+        foreach (var file in files.OfType<JsonObject>())
+        {
+            if (string.IsNullOrWhiteSpace(file.StringValue("relativePath"))) return false;
+            if (string.IsNullOrWhiteSpace(file.StringValue("kind"))) return false;
+            if (string.IsNullOrWhiteSpace(file.StringValue("content"))) return false;
+        }
+
+        if (obj["warnings"] is not null and not JsonArray) return false;
+        if (obj["manualReviewReasons"] is not null and not JsonArray) return false;
+        return true;
+    }
+
+    private static bool IsModernizationModulePlanSchema(JsonObject obj)
+    {
+        if (obj["summary"] is null) return false;
+        if (obj["suggestedOutputs"] is not null and not JsonArray) return false;
+        if (obj["steps"] is not null and not JsonArray) return false;
+        if (obj["sqlArtifacts"] is not null and not JsonArray) return false;
+        if (obj["manualReviewReasons"] is not null and not JsonArray) return false;
+        return obj["steps"] is JsonArray || obj["suggestedOutputs"] is JsonArray;
     }
 
     private static bool IsInsideMarkdownFence(string text, int index)

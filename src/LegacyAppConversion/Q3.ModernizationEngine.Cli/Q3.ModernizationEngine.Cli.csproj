@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Q3.ModernizationEngine.Core\Q3.ModernizationEngine.Core.csproj" />
+    <ProjectReference Include="..\Q3.ModernizationEngine.Shared\Q3.ModernizationEngine.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
