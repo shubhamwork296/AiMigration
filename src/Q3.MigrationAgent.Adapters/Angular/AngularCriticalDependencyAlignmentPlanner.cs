@@ -15,6 +15,7 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
     private static readonly HashSet<string> Criticalities = ["required", "recommended", "advisory", "unknown"];
     private static readonly HashSet<string> Risks = ["low", "medium", "high"];
     private static readonly HashSet<string> Sections = ["dependencies", "devDependencies"];
+    private static readonly HashSet<string> RuntimeSupportPackages = ["rxjs", "zone.js", "tslib"];
     private static readonly HashSet<string> AngularOwned = AngularCriticalDependencyPolicy.CriticalPackages
         .Where(AngularCriticalDependencyPolicy.IsAngularOwnedPackage)
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -122,9 +123,10 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
         if (AngularOwned.Contains(name) && action is "align" or "add" && MajorVersion(recommended) < targetAngularMajor) return (false, "Angular-owned package recommendation is below the target hop major.");
         if (name == "typescript" && action is "align" or "add" && typeScriptPeerEvidence.HasIntersection && !typeScriptPeerEvidence.Contains(recommended)) return (false, $"TypeScript recommendation is outside the Angular tooling peer dependency intersection {typeScriptPeerEvidence.IntersectionText}.");
         if (name == "typescript" && action is "align" or "add" && !AngularCriticalDependencyPolicy.IsSupportedTypeScriptForTarget(recommended, targetAngularMajor)) return (false, "TypeScript recommendation is incompatible with the target Angular major.");
+        if (action is "align" or "add" && !AngularCriticalDependencyPolicy.IsSafeCriticalAlignment(name, recommended, targetAngularMajor)) return (false, "Recommended version is not safe for Angular critical dependency alignment.");
         if (confidence < 60) return (false, "Critical dependency recommendation confidence is below 60.");
-        if (risk == "high" && !(BlocksKnownFailure(item) && ReasonReferencesSpecificCompatibility(reason))) return (false, "High-risk critical dependency recommendation requires manual review.");
-        if (confidence < 80 && !ReasonReferencesSpecificCompatibility(reason)) return (false, "Medium-confidence recommendation must explicitly reference Angular compatibility.");
+        if (risk == "high" && !(BlocksKnownFailure(item) && ReasonReferencesSpecificCompatibility(name, reason))) return (false, "High-risk critical dependency recommendation requires manual review.");
+        if (confidence < 80 && !ReasonReferencesSpecificCompatibility(name, reason)) return (false, "Medium-confidence recommendation must explicitly reference Angular compatibility.");
         if (item.BoolValue("manualReviewRequired") || action == "manualReview") return (false, string.IsNullOrWhiteSpace(reason) ? "AI requested manual review." : reason);
         return (true, "");
     }
@@ -254,7 +256,23 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
     private static string NormalizeRange(string range) => Regex.Replace(range, @"\s+", " ").Trim();
 
     private static bool BlocksKnownFailure(JsonObject item) => item.BoolValue("blocksBuild") || item.BoolValue("blocksInstall");
-    private static bool ReasonReferencesSpecificCompatibility(string reason) => reason.Contains("Angular", StringComparison.OrdinalIgnoreCase) && (reason.Contains("TypeScript", StringComparison.OrdinalIgnoreCase) || reason.Contains("compiler", StringComparison.OrdinalIgnoreCase) || reason.Contains("peer", StringComparison.OrdinalIgnoreCase) || reason.Contains("build", StringComparison.OrdinalIgnoreCase));
+    private static bool ReasonReferencesSpecificCompatibility(string packageName, string reason)
+    {
+        if (!reason.Contains("Angular", StringComparison.OrdinalIgnoreCase)) return false;
+        if (reason.Contains("TypeScript", StringComparison.OrdinalIgnoreCase) ||
+            reason.Contains("compiler", StringComparison.OrdinalIgnoreCase) ||
+            reason.Contains("peer", StringComparison.OrdinalIgnoreCase) ||
+            reason.Contains("build", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return RuntimeSupportPackages.Contains(packageName) &&
+               (reason.Contains(packageName, StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("runtime", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("compatib", StringComparison.OrdinalIgnoreCase) ||
+                reason.Contains("requires", StringComparison.OrdinalIgnoreCase));
+    }
     private static int? MajorVersion(string value) => Regex.Match(value, @"\d+") is { Success: true } m ? int.Parse(m.Value) : null;
     private static int[]? VersionTuple(string? version) => Regex.Match(version ?? "", @"(\d+)(?:\.(\d+))?(?:\.(\d+))?") is { Success: true } m ? m.Groups.Values.Skip(1).Where(g => g.Success).Select(g => int.Parse(g.Value)).ToArray() : null;
     private static int Compare(int[] left, int[] right) { for (var i = 0; i < Math.Max(left.Length, right.Length); i++) { var l = i < left.Length ? left[i] : 0; var r = i < right.Length ? right[i] : 0; if (l != r) return l.CompareTo(r); } return 0; }

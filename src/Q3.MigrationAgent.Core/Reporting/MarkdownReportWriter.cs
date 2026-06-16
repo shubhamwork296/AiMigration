@@ -96,10 +96,10 @@ public sealed class MarkdownReportWriter
             $"- angular.json: {manifest["hasAngularJson"]}",
             $"- tsconfig.json: {manifest["hasTsconfig"]}",
             "- Global Angular CLI was not modified.",
-            "- Angular CLI migrate-only runs only for policy-required hops.",
-            "- Command source: project-local npm scripts for validation; PATH ng only for policy-required official migrate-only",
-            "- Angular CLI source: PATH ng for official migrate-only; project-local dependency when validation scripts invoke it",
-            "- Global Angular CLI: used from PATH only for policy-required official migrate-only",
+            "- Angular CLI official update runs only for policy-required hops.",
+            "- Command source: project-local npm scripts for validation and project-local Angular CLI for official Angular updates",
+            "- Angular CLI source: project-local dependency for official updates and validation scripts",
+            "- Global Angular CLI: not used for official Angular updates",
             "- Global install/update: not performed",
             "",
             "## Planned Migration Hops"
@@ -167,7 +167,7 @@ public sealed class MarkdownReportWriter
         lines.AddRange(FormatAgentValidation(hopResults));
         lines.AddRange(["", "## Build Verification"]);
         lines.AddRange(FormatBuildVerification(hopResults));
-        lines.AddRange(["", "## Angular CLI Migrate-only Status"]);
+        lines.AddRange(["", "## Angular CLI Official Update Status"]);
         lines.AddRange(FormatOfficialMigrateOnlyStatus(hopResults));
         lines.AddRange(["", "## Preflight Dependency Compatibility Analysis"]);
         foreach (var hop in hops)
@@ -246,16 +246,18 @@ public sealed class MarkdownReportWriter
         return hopResults.Select(r =>
         {
             var label = $"Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}";
-            var command = string.Join(" ", r["officialAngularMigrateOnlyCommand"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
-            if (r.BoolValue("officialAngularMigrateOnlyExecuted"))
+            var command = string.Join(" ", (r["officialAngularUpdateCommand"] ?? r["officialAngularMigrateOnlyCommand"])?.AsArray()?.Select(x => x?.ToString()) ?? []);
+            if (r.BoolValue("officialAngularUpdateExecuted", r.BoolValue("officialAngularMigrateOnlyExecuted")))
             {
-                var files = string.Join(", ", r["officialAngularMigrateOnlyChangedFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
-                return $"- {label}: migrate-only triggered=yes; reason={r.StringValue("officialAngularMigrateOnlyTriggerReason")}; source={r.StringValue("officialAngularMigrateOnlySource")}; command=`{command}`; Angular CLI generated changes={FilesText(files)}";
+                var files = string.Join(", ", (r["officialAngularUpdateChangedFiles"] ?? r["officialAngularMigrateOnlyChangedFiles"])?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                var businessFiles = string.Join(", ", r["officialAngularMigrationBusinessImpactingFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                var highRisk = r.BoolValue("officialAngularMigrationBusinessImpactingHighRisk") ? "; high-risk business-impacting changes=yes" : "";
+                return $"- {label}: official update triggered=yes; mode={r.StringValue("officialAngularUpdateMode", "migrate-only")}; reason={r.StringValue("officialAngularUpdateTriggerReason", r.StringValue("officialAngularMigrateOnlyTriggerReason"))}; source={r.StringValue("officialAngularUpdateSource", r.StringValue("officialAngularMigrateOnlySource"))}; command=`{command}`; Angular CLI generated changes={FilesText(files)}; acceptance={r.StringValue("officialAngularMigrationAcceptanceStatus")}; business-impacting files={FilesText(businessFiles)}{highRisk}";
             }
 
-            var required = r.BoolValue("officialAngularMigrateOnlyRequired");
-            var reason = r.StringValue("migrateOnlySkippedReason", required ? "required migrate-only did not run" : "not required by Angular hop policy");
-            return $"- {label}: migrate-only triggered={r.BoolValue("officialAngularMigrateOnlyTriggered")}; skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
+            var required = r.BoolValue("officialAngularUpdateRequired", r.BoolValue("officialAngularMigrateOnlyRequired"));
+            var reason = r.StringValue("migrateOnlySkippedReason", required ? "required official Angular update did not run" : "not required by Angular hop policy");
+            return $"- {label}: official update triggered={r.BoolValue("officialAngularUpdateTriggered", r.BoolValue("officialAngularMigrateOnlyTriggered"))}; skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
         });
     }
 

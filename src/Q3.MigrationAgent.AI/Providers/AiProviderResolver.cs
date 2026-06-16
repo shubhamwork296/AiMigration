@@ -233,7 +233,12 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     }
 
     private static bool IsExpectedResponseSchema(JsonObject obj) =>
-        IsRemediationPlanSchema(obj) || IsRecommendationSchema(obj) || IsPackageClassificationSchema(obj) || IsThirdPartyPackageRemediationSchema(obj);
+        IsRemediationPlanSchema(obj) ||
+        IsRecommendationSchema(obj) ||
+        IsPackageClassificationSchema(obj) ||
+        IsThirdPartyPackageRemediationSchema(obj) ||
+        IsInstallStrategySchema(obj) ||
+        IsStructuralConfigSchema(obj);
 
     private static bool IsRemediationPlanSchema(JsonObject obj)
     {
@@ -289,6 +294,40 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         return false;
     }
 
+    private static bool IsInstallStrategySchema(JsonObject obj)
+    {
+        if (obj["strategy"] is null || obj["command"] is null || obj["reason"] is null || obj["confidence"] is null || obj["risk"] is null) return false;
+        if (obj["isRetry"] is null || obj["isFallback"] is null || obj["maxRetries"] is null || obj["failureClassification"] is null) return false;
+
+        var strategy = obj.StringValue("strategy");
+        if (strategy is not ("normalInstall" or "legacyPeerDepsInstall" or "retrySameCommand" or "manualReview")) return false;
+        if (obj.StringValue("risk") is not ("low" or "medium" or "high")) return false;
+        if (obj.StringValue("failureClassification") is not ("none" or "peerDependencyConflict" or "transientNetworkFailure" or "registryAuthFailure" or "packageVersionNotFound" or "unknownFailure")) return false;
+        return obj["isRetry"] is JsonValue && obj["isFallback"] is JsonValue && obj["maxRetries"] is JsonValue;
+    }
+
+    private static bool IsStructuralConfigSchema(JsonObject obj)
+    {
+        if (obj["targetAngularHop"] is null || obj["changes"] is not JsonArray changes || obj["manualRecommendations"] is not JsonArray manualRecommendations || obj["safetyDecision"] is not JsonObject safetyDecision) return false;
+        if (safetyDecision["canApplyAutomatically"] is null || safetyDecision["requiresManualReview"] is null || safetyDecision["reason"] is null) return false;
+
+        foreach (var change in changes)
+        {
+            if (change is not JsonObject changeObj) return false;
+            if (string.IsNullOrWhiteSpace(changeObj.StringValue("filePath"))) return false;
+            if (changeObj.StringValue("changeType") is not ("update_builder" or "update_option" or "remove_deprecated_option" or "update_tsconfig" or "update_script" or "manual_review")) return false;
+            if (changeObj["patch"] is not JsonObject patch || patch["before"] is null || patch["after"] is null) return false;
+        }
+
+        foreach (var item in manualRecommendations)
+        {
+            if (item is not JsonObject recommendation) return false;
+            if (recommendation["reason"] is null) return false;
+        }
+
+        return true;
+    }
+
     private static bool IsInsideMarkdownFence(string text, int index)
     {
         var before = text[..index];
@@ -329,7 +368,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
                 })
                 .FirstOrDefault(o => o is not null);
             if (first is null) return "";
-            var expected = new[] { "summary/confidence/risk/changes", "recommendations", "packages", "packageUpdates/manualReview" };
+            var expected = new[] { "summary/confidence/risk/changes", "recommendations", "packages", "packageUpdates/manualReview", "strategy/command", "targetAngularHop/changes/manualRecommendations/safetyDecision" };
             var actual = first.Select(kvp => kvp.Key).ToArray();
             var missing = new[] { "packageUpdates", "manualReview" }.Where(f => !first.ContainsKey(f)).ToArray();
             var unexpected = actual.Where(f => !new[] { "packageUpdates", "manualReview" }.Contains(f)).ToArray();

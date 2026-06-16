@@ -366,6 +366,39 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
+    public void ParseCodexResponse_Extracts_Install_Strategy_From_Jsonl()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"turn.started\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidInstallStrategyJson()) + "}}\n" +
+                     "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        Assert.Equal("manualReview", parsed["strategy"]?.ToString());
+        Assert.Equal("packageVersionNotFound", parsed["failureClassification"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseJsonObject_Accepts_Structural_Config_Schema()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""
+            {
+              "targetAngularHop": "14->15",
+              "changes": [],
+              "manualRecommendations": [],
+              "safetyDecision": {
+                "canApplyAutomatically": true,
+                "requiresManualReview": false,
+                "reason": "No safe structural Angular config changes required."
+              }
+            }
+            """, "codex");
+
+        Assert.Equal("14->15", parsed["targetAngularHop"]?.ToString());
+    }
+
+    [Fact]
     public void CodexUsageParser_Uses_Latest_Jsonl_Usage_Event()
     {
         var stdout = """
@@ -475,6 +508,20 @@ public sealed class AiProviderResolverTests
           "manualReview": [],
           "changes": [],
           "recommendations": []
+        }
+        """;
+
+    private static string ValidInstallStrategyJson() => """
+        {
+          "strategy": "manualReview",
+          "command": "",
+          "reason": "The previous install failed with ETARGET/no matching version found.",
+          "confidence": 0.98,
+          "risk": "high",
+          "isRetry": false,
+          "isFallback": false,
+          "maxRetries": 0,
+          "failureClassification": "packageVersionNotFound"
         }
         """;
 

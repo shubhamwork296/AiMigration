@@ -147,6 +147,31 @@ typescript@4.8.4 invalid: ">=4.4.3 <4.7" from @ngtools/webpack@13.3.11
     }
 
     [Fact]
+    public async Task Angular_19_Accepts_ZoneJs_Runtime_Support_Alignment()
+    {
+        var result = await Planner(new CapturingAi(Response(Rec("zone.js", "^0.14.10", "~0.15.0", "Angular 19 requires a zone.js runtime support version compatible with Angular 19.", confidence: 75, section: "dependencies", blocksBuild: false))))
+            .RecommendAsync(Config(), new MigrationHop(18, 19, "Angular 18 to 19"), Angular18PackageJson());
+
+        Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r =>
+            r.StringValue("packageName") == "zone.js" &&
+            r.StringValue("recommendedVersion") == "~0.15.0" &&
+            r.StringValue("dependencySection") == "dependencies");
+        Assert.DoesNotContain(result["rejected"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "zone.js");
+    }
+
+    [Fact]
+    public async Task Angular_Owned_Extension_Packages_Are_Framework_Critical()
+    {
+        var result = await Planner(new CapturingAi(Response(
+                Rec("@angular/localize", "18.2.13", "^19.0.0", "Angular localize must align with Angular framework packages for Angular 19.", section: "dependencies"),
+                Rec("@angular/material-moment-adapter", "18.2.13", "^19.0.0", "Angular Material adapter must align with Angular Material for Angular 19.", section: "dependencies"))))
+            .RecommendAsync(Config(), new MigrationHop(18, 19, "Angular 18 to 19"), Angular18PackageJson());
+
+        Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@angular/localize");
+        Assert.Contains(result["accepted"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@angular/material-moment-adapter");
+    }
+
+    [Fact]
     public async Task Low_Confidence_And_High_Risk_Become_Manual_Review()
     {
         var result = await Planner(new CapturingAi(Response(
@@ -176,6 +201,25 @@ typescript@4.8.4 invalid: ">=4.4.3 <4.7" from @ngtools/webpack@13.3.11
     {
         ["dependencies"] = new JsonObject { ["@angular/core"] = "^13.3.0" },
         ["devDependencies"] = new JsonObject { ["@angular/compiler-cli"] = "^13.1.3", ["@angular-devkit/build-angular"] = "^13.3.11", ["typescript"] = typescriptVersion }
+    };
+
+    private static JsonObject Angular18PackageJson() => new()
+    {
+        ["dependencies"] = new JsonObject
+        {
+            ["@angular/core"] = "18.2.13",
+            ["@angular/localize"] = "18.2.13",
+            ["@angular/material-moment-adapter"] = "18.2.13",
+            ["zone.js"] = "^0.14.10",
+            ["rxjs"] = "^7.4.0",
+            ["tslib"] = "^2.6.2"
+        },
+        ["devDependencies"] = new JsonObject
+        {
+            ["@angular/compiler-cli"] = "18.2.13",
+            ["@angular-devkit/build-angular"] = "18.2.12",
+            ["typescript"] = "^5.5.2"
+        }
     };
 
     private static JsonObject Angular13PeerMetadata() => new()
