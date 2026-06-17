@@ -1,0 +1,81 @@
+.select-upgrade-bx {
+    background: #FFFFFF;
+    border: 1px solid #D6D1CA;
+    box-sizing: border-box;
+    border-radius: 5px;
+    padding: 16px 17px;
+    height: auto;
+}
+
+.upgradebanner-ul {
+    margin: 5px 25px  0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.upgradebanner-ul li {
+    margin: 0;
+    padding: 0 0 7px 20px;
+    list-style: none;
+    position: relative;
+    font-size: 14px;
+    line-height: 21px;
+}
+
+.upgradebanner-ul li::before {
+    position: absolute;
+    height: 10px;
+    width: 10px;
+    content: '';
+    background: url('../../../assets/images/tick.svg');
+    left: 0;
+    top: 3px;
+    background-size: cover;
+}
+
+.select-tickets-bx {
+    background: #FFFFFF;
+    border: 1px solid #D6D1CA;
+    box-sizing: border-box;
+    border-radius: 5px;
+    padding: 16px 17px;
+}
+
+.active-upgrade {
+    border: 1px solid #131E29;
+}
+
+.ticket-upgrade-msg {
+    margin: 30px 0;
+    background: #F6E5AE;
+    border: 1px solid #F4CA40;
+    border-radius: 4px;
+    padding: 12px 12px 14px;
+}
+
+.ticket-upgrade-msg .info-icon svg {
+    margin-top: -10px;
+}
+
+.ln-21 {
+    line-height: 21px;
+}
+
+@media (max-width:767px) {
+    .pl-xs-32 {
+      padding-left: 32px;
+    }
+
+    .ticket-upgrade-msg .info-icon svg {
+      margin-top: 0;
+    }
+
+    .ticket-upgrade-msg p.f-14 {
+      font-size: 14px !important;
+    }
+
+    .select-upgrade-bx {
+      line-height: 17px !important;
+      padding: 8px 10px !important;
+    }
+}

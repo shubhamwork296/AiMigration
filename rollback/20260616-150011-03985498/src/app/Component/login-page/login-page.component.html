@@ -1,0 +1,94 @@
+<div class="signin-modal upgrade-login-popup">
+    <h2 matDialogTitle>Sign in to your Account</h2>
+    <button class="dialog-close simple-btn" *ngIf="!data.isLoginFromOutside" mat-dialog-close (click)="onClosePopup()">
+        <img src="assets/images/Close.svg" alt="close_icon">
+    </button>
+
+    <div *ngIf="form.invalid && showBanner || invalidCredential && showBanner" class="error-banner-bx" role="alert">
+        <h2 class="f-18 text-spark-dark" aria-label="Please amend the errors in the following mandatory fields">
+            <button class="simple-btn" (click)="hideBanner()">
+                <img src="assets/images/close-orange.svg" alt="close_icon">
+            </button> Please amend the errors in the following mandatory fields.
+        </h2>
+        <div *ngIf="isSubmitted" class="ps-2">
+            <ul class="text-spark-dark font-500">
+                <li *ngIf="form.get('username').hasError('emailRegexError')  && isSubmitted">
+                    Email: Email is not valid.
+                </li>
+                <li *ngIf="form.get('username').hasError('required') && isSubmitted">
+                    Email: Please complete this mandatory field.
+                </li>
+                <li *ngIf="form.get('username').hasError('maxlength') && isSubmitted">
+                    Email: Invalid email address length. Please enter a valid email address.
+                </li>
+                <li *ngIf="form.get('password').hasError('required') && isSubmitted">
+                    Password: Please complete this mandatory field.
+                </li>
+            </ul>
+        </div>
+        <div *ngIf="invalidCredential" class="text-spark-dark mb-10">
+            <ul class="text-spark-dark font-500">
+                <li>
+                    {{lockoutMessage}}
+                </li>
+            </ul>
+        </div>
+    </div>
+    <mat-dialog-content>
+        <form [formGroup]="form" class="login-form upgrade-login-form-popup">
+            <div class="form-group" id="email">
+                <label class="f-16 font-500">Email Address<span class="text-spark-dark ps-1">*</span></label>
+                <mat-form-field class="example-full-width default-input default-input-brdr" floatLabel="never">
+                    <input aria-labelledby="email" matInput placeholder="Enter your email address" type="text" formControlName="username" autocomplete="off" [prevent-keys]="[32]">
+                    <div *ngIf="form.get('username').hasError('emailRegexError')  && isSubmitted">
+                        <span class="validation-err">Email is not valid.</span>
+                    </div>
+                    <div *ngIf="form.get('username').hasError('required') && isSubmitted">
+                        <span class="validation-err">Please complete this mandatory field.</span>
+                    </div>
+                    <div *ngIf="form.get('username').hasError('maxlength') && isSubmitted">
+                        <span class="validation-err">Invalid email address length. Please enter a valid email address.</span>
+                    </div>
+                </mat-form-field>
+            </div>
+            <div class="form-group new-version-input" id="password">
+                <label class="f-16 font-500">Password<span class="text-spark-dark ps-1">*</span></label>
+                <mat-form-field class="example-full-width default-input default-input-brdr" floatLabel="never">
+                    <input id="lp-password-input" capsLockDetect (capsLockOn)="capsLock = $event" [type]="passwordFieldTextType ? 'text' : 'password'" aria-labelledby="password" matInput placeholder="Enter your password" type="password" formControlName="password">
+                    <button (click)="passwordFieldTextType = !passwordFieldTextType" type="button"
+                    mat-icon-button matSuffix attr.aria-label="{{passwordFieldTextType ? 'Hide password' : 'Show password'}}"
+                    [attr.aria-pressed]="passwordFieldTextType">
+                        <mat-icon class="sign-in-mat-icon">
+                            <span id="lp-password-visible-hide-icon" class="material-symbols-outlined icon-font-size">
+                                {{passwordFieldTextType ? 'visibility' :
+                                'visibility_off'}}
+                            </span>
+                        </mat-icon>
+                    </button>
+                    <div *ngIf="form.get('password').hasError('required') && isSubmitted">
+                        <span class="validation-err">Please complete this mandatory field.</span>
+                    </div>
+                </mat-form-field>
+            </div>
+            <p class="capslock-txt mt-0 mb-8" *ngIf="capsLock === 1">
+                Caps lock is on
+            </p>
+            <div class="form-group d-md-flex justify-content-between upgrade-login-checkbox-popup">
+                <mat-checkbox class="graphene-checkbx remebermecheckbx f-14" formControlName="rememberme">Remember me on this device</mat-checkbox>
+            </div>
+            <p *ngIf="error" class="error">
+                {{ error }}
+            </p>
+            <button type="submit" mat-button class="default-btn w-100" (click)="submit()">Login</button>
+        </form>
+    </mat-dialog-content>
+
+    <div class="extras-login-popup-footer">
+        <div class="extras-login-popup-footer-left">
+            <button mat-button class="font-weight-500 forgot-password-btn text-underline px-0" (click)="forgotPassword()">Forgotten password?</button>
+        </div>
+        <div class="extras-login-popup-footer-right">
+            <button mat-button (click)="registerForm()" class="font-weight-500 forgot-password-btn px-0 send-email text-underline text-spark-dark" (click)="registerForm()">Create a new account</button>
+        </div>
+    </div>
+</div>

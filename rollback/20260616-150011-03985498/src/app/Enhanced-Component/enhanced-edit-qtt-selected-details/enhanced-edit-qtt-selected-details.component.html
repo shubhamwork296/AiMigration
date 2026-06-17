@@ -1,0 +1,86 @@
+<ul id="eeqsd-view-journey-list" class="d-flex view-edit-form-container" *ngIf="!isShowingEditQTTInMobile()">
+    <li id="eeqsd-view-journey-station-stops" class="view-edit-form-station-stops">
+        <span id="eeqsd-view-journey-station-from" class="f-700 white-space-nowrap">{{commonServices.getCityNameOnly(searchRequest?.DepartureLocationName)}}</span>
+        <img id="eeqsd-view-journey-station-interchange-icon" *ngIf="searchRequest?.TravelSolutionDirection !== 'ONE_WAY'" src="assets/images/new-design-img/interchange-icon.svg" alt="" aria-hidden="true" />
+        <img id="eeqsd-view-journey-station-interchange-icon2" *ngIf="searchRequest?.TravelSolutionDirection === 'ONE_WAY'" src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" />
+        <span id="eeqsd-view-journey-station-to" class="f-700 white-space-nowrap">{{commonServices.getCityNameOnly(searchRequest?.ArrivalLocationName)}}</span>
+    </li>
+    <li id="eeqsd-view-journey-date" class="view-edit-form-mobile-date">
+        <span id="eeqsd-view-journey-date-out" *ngIf="(searchRequest?.DepartureTimesStart) || (searchResponse && searchResponse?.TravelSolutions)">Out: {{searchRequest?.DepartureTimesStart | date:'EEE dd MMM'}}</span><span class="arrow-margin" *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' && searchReturnResponse">,</span>
+        <span id="eeqsd-view-journey-date-return" *ngIf="(searchRequest?.ReturnTimesStart) || (searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' && searchReturnResponse)">Return: {{searchRequest?.ReturnTimesStart | date:'EEE dd MMM'}}</span><span *ngIf="searchRequest?.TravelSolutionDirection == 'OPEN_RETURN'">,</span>
+        <span id="eeqsd-view-journey-date-open-return" *ngIf="searchRequest?.TravelSolutionDirection == 'OPEN_RETURN'">Open return</span>
+    </li>
+    <li id="eeqsd-view-journey-single-txt" class="white-space-nowrap" *ngIf="!isMobile && !isTablet && searchRequest?.TravelSolutionDirection === 'ONE_WAY'">
+        Single journey
+    </li>
+    <li id="eeqsd-view-journey-return-txt" class="white-space-nowrap" *ngIf="!isMobile && !isTablet && (searchRequest?.TravelSolutionDirection === 'RETURN' || searchRequest?.TravelSolutionDirection === 'FORWARD')">
+        Return journey
+    </li>
+    <li id="eeqsd-view-journey-open-return-txt" class="white-space-nowrap" *ngIf="!isMobile && !isTablet && searchRequest?.TravelSolutionDirection === 'OPEN_RETURN'">
+        Open return journey
+    </li>
+    <li id="eeqsd-view-journey-adult" class="view-edit-form-pax-railcard" *ngIf="searchRequest?.Adult > 0">
+        <div id="eeqsd-view-journey-adult-inner" class="view-edit-form-pax white-space-nowrap">
+            <span id="eeqsd-view-journey-number-of-adult" class="f-700">{{searchRequest?.Adult}}</span>
+            {{searchRequest?.Adult > 1 ? 'Adults' : 'Adult'}}
+        </div>
+    </li>
+    <li id="eeqsd-view-journey-child" class="view-edit-form-pax-railcard" *ngIf="searchRequest?.Child > 0">
+        <div id="eeqsd-view-journey-child-inner" class="view-edit-form-pax white-space-nowrap">
+            <span id="eeqsd-view-journey-number-of-child" class="f-700">{{searchRequest?.Child}}</span>
+            {{searchRequest?.Child > 1 ? 'Children' : 'Child'}}
+        </div>
+    </li>
+    <li id="eeqsd-view-journey-railcard" class="view-edit-form-pax-railcard" *ngIf="showRailCardAsLabelIfOpted()">
+        <div id="eeqsd-view-journey-railcard-inner" class="view-edit-form-railcard white-space-nowrap">
+            <span id="eeqsd-view-journey-number-of-railcard" class="f-700">{{getTotalRailCardCount()}}</span>
+            <span id="eeqsd-view-journey-railcard-sign">x</span>
+            {{getTotalRailCardCount() > 1 ? 'Railcards' : 'Railcard'}}
+        </div>
+    </li>
+    <li id="eeqsd-view-journey-railcard" class="view-edit-form-pax-railcard" *ngIf="showNoRailCardMessage()">
+        <div id="eeqsd-view-journey-railcard-type" class="view-edit-form-railcard" >
+            No railcard
+        </div>
+    </li>
+    <!----- For mobile ----->
+    <li id="eeqsd-view-journey-pax-railcard-promotion-mobile" class="view-journey-mobile ">
+        <div id="eeqsd-view-journey-adult-mobile" class="white-space-nowrap" *ngIf="searchRequest?.Adult > 0">
+            <span id="eeqsd-view-journey-number-of-adult-mobile">{{searchRequest?.Adult}}</span>
+            {{searchRequest?.Adult > 1 ? 'Adults' : 'Adult'}}<span *ngIf="searchRequest?.Child > 0 || showRailCardAsLabelIfOpted() || showNoRailCardMessage()">,</span>
+        </div>
+        <div id="eeqsd-view-journey-child-mobile" class="white-space-nowrap" *ngIf="searchRequest?.Child > 0">
+            <span id="eeqsd-view-journey-number-of-child-mobile">{{searchRequest?.Child}}</span>
+            {{searchRequest?.Child > 1 ? 'Children' : 'Child'}}<span *ngIf="showRailCardAsLabelIfOpted() || showNoRailCardMessage()">,</span>
+        </div>
+        <div id="eeqsd-view-journey-railcard-mobile" class="white-space-nowrap" *ngIf="showRailCardAsLabelIfOpted()">
+            <span id="eeqsd-view-journey-number-of-railcard-mobile">{{getTotalRailCardCount()}}</span>
+            {{getTotalRailCardCount() > 1 ? 'Railcards' : 'Railcard'}}
+        </div>
+        <div id="eeqsd-view-journey-railcard-mobile" class="white-space-nowrap" *ngIf="showNoRailCardMessage()">
+            No railcard
+        </div>
+    </li>
+    <!----- End For mobile ----->
+</ul>
+
+    <div class="view-journey-mobile select-page-edit-qtt" *ngIf="isShowingEditQTTInMobile()">
+        <ul>
+            <li id="eeqsd-view-journey-station-stops" class="view-edit-form-station-stops">
+                <span id="eeqsd-view-journey-station-from"
+                    class="f-700 white-space-nowrap">{{isReturn ? commonServices.getCityNameOnly(searchRequest?.ArrivalLocationName): commonServices.getCityNameOnly(searchRequest?.DepartureLocationName)}}</span>
+                <img id="eeqsd-view-journey-station-interchange-icon2"
+                    src="assets/images/new-design-img/mobile-editpagearrow.svg" alt=""
+                    aria-hidden="true" />
+                <span id="eeqsd-view-journey-station-to"
+                    class="f-700 white-space-nowrap">{{isReturn ? commonServices.getCityNameOnly(searchRequest?.DepartureLocationName): commonServices.getCityNameOnly(searchRequest?.ArrivalLocationName)}}</span>
+            </li>
+            <li class="view-edit-form-station-stops mt-4rem">
+                <span><b>{{getDepartureDate()}}</b></span>
+                <img src="assets/images/new-design-img/mobile-editpagearrow.svg" alt="" aria-hidden="true" />
+                <span><b>{{getArrivalDate()}}</b></span>
+                <span class="time-stamp">{{getDurationAndChangesText()}}</span>
+            </li>
+        </ul>
+
+    </div>

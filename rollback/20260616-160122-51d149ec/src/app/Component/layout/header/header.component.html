@@ -1,0 +1,91 @@
+<div id="header-top" class="header-top"></div>
+<mat-toolbar id="header-matToolbar" class="header-main" *ngIf="!((router.url.includes(appRouteEnum.resetEmail) && isShowBuyTicket) || router.url.includes(appRouteEnum.ForgotPassword) || router.url.includes(appRouteEnum.Reset) || router.url.includes(appRouteEnum.Login) || router.url.includes(appRouteEnum.verifyEmail))">
+  <div id="header-container" class="container">
+    <div id="header-row" class="row">
+      <span id="header-logo" class="ps-sm-3 p-0"><a id="header-logoLink" href={{qtturl}} class="d-block p-1 main-logo"><img id="header-logoImg"
+            src="assets/images/logo-light.svg" alt="Avanti westcoast Logo" class="logo-img"></a></span>
+      <span id="header-menuSpacer" class="menu-spacer"></span>
+      <button id="header-menuBtn" mat-icon-button (click)="sidenav.toggle()" fxShow="true" class="menutoggle-icon" fxHide.gt-sm
+        *ngIf="isShowHeaderMenu()">
+        <mat-icon id="header-menuIcon">menu</mat-icon>
+      </button>
+      <div id="header-fixMenu" fxShow="true" class="align-self-center" fxHide.lt-md
+        *ngIf="isShowHeaderMenu()">
+        <!-- The following menu items will be hidden on both SM and XS screen sizes -->
+        <a id="header-trainTicketMenu" href="#" mat-button>Train Tickets</a>
+        <a id="header-planMyJourneyMenu" href="#" mat-button>Plan My Journey</a>
+        <a id="header-travelWithUsMenu" href="#" mat-button>Travelling With Us</a>
+        <a id="header-destinationOffersMenu" href="#" mat-button>Destinations and Offers</a>
+        <a id="header-helpSupportMenu" href="#" mat-button>Help and Support</a>
+        <a id="header-basketMenu" href="javascript: void(0);" [attr.aria-label]="'Basket count ' + basketCount" mat-button
+          class="basket-count-anchor basket-count-anchor-focus" *ngIf="basketCount && isLoggedIn"
+          (click)="redirectToReviewBuy()">Basket <div id="header-basketDiv" class="basket-count-div">
+            <img id="header-basketImg" src="assets/images/emptyBasket-awc.png" class="basket" alt="basket_logo"><span id="header-basketCount"
+              class="basket-count">
+              {{basketCount}}</span>
+          </div>
+        </a>
+      </div>
+      <div id="header-user-sing-in" class="header-sing-in-welcome">
+        <div id="header-sign-tooltip-header" class="d-flex p-relative header-sign-in">
+          <button id="header-signInBtn" mat-button *ngIf="!sharedService.isLogin && !onSignInPage && !router.url.includes(appRouteEnum.resetEmail)" mat-button class='signin-btn'
+          (click)="openLogin()">Sign in</button>
+          <div id="header-sign-tooltip-area" class="p-absolute login-tooltip-position login-tooltip-backdrop" *ngIf="isLoginTooltip" [ngClass]="{'d-block' : isLoginTooltip, 'd-none' : !isHideLoginToolTip}">
+            <app-login-search></app-login-search>
+          </div>
+        </div>
+        <button id="header-welcomeCustomerBtn" *ngIf="sharedService.isLogin && !router.url.includes(appRouteEnum.resetEmail)" mat-button class="signin-btn d-header-user" [matMenuTriggerFor]="appMenu">
+          <img id="header-welcomeCustomerUserIcon" src="assets/images/new-user.svg" alt="user" class="user-login-img">Hi, {{ customerName }}<img id="header-welcomeCustomerArrowIcon" src="assets/images/header-arrow.svg" alt="expand arrow" class="header-user-arrow">
+        </button>
+      </div>
+
+      <mat-menu id="header-matMenu" class="cus-matmenu upgrade-myaccount-menu" #appMenu="matMenu">
+        <button id="header-accountBtn" mat-menu-item (click)="[showAccountDetails()]">My Account</button>
+        <button id="header-logoutBtn" mat-menu-item (click)="[showLogoutPopup()]">Logout</button>
+      </mat-menu>
+      <a id="header-basket2" href="javascript: void(0);" [attr.aria-label]="'Basket count ' + basketCount" mat-button
+        class="text-fff align-self-center basket-count-anchor-focus upgrade-basket-txt" (click)="redirectToReviewBuy()"
+        *ngIf="basketCount && isLoggedIn"><span id="header-basketTitle" class="d-none d-md-inline-block">Basket</span>
+        <div id="header-basketCountDiv" class="basket-count-div">
+          <img id="header-basketLogo" src="assets/images/emptyBasket-awc.svg" class="basket" alt="basket_logo1">
+          <span id="header-basketCount2" class="basket-count">{{basketCount}}</span>
+        </div>
+      </a>
+      <p id="header-paymentArea" class="payment-value plr-15 mb-0" *ngIf="(router.url.includes('payment-form'))">
+        <span id="header-paymentDetails" class="d-block f-16 ln-20">Payment Details</span>
+        <span id="header-paymentPrice" class="f-16">£<span id="header-paymentTotal" class="f-24">15.00</span></span>
+      </p>
+    </div>
+  </div>
+</mat-toolbar>
+<mat-sidenav-container id="header-matSidenavContainer" fxFlexFill class="d-none">
+  <mat-sidenav id="header-matSidenav" #sidenav>
+    <mat-nav-list id="header-matNavList">
+      <a id="header-menuTitle" class="font-500 menu-heading" mat-list-item>Menu</a>
+      <a id="header-trainTicketMenu2" href="#" mat-list-item>Train Tickets</a>
+      <a id="header-planMyJourneyMenu2" href="#" mat-list-item>Plan My Journey</a>
+      <a id="header-travelWithUsMenu2" href="#" mat-list-item>Travelling With Us</a>
+      <a id="header-destinationOffersMenu2" href="#" mat-list-item>Destinations and Offers</a>
+      <a id="header-helpSupportMenu2" href="#" mat-list-item>Help and Support</a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content id="header-matSidenavContent" fxFlexFill class="">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<mat-toolbar *ngIf="((router.url.includes(appRouteEnum.resetEmail) && isShowBuyTicket) || router.url.includes(appRouteEnum.ForgotPassword) || router.url.includes(appRouteEnum.Reset) || router.url.includes(appRouteEnum.Login) || router.url.includes(appRouteEnum.verifyEmail))" id="header-logo-buy-btn" class="header-main">
+  <div id="header-container2" class="container">
+    <div id="header-row2" class="row">
+      <div id="header-logo-btn-div" class="logo-buy-btn w-100">
+        <span id="header-logo2" class="ps-sm-3 p-0">
+          <a id="header-logoLink2" href={{qtturl}} class="d-block p-1 main-logo">
+            <img id="header-logoImg2" src="assets/images/logo-light.svg" alt="Avanti westcoast Logo" class="logo-img">
+          </a>
+        </span>
+        <span id="header-menuSpacer2" class="menu-spacer"></span>
+        <button id="rm-buy-ticket-btn" mat-button class="default-btn" (click)="buyTicket()">Buy tickets</button>
+      </div>
+    </div>
+  </div>
+</mat-toolbar>

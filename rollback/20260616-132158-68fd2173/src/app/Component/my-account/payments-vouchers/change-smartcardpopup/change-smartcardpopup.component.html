@@ -1,0 +1,33 @@
+<div class="popup parking-popup" *ngIf="isChange">
+    <div class="popup-hdr">
+        Change
+    </div>
+    <div class="popup-body">
+        <h3 class="mb-10 mt-20 f-26">Action Confirmation</h3>
+        <p class="mb-2 mt-10">There are tickets on this Smartcard - In order to transfer these to your new Smartcard
+            there is £10 Admin Fee. You can continue to use this Smartcard while your new one is
+            being processed. Any this Links to other accounts will be lost</p>
+        <div class="text-end">
+            <button class="default-btn-outline me-2" mat-button mat-dialog-close>Cancel</button>
+            <button class="default-btn" mat-button (click)="onContinue(1)">Continue</button>
+        </div>
+    </div>
+</div>
+<div class="popup parking-popup" *ngIf="isReplace">
+    <div class="popup-hdr">
+        Replace
+    </div>
+    <div class="popup-body">
+        <h3 class="mb-10 mt-20 f-26">Action Confirmation</h3>
+        <p class="mb-2 mt-10">Your Smartcard has been lost, stolen or damaged and you need to replace it. There are
+            ticket(s) on this Smartcard so we will cancel these so they can no longer be used - In 
+            order to transfer these to your new Smartcard there is £10 Admin Fee. Please note 
+            whilst your replacement Smartcard is waiting to be delivered you will need to purchase 
+            tickets to cover your travel - for information on refunds please contact customer
+            relations. Any links to other accounts will be lost.</p>
+        <div class="text-end">
+            <button class="default-btn-outline me-2" mat-button mat-dialog-close>Cancel</button>
+            <button class="default-btn" mat-button (click)="onContinue(2)">Continue</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,23 @@
+.change-email-body .new-input input.error-input-focus {
+    border: 1px solid #E42B00 !important;
+    box-shadow: 0 0 0 0.1rem rgb(228 43 0 / 100%) !important;
+    border-radius: 5px;
+}
+
+.forgot-password-error {
+    position: relative !important;
+}
+
+@media (max-width:767px) {
+    .p-0 {
+        padding: 0 !important;
+    }
+
+    .icon-font-size {
+        font-size: 92% !important;
+    }
+
+    .mb-xs-16 {
+        margin-bottom: 16px;
+    }
+}

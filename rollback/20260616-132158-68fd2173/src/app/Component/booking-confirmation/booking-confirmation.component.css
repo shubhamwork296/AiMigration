@@ -1,0 +1,547 @@
+mat-expansion-panel.outer mat-expansion-panel-header.outer {
+    min-height: 64px !important;
+}
+.bookingbanner{
+    padding: 60px 45px 40px;
+    position: relative;
+}
+.bookingbanner-img1{
+    background: url('../../../assets/images/banner1.png') no-repeat;
+    background-size: cover;
+}
+.bookingbanner-img2{
+    background: url('../../../assets/images/banner2.png') no-repeat;
+    background-size: cover;
+}
+.link-spark{
+    text-decoration: underline;
+}
+
+.m-20{
+  margin: 20px;
+}
+.bookingbanner::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+}
+.bookingbanner-link{
+    text-decoration: underline;
+}
+.bookingbanner-link:hover{
+    color: #fff;
+}
+.btm-space-td td {
+    padding-bottom: 20px;
+}
+span.mat-panel-title-span:first-child {
+    color: #131E29;
+    font-size: inherit;
+}
+@media (max-width:767px) {
+    tr.for-season-flexi td p{
+        display: inline-block;
+        margin-bottom: 10px;
+    }   
+    
+}
+.valid-text{
+    color: #204555;
+    font-size: 16px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+.deck-popup-btn {
+    background: transparent;
+    border: none;
+}
+.journey-tbl{
+    display: table;
+    float: right;
+}
+.journey-tbl p{
+    display: table-row;
+}
+.journey-tbl p span.t-cell{
+    display: table-cell;
+}
+@media (max-width:767px){
+    .ticket-details-bx tr.mat-row {
+        float: left;
+        display: block;
+        width: 50%;
+    }
+    .ticket-details-bx tr .mat-cell {
+        display: block;
+        padding: 0 !important;
+        font-size: 12px !important;
+    }
+    
+    .ticket-details-bx tr .mat-cell p{
+        margin-bottom: 0;
+    }
+    .valid-text,.valid-date{
+        margin-bottom: 0px;
+    }
+    .valid-text {
+        font-size: 12px;
+    }
+}
+@media (max-width: 991px) and (min-width: 768px){
+p.journey-type {
+    margin-top: 11px !important;
+    line-height: 24px !important;
+}
+}
+@media (max-width:767px){
+    mat-expansion-panel.outer mat-expansion-panel-header.outer {
+        height: auto !important;
+    }
+    .ticket-details-bx p.font-500.mb-10.mt-2{
+        margin-top: 5px !important;
+    margin-bottom: 0PX !important;
+    }
+    .booking-cnfrm-acrdn .bg-solve.p-20 {
+        margin-bottom: 5px !important;
+    }
+    .journey-tbl {
+        float: none;
+        width: 100%;
+    }
+    .journey-tbl .journey-icon{
+        margin-right: 10px !important;
+    }
+    .mode-of-del{
+        display: block;
+    }
+    .seating-details-bx tr.mat-row {
+        float: auto;
+        display: block;
+        width: 50%;
+    }
+    .seating-details-bx tr th.mat-cell, .seating-details-bx tr td.mat-cell {
+        display: block;
+        padding: 0 !important;
+        font-size: 12px !important;
+        white-space: nowrap;
+    }
+}
+@media (min-width:768px){
+    .outwrd-lbl {
+        width: 83px;
+        display: inline-block;
+        line-height: 18px;
+    }
+}
+
+.j-dtl-bx{
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+.t-dlvry-bx{
+    padding: 10px;
+    background: #E7EBF3;
+    font-size: 14px;
+}
+.journey-summary-detail .journey-summary-header {padding-bottom: 10px; border-bottom: 1px solid #D6D1CA;}
+.journey-summary-header p {font-size: 16px; font-weight: 600; color: #131E29; float: left;}
+.journey-summary-header span {font-size: 16px; font-weight: 400; color: #131E29; float: right;}
+.journey-summary-detail .journey-summary-body {padding-left: 16px; padding-top: 12px;}
+.journey-summary-detail .journey-summary-footer {padding-top: 20px; border-top: 1px solid #D6D1CA;}
+.journey-summary-footer p {font-size: 14px; color: #131E29;}
+.journey-summary-body p {font-weight: 400; font-size: 14px; color: #131E29; margin-bottom: 0px;} 
+
+
+.routedetails-tbl td.Departure-stop {border: 0px !important; padding-left: 0px !important; text-align: left !important;}
+.routedetails-tbl td.Departure-stop::after {display: none;}
+.routedetails-tbl td.Departure-stop span.ride-stop {font-size: 14px; font-weight: 600; color: #FF4713;} 
+.routedetails-tbl td.Departure-stop span.ride-stop img {width: 7px; transform: rotate(90deg);}
+.routedetails-tbl td:last-child::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    bottom: 21px;
+    width: 8px;
+    height: 4px;
+    background: #0A493E;
+    border-radius: 0px;
+}
+table.routedetails-tbl tr:first-child td:last-child::after {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 13px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #0a493e;
+    background: #ffffff;
+}
+table.routedetails-tbl tr:last-child td:last-child::after {
+    content: '';
+position: absolute;
+left: -6px;
+bottom: 13px;
+width: 10px;
+height: 10px;
+border-radius: 50%;
+border: 2px solid #0A493E;
+background: #fff;
+top: inherit;
+}
+table.routedetails-tbl td {
+    padding: 12px 15px 12px 20px !important;
+}
+table.routedetails-tbl td.p-0 {
+    padding:0 !important;
+}
+table.routedetails-tbl td:last-child {
+    border-left: 2px solid #0A493E;
+    background: #fff; 
+}
+table.routedetails-tbl tr:last-child td:last-child::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    bottom: 0px;
+    width: 3px;
+    height: 13px;
+    background: #fff;
+}
+table.routedetails-tbl tr:first-child td:last-child::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0px;
+    width: 3px;
+    height: 13px;
+    background: #fff;
+}
+table.routedetails-tbl tr:last-child td:first-child::after {
+    border: 2px solid #FF4713;
+    right: -9px;
+    bottom: 13px;
+    top: inherit;
+    background: #fff;
+} 
+.journey-summary-body .outward-route-loop-bx:first-child table.routedetails-tbl tr:first-child td,
+.journey-summary-body .outward-route-loop-bx:last-child table.routedetails-tbl tr:last-child td{
+    font-weight: 600;
+    font-size: 16px;
+}
+table.routedetails-tbl td:first-child {
+    border-right: none;
+}
+table.routedetails-tbl tr:first-child td:first-child::after, table.routedetails-tbl tr:last-child td:first-child::after {
+    display: none;
+}
+table.routedetails-tbl .Departure-tm{  
+    text-align: center !important;  
+    font-size: 14px;
+}
+table.routedetails-tbl .Departure-tm.journey-first-td {
+    text-align: center !important;
+    font-size: 14px !important;
+    padding: 5px 15px !important;
+    color: #131E29;
+    border-bottom: none;
+    font-weight: 500 !important;
+}
+table.routedetails-tbl tr:first-child .Departure-tm-2, table.routedetails-tbl tr:last-child .Departure-tm-2{  
+    font-size: 14px;
+    font-weight: 400;
+}
+table.routedetails-tbl tr.with-other-logo td:last-child::after{ bottom: 25px;}
+
+table.routedetails-tbl .Departure-tm-2{ 
+    text-align: left !important; 
+}
+table.routedetails-tbl tr.with-other-logo td:last-child{
+    padding-top: 10px !important;
+}
+table.routedetails-tbl tr.with-other-logo td:last-child span{
+    line-height: 34px;
+}
+.journey-logo{
+    transform: translateX(-50%);
+    margin-left: 80px;
+    width: fit-content;
+}
+table.routedetails-tbl td.journey-mid-btn-td {
+    padding: 12px 0px 12px 0px !important;
+}
+table.routedetails-tbl td.journey-mid-btn-td button{
+    transform: translateX(-50%);
+    background: #fff !important;
+    padding: 8px 0px !important;
+}
+.reserve-detail {
+    padding: 20px 0 10px 0;
+}
+.seat-reserve-section {margin-bottom: 16px;}
+.seat-reserve-header .seat-reserve-title h2 {font-size: 24px; color: #204555; font-weight: 600;}
+.seat-reserve-section .seat-reserve-body {margin-top: 16px; padding: 24px; box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1); border-radius: 5px;}
+.seat-reserve-detail-header {padding-bottom: 10px; border-bottom: 1px solid #D6D1CA;}
+.seat-reserve-detail-header h3 {color: #131E29; font-size: 16px; font-weight: 600; margin: 0px;}
+.reserve-detail .reserve-detail-station span {font-size: 14px; font-weight: 600; color: #131E29;}
+.reserve-detail .reserve-detail-station span img {transform: rotate(90deg); width: 10px;}
+.reserve-detail-seats {margin-bottom: 10px;} 
+.reserve-detail-seats .reserve-seat-no {font-size: 24px; font-weight: 600; color: #131E29; vertical-align: middle; width: 60px; display: inline-block;}
+.non-avanti-seat .reserve-seat-no {width: 90px;}
+.non-avanti-seat .reserve-seat-list {width: calc(100% - 90px) !important;}
+.reserve-detail-seats .reserve-seat-list {display: inline-block; font-size: 12px; font-weight: 400; color: #131E29; vertical-align: middle; width: calc(100% - 60px);}
+.reserve-detail .reserve-detail-station {margin-bottom: 16px;}
+.reserve-detail.reserve-detail-box {border-top: 1px solid #D6D1CA;}
+.reserve-detail.reserve-detail-box .reserve-detail-station {margin-top: 10px;}
+.no-reserve-detail-seats {font-size: 12px; font-weight: 400; color: #131E29; margin-top: 32px;}
+.after-none::after{
+    display: none !important;
+}
+.list-payment-style{
+    list-style: none;
+}
+.list-payment-style-circle{
+    list-style-type: circle;
+}
+@media only screen and (max-width: 767px){
+    .f-24 {
+        font-size: 24px !important;
+    }
+    .f-14 {
+        font-size: 14px !important;
+    }
+    .new-payment-dtl .booking-payment-col{
+        padding: 20px 30px 0px 30px;
+    }
+    .new-payment-dtl .booking-payment-col .booking-payment{
+        padding: 0;
+        position: relative;
+        width: auto;
+    }
+    .new-payment-dtl .booking-payment-col::after{
+        content: '';
+        position: absolute;
+        display: none;
+        width: 184px;
+        height: 2px;
+        left: 30px;
+        bottom: 0;
+        border-bottom: 1px solid #D6D1CA;
+    }
+    .new-payment-dtl .booking-payment-col:last-child::after{
+       display: none;
+    }
+    .new-payment-dtl{
+        padding-top: 0;
+    }
+}
+.banner {
+    background: url('../../../assets/images/confirmbanner.png') #131e29 no-repeat;
+    background-size: cover;
+    background-position: center; 
+}
+@media (max-width:767px) {
+    .banner {
+        background-position: 70% !important;
+    } 
+}
+.seat-prefrences-msg{
+    padding: 10px;
+    font-size: 14px;
+    background: #E2F5E9;
+}
+.open-return-dtl-bx{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.train-operator {
+    font-weight: 600;
+}
+.journey-expetion-panel mat-expansion-panel-header {
+    padding-left: 10px !important;
+    padding-right: 27px !important;
+}
+.westcoast-highlight1 {
+    background: #95E1BF;
+    font-style: italic;
+    border-radius: 5px;
+    padding: 5.5px 9.86px;
+    top: 8px;
+    position: absolute;
+    font-size: 16px;
+    font-weight: 500;
+    z-index: 3;
+}
+
+.book-pass-txt {
+    display: block;
+}
+
+.booking-payment {
+    padding-right: 10px;
+}
+
+.booking-payment label {
+    font-size: 12px; 
+    font-weight: 400; 
+    color: #131E29; 
+    margin-bottom: 5px;
+}
+
+.booking-payment p {
+    font-size: 16px; 
+    font-weight: 400; 
+    color: #131E29; 
+    margin-bottom: 0px;
+    word-break: break-word;
+}
+
+.booking-payment span {
+    color: #131E29; 
+    font-size: 16px; 
+}
+
+.booking-payment .booking-payment-txt {
+    min-width: 260px;
+    display: inline-block;
+}
+
+.booking-payment.refund-bold span {
+    font-weight: 600;
+}
+
+.journey-expetion-panel mat-expansion-panel-header.payment-summary-border {
+    border-top: 1px solid #D6D1CA;
+    border-bottom: 1px solid #D6D1CA;
+    padding: 18px !important;
+}
+
+.payment-details-space {
+    padding: 0 43px 20px !important;
+}
+
+.payment-summary-padding {
+    padding: 0 1px;
+}
+
+.smartcard-new-txt {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 21px;
+    letter-spacing: 0.09px;
+    position: relative;
+    top: 2px;
+}
+.bc-smartcard-details {
+    color: #131E29;
+    font-size: 14px;
+    text-align: center;
+    line-height: 20px;
+    max-width: 570px;
+    width: 100%;
+    margin: 10px auto 0 auto;
+}
+
+.bc-smartcard-details span {
+    font-weight: 700;
+}
+
+.bc-smartcard-details a {
+    text-underline-offset: 2px;
+}
+
+.railcard-with-discount {
+    display: flex;
+}
+
+.bc-railcard-mr {
+    margin-right: 24px;
+}
+
+.upgrade-season-confirmation-banner {
+    position: relative;
+}
+
+.upgrade-season-confirmation-tandc-link {
+    top: -1.5px;
+}
+
+@media (max-width: 1199px) {
+    .railcard-with-discount {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 991px) {
+    .bc-smartcard-details {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 767px) {
+    .book-pass-txt {
+        display: inline;
+    }
+    .payment-summary-body {
+        padding-top: 18px;
+    }
+    .new-payment-dtl .booking-payment-col {
+        padding: 20px 30px 10px 12px;
+        border-bottom: 1px solid #D6D1CA;
+    }
+    .payment-details-space {
+        padding: 0 23px 20px !important;
+    }    
+}
+
+@media (max-width: 576px) {
+    .booking-payment .booking-payment-txt {
+        min-width: 210px;
+        max-width: 210px;
+    } 
+}
+
+@media (max-width: 400px) {
+    .booking-payment .booking-payment-txt {
+        min-width: 180px;
+        max-width: 180px;
+    } 
+}
+
+@media (max-width: 385px) {
+    .booking-payment .booking-payment-txt {
+        min-width: 160px;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 360px) {
+    .booking-payment .booking-payment-txt {
+        word-break: keep-all;
+    }
+}
+
+
+@media (max-width: 340px) {
+    .booking-payment .booking-payment-txt {
+        max-width: 132px;
+        min-width: 132px;
+    }
+}
+
+@media (max-width: 320px) {
+    .smartcard-new-area {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+.upgrade-review-class-tandc-link {
+    color: #131e29 !important;
+}

@@ -1,0 +1,44 @@
+<app-enhanced-basic-dialog [dialogFooter]="dialogFooter" class="enhanced-alert-dialogs content-center" [dialogTitle]="headerTitle">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+        <div class="enhanced-common-info-content">
+          <div class="expired-journey-content">
+            <h3 class="expired-journey-station">
+              <span>Warrington Bank Quay</span>
+              <img src="assets/images/new-design-img/interchange-icon.svg" alt="" aria-hidden="true" />
+              <img src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" class="enhanced-d-none" />
+              <span>Glasgow Central</span>
+            </h3>
+            <ul class="expired-journey-details">
+              <li>
+                Departing Thu, 06 Mar 2025
+              </li>
+              <li>
+                Return journey
+              </li>
+              <li>
+                2 Adults, 1 Child
+              </li>
+              <li>
+                1 railcard
+              </li>
+            </ul>
+          </div>
+          <p>
+            The journey in your basket has expired. To continue, please search for your journey again and proceed with a new booking.
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-content>
+  <ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+      <div class="two-btn-footer journey-dialog-footer-center">
+        <button mat-dialog-close type="button" mat-button class="fill-btn fill-light-hover-btn">
+          Got it
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</app-enhanced-basic-dialog>

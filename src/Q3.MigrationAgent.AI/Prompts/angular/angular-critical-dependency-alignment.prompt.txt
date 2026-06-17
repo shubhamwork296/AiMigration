@@ -22,27 +22,24 @@ Recommend compatible versions for Angular framework-critical dependencies for th
 
 FRAMEWORK-CRITICAL DEPENDENCIES:
 Only consider these packages:
-- Angular-owned framework packages:
+- Synchronized Angular framework group:
   @angular/animations
   @angular/common
   @angular/compiler
+  @angular/compiler-cli
   @angular/core
   @angular/forms
+  @angular/localize
   @angular/platform-browser
   @angular/platform-browser-dynamic
   @angular/router
-  @angular/localize
-  @angular/service-worker
-  @angular/elements
-- Angular CLI/build/compiler tooling:
-  @angular/cli
-  @angular/compiler-cli
-  @angular-devkit/build-angular
-  @angular-devkit/core
-  @angular-devkit/schematics
-- Angular CDK/Material:
+  @angular/language-service
+- Independent Angular package group:
   @angular/cdk
   @angular/material
+  @angular/material-moment-adapter
+  @angular/cli
+  @angular-devkit/build-angular
 - Angular runtime/compiler support packages:
   typescript
   rxjs
@@ -65,29 +62,31 @@ STRICT RULES:
 3. Do not suggest business source-code changes.
 4. Do not suggest API replacements, method changes, class refactoring, or logic changes.
 5. Do not use latest, *, x, >=, unbounded ranges, or placeholder versions.
-6. Do not blindly copy the exact @angular/core patch version to every Angular-owned package.
-7. Angular-owned framework packages must align to the target Angular major.
-8. Angular CLI, compiler-cli, and build-angular must align to the target Angular major.
-9. Angular CDK and Angular Material must align to the target Angular major when present.
-10. TypeScript must be compatible with the target Angular major’s compiler-cli/build-angular range.
-11. Angular 13 and Angular 14 must not use TypeScript 5.x.
-12. If the current package is already compatible with the target Angular major, preserve it.
-13. If a required framework-critical package is missing and Angular normally requires it for this project type, recommend add.
-14. If a package is obsolete or incompatible for the target Angular major and directly affects Angular build/test, recommend remove only when confidence is high.
-15. If exact compatibility cannot be determined from Angular compatibility rules, local metadata, or supplied failure context, use manualReview.
-16. If a package requires registry verification for an exact patch, recommend a bounded target-major-compatible range and set requiresRegistryVerification to true.
-17. Never invent exact patch versions unless they are supplied in the input or known from Angular compatibility rules.
-18. Prefer bounded compatible ranges:
-    - Angular-owned packages: use target-major-compatible caret or tilde range based on supplied project style.
+6. For synchronized Angular framework packages, recommend one exact three-part version shared by all such packages in the response.
+7. Only the synchronized Angular framework group must use the exact @angular/core target patch.
+8. Independent Angular packages must be resolved by major using npm view <package>@<targetMajor> version --json and must not be forced to the @angular/core patch.
+9. TypeScript must be compatible with the target Angular major’s compiler-cli/build-angular range.
+10. Angular 13 and Angular 14 must not use TypeScript 5.x.
+11. If the current package is already compatible with the target Angular major, preserve it.
+12. If a required framework-critical package is missing and Angular normally requires it for this project type, recommend add.
+13. If a package is obsolete or incompatible for the target Angular major and directly affects Angular build/test, recommend remove only when confidence is high.
+14. If exact compatibility cannot be determined from Angular compatibility rules, local metadata, or supplied failure context, use manualReview.
+15. If a synchronized Angular framework package requires registry verification for an exact patch and no exact version is supplied, use manualReview instead of a range.
+16. Never invent exact patch versions unless they are supplied in the input or known from Angular compatibility rules.
+17. Prefer bounded compatible ranges only for packages that do not require synchronized exact Angular versions:
+    - Synchronized Angular framework packages: use one exact three-part version such as 20.3.25, never ^20.0.0, ~20.0.0, 20.x, latest, or any other range.
+    - Independent Angular packages: use the major-scoped npm discovery result, not the @angular/core patch.
     - TypeScript: use the known compatible bounded range for the target Angular major.
     - RxJS, zone.js, and tslib: preserve when compatible; align only when clearly incompatible.
-19. Third-party packages must not be changed here unless they are directly Angular build/runtime/test critical.
-20. If confidence is low or risk is high, mark manualReviewRequired as true.
+18. Third-party packages must not be changed here unless they are directly Angular build/runtime/test critical.
+19. If confidence is low or risk is high, mark manualReviewRequired as true.
 
 VERSION RECOMMENDATION GUIDANCE:
-- Preserve the existing range style where safe.
-- For Angular-owned packages, recommend the target Angular major range, not necessarily a specific patch.
-- For package-specific Angular-owned packages such as @angular/material and @angular/cdk, allow their patch/minor to differ from @angular/core.
+- Preserve the existing range style where safe only for non-synchronized support packages.
+- For synchronized Angular framework packages, recommend exactly one shared three-part version for all recommended Angular framework packages.
+- Treat @angular/animations, @angular/common, @angular/compiler, @angular/compiler-cli, @angular/core, @angular/forms, @angular/localize, @angular/platform-browser, @angular/platform-browser-dynamic, @angular/router, and @angular/language-service as synchronized Angular framework packages.
+- Treat @angular/cdk, @angular/material, @angular/material-moment-adapter, @angular/cli, and @angular-devkit/build-angular as independent Angular packages that must be resolved by major discovery.
+- Do not force the independent Angular packages to the same exact patch as @angular/core.
 - Do not perform broad npm version enumeration.
 - Do not recommend a version just because it is the newest.
 - Prefer compatibility over freshness.

@@ -1,0 +1,6710 @@
+@import "../../assets/css/indigo-pink.css";
+@import "../fonts/font.css";
+@import url('../css/indigo-pink.css');
+
+
+:root {
+    --body-bg: #f9f7f6;
+    --neutrals-light-grey : #F6F6F6;
+    --neutrals-bright-grey : #E7EBF3;
+    --warm-grey : #D4D0C8;
+    --primary-coalescent : #131E29;
+    --primary-graphene : #004F59;
+    --graphene : #004652;
+    --neutrals-auro-metal : #667980; 
+    --neutrals-light-periwinkle : #C5CFD9;
+    --shades-white : #FFF;
+    --shades-black : #000;
+    --black-heading : #111;
+    --black-body : #333;
+    --neutrals-shadow-blue : #7F8FA1;
+    --neutrals-metallic-blue : #2E637A;
+    --secondary-parys-earth : #95E1BF;
+    --primary-solway-breeze : #E2F5E9;
+    --fast-green : #80E0BC;
+    --tint-feel-good-green : #F2FEF1;
+    --feel-good-green : #EAFEE8;
+    --success-green : #6CAF35;
+    --dark-radio : #204555;
+    --dark-spark : #E42900;
+    --primary-spark : #FF4713;
+    --primary-dark-spark : #E42B00;
+    --wallet-bg : #1F1F1F;
+    --destructive-watermellon : #C0414D;
+    --separate-border: #D9D9D9;
+    --font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;
+    --datepicker-color: #6c757d;
+    --seat-preferences-bg: #F1FAF4;
+    --checkbox-text-color: #212121;
+    --toast-success: #DAFCD7;
+    --toast-error: #F9ECED;
+    --positive-tint: #DAFCD7;
+    --dark-hover-bg: #CF2500;
+    --primary-pressed-btn-bg: #B82100;
+    --secondary-pressed-btn-bg: #002428;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+html,
+body {
+    height: 100%;
+    touch-action: auto;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    background-color: var(--body-bg) !important;
+    font-family: var(--font-family) !important;
+    font-weight: 400;
+}
+
+.primary-coalescent {
+    color: var(--primary-coalescent) !important;
+}
+
+enhanced-add-railcard-dialogs #ebd-base-dialog-header{display:none !important}
+
+enhanced-search-journey-station-dialogs #ebd-base-dialog-header{display:none!important}
+
+.label-hide-ondestop{min-height: 1.5rem;}
+
+.tab-legends-hide-show{    min-height: 60px;
+    visibility: hidden;}
+       
+    enhanceddatepickerpopupcomponent mat-dialog-content{
+      
+        max-height: inherit !important;
+       }
+
+
+.enhanced-datepicker-info select{
+       
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    pointer-events: none;
+}
+.notrains-found-card .notrains-found-content .notrains-found-sub-content a {text-decoration: underline;}
+.spark-text{color: var(--dark-spark);text-decoration: none;font-weight: 700;}
+.desktop-label{display: block;}
+.mobile-label{display: none;}
+.mat-mdc-select-arrow svg{display: none;}
+.mat-mdc-select-arrow{
+    background: url(../images/new-design-img/later-arrow.svg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 18px !important;
+    height: 18px !important;
+    background-position: center;
+}
+.padiing-footer {
+    padding-bottom: 100px; /* Adjust footer height for mobile */
+  }
+  .ticket-detail-mobile {height: calc(100vh - 128px);}
+.overflow-hidden{overflow: hidden;}
+
+.ticket-tabs .mat-mdc-tab:hover .mdc-tab__ripple::before{opacity:0}
+
+.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:not([aria-disabled=true]):hover,  .mat-mdc-tab.mdc-tab--active .mdc-tab__ripple::before, .mat-mdc-tab.mdc-tab--active .mat-ripple-element{
+
+    background: transparent!important;
+}
+
+.show-only-btn:hover {
+    background: var(--shades-white) !important;
+    outline: 1px solid var(--primary-graphene) !important;
+    border: 1px solid var(--primary-graphene) !important;
+    background-color: var(--shades-white) !important;
+}
+
+.show-only-btn:hover .mdc-button__label {
+    color: var(--primary-graphene)!important;
+}
+
+.mat-mdc-radio-button.mat-mdc-radio-checked .mat-ripple-element, .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background::before {
+    background-color: transparent !important;
+}
+.mat-mdc-button.cdk-program-focused .mat-mdc-button-persistent-ripple::before {
+	background-color: transparent;
+}
+
+.feel-good-green {
+    background-color: var(--feel-good-green);
+}
+
+.neutrals-bright-grey {
+    background-color: var(--neutrals-bright-grey)!important;
+}
+.ticket-details .summary p {
+    font-size: 1rem;
+    margin-bottom: 0.5rem!important;
+}
+/*----- Material tags override CSS -----*/
+
+.mat-mdc-button, .mat-mdc-tab,
+.mat-mdc-radio-button .mat-internal-form-field,
+.mat-mdc-form-field,
+.mdc-text-field--outlined .mdc-floating-label,
+.mat-mdc-form-field-subscript-wrapper, .mat-mdc-form-field-bottom-align::before {
+    font-family: var(--font-family) !important;
+    letter-spacing: normal !important;
+    height: auto !important;
+    line-height: normal !important;
+    font-weight: normal;
+}
+.mat-mdc-select-value-text
+.mdc-form-field--align-end>label {
+    padding-right: 0 !important;
+}
+
+.common-floting-input.error-border.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field .mdc-notched-outline__notch
+
+{
+    border-left: none;
+}
+
+.stepper-header a {
+    z-index: 1;
+    display: block;
+    position: relative;
+    height: 100%;
+}
+
+.add-railcard-section .mdc-notched-outline .mdc-notched-outline__notch{display: block;}
+.add-railcard-section .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-floating-label{left: inherit !important;}
+
+
+.via-avoid-section button:hover {
+    background: #F1FEF0;
+    color: var(--primary-graphene);
+}
+
+.via-avoid-section button:focus-visible {
+    background-color: var(--primary-coalescent);
+    border: 2px solid var(--primary-coalescent);
+    color: var(--shades-white) !important;
+}
+
+.sign-in-popup-container .validation-err {
+    margin-top: 0rem;
+    color: var(--destructive-watermellon) !important;
+}
+/*----- End Material tags override CSS -----*/
+.alert-railcard button {
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    border:none;
+}
+
+.search-station .mat-mdc-icon-button.mat-mdc-button-base {
+    background: url(../images/new-design-img/delete-input.svg);
+    width: 18px;
+    height: 18px;
+    background-size: 19px;
+    background-repeat: no-repeat;
+    background-position: center; 
+    margin-right: 0.5rem;
+}
+
+.search-station .mat-mdc-icon-button.mat-mdc-button-base:hover {
+    background: url(../images/new-design-img/close-hover.svg);
+    width: 18px;
+    height: 18px;
+    background-size: 19px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 0.5rem;
+}
+.mobile-hide{display: block;}
+.mobile-show{display: none;}
+.search-station .mat-mdc-icon-button.mat-mdc-button-base:focus-visible {
+    background: url(../images/new-design-img/close-hover.svg);
+    outline: 2px solid var(--primary-coalescent) !important;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    background-size: 19px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 0.5rem;
+}
+
+.edit-qtt-return-date{position: relative;}
+.edit-qtt-return-date button span{color: var(--graphene);text-decoration: underline;text-underline-offset: 3px;}
+.edit-qtt-return-date button {
+    background: none;
+    position: absolute;
+    right: 0;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1rem;
+    top: 50%;
+    transform: translate(0px, -50%);
+    font-weight: 400;
+    color: var(--primary-coalescent);
+}
+
+.mat-mdc-select-value-text {
+    font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;
+}
+
+/*----- Common Classes -----*/
+.enhaanced-validation-err {
+    font-size: 0.75rem;
+    color: var(--destructive-watermellon);
+    line-height: 1.125rem;
+}
+
+.field-error-space {
+    position: relative;
+    bottom: -0.5rem;
+}
+
+.h-fit-content {
+    height: fit-content !important;
+}
+
+.f-100 {
+    font-weight: 100;
+}
+
+.f-200 {
+    font-weight: 200;
+}
+
+.f-300 {
+    font-weight: 300;
+}
+
+.f-400 {
+    font-weight: 400 !important;
+}
+
+.f-500 {
+    font-weight: 500;
+}
+
+.f-600 {
+    font-weight: 600;
+}
+
+.f-700 {
+    font-weight: 700;
+}
+
+.f-800 {
+    font-weight: 800;
+}
+
+.f-900 {
+    font-weight: 900;
+}
+
+.pt-0 {
+    padding-top: 0 !important;
+}
+
+.pb-0 {
+    padding-bottom: 0 !important;
+}
+
+.new-pb-24 {
+    padding-block-end: 1.5rem !important;
+}
+
+p {
+    margin-bottom: 0 !important;
+}
+
+.horizontal-center {
+    display: flex;
+    justify-content: center;
+}
+
+.vertical-center {
+    display: flex;
+    align-items: center;
+}
+
+.m-0 {
+    margin: 0 !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.m-inline-0 {
+    margin-inline: 0 !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.enhanced-d-none {
+    display: none !important;
+}
+
+.enhanced-d-block {
+    display: block !important;
+}
+
+.text-end {
+    text-align: right;
+}
+
+.text-start {
+    text-align: start;
+}
+
+.text-underline {
+    text-decoration: underline;
+}
+
+.for-mobile-content {
+    display: none;
+}
+
+.p-t-0{padding-top:0 !important;}
+.p-b-0{padding-bottom:0 !important;}
+.text-overline {
+    text-decoration: overline;
+}
+
+.text-line-through {
+    text-decoration: line-through;
+}
+
+.visibility-hidden {
+    visibility: hidden;
+}
+
+.new-w-auto {
+    width: auto !important;
+}
+
+.w-100 {
+    width: 100% !important;
+}
+
+.w-fit-content {
+    width: fit-content !important;
+}
+
+.white-space-nowrap {
+    white-space: nowrap;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.text-strike {
+    text-decoration: line-through;
+}
+
+.footer-buttons-end {
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.p-0 {
+    padding: 0 !important;
+}
+
+.mb-16 {
+    margin-bottom: 1rem;
+}
+
+.mt-16 {
+    margin-top: 1rem;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.border-top-none {
+    border-top: none !important;
+}
+
+.border-bottom-none {
+    border-bottom: none !important;
+}
+
+.enhanced-asterisk {
+    color: var(--destructive-watermellon);
+}
+.loading-text{margin-top: 0px !important;}
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+
+.remove-focus:focus,
+.remove-focus:focus-visible,
+.remove-focus.cdk-keyboard-focused {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.logout-popup .mat-mdc-dialog-container .mat-mdc-dialog-title {
+    display: flex;
+    flex: 1 1 100%;
+    justify-content: center;
+}
+
+.mat-mdc-menu-panel {
+    min-width: 132px;
+    max-width: 280px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+    outline: 0;
+    border-radius: 0.313em;
+    background-color: var(--mat-menu-container-color, var(--mat-app-surface-container));
+    will-change: transform, opacity;
+    box-shadow: 0px 6px 7px 0px #4b4b4b2b !important;
+    margin-top: 0.5rem;
+}
+.notrains-found-card .radio-card-journey-details .notrains-found-view-other{cursor: pointer;}
+app-enhanced-ticket-type-and-class .notrains-found-card.open-return-card .radio-card-journey-details:first-child{border-top:none !important;}
+
+.search-journey-btn button:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    
+}
+.search-journey-btn button:focus-visible  {
+   outline: 2px solid var(--primary-coalescent)!important;border-radius: 0.313rem;padding: 0 0.5rem;
+}
+.cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+.enhanced-common-card {
+    padding: 1.5rem;
+    border-radius: 0.313rem;
+    background-color: var(--shades-white);
+    box-shadow: 0px 2px 12px 2px rgba(19, 30, 41, 0.08);
+}
+
+.railcard-cheapest-card {
+    width: 27rem;
+    position: fixed;
+    bottom: 6.625rem;
+    right: 1rem;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.railcard-cheapest-card:empty {
+    display: none;
+}
+
+.cheapest-ticket-message .mat-mdc-card,
+.railcard-applied-message .mat-mdc-card {
+    box-shadow: 0 6px 20px 0 rgba(19, 30, 41, 0.16);
+    border-radius: 0.313rem;
+    background-color: var(--shades-white);
+}
+
+.cheapest-ticket-message p,
+.railcard-applied-message p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.375rem;
+    margin-top: 0.5rem;
+}
+
+.cheapest-ticket-message-button {
+   margin-top: 0.75rem;
+}
+
+.cheapest-ticket-message button {
+    border-color: var(--neutrals-shadow-blue)!important;
+}
+
+.cheapest-ticket-message .ticket-label button {
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding-right: 0;
+}
+
+.cheapest-ticket-message mat-card-content.mat-mdc-card-content,
+.railcard-applied-message mat-card-content.mat-mdc-card-content {
+    padding: 0.75rem 1rem !important;
+}
+
+.using-railcard-title span {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.563rem;
+    color: var(--primary-coalescent);
+}
+
+.railcard-cheapest-card .ticket-label {
+    align-items: center;
+}
+
+.railcard-cheapest-card .ticket-label button .mdc-button__label {
+    line-height: 10px;
+}
+
+.invisible-accessibility-content {
+    position: absolute; 
+    left: -9999px;
+}
+
+.mat-mdc-option.mdc-list-item{
+    font-family: Averta, Helvetica, Verdana, Arial, sans-serif;
+}
+.add-railcard-section .common-floting-input .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece{border: none;}
+.add-railcard-section .common-floting-input .mdc-text-field--outlined {
+    padding: 0.5rem 1rem !important;
+    border: 1px solid rgba(127, 143, 161, 1);
+    border-radius: 0.313rem;
+}
+.enhanced-common-link-txt {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--primary-graphene);
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    display: inherit;
+}
+.ticket-tabs .mat-mdc-tab-body-content{padding: 0;}
+mat-button{cursor: pointer;}
+/* Dialog css starts */
+app-enhanced-basic-dialog {
+    color: var(--primary-coalescent)
+}
+
+app-enhanced-basic-dialog .mat-mdc-dialog-container .mat-mdc-dialog-title {
+    margin: 0;
+}
+app-enhanced-basic-dialog mat-dialog-actions {
+    padding: 1.5rem;
+}
+
+app-enhanced-basic-dialog header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0;
+    color: var(--primary-graphene);
+    border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    padding: 1.5rem;
+    align-items: center;
+}
+
+app-enhanced-basic-dialog header h1 {
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    line-height: 1.563rem !important;
+    font-weight: 600 !important;
+}
+
+app-enhanced-basic-dialog header .mat-mdc-dialog-title::before{height: 1.563rem;}
+
+app-enhanced-basic-dialog header .mat-mdc-button .mat-mdc-button-touch-target, 
+app-enhanced-basic-dialog header .mdc-button:hover, 
+app-enhanced-basic-dialog header .mdc-button:active, 
+app-enhanced-basic-dialog  header .mdc-button {
+    height: inherit;
+    min-width: inherit;
+    width: 1.125rem;
+}
+.hover-img{display: none;}
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end, app-enhanced-basic-dialog header mat-button {
+    min-height: 18px;
+    line-height: 1.125rem;
+    padding: 0;
+    height: 1.5rem;
+}
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end button .mdc-button__label {
+    line-height: 0;
+}
+
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end button:hover {
+    outline: none;
+    border: none;
+    cursor: pointer;
+}
+
+app-enhanced-basic-dialog header mat-button button:focus-visible,
+app-enhanced-basic-dialog header mat-button:focus-visible button.ckd-keyboard-focused,
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end button:focus-visible,
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end button.cdk-keyboard-focused {
+    outline: 2px solid rgba(19, 30, 41, 1) !important;
+    outline-offset: 1px;
+    border: none;
+}
+app-enhanced-basic-dialog .mat-mdc-card-header {
+    padding: 0;
+}
+
+app-enhanced-basic-dialog.enhanced-alert-dialogs footer {
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+    padding: 1.5rem;
+}
+
+app-enhanced-basic-dialog.enhanced-alert-dialogs.content-center footer button {
+    margin: 0 auto;
+}
+
+app-enhanced-basic-dialog mat-tab-header.mat-mdc-tab-header {
+    border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+.enhanced-datepicker-info .mat-mdc-tab.mdc-tab:focus-visible span.mdc-tab__text-label {
+    outline: 2px solid rgba(19, 30, 41, 1);
+    border-radius: 5px;
+    outline-offset: 1px;
+}
+
+.matmenu-myaccount .mat-mdc-menu-content .mat-mdc-menu-item:hover {
+    background: rgba(242, 254, 241, 1);
+    color: rgba(0, 70, 82, 1);
+}
+
+.matmenu-myaccount .mat-mdc-menu-content .mat-mdc-menu-item:focus-visible {
+    background-color: transparent;
+    color: var(--primary-coalescent);
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: -5px;
+    border-radius: 8px;
+}
+
+.EnhancedPriceBreakdownDialogs .mat-mdc-tab-header {
+    border-bottom: none;
+    border-top: none;z-index: 11;
+}
+.EnhancedPriceBreakdownDialogs .mat-mdc-tab-body-wrapper{
+    border-top: 1px solid var(--neutrals-light-periwinkle);margin-top: -1.5px;
+}
+app-enhanced-basic-dialog mat-tab-header span.mdc-tab__content {
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+
+app-enhanced-basic-dialog .mdc-tab {
+    padding: 0.5rem 1.5rem;
+}
+
+app-enhanced-basic-dialog .mdc-tab span {
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+.user-account-signin img{padding-right: 0.5rem;}
+.user-account-signin img:last-child{padding-right: 0rem!important;}
+.matmenu-myaccount {
+    box-shadow: 0px 4px 16px 4px #131E2914 !important;
+    border-radius: 0.313rem !important;
+    background: #fff;
+    left: -20px;
+    position: absolute;
+}
+    .matmenu-myaccount button{font-size: 1rem;padding: 1rem;}
+    .matmenu-myaccount .mat-mdc-menu-content{padding: 0;}
+.class-details-row mat-card-subtitle{color: var(--primary-coalescent);line-height: 1.125rem;font-weight: 400;font-size: 0.75rem;}
+.add-railcard-section .error-border .mdc-text-field {
+    border: 2px solid var(--destructive-watermellon) !important;
+    border-radius: 4px;
+    padding: 5px;
+}
+.sign-in-popup-container input.error-border, .sign-in-popup-container input.error-border:hover {
+    border-width: 2px;
+    border-color: var(--destructive-watermellon);
+}
+
+.user-account-signin{
+    justify-content: center;
+    display: flex;
+}
+
+.mat-mdc-option .mdc-list-item__primary-text {
+    color: rgba(0, 70, 82, 1)!important;
+}
+.mat-mdc-option .mat-pseudo-checkbox {
+    --mat-minimal-pseudo-checkbox-selected-checkmark-color: rgba(0, 70, 82, 1)!important;
+}
+.header-avanti-logo:focus-visible{
+    outline: 3px solid rgba(19, 30, 41, 1);
+    outline-offset: 1px;
+}
+.user-account-signin button {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+}
+   
+.user-account-signin button:focus-visible {
+    border: 2px solid var(--primary-coalescent);
+    border-radius: 5px;
+}
+
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mat-mdc-notch-piece {
+    border-color: var(--destructive-watermellon) !important;
+    border-width: 2px;
+}
+
+.enchanced-common-popup-header h1 {
+    font-size: 1.25rem;
+    line-height: 1.563rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--primary-coalescent);
+}
+
+.enchanced-common-popup-header .enchanced-common-popup-header-action {
+    min-height: auto !important;
+    line-height: normal !important;
+    height: auto !important;
+}
+
+.enchanced-common-popup-header .enchanced-common-popup-header-action .mdc-button {
+    width: auto;
+    padding: 0;
+}
+
+.buttons-footer {
+    padding: 1.5rem;
+    gap: 1.5rem;
+    justify-content: flex-end;
+}
+
+.enhanced-alert-dialogs .enhanced-common-popup-theme {
+    min-height: inherit;
+}
+
+.alert-content p {
+    margin-bottom: 0;
+}
+
+.enhanced-alert-dialogs.content-center  .mat-mdc-dialog-title {
+    font-family: inherit !important;
+    justify-content: center;
+    align-items: center !important;
+    text-align: center;
+    width: 100%;
+}
+
+.enhanced-alert-dialogs.content-center h2 {
+    margin: 0 auto !important;
+}
+
+.cleardate-btn {
+    font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif!important;
+}
+
+.alert-content {
+    padding: 1.25rem;font-weight: 400;line-height: 1.5rem;font-size: 1rem;
+}
+
+.arrow-margin {
+    margin-left: -5px;
+}
+
+.alert-content a {
+    color: var(--graphene);
+}
+
+.journey-type {
+    display: flex;
+    gap: 4px;
+}
+
+.comfot-in-class {
+    margin-bottom: 2rem;
+    display: none;
+}
+
+.comfot-in-class button {
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.comfot-in-class button {
+    text-decoration: underline;
+    color:var(--primary-graphene);
+    font-size: 0.875rem !important; 
+    text-underline-offset: 0.125rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background-color: var(--shades-white);
+    box-shadow: 0 0.125rem 0.75rem 0.125rem rgba(19, 30, 41, 0.08);
+    padding: 0.5rem;
+    border-radius: 0.313rem;
+}
+
+.comfot-in-class button:hover {
+    font-weight: 600;
+}
+
+.comfot-in-class button:focus-visible {
+    outline-offset: -4px;
+    outline: 2px solid var(--primary-coalescent) !important;
+}
+
+.comfot-in-class button img {
+    margin-left: 4px;
+    height: 1rem;
+    width: 1rem;
+}
+
+.class-detail-popup {
+    max-width: 100% !important; 
+    height: calc(100vh - 128px);
+}
+
+
+.mat-column-PricePerPersonAndTotalPrice {
+    text-align: right;
+}
+
+.mat-mdc-tab .mdc-tab-indicator__content--underline {
+    border-color: var( --primary-spark) !important;
+    border-width: 0.25rem;
+}
+
+.mat-mdc-tab .mdc-tab__text-label, .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+    color: var(--primary-coalescent)!important;
+    font-weight: 700;letter-spacing: 0;
+}
+/* Tab styling ends*/
+
+/*----- Buttons -----*/
+.fill-btn {
+    background-color: var(--dark-spark) !important;
+    padding: 0.5rem 1.375rem ;
+    letter-spacing: 0.02rem;
+    font-size: 1rem ;
+    font-weight: 700 ;
+    line-height: 1.25rem;
+    border-radius: 0.313rem !important;
+    height: 40px !important;
+    border: 0.125rem solid var(--dark-spark);
+}
+
+.season-review-basket-btn.fill-btn {
+    padding: 0.5rem 1.375rem !important;
+    letter-spacing: 0.02rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    border: 0.125rem solid var(--dark-spark) !important;
+}
+
+.fill-btn .mdc-button__label {
+    color: var(--shades-white) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.fill-btn:hover {
+    background-color: var(--dark-hover-bg) !important;
+    border: 0.125rem solid var(--dark-hover-bg) !important;
+}
+
+.fill-btn:active {
+    background-color: var(--primary-pressed-btn-bg) !important;
+    border: 0.125rem solid var(--primary-pressed-btn-bg) !important;
+}
+
+.fill-btn:focus-visible,
+.fill-btn.cdk-keyboard-focused {
+    outline-offset: 1px;
+    outline: 3px solid var(--primary-coalescent) !important;
+    background-color: var(--dark-spark) !important;
+    border: 0.125rem solid var(--dark-spark) !important;
+}
+
+.fill-btn:disabled {
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+    border: 2px solid var(--neutrals-bright-grey);
+}
+
+.fill-light-hover-btn:hover {
+    background-color: var(--dark-hover-bg) !important;
+    border: 0.125rem solid var(--dark-hover-bg) !important;
+}
+
+.fill-light-hover-btn:active {
+    background-color: var(--primary-pressed-btn-bg) !important;
+    border: 0.125rem solid var(--primary-pressed-btn-bg) !important;
+}
+
+.fill-light-hover-btn:focus-visible,
+.fill-light-hover-btn.cdk-keyboard-focused {
+    outline-offset: 1px;
+    outline: 3px solid var(--primary-coalescent) !important;
+    background-color: var(--dark-spark) !important;
+    border: 0.125rem solid var(--dark-spark) !important;
+}
+
+div#emdcl-open-return-icon {
+    padding-top: 0.725rem;
+}
+.fill-btn:disabled .mdc-button__label {
+    color: var(--neutrals-shadow-blue) !important;
+}
+
+.fill-btn:disabled .mdc-button__label img {
+    filter: invert(0%) sepia(40%) saturate(1647%) hue-rotate(178deg) brightness(57%) contrast(91%) !important;
+}
+
+.dark-fill-btn {
+    background-color: var(--dark-spark) !important;
+    padding: 0.875rem 1.375rem ;
+    letter-spacing: 0.02rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    border-radius: 0.313rem !important;
+    height: fit-content !important;
+}
+
+.dark-fill-btn .mdc-button__label {
+    color: var(--shades-white) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.dark-fill-btn:disabled,
+.dark-fill-btn:disabled:hover {
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+}
+
+.dark-fill-btn:disabled .mdc-button__label {
+    color: var(--neutrals-shadow-blue) !important;
+}
+
+.dark-fill-btn:disabled .mdc-button__label img {
+    filter: invert(0%) sepia(40%) saturate(1647%) hue-rotate(178deg) brightness(57%) contrast(91%) !important;
+}
+
+.dark-fill-btn.mat-mdc-button-disabled .mdc-button__label img#efc-qtt-footer-next-btn-icon {
+    display: none;
+}
+
+.dark-fill-btn:hover {
+    background-color: var(--dark-hover-bg) !important;
+}
+
+.dark-fill-btn:active {
+    background-color: var(--primary-pressed-btn-bg) !important;
+}
+
+.dark-fill-btn:focus-visible,
+.dark-fill-btn.cdk-keyboard-focused {
+    background-color: var(--dark-spark) !important;
+    outline: 3px solid var(--shades-white) !important;
+    outline-offset: 1px;
+}
+
+.outline-btn {
+    border: 0.125rem solid var(--primary-spark) !important;
+    padding: 0.5rem 1.375rem !important;
+    letter-spacing: 0.02rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important; 
+    line-height: 1.25rem !important;
+    border-radius: 0.313rem !important;
+    height: fit-content !important;
+    background-color: transparent !important;
+}
+
+.outline-btn .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-btn:hover {
+    background: var(--dark-spark) !important;
+    border-color: var(--dark-spark) !important;
+}
+
+.outline-btn:active {
+    border: 0.125rem solid var(--primary-pressed-btn-bg) !important;
+    background-color: var(--primary-pressed-btn-bg) !important;
+}
+
+.outline-btn:hover .mdc-button__label,
+.outline-btn:active .mdc-button__label,
+.outline-btn.cdk-focused:active .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-btn:focus-visible,
+.outline-btn:focus-visible:hover,
+.outline-btn.cdk-keyboard-focused  {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-btn:disabled {
+    border: 0.125rem solid var(--neutrals-bright-grey) !important;
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+}
+
+.outline-btn:disabled .mdc-button__label {
+    color: var(--neutrals-shadow-blue) !important;
+}
+
+.outline-secondary-btn {
+    border: 0.125rem solid var(--neutrals-shadow-blue) !important;
+    padding: 0.5rem 1.375rem !important;
+    letter-spacing: 0.02rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important; 
+    line-height: 1.25rem !important;
+    border-radius: 0.313rem !important;
+    height: fit-content !important;
+    background-color: transparent !important;
+}
+
+.outline-secondary-btn .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-secondary-btn:hover {
+    background: var(--graphene) !important;
+    border-color: var(--neutrals-auro-metal) !important;
+}
+
+.outline-secondary-btn:active {
+    border: 0.125rem solid var(--neutrals-auro-metal) !important;
+    background-color: var(--secondary-pressed-btn-bg) !important;
+}
+
+.outline-secondary-btn:hover .mdc-button__label,
+.outline-secondary-btn:active .mdc-button__label,
+.outline-secondary-btn.cdk-focused:active .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-secondary-btn:focus-visible,
+.outline-secondary-btn:focus-visible:hover,
+.outline-secondary-btn.cdk-keyboard-focused  {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    color: var(--primary-coalescent) !important;
+    border-color: var(--neutrals-shadow-blue) !important;
+}
+
+.outline-secondary-btn:disabled {
+    border: 0.125rem solid var(--neutrals-bright-grey) !important;
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+}
+
+.outline-secondary-btn:disabled .mdc-button__label {
+    color: var(--neutrals-shadow-blue) !important;
+}
+
+.edit-address-right-btn button.outline-secondary-btn,
+.additional-information-wrapper button.outline-secondary-btn {
+    height: 2.5rem !important;
+}
+
+.dark-outline-btn {
+    border: 0.125rem solid var(--primary-solway-breeze) !important;
+    padding: 0.75rem 1.375rem !important;
+    letter-spacing: 0.02rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important; 
+    line-height: 1.25rem !important;
+    border-radius: 0.313rem !important;
+    height: fit-content !important;
+    background-color: transparent !important;
+}
+
+.dark-outline-btn .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.dark-outline-btn:disabled {
+    border: none !important;
+    background-color: var(--neutrals-light-periwinkle) !important;
+    cursor: not-allowed !important;
+}
+
+.dark-outline-btn:disabled .mdc-button__label {
+    color: var(--neutrals-auro-metal) !important;
+}
+
+.qtt-footer-btn .dark-outline-btn:disabled {
+    border: 0.125rem solid var(--neutrals-light-periwinkle) !important;
+    height: 3rem !important;
+}
+
+.simple-btn {
+    font-size: 1rem !important;
+    font-weight: 700;
+    line-height: 1.25rem !important;
+    min-width: auto !important;
+    letter-spacing: 0.32px !important;
+    color: var(--primary-dark-spark) !important;
+}
+
+.simple-hover-btn:hover {
+    color: #E42B00 !important;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.125rem;
+}
+
+.simple-hover-btn:focus-visible:hover {
+    text-decoration: none;
+}
+
+.simple-hover-btn:active {
+    color: #CF2500 !important;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.125rem;
+}
+
+.simple-hover-btn:focus-visible {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.simple-hover-btn:focus-visible .mdc-button__label,
+.simple-hover-btn:focus-visible:hover .mdc-button__label,
+.simple-hover-btn.cdk-keyboard-focused .mdc-button__label {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+    color: #E42B00 !important;
+    border-radius: 5px;
+}
+
+/* cdk-focused cdk-mouse-focused */
+
+.mdc-button__ripple,
+.mdc-button__ripple::before,
+.simple-btn .mdc-button__ripple,
+.simple-btn .mdc-button__ripple::before,
+.dark-outline-btn .mdc-button__ripple,
+.dark-outline-btn .mdc-button__ripple::before,
+.outline-btn .mdc-button__ripple,
+.outline-btn .mdc-button__ripple::before, 
+.fill-btn .mdc-button__ripple,
+.fill-btn .mdc-button__ripple::before,
+.dark-fill-btn .mdc-button__ripple,
+.dark-fill-btn .mdc-button__ripple::before {
+    background-color: transparent !important;
+}
+
+.simple-btn.review-h-40 {
+    height: auto !important;
+}
+
+.order-smartcard-section .outline-btn {
+    border-color: var(--neutrals-shadow-blue) !important;
+    width: fit-content;
+}
+
+.common-edit-form-btn {
+    padding: 0.5rem 1.125rem !important;
+    margin: 0;
+    min-width: auto !important;
+    border: 0.125rem solid var(--neutrals-auro-metal) !important;
+    border-radius: 0.313rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02rem !important;
+    line-height: 1.25rem !important;
+    color: var(--primary-coalescent) !important;
+    height: 2.5rem !important;
+}
+
+.common-edit-form-btn .mat-mdc-button .mat-mdc-button-touch-target {
+    line-height: 2.25rem;
+}
+
+.common-edit-form-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.common-edit-form-btn .mdc-button__label span {
+    line-height: 0;
+}
+
+.common-edit-form-btn:hover {
+    background: var(--graphene)!important;
+    color: var(--shades-white) !important;
+    border: 2px solid var(--neutrals-auro-metal);
+}
+
+.common-edit-form-btn:active {
+    background: var(--secondary-pressed-btn-bg) !important;
+    color: var(--shades-white) !important;
+    border: 2px solid var(--neutrals-auro-metal);
+}
+
+.common-edit-form-btn:hover .mdc-button__label,
+.common-edit-form-btn:active .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.common-edit-form-btn:hover .mdc-button__label img,
+.common-edit-form-btn:active .mdc-button__label img {
+    filter: invert(1);
+}
+
+.common-edit-form-btn:focus-visible,
+.common-edit-form-btn.cdk-keyboard-focused {
+    background: transparent !important;
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+}
+
+.common-edit-form-btn:focus-visible .mdc-button__label,
+.common-edit-form-btn.cdk-keyboard-focused .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+    background: transparent !important;
+}
+
+.common-edit-form-btn:focus-visible img {
+    filter: inherit !important;
+}
+
+.common-edit-form-btn:hover .mdc-button__ripple::before,
+.common-edit-form-btn:focus .mdc-button__ripple::before {
+    opacity: 0 !important;
+}
+
+.common-edit-form-btn:disabled {
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+    border: 2px solid var(--neutrals-bright-grey) !important;
+}
+
+.common-edit-form-btn:disabled .mdc-button__label {
+    color: var(--neutrals-shadow-blue) !important;
+}
+
+.common-edit-form-btn:disabled .mdc-button__label img {
+    filter: brightness(0) saturate(100%) invert(59%) sepia(8%) saturate(756%) hue-rotate(172deg) brightness(92%) contrast(92%);
+}
+
+.show-only-btn {
+    border: 0.063rem solid var(--neutrals-shadow-blue) !important;
+    background-color: var(--shades-white) !important;
+    padding: 0.438rem 1rem !important;
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+    border-radius: 6.25rem !important;
+    height: 2.5rem !important;
+}
+
+.show-only-btn .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.show-only-btn .mdc-button__label img {
+    display: none;
+}
+.active-show-only-btn .mdc-button__label{
+    color: var(--primary-graphene) !important;
+}
+.class-details-row mat-card-content li img {
+    width: 28px;
+} 
+.show-only-btn.active-show-only-btn .mdc-button__label img {
+    display: block;
+}
+/*----- End Buttons -----*/
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab:hover .tab-legends {
+    background: #f6f6f6;
+}
+
+.tab-legends-btn {
+    color: var(--neutrals-metallic-blue) !important;
+    font-weight: 400;
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+    text-align: center;
+    background-color: transparent;
+}
+
+.tab-legends-btn:hover {
+    text-decoration: none;
+}
+
+.mdc-tab--active .tab-legends-btn {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+    color: var(--primary-graphene) !important;
+    text-align: center;
+    background-color: transparent;
+}
+
+.mdc-tab--active .tab-legends-btn:hover {
+    color: var(--primary-coalescent) !important;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    background-color: transparent;
+}
+
+.mdc-tab--active .tab-legends-btn:focus-visible {
+    outline: none;
+}
+
+.mdc-tab--active .tab-legends-btn:focus-visible .mdc-button__label .mat-icon {
+    outline: 0.125rem solid var(--primary-coalescent) !important;
+    outline-offset: -0.125rem;
+    border-radius: 5px;
+    background-color: transparent;
+}
+
+.mdc-tab--active .tab-legends-btn:focus-visible:hover {
+    text-decoration: none;
+}
+
+.mdc-tab--active .tab-legends-btn:focus-visible:hover .mdc-button__label .mat-icon {
+    outline: none;
+}
+/*----- Form field -----*/
+.common-floting-input {
+    width: 100%;
+}
+
+.common-floting-input .mdc-text-field--outlined {
+    padding: 0.5rem 1rem;
+}
+
+.common-floting-input .mdc-text-field--outlined .mat-mdc-form-field-infix,
+.common-floting-input .mdc-text-field--no-label .mat-mdc-form-field-infix {
+    padding: 0;
+    min-height: auto;
+    width: auto;
+}
+
+.common-floting-input .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece {
+    border-color: var(--neutrals-shadow-blue);
+}
+
+.common-floting-input .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece:hover {
+    border-color: var(--primary-coalescent) !important;
+}
+
+.common-floting-input .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece:focus-visible,
+.common-floting-input .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline .mat-mdc-notch-piece {
+    border-color: var(--primary-coalescent) !important;
+}
+
+.edit-qtt-pax-input.mat-form-field-invalid.ng-invalid .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline .mat-mdc-notch-piece {
+    border-color: var(--destructive-watermellon) !important;
+    border-width: 2px !important;
+}
+.add-railcard-section .common-floting-input .mdc-text-field.mdc-text-field--focused {
+    border-color: rgba(19, 30, 41, 1) !important;
+    border-width: 2px !important;
+}
+app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end:focus-visible, app-enhanced-basic-dialog header mat-button:focus-visible {
+    outline: 2px solid rgba(19, 30, 41, 1);
+    border-radius: 5px;
+}
+.edit-qtt-pax-input.mat-form-field-invalid.ng-invalid .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline .mdc-notched-outline__notch {
+    border-left-width: 0 !important;
+}
+
+.common-floting-input .mdc-notched-outline__leading {
+    border-top-left-radius: 0.313rem;
+    border-bottom-left-radius: 0.313rem;
+}
+
+.common-floting-input .mdc-notched-outline__trailing {
+    border-top-right-radius: 0.313rem;
+    border-bottom-right-radius: 0.313rem;
+}
+
+.common-floting-input .mdc-floating-label {
+    font-size: 0.75rem !important;
+    line-height: 1.125rem !important;
+    color: var(--primary-coalescent) !important;
+}
+
+.common-floting-input .mdc-text-field--outlined .mdc-text-field__input {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent) !important;
+    box-shadow: none !important;
+}
+
+.common-floting-input .mdc-text-field--outlined .mat-mdc-input-placeholder {
+    color: yellow;
+}
+
+.common-floting-input .mdc-text-field--outlined .mdc-floating-label--float-above {
+    transform: translateY(-2.45rem) !important;
+    background-color: var(--shades-white);
+    padding: 0 0.375rem 0 0.125rem;
+}
+
+.edit-qtt-pax-input input[matinput]::-webkit-outer-spin-button,
+.edit-qtt-pax-input input[matinput]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/*----- End Form field -----*/
+
+.journey-details-route-stations-accordion .mat-accordion .journey-details-route-stations-inner .journey-details-route-stations-name {
+    text-align: left;
+}
+app-enhanced-ticket-type-and-class header{position: relative; z-index: 11;}
+enhanced-search-journey-station-dialogs .enhanced-common-popup-theme{min-height: 80vh!important;}
+
+.mat-mdc-radio-button .mdc-radio__outer-circle {
+    border-width: 0.052rem!important;
+    border-color: var(--dark-radio);
+    background: var(--shades-white);
+}
+
+.mat-mdc-radio-button .mdc-radio__native-control:enabled:focus:checked+.mdc-radio__background .mdc-radio__inner-circle {
+    border-color: var(--dark-radio)!important;
+}
+
+.mat-mdc-radio-button .mdc-radio, .mat-mdc-radio-button .mdc-radio__native-control, .mat-mdc-radio-touch-target {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+}
+
+.mat-mdc-tab.mdc-tab--active .mdc-tab__ripple::before, .mat-mdc-tab.mdc-tab--active .mat-ripple-element {
+    background-color: transparent;
+}
+
+.mat-mdc-radio-button .mdc-radio__native-control:enabled:checked+.mdc-radio__background .mdc-radio__inner-circle {
+    border-color: var(--dark-radio) !important;
+    background:var(--dark-radio) !important
+} 
+.user-account-signin button {
+    background: none;
+    border-bottom: 1px solid #fff;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+}
+.user-account-signin button:hover {
+    border-bottom: 1px solid rgba(19, 30, 41, 1)!important;
+}
+    
+app-login-popup .password-field button {
+    position: absolute;
+    top: 3.5rem;
+    right: 0;
+    color: var(--primary-coalescent);
+}
+app-login-popup .enhanced-common-mat-checkbox .mdc-checkbox input {
+    height: 1.25rem;
+    width: 1.25rem;
+    border: 1px solid var(--dark-radio);
+    border-radius: 2px;
+}
+/* .mat-mdc-option:focus-visible {
+    border: 2px solid #3f51b5; /* Material primary color */
+  /*   border-radius: 4px;
+   
+  } */
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox:hover {
+    border-width: 1px;
+    border-color: rgba(0, 79, 89, 1);
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox:hover .mdc-checkbox__background {
+    outline: 1px solid var(--dark-radio);
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox:focus .mdc-checkbox__background {
+    outline: 3px solid rgba(19, 30, 41, 1) !important;
+    outline-offset: 1px;
+}
+/*----- Popup -----*/
+.enhanced-common-popup-container .mat-mdc-dialog-surface {
+    border-radius: 0.313rem;
+}
+
+app-enhanced-basic-dialog header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem!important;
+    border-bottom: 0.063rem solid var(--neutrals-light-periwinkle);
+}
+
+app-enhanced-basic-dialog header h2 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 1.25rem !important;
+    line-height: 1.563rem !important;
+    font-weight: 600 !important;
+    color: var(--primary-coalescent) !important;
+    letter-spacing: normal;
+}
+
+app-enhanced-basic-dialog header h2::before {
+    display: none;
+}
+#eeqc-edit-btn-icon-are{display: flex;}
+app-enhanced-basic-dialog header button {
+    padding: 0;
+    margin: 0;
+    min-width: auto;
+    height: 1.125rem !important;
+    width: 1.125rem !important;
+}
+
+.enhanced-common-popup-body .mat-mdc-dialog-content {
+    padding: 1.5rem;
+    font-family: var(--font-family);
+    line-height: normal;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+app-enhanced-journey-details-and-itinerary-dialogs .enhanced-common-popup-body .mat-mdc-dialog-content{
+    max-height: calc(100vh - 205px);
+}
+/*----- End Popup -----*/
+
+/*----- End Common Classes -----*/
+
+/*----- Header -----*/
+.user-account-signin-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-account-signin-btn:hover .mdc-button__label .user-account-basket-txt {
+    text-decoration: underline;
+    text-underline-offset: 0.188rem;
+    font-weight: 600;
+}
+
+.user-account-signin-btn:focus-visible .mdc-button__label .user-account-basket-txt,
+.user-account-signin-btn:focus-visible:hover .mdc-button__label .user-account-basket-txt,
+.user-account-signin-btn.cdk-keyboard-focused .mdc-button__label .user-account-basket-txt {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    border-radius: 0.313rem;
+}
+
+.mat-mdc-button-ripple {
+    display: none;
+}
+/*----- End Header -----*/
+
+/*----- Searched Journey -----*/
+.ticket-label-left, .ticket-label-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+}
+.cheapest-ticket {
+    background:var(--secondary-parys-earth);
+    color: var(--primary-coalescent);
+}
+
+.offer-ticket {
+    background:#90FB8A;
+    color: var(--primary-coalescent);
+}
+
+.railcard-applied{
+    background: var(--primary-coalescent);
+    color: var(--shades-white);
+}
+.fastest-ticket {
+    background: var(--primary-graphene);
+    color: var(--shades-white);
+}
+
+.limited-ticket {
+    background: var(--neutrals-light-periwinkle);
+    color: var(--primary-coalescent);
+}
+enhanced-ticket-detail-dialogs .enhanced-common-popup-theme{max-height: calc(100vh - 215px);
+    overflow: auto;
+    padding-bottom: 5rem;}
+.service-arrive-ticket {
+    background: var(--neutrals-bright-grey);
+    color: var(--primary-coalescent);
+}
+
+.search-journey-btn button .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button .mdc-radio {
+    position: absolute;
+    right: 1.25rem;
+    top: 4.2rem;
+    padding: inherit;
+}
+
+.label-less-radio-card .mat-mdc-radio-button .mdc-radio{
+    top: 2.85rem!important;
+}
+
+.ticket-class-section .label-less-radio-card .mat-mdc-radio-button .mdc-radio {
+    top: 1.35rem !important;
+}
+
+.search-journey-card-row .radio-card mat-radio-button {
+    background: var(--shades-white);
+    padding: 0.5rem 0.5rem 3.5rem;
+    border-radius: 0.313rem;
+    box-shadow: 0 0.125rem 0.75rem 0.125rem rgba(19, 30, 41, 0.08);
+    position: relative;
+    cursor: pointer;
+}
+
+.stations-types p:first-child {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.search-journey-card-row .radio-card mat-radio-button:hover,
+.search-journey-card-row .radio-card mat-radio-button:focus-visible {
+    outline: 0.125rem solid var(--primary-graphene);
+}
+
+.search-journey-card-row .radio-card .radio-card-journey-details button:hover{font-weight: 700; background: transparent!important; outline: none;}
+.search-journey-card-row .radio-card .radio-card-journey-details button:focus-visible{background: var(--neutrals-light-periwinkle);font-weight: 700; outline: 3px solid var(--primary-coalescent) !important; outline-offset: 1px;}
+.train-cancelled .radio-card-ticket-info .radio-card-time-jouney span{
+    text-decoration: line-through;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button .mdc-radio .mdc-radio__background {
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border: 0.063rem solid;
+    border-color: var(--dark-radio) !important;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button:hover .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border: 2px solid  rgba(32, 69, 85, 1) !important;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button.cdk-keyboard-focused .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    outline: 3px solid rgba(32, 69, 85, 1) !important;
+    outline-offset: 1px;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.search-journey-card-row .radio-card .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio .mdc-radio__background .mdc-radio__inner-circle {
+    background-color: var(--dark-radio) !important;
+    border-color: var(--dark-radio) !important;
+}
+
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active:hover .tab-legends-txt{
+    text-decoration: underline;font-weight: 700;cursor: pointer;
+}
+.ticket-tabs .mat-mdc-tab.mdc-tab--active:hover  mat-icon{cursor: pointer;}
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab:focus-visible .tabname-main {
+    outline: 3px solid var(--primary-coalescent);
+    outline-offset: -3px;
+}
+
+
+
+/*----- Disabled Card -----*/
+ .search-journey-card-row .radio-card mat-radio-button.mat-mdc-radio-disabled {
+    background: var(--neutrals-bright-grey) !important;
+}
+
+.search-journey-card-row .radio-card mat-radio-button.mat-mdc-radio-disabled:hover {
+    cursor: not-allowed;
+    outline: none;
+}
+
+.search-journey-card-row .radio-card mat-radio-button.mat-mdc-radio-disabled .mdc-radio {
+    display: none;
+}
+
+/* .search-journey-card-row .radio-card mat-radio-button.mat-mdc-radio-disabled .radio-card-time-price {
+    width: 100%;
+    padding-right: 0;
+} */
+
+.disabled-radio-card{
+    background:var(--neutrals-bright-grey) !important;
+    outline:none;
+}
+.disabled-radio-card .radio-card-time-price{padding-right: 0!important;}
+.disabled-radio-card:focus , .disabled-radio-card:hover {outline:none!important;}
+.disabled-radio-card .mdc-radio {
+    display: none!important;
+}
+.radio-card .mat-mdc-radio-checked.disabled-radio-card{
+    background:var(--neutrals-bright-grey) !important;
+    outline:none !important;
+}
+.search-journey-card-row .radio-card mat-radio-button.disabled-radio-card .radio-card-price-col .radio-card-price-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.search-journey-card-row .radio-card .disabled-radio-card .radio-card-price-col .radio-card-price-inner p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    font-weight: 700;
+}
+
+.search-journey-card-row .radio-card .disabled-radio-card .radio-card-price-col .radio-card-price-inner a {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-graphene);
+    cursor: pointer;
+    text-underline-offset: 0.25rem;
+}
+.search-journey-card-row .radio-card .disabled-radio-card .radio-card-journey-details button{
+    color: var(--primary-coalescent);
+}
+.search-journey-card-row .mat-mdc-tab:hover .mdc-tab__ripple::before {
+    display: none;
+}
+.search-journey-card-row .radio-card mat-radio-button.disabled-radio-card .radio-card-time-price{
+    padding-right: 0 !important;width: 100% !important;
+}
+.search-journey-card-row .radio-card-price-inner a {
+    color: var(--primary-graphene);
+    margin-top: 4px;
+}
+/*----- End Searched Journey -----*/
+
+.search-station mat-form-field input:focus{
+    box-shadow: none !important;
+}
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab .tabname-main:nth-child(2n) {
+    border-right:1px solid red ;
+}
+
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab { 
+    padding: 0; flex: 0 0 33.33%;
+}
+
+/* .ticket-tabs .mat-mdc-tab-header .mat-mdc-tab.cdk-focused .tabname-main,
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab.cdk-mouse-focused .tabname-main,
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab.cdk-focused .tab-legends,
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab.cdk-mouse-focused .tab-legends {
+    outline: 2px solid var(--primary-graphene);
+} */
+
+.ticket-tabs .mat-mdc-tab .mdc-tab__content {
+    width: 100%;
+    align-items: flex-start;
+}
+.ticket-price {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: normal;
+}
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab .tabname-main {
+    background: #fff;
+    padding: 14.5px;
+    width: 100%;
+    text-align: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab:first-child .tabname-main {
+    border-top-left-radius: 0.313rem;
+    border-bottom-left-radius: 0.313rem;
+}
+
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab:last-child .tabname-main {
+    border-top-right-radius: 0.313rem;
+    border-bottom-right-radius: 0.313rem;
+}
+
+.ticket-tabs .mat-mdc-tab-header .mat-mdc-tab .mdc-tab-indicator__content--underline, .ticket-tabs .mat-mdc-tab-header .mat-mdc-tab-label-container {
+    border: none;
+}
+
+.ticket-tabs span.mdc-tab__text-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;width: 100%;
+    flex-direction: column;
+}
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active .tabname-main {
+    background:var(--graphene);
+    color:var(--shades-white) ;
+}
+.ticket-tabs .mat-mdc-tab.mdc-tab--active .tabname-main .tab-legends div{color: var(--primary-graphene);}
+.ticket-tabs .mat-mdc-tab mat-icon {
+    display: none;
+}
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active mat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.125rem;
+}
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active mat-icon img{
+    width: 99%;
+}
+
+.search-journey-row .mat-mdc-tab-body-wrapper {
+    margin-top: 2rem;
+}
+
+.search-journey-row .mat-mdc-tab-labels {
+    gap: 0rem;    
+    align-items: center;
+    justify-content: center; 
+}
+
+.ticket-tabs .tab-legends {
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin-top: 0rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.375rem;
+    line-height: 1.375rem;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    color: var(--neutrals-metallic-blue);
+    position: relative;
+    cursor: default;
+}
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active .tab-legends {
+    cursor: pointer;
+}
+
+.ticket-tabs .tab-legends .inner-tab-legends {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: fit-content;
+}
+
+.ticket-tabs .tab-legends .tab-legends-txt {
+    width: fit-content;
+    padding: 0 0.125rem;
+}
+
+.ticket-tabs {
+    margin-top: 1rem;
+}
+
+.ticket-tabs .mdc-radio {
+    top: 2.65rem !important;
+}
+
+.ticket-tabs .mat-mdc-tab.mdc-tab--active .tab-legends div {
+    font-weight: 700;
+}
+
+.tab-awc .mat-mdc-tab-header .mat-mdc-tab-label-container .mat-mdc-tab-labels .mat-mdc-tab:last-child {
+    display: none !important;
+}
+
+.tab-awc .mat-mdc-tab-header .mat-mdc-tab-label-container .mat-mdc-tab-labels .mat-mdc-tab:nth-last-child(2) .tabname-main {
+    border-top-right-radius: 0.313rem;
+    border-bottom-right-radius: 0.313rem;
+}
+
+.single-active-mat-tab .mat-mdc-tab-header .mat-mdc-tab-label-container .mat-mdc-tab-labels .mat-mdc-tab.mdc-tab--active .tabname-main {
+    border-radius: 0.313rem;
+}
+
+.radio-card .mdc-form-field--align-end label {
+    margin: 0 !important;
+    width: 100%;
+}
+
+.ticket-list {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    padding-left: 1.5rem;
+}
+
+.radio-card.ticket-with-list .mdc-radio {
+    position: absolute !important;
+    right: 1.25rem;
+    top: 3rem;
+}
+/*----- End Disabled Card -----*/
+.password-field {
+    position: relative;
+}
+.password-field button {
+    position: absolute;
+    right: 0;
+    top: 70%;
+    transform: translate(0, -50%); 
+}
+.search-station .mat-mdc-form-field-infix {
+    padding: 0.813rem 0.75rem 0.813rem 2.5rem!important;
+    min-height: inherit;
+    height: 3rem;
+    font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;
+}
+
+.search-station .mat-mdc-text-field-wrapper:hover .mat-mdc-form-field-focus-overlay {
+    opacity: 0;
+}
+
+.stations-name button {
+    margin-left: 0 !important;
+    justify-content: flex-start;
+}
+
+.stations-name button:hover, .stations-name button:focus {
+    outline: 3px solid var(--primary-coalescent)!important;
+}
+
+.edit-qtt-via-avoid:hover button span {
+    font-weight: 700;
+}
+.edit-qtt-via-avoid-without-discount:hover button span {
+    font-weight: 700;
+}
+
+/*----- Add return journey button card -----*/
+.add-return-jounrey-btn {
+    padding: 0.875rem 1.375rem !important;
+    box-shadow: 0px 2px 12px 2px rgba(19, 30, 41, 0.08);
+    border-radius: 0.313rem !important;
+    background-color: var(--shades-white) !important;
+    width: 100%;
+    font-size: 1rem !important;
+    letter-spacing: 0.02rem !important;
+    line-height: 1.25rem !important;
+    font-weight: 700 !important;
+    color: var(--primary-coalescent) !important;
+}
+
+.add-return-jounrey-btn:hover,
+.add-return-jounrey-btn:focus {
+    outline: 0.125rem solid var(--primary-graphene) !important;
+}
+
+.add-return-jounrey-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+/*----- End Add return journey button card -----*/
+
+
+/* edit QTT animations starts*/
+app-enhanced-mixing-deck-combined-list header{position: relative;z-index: 11;}
+.slide-down-banner-edit-qtt{
+    animation: slideDown 0.5s ease-out forwards;
+}
+
+@keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  .slide-up-banner-edit-qtt{
+    animation: slideUp 0.5s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from {
+      transform: translateY(0%);
+    }
+    to {
+      transform: translateY(-100%);
+    }
+  }
+/* edit QTT animations ends*/
+
+/*----- Edit QTT Form -----*/
+
+.edit-qtt-railcard .mdc-button {
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1.5rem !important;
+    color: var(--primary-coalescent) !important;
+    font-weight: 400;
+}
+
+.edit-qtt-railcard .mdc-button:focus-visible,
+.edit-qtt-via-avoid .mdc-button:focus-visible, 
+.edit-qtt-via-avoid-without-discount .mdc-button:focus-visible {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+}
+
+.edit-qtt-railcard .mdc-button:focus-visible:hover .mdc-button__label .underline,
+.edit-qtt-via-avoid .mdc-button:focus-visible:hover .mdc-button__label, 
+.edit-qtt-via-avoid-without-discount .mdc-button:focus-visible:hover .mdc-button__label {
+    font-weight: 400;
+    text-decoration: none;
+}
+
+.price-breakdown-btn:hover {
+    background-color: rgba(234, 254, 232, 1) !important; 
+    border-color: rgba(234, 254, 232, 1) !important;
+}
+
+.price-breakdown-btn:hover span,
+.price-breakdown-btn:active span,
+.price-breakdown-btn:visited span {
+    color: var(--graphene) !important;
+}
+
+.price-breakdown-btn:active,
+.price-breakdown-btn:visited {
+    background-color: var(--shades-white) !important;
+    border-color: var(--primary-solway-breeze) !important; 
+}
+
+.price-breakdown-btn:focus-visible,
+.price-breakdown-btn:focus-visible:hover,
+.price-breakdown-btn.cdk-keyboard-focused {
+    border-color: var(--primary-solway-breeze) !important;
+    background-color: transparent !important;
+    outline: 3px solid var(--shades-white) !important;
+    outline-offset: 1px !important;
+}
+
+.price-breakdown-btn:focus-visible span,
+.price-breakdown-btn:focus-visible:hover span,
+.price-breakdown-btn.cdk-keyboard-focused span {
+    color: var(--shades-white) !important;
+}
+
+.reviewbuy-btn:hover {
+    background-color: rgba(207, 37, 0, 1) !important;
+}
+
+.dark-fill-btn:disabled:focus {
+    background-color: var(--neutrals-bright-grey) !important;
+    cursor: not-allowed !important;
+}
+
+.reviewbuy-btn:focus {
+    background-color: rgba(184, 33, 0, 1) !important;
+}
+.edit-qtt-railcard .mdc-button:hover .underline{text-decoration: underline;text-underline-offset: 0.2rem;font-weight: 600;}
+
+.add-railcard-popup footer {
+    padding: 0 1rem 1rem 1rem!important;
+    border: none !important;
+    justify-content: center;
+    align-items: center;
+}
+.edit-qtt-railcard .mdc-button .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-qtt-railcard .mdc-button .mdc-button__label span {
+    background-color: var(--primary-graphene);
+    padding: 0.375rem;
+    height: 1.5rem;
+    width: 1.5rem;
+    border-radius: 100%;
+    color: var(--shades-white);
+    display: flex;
+    font-size: 1.5rem;
+    line-height: 0.563rem;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.edit-qtt-via-avoid .mdc-button, .edit-qtt-via-avoid-without-discount .mdc-button  {
+    font-size: 1rem;
+    line-height: 1.5rem !important;
+    text-decoration: underline;
+    color: var(--primary-graphene) !important;
+    text-underline-offset: 0.25rem;
+    font-weight: 400;
+    padding: 0;
+}
+
+
+
+.edit-qtt-pax-input input {
+    color: var(--primary-coalescent);
+    line-height: 1.5rem;
+    font-size: 1.125rem;
+    text-align: center;
+}
+
+.edit-journey-form-inner .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.edit-qtt-applied-railcard-self .mdc-button {
+    padding: 0;
+    min-width: auto;
+}
+
+.edit-qtt-applied-railcard-self .mdc-button .mdc-button__label {
+    padding: 0;
+    height: 1.125rem;
+}
+
+.edit-qtt-applied-railcard-self:hover button span img{
+    filter: brightness(0) saturate(100%) invert(9%) sepia(23%) 
+          saturate(1037%) hue-rotate(176deg) brightness(91%) contrast(90%);
+}
+
+.applied-railcard-chip:focus-visible .mdc-button__label img,
+.applied-railcard-chip:focus-visible:hover .mdc-button__label img,
+.applied-railcard-chip.cdk-keyboard-focused .mdc-button__label img {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    border-radius: 100%;
+}
+
+.pax-decrease-increase-btn {
+    height: 1.5rem !important;
+    width: 1.5rem;
+    min-width: auto !important;
+    border: none !important;
+    border-radius: 100% !important;
+    color: var(--primary-graphene) !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    line-height: 1.7rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: var(--primary-solway-breeze) !important;
+    padding: 0 !important;
+}
+
+.pax-decrease-increase-btn .mdc-button__label {
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translate(0px, -50%);
+}
+
+.pax-decrease-increase-btn:hover, 
+.review-travel-extras-decrease-btn:hover, 
+.review-travel-extras-increase-btn:hover {
+    background-color: rgba(203, 221, 210, 1) !important;
+}
+
+.pax-decrease-increase-btn:focus-visible,
+.pax-decrease-increase-btn:focus-visible:hover,
+.pax-decrease-increase-btn.cdk-keyboard-focused,
+.review-travel-extras-decrease-btn:focus-visible,
+.review-travel-extras-decrease-btn:focus-visible:hover,
+.review-travel-extras-decrease-btn.cdk-keyboard-focused,
+.review-travel-extras-increase-btn:focus-visible,
+.review-travel-extras-increase-btn:focus-visible:hover,
+.review-travel-extras-increase-btn.cdk-keyboard-focused,
+.filter-clear-btn:focus-visible,
+.filter-clear-btn:focus-visible:hover,
+.filter-clear-btn.cdk-keyboard-focused {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+}
+
+.pax-decrease-btn {
+    position: absolute !important;
+    top: 50%;
+    left: 0.5rem;
+    cursor: pointer;
+    z-index: 99;
+    transform: translate(0px, -50%);
+}
+
+.pax-decrease-btn .mdc-button__label {
+    width: 0.5rem;
+    overflow: hidden;
+}
+
+.pax-increase-btn {
+    position: absolute !important;
+    top: 50%;
+    right: 0.5rem;
+    cursor: pointer;
+    z-index: 99;
+    transform: translate(0px, -50%);
+}
+
+.pax-disabled-btn, .pax-disabled-btn:hover, .pax-disabled-btn:focus, .pax-disabled-btn:focus:hover  {
+    background-color: var(--neutrals-light-periwinkle) !important;
+    cursor: not-allowed;outline: none !important;
+}
+.stations-list {   
+   
+   overflow: auto;margin-bottom: 2rem;height: auto;
+}
+
+.info-card {
+    background-color: var(--toast-error);
+    border-radius: 0.313rem;
+    padding: 0.25rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+}
+.grey-info{ background-color: var(--neutrals-light-grey)!important;}
+.info-card p {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    margin-bottom: 0;
+}
+
+.info-card p a {
+    color: var(--primary-dark-spark);
+    font-weight: 400;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+}
+
+/*----- End Edit QTT Form -----*/
+
+/*----- Page back button -----*/
+.journey-info-header {
+    min-height: 135px;
+}
+
+.sign-error-banner-bx {
+    padding: 0.5rem;
+    border-bottom: none;
+    margin-bottom: 15px;
+    background: #C0414D1A;
+    border-radius: 0.313rem;
+    border-top: none;
+    color: var(--primary-coalescent);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.sign-error-banner-bx h2 {
+    font-size: 14px;
+    font-weight: 400;
+    flex: 0 0 90%;
+    margin-bottom: 0;
+}
+.sign-error-banner-bx ul{
+    margin-bottom: 0px;
+}
+enhanced-class-details-dialogs .enhanced-common-popup-theme {
+    max-height: calc(100vh - 205px);
+    overflow: auto;
+    height: 100%;
+    padding-bottom: 1rem !important;
+   
+}
+
+.back-btn {
+    padding: 1.5rem 0;
+}
+
+.back-btn button {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 700;
+    color: var(--primary-coalescent) !important;
+    padding: 0;
+    min-width: auto;
+}
+
+.back-btn button:hover .mdc-button__label span {
+    text-decoration: underline;
+    text-underline-offset: 0.2rem;
+    font-weight: 600;
+}
+
+.back-btn button:focus-visible,
+.back-btn button:focus-visible:hover {
+    outline: 2px solid rgba(19, 30, 41, 1) !important;
+}
+
+.back-btn button:focus-visible:hover .mdc-button__label span {
+    text-decoration: none;
+}
+
+.back-btn button .mdc-button__label {
+    display: flex;
+    font-size: 0.875rem;
+    align-items: center;
+    gap: 0.5rem;
+}
+/*----- End Page back button -----*/
+.enhanced-datepicker-info .mat-mdc-tab-group.mat-mdc-tab-group-stretch-tabs .mat-mdc-tab-header .mat-mdc-tab[aria-setsize="1"] {
+    display: none !important;
+}
+
+.class-details-dialog .mat-mdc-tab-group.mat-mdc-tab-group-stretch-tabs .mat-mdc-tab-header .mat-mdc-tab[aria-setsize="1"] {
+    display: block !important;
+}
+/*----- Datepicker -----*/
+
+.enhanced-datepicker-info {
+    width: 45rem;  
+    overflow: auto;  
+}
+.enhanced-datepicker-info .ngb-dp-day:focus-visible, .enhanced-datepicker-info .ngb-dp-arrow:focus-visible {
+    outline: 3px solid rgba(19, 30, 41, 1) !important;
+    outline-offset: 1px;
+    border-radius: 50%;
+   
+}
+.enhanced-datepicker-info .ngb-dp-day:focus-visible{
+    border: 2px solid rgba(0, 79, 89, 1);
+}
+
+.add-railcard-section .common-floting-input .mdc-text-field--outlined:hover{border-color: #131E29;}
+.add-railcard-section .common-floting-input:focus-visible{border-color: #131E29;border-width: 2px;}
+
+    .enhanced-datepicker-info .btn-link:focus-visible  {
+        outline: 3px solid rgba(19, 30, 41, 1) !important;
+        outline-offset: 2px;
+    }
+
+
+[ngbDatepickerDayView]:hover:not(.bg-primary), [ngbDatepickerDayView].active:not(.bg-primary) {
+    background-color: inherit !important;
+    outline: 0 !important;
+}
+.enhanced-datepicker-info .ngb-dp-day:focus-visible {
+    border: 2px solid rgba(0, 79, 89, 1);outline-offset: 1px;
+}
+.enhanced-datepicker-info #ebd-base-dialog-body .mat-mdc-dialog-actions {
+    padding: 1.5rem;
+}
+.edit-qtt-railcard .mdc-button.cdk-program-focused .mat-ripple {background: none;box-shadow: none;}
+.edit-qtt-railcard .mat-mdc-button-touch-target{background: none;box-shadow: none;}
+.enhanced-datepicker-info [ngbDatepickerDayView]{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-coalescent);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+}
+
+.enhanced-datepicker-info .ngb-dp-day {
+    margin-bottom: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+}
+.enhanced-datepicker-info header{border: none;}
+.enhanced-datepicker-info .ngb-dp-arrow{width: 20px!important; height: 20px!important;}
+.enhanced-datepicker-info .ngb-dp-arrow-next .ngb-dp-navigation-chevron {   margin-left: 0!important;}
+.enhanced-datepicker-info .ngb-dp-navigation-chevron{margin-right: 0;}
+.enhanced-datepicker-info ngb-datepicker, .enhanced-datepicker-info .ngb-dp-week{width: 100%;position: relative;}
+.enhanced-datepicker-info .ngb-dp-month {
+    pointer-events: none;    flex: 1 1 auto;    min-width: 280px;}
+.enhanced-datepicker-info .ngb-dp-month-name {
+    font-size: 1rem;
+    height: auto;
+    line-height: 2rem;
+    text-align: center;
+    font-family: inherit;
+    color: var(--primary-coalescent);
+    margin-bottom: 0;
+    background-color: transparent;
+}
+.enhanced-datepicker-info .ngb-dp-weekdays{border: none;background-color: transparent;}
+.enhanced-datepicker-info .ngb-dp-month:first-child .ngb-dp-week{padding-left: 0;padding-right:0;}
+.enhanced-datepicker-info .ngb-dp-month:last-child .ngb-dp-week{padding-right: 0;padding-left: 0;}
+
+.enhanced-datepicker-info .ngb-dp-week {
+    border-radius: .25rem;
+    display: flex;
+    font-family: inherit;
+    font-size: 1rem;
+    justify-content: space-between;
+    color: var(--primary-coalescent);
+    margin-bottom:0.3rem;
+}
+.enhanced-datepicker-info .mat-button-toggle-appearance-standard .mat-button-toggle-label-content{height: 2.5rem;line-height: 2.5rem;font-family: Averta, Helvetica, Verdana, Arial, sans-serif;font-weight: 700;font-size: 14px;}
+.enhanced-datepicker-info .ngb-dp-weekday, .ngb-dp-week-number {
+    line-height: 2rem;
+    text-align: center;
+    font-style: normal;
+    color: var(--primary-coalescent);
+    font-size: 1rem;
+}
+.enhanced-datepicker-info .ngb-dp-months {
+    display: flex;
+    font-family: Averta, Helvetica, Verdana, Arial, sans-serif;
+    padding: 0 1.5rem 1.5rem;
+    gap: 4.5rem;
+    margin-top: 1rem;
+}
+
+
+.enhanced-datepicker-info .ngb-dp-header {
+    margin-top: 0rem;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    position: relative;
+    top: 0;
+    height: 60px;;
+    width: 100%;
+    padding: 1.5rem 1.5rem 0;
+}
+
+
+
+.enhanced-datepicker-info .ngb-dp-header {
+    justify-content: space-between;
+}
+ 
+.enhanced-datepicker-info ngb-datepicker-navigation {
+    display: grid !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    grid-template-columns: auto 1fr 3.5rem 3.5rem 1fr auto;
+}
+ 
+/* Ensure both month names take 50% width and center their text */
+.enhanced-datepicker-info .ngb-dp-month-name {
+  width: 100% !important;
+  text-align: center !important;
+}
+ 
+/* Optional: Center the arrows relative to each month */
+.enhanced-datepicker-info .ngb-dp-arrow {
+  flex: 0 0 auto !important;
+}
+
+
+
+
+.enhanced-datepicker-info .ngb-dp-header ngb-datepicker-navigation{width: 100%;position: absolute;
+    left: 0;
+    right: 0;padding: 0 1.5rem;}
+
+.enhanced-datepicker-info .ngb-dp-navigation-select{display: none;}
+.enhanced-datepicker-info .btn-link {
+    font-weight: 400;
+    color: var(--primary-coalescent) !important;
+    border: 2px solid var(--primary-coalescent) !important;
+    border-radius: 50%;
+    text-decoration: none;
+    height: 1.25rem;
+    width: 1.25rem;
+    padding: 0;
+    margin: 0;
+    font-size: 10px;
+   
+}
+.enhanced-datepicker-info .btn-link:disabled, .enhanced-datepicker-info .btn-link.disabled {
+    border-color: var(--neutrals-shadow-blue) !important;
+    color: var(--neutrals-shadow-blue) !important;
+    pointer-events: none;
+}
+
+.enhanced-datepicker-info .ngb-dp-arrow .ngb-dp-arrow-btn:focus-visible {
+    box-shadow:none !important;
+}
+
+.enhanced-datepicker-info .datepicker-btns {
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+    border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    flex-wrap: wrap;
+}
+.enhanced-datepicker-info .mat-mdc-tab-labels {
+    display: flex;
+    flex: 1 0 auto;
+    justify-content: center;
+}
+.enhanced-datepicker-info .datepicker-btns mat-button-toggle-group {
+    width: 100%;
+    border: 2px solid var(--primary-graphene);
+    border-radius: 0.313rem;
+}
+.enhanced-datepicker-info .datepicker-btns mat-button-toggle-group mat-button-toggle:hover{
+    background: rgba(241, 254, 240, 1);
+}
+.enhanced-datepicker-info .mat-button-toggle-appearance-standard.mat-button-toggle-checked {
+    background-color: var(--primary-graphene) !important;
+    color: var(--shades-white)!important;
+}
+.enhanced-datepicker-info .mat-button-toggle-appearance-standard.mat-button-toggle-checked button:focus-visible{
+    background-color: rgba(19, 30, 41, 1)!important;
+}
+.enhanced-datepicker-info .mat-button-toggle-appearance-standard button:focus-visible{
+    outline: 3px solid rgba(19, 30, 41, 1)!important;
+}
+.enhanced-datepicker-info .datepicker-btns mat-button-toggle-group .mat-button-toggle .mat-pseudo-checkbox {
+    display: none;
+}
+.enhanced-datepicker-info .datepicker-btns mat-button-toggle {
+    width: 50%;
+}
+.enhanced-datepicker-info .deperture-btn {
+    flex: 1 1 56%;
+    width: 58%;
+}
+.enhanced-datepicker-info .arrive-by-btn {
+    width: 40%;
+}
+
+.enhanced-datepicker-info .mat-form-field-infix {
+    border-top: none;
+    padding-top: 0
+}
+.enhanced-datepicker-info ngb-datepicker{padding: 0;border: none;}
+.enhanced-datepicker-info mat-select {
+    --mat-full-pseudo-checkbox-selected-icon-color:var(--neutrals-shadow-blue) !important;
+    /* border: 0.063rem solid var(--neutrals-shadow-blue) !important; */
+    margin-top: 0;
+    padding: 0.5rem 1rem;
+    border-radius: 0.313rem;
+    height: 2.5rem;
+}
+.enhanced-datepicker-info mat-select:hover{border-color: rgba(19, 30, 41, 1)!important;}
+.enhanced-datepicker-info mat-mdc-tab-labels {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: center;
+}
+.enhanced-datepicker-info .mat-mdc-tab.mdc-tab {
+    flex-grow: 0 !important;
+}
+.enhanced-datepicker-info .mat-mdc-tab.mdc-tab:hover {
+border-color: var(--primary-spark) !important;
+    border-width: 0.25rem;}
+.enhanced-datepicker-info .mat-mdc-tab-body-content {
+    padding: 0;
+}
+ .enhanced-datepicker-info .btn-light.ng-star-inserted.bg-primary.text-white {
+    background: var(--primary-graphene) !important;
+    /* outline: 2px  solid !important; */
+    color: var(--shades-white)!important;
+    border-radius: 50%;
+    line-height: 26px;
+    font-weight: 600;
+} 
+.enhanced-datepicker-info .ngb-dp-day .btn-light:hover{
+    outline: 2px solid var(--primary-coalescent)  !important;
+    border-radius: 50%;
+    background-color: var(--shades-white )!important;
+    font-weight: 600;
+    outline-offset: 1px;
+    color:var(--primary-coalescent) !important;
+}
+.enhanced-datepicker-info .ngb-dp-day:focus-visible .btn-light:hover {
+    border: none !important;
+    background: none !important;
+    outline: none !important;
+}
+
+.enhanced-datepicker-info .ngb-dp-day:focus-visible{
+    outline: 3px  solid var(--primary-coalescent)!important;
+    border-radius: 50%;
+   border: 2px solid  var(--primary-graphene);
+    /* font-weight: 600; */
+    outline-offset: 2px;
+    color:var(--primary-coalescent) !important;
+}
+/* .enhanced-datepicker-info .ngb-dp-day:focus-visible{
+    outline: 2px var(--primary-graphene) solid !important;
+    border-radius: 50%;
+    background-color: var(--shades-white) !important;
+    font-weight: 600;
+    color: var(--primary-coalescent) !important;
+   
+} */
+.enhanced-datepicker-info .mdc-text-field--filled:not(.mdc-text-field--disabled) .mdc-line-ripple::before, .enhanced-datepicker-info .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.enhanced-datepicker-info .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+    background-color: transparent;
+    padding: 0;
+}
+.enhanced-datepicker-info mat-mdc-form-field-infix {
+    width: 100%;
+    padding: 0 !important;
+}
+.enhanced-datepicker-info .mat-mdc-form-field-infix {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+    min-height: inherit;
+    padding: 0!important;
+    color: var(--primary-coalescent);
+    font-weight: 700;
+}
+.enhanced-datepicker-info .mat-mdc-select-value {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+    font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;
+}
+.enhanced-datepicker-info .outline-btn {
+    color: var(--primary-coalescent);
+    border: 2px solid var(--primary-spark) !important;}
+.enhanced-datepicker-info .outline-btn .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.enhanced-datepicker-info .outline-btn:hover .mdc-button__label {
+    color: #fff !important;
+}
+.enhanced-datepicker-info .return-tab-content{padding: 1.5rem;font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;border-bottom:1px solid var(--neutrals-light-periwinkle);color: var(--primary-coalescent);}
+ 
+/*----- End Datepicker -----*/
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title, 
+.mat-mdc-card-title,  
+mat-card-subtitle {
+    font-family: inherit !important;
+}
+
+.enhanced-common-popup-theme {
+    max-height: 75dvh;
+    overflow: auto;
+    height: 100%;
+}
+
+/*----- Station Popup -----*/
+.stations-popup {
+    max-width: 720px !important;
+    width: 100%;
+    height: calc(100vh - 128px);
+}
+
+.search-station mat-label {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+}   
+
+.search-station .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+    background-color: var(--shades-white);
+    border-radius: 0.313rem;
+}
+.search-station .mat-mdc-form-field .mat-mdc-text-field-wrapper:hover {
+    border-color: #131E29 !important;
+}
+
+.search-station .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mat-mdc-notch-piece {
+    border-color: var(--neutrals-shadow-blue) !important;
+    border-width: 1px;
+}
+
+.search-station .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid:hover .mat-mdc-notch-piece {
+    border-color: var(--primary-coalescent) !important;
+}
+
+.search-station .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline .mat-mdc-notch-piece {
+    border-width: 2px !important;
+}
+
+.search-station .mat-mdc-form-field .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.button-infor-message {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+/*----- End Station Popup -----*/
+
+/* Add Railcard Popup */
+.add-railcard-popup {
+    max-width: 35rem !important;
+    width: 100%;
+}
+
+.add-railcard-section .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.radio-card .radio-card-journey-details:hover {
+    font-weight: 700;
+}
+.radio-card .radio-card-journey-details:focus-visible a{
+    font-weight: 700;background-color: var(--neutrals-light-periwinkle);
+}
+
+/*----- View Journey Form -----*/
+
+.main-header-container {
+    background-color: var(--shades-white);
+    position: relative;
+    z-index: 2;
+}
+
+.view-journey-form-container {
+    padding: 1rem 0;
+    box-shadow: 0 0.125rem 0.75rem 0.125rem #131E2914;
+}
+
+.view-journey-form-container.remove-shadow {
+    box-shadow: none;
+}
+
+.view-journey-form-flex {
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+
+.view-edit-form-container {
+    align-items: center;
+    column-gap: 1rem;
+    list-style: none;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+}
+
+.view-edit-form-container li {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent); 
+    border-right: 0.125rem solid var(--neutrals-light-periwinkle);
+    padding: 0 1rem 0 0;
+}
+
+.view-edit-form-container li:first-child {
+    border-left: none;
+}
+
+.view-edit-form-container li:nth-last-child(2) {
+    border-right: none;
+}
+
+.view-edit-form-station-stops {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.view-edit-form-pax-railcard {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.view-edit-form-pax,
+.view-edit-form-railcard {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.view-journey-mobile {
+    display: none;
+    border-left: none;
+}
+
+.view-edit-form-mobile-date {
+    display: none;
+}
+/*----- End View Journey Form -----*/
+
+
+/*----- Seat Preferences -----*/
+.enhanced-common-popup-container.enchanced-seat-preferences-popup {
+    width: 61rem;
+}
+
+.enhanced-common-popup-container.enchanced-seat-preferences-popup .mat-mdc-dialog-surface {
+    border-radius: 0;
+}
+
+.enchanced-seat-preferences-popup .enhanced-common-popup-theme {
+    padding: 1.5rem;
+    /* height: 67dvh; */
+}
+
+.enchanced-seat-preferences-popup header .mdc-button .mdc-button__label {
+    line-height: 0 !important;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mdc-form-field,
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mdc-form-field .mdc-label,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mdc-form-field,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mdc-form-field .mdc-label {
+    width: 100%;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button {
+    background-color: var(--shadow-white);
+    border: 0.063rem solid var(--neutrals-light-periwinkle);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.313rem;
+    cursor: pointer;
+    position: relative;
+    height: 3.5rem;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button:hover {
+    border: 0.063rem solid var(--primary-coalescent);
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox {
+    background-color: var(--shadow-white);
+    border: 0.063rem solid var(--neutrals-light-periwinkle);
+    padding: 0;
+    border-radius: 0.313rem;
+    cursor: pointer;
+    position: relative;
+    height: 3.5rem;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button.mat-mdc-radio-checked,
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button.cdk-focused,
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button.cdk-keyboard-focused,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox.mat-mdc-checkbox-checked,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox.cdk-focused,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox.cdk-keyboard-focused,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox:has(.mdc-checkbox__native-control:focus-visible) {
+    background-color: var(--seat-preferences-bg);
+    border: 0.063rem solid var(--primary-graphene);
+    outline: 0.063rem solid var(--primary-graphene);
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mdc-radio,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mdc-checkbox {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button .mdc-label,
+.enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-checked .mdc-label {
+    padding-left: 0;
+    cursor: pointer;
+}
+
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox .mdc-label,
+.enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox-checked .mdc-label {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+}
+/*----- End Seat Preferences cdk-focused cdk-keyboard-focused -----*/
+
+/*----- Sign In popup -----*/
+.cdk-global-overlay-wrapper {
+    justify-content: center !important;
+}
+
+.enchanced-common-popup-content {
+    padding: 1.5rem !important;
+}
+
+.enhanced-sign-in-dialog {
+    max-width: 45rem !important;
+    width: 100% !important;
+    height: auto;
+}
+
+.enhanced-sign-in-dialog .enchanced-common-popup-header h1 {
+    color: var(--primary-coalescent);
+}
+
+.enhanced-sign-in-dialog .enchanced-common-popup-content {
+    max-height: 61vh;
+}
+
+.sign-in-popup-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.enhanced-common-label-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.enhanced-common-label-field label {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+    pointer-events: none;
+}
+
+.enhanced-common-label-field label span {
+    color: var(--destructive-watermellon);
+}
+
+.enhanced-common-label-field input {
+    padding: 0.75rem 1rem;
+    border-radius: 0.313rem;
+    border: 0.063rem solid var(--neutrals-shadow-blue);
+    background-color: var(--shades-white);
+    height: 3rem;
+}
+
+.enhanced-common-label-field input:hover {
+    border: 0.063rem solid var(--primary-coalescent);
+}
+
+.enhanced-common-label-field input:focus-visible {
+    border: 0.063rem solid var(--primary-coalescent) !important;
+    outline: 0.063rem solid var(--primary-coalescent) !important;
+}
+
+.enhanced-common-label-field-placeholder::placeholder {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: #000;
+    font-weight: 400;
+}
+
+.enhanced-field-error-border {
+    border: 0.063rem solid var(--destructive-watermellon) !important;
+    outline: 0.063rem solid var(--destructive-watermellon) !important;
+}
+
+.enhanced-common-label-field .mat-mdc-select,
+.enhanced-common-label-field .mat-mdc-input-element {
+    background-color: var(--shades-white);
+    height: 3rem;
+}
+
+.enhanced-common-label-field .mat-mdc-select .mat-mdc-select-trigger {
+    height: 3rem;
+    padding: 0.75rem 1rem;
+}
+
+.enhanced-common-label-mat-field .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece {
+    border: 0.063rem solid var(--neutrals-shadow-blue);
+}
+
+.enhanced-common-label-mat-field .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece.mdc-notched-outline__leading {
+    border-right: none;
+}
+
+.enhanced-common-label-mat-field .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece.mdc-notched-outline__trailing {
+    border-left: none;
+}
+
+.enhanced-common-label-mat-field .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mat-mdc-notch-piece {
+    border-color: var(--primary-coalescent) !important;
+}
+
+.enhanced-common-label-field .mat-mdc-form-field.enhanced-common-label-field-placeholder {
+    height: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; 
+}
+
+.enhanced-common-label-field .mat-mdc-input-element {
+    padding: 0.75rem 1rem;
+    border-radius: 0.313rem;
+    border: 0.063rem solid var(--neutrals-shadow-blue);
+    background-color: var(--shades-white);
+    height: 3rem !important;
+    box-shadow: none !important;
+}
+
+.enhanced-common-label-field .mat-mdc-input-element:hover {
+    border: 0.063rem solid var(--primary-coalescent);
+}
+
+.enhanced-common-label-field .mat-mdc-input-element:focus-visible {
+    border: 0.063rem solid var(--primary-coalescent) !important;
+    outline: 0.125rem solid var(--primary-coalescent) !important;
+    outline-offset: -0.188rem;
+    box-shadow: none !important;
+    background-clip: padding-box;
+}
+
+.enhanced-common-label-field .enhanced-readonly-input-border.mat-mdc-input-element:focus-visible, 
+.enhanced-common-label-field .enhanced-readonly-input-border.mat-mdc-input-element:hover {
+    border: 0.063rem solid var(--neutrals-shadow-blue) !important;
+    outline: none !important;
+}
+
+.enhanced-common-label-field .mat-form-field-invalid .mat-mdc-input-element {
+    border: 0.063rem solid var(--destructive-watermellon) !important;
+    outline: 0.063rem solid var(--destructive-watermellon) !important;
+    outline-offset: -0.125rem;
+    box-shadow: none !important;
+    background-clip: padding-box;
+}
+
+.smartcard-pax-select-field .enhanced-common-label-field .mat-form-field-invalid .mdc-notched-outline .mat-mdc-notch-piece {
+    border-color: var(--destructive-watermellon) !important;
+    border-width: 2px;
+}
+
+.smartcard-pax-select-field .enhanced-common-label-field .mat-form-field-invalid .mdc-notched-outline .mat-mdc-notch-piece.mdc-notched-outline__leading {
+    border-right: none;
+}
+
+.enhanced-common-label-field .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.enhanced-title-error {
+    margin-block-start: 0.5rem;
+}
+
+.enhanced-common-label-field .mat-form-field-invalid .mat-mdc-form-field-subscript-wrapper {
+    display: block;
+}
+
+.enhanced-common-label-field .mat-form-field-invalid .mat-mdc-form-field-subscript-wrapper .mat-mdc-form-field-error span {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--destructive-watermellon);
+    font-weight: 400;
+}
+
+.smartcard-pax-select-field .enhanced-common-label-field .mat-form-field-invalid .mat-mdc-form-field-subscript-wrapper .mat-mdc-form-field-error {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--destructive-watermellon);
+    font-weight: 400;
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox {
+    padding: 0 0.625rem 0 0;
+    height: 1.25rem;
+    width: 1.25rem;
+    flex: 0 0 1.25rem;
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox input {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox .mat-mdc-checkbox-touch-target {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox .mdc-checkbox__background {
+    top: 0;
+    left: 0;
+    height: 1.25rem;
+    width: 1.25rem;
+    border: 0.063rem solid var(--dark-radio);
+    border-radius: 0.125rem;
+}
+
+.enhanced-common-mat-checkbox .mdc-checkbox__native-control:enabled:checked~.mdc-checkbox__background, 
+.enhanced-common-mat-checkbox .mdc-checkbox__native-control:enabled:indeterminate~.mdc-checkbox__background {
+    background-color: var(--dark-radio) !important;
+}
+
+.enhanced-common-mat-checkbox .mat-ripple,
+.enhanced-common-mat-checkbox .mdc-checkbox__ripple {
+    display: none;
+    opacity: 0;
+}
+
+.enhanced-common-mat-checkbox .mdc-label {
+    font-size: 0.875rem;
+    line-height: 1.313rem;
+    color: var(--checkbox-text-color);
+    padding-left: 0;
+}
+
+.sign-in-popup-container .fill-btn {
+    letter-spacing: 0.02rem;
+    height: 3rem !important;
+}
+
+.sign-in-footer-flex {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.enhanced-forgot-password-btn {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+    color: var(--graphene) !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 0.25rem;
+    padding: 0 !important;
+}
+
+.enhanced-create-account-btn {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+    color: var(--primary-dark-spark) !important;
+    font-weight: 700 !important;
+    padding: 0 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 0.25rem;
+}
+
+.add-return-jounrey-btn.mat-mdc-button .mat-mdc-button-persistent-ripple::before {
+    opacity: 0 !important;
+}
+
+.journey-class-card .journey-class-details .journey-class-list ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+}
+
+.journey-class-card .journey-class-details .journey-class-list ul li {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    position: relative;
+}
+
+.journey-class-card .journey-class-details .journey-class-list ul li::before {
+    content: "";
+    position: absolute;
+    left: -0.75rem;
+    top: 0.563rem;
+    height: 3px;
+    width: 3px;
+    background-color: var(--primary-coalescent);
+    border-radius: 100%;
+    z-index: 9999;
+}
+/*----- End Sign In popup -----*/
+
+.cheaper-option-close-btn {
+    padding: 0;
+    min-width: auto;
+}
+
+.cheapest-ticket-content {
+    margin-bottom: 0.75rem;
+}
+
+.cheaper-mobile-arrow {
+    display: none;
+}
+
+.new-radio-card {
+    position: relative;
+}
+
+.radio-card-journey-details button {
+    color: var(--primary-graphene);
+    font-size: 1rem;
+    line-height: 1.5rem;
+    text-underline-offset: .25rem;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.radio-card-journey-details button .mdc-button__ripple,
+.radio-card-journey-details button .mdc-button__ripple::before {
+    display: none;
+}
+
+.radio-card-journey-details button:hover,
+.radio-card-journey-details button:focus-visible,
+.radio-card-journey-details button.cdk-focused,
+.radio-card-journey-details button.cdk-mouse-focused {
+    background-color: transparent !important;
+}
+
+/*----- Review buy page -----*/
+.review-page-mat-expansion-panel:hover .mat-expansion-indicator{
+    /* outline: 0.125rem solid var(--graphene);
+    outline-offset: -0.125rem; */
+    /* transform: rotate(135deg) !important;
+    margin-top: -0.25rem; */
+}
+
+.keyboard-mode .review-page-mat-expansion-panel:focus-within,
+.keyboard-mode .review-page-mat-expansion-panel.mat-expanded:focus-within {
+    border: 1px solid var(--neutrals-light-periwinkle) !important;
+    border-bottom: 1px solid var(--neutrals-light-periwinkle) !important;
+    outline: 0.125rem solid var(--primary-coalescent);
+    outline-offset: 0.125rem;
+}
+
+.review-page-mat-expansion-panel .mat-expansion-panel-header:focus,
+.review-page-mat-expansion-panel .mat-expansion-panel-header:focus-within,
+.review-page-mat-expansion-panel .mat-expansion-panel-header:focus-visible {
+    background-color: transparent !important;
+}
+
+.review-page-mat-expansion-panel.mat-expanded .mat-expansion-panel-content {
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+
+.review-column-seat-mat-header .mat-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    justify-content: space-between;
+    padding-right: 11px;
+}
+
+.review-column-seat-mat-header .mat-expansion-indicator::after {
+    content: "";
+    border: none;
+    padding: 0;
+    position: absolute;
+    top: -1px;
+    left: -12px;
+    background-image: url(../images/new-design-img/seat-details-accordion-arrow.svg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 13px;
+    width: 15px;
+    transform: rotate(0deg) !important;
+    transition: transform 0.2s ease-in-out;
+}
+
+.review-column-seat-mat-header.mat-expanded .mat-expansion-indicator::after {
+    transform: rotate(180deg) !important;
+    top: 0;
+}
+
+.review-column-seat-mat-header .mat-expansion-indicator {
+    transform: rotate(0deg) !important;
+}
+
+.review-column-seat-mat-header.mat-expanded .mat-expansion-indicator {
+    transform: rotate(0deg) !important;
+}
+
+.review-column-seat-mat-header .review-column-seat-numbers-hide-show:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    font-weight: 600;
+}
+
+.review-column-seat-mat-header:focus-visible {
+    background-color: transparent !important;
+}
+
+.review-column-seat-mat-header:focus-visible .review-column-seat-numbers-hide-show {
+    outline: 2px solid var(--primary-coalescent);
+    outline-offset: -2px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 400;
+}
+
+.review-column-seat-mat-panel.mat-expanded .mat-expansion-panel-content {
+    border-top: none !important;
+}
+
+.review-travel-extras-mat-header .mat-content {
+    justify-content: space-between;
+}
+
+.review-travel-extras-mat-panel:hover {
+    border: 1px solid var(--graphene) !important;
+    border-bottom: 1px solid var(--graphene) !important;
+    outline: 1px solid var(--graphene);
+    outline-offset: 0;
+}
+
+.keyboard-mode .review-travel-extras-mat-panel:focus-within,
+.keyboard-mode .review-travel-extras-mat-panel:focus-within:hover,
+.keyboard-mode .review-travel-extras-mat-panel.mat-expanded:focus-within,
+.keyboard-mode .review-travel-extras-mat-panel.mat-expanded:focus-within:hover {
+    border: 1px solid var(--neutrals-light-periwinkle) !important;
+    border-bottom: 1px solid var(--neutrals-light-periwinkle) !important;
+    outline: 0.125rem solid var(--primary-coalescent);
+    outline-offset: 0.125rem;
+}
+
+.review-travel-extras-mat-panel .mat-expansion-panel-header:focus,
+.review-travel-extras-mat-panel .mat-expansion-panel-header:focus-within,
+.review-travel-extras-mat-panel .mat-expansion-panel-header:focus-visible {
+    background-color: transparent !important;
+}
+
+.review-travel-extras-mat-panel.mat-expanded .mat-expansion-panel-content {
+    font-size: inherit;
+    line-height: normal;
+    font-weight: 400;
+    padding-block: 1.5rem;
+    margin-inline: 1.5rem;
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+
+.review-travel-extras-mat-panel .mat-expansion-panel-content {
+    margin-inline: 1.5rem;
+}
+
+.review-travel-extras-mat-header.mat-expanded {
+    height: auto;
+}
+
+.review-travel-extras-bike-amount-inner .mat-mdc-form-field {
+    width: 5.75rem;
+    text-align: center;
+    position: relative;
+}
+
+.review-travel-extras-bike-amount-inner .mdc-text-field--outlined.mdc-text-field--disabled .mat-mdc-notch-piece {
+    border-color: var(--warm-grey) !important;
+}
+
+.review-travel-extras-bike-amount-inner .mat-mdc-form-field input {
+    height: 2.5rem;
+    width: 5.75rem;
+    background-color: var(--shades-white);
+    border-radius: 0.313rem;
+    border-color: #D6D1CA !important;
+    text-align: center;
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    padding-left: 0.75rem;
+    opacity: 1;
+}
+
+.review-travel-extras-bike-amount-inner button {
+    padding: 0;
+    min-width: auto;
+    position: absolute;
+    height: 1.5rem !important;
+    width: 1.5rem;
+    border-radius: 100%;
+    z-index: 9;
+}
+
+.review-travel-extras-bike-amount-inner button.review-travel-extras-disabled-btn {
+    font-size: 1.5rem !important;
+    line-height: 1.813rem !important;
+    font-weight: 600;
+    color: var(--neutrals-shadow-blue) !important;
+    background-color: var(--neutrals-bright-grey);
+}
+
+.review-travel-extras-bike-amount-inner button:disabled {
+    cursor: not-allowed !important;
+}
+
+.review-travel-extras-bike-amount-inner button.review-travel-extras-active-btn {
+    background-color: var(--primary-solway-breeze);
+    color: var(--dark-radio) !important;
+    font-size: 1.5rem !important;
+    line-height: 1.813rem !important;
+    font-weight: 600;
+}
+
+.review-travel-extras-bike-amount-inner button.review-travel-extras-decrease-btn {
+    top: 0.5rem;
+    left: 0.5rem;
+}
+
+.review-travel-extras-bike-amount-inner button.review-travel-extras-increase-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.review-travel-extras-increase-btn.mat-mdc-button-disabled,
+.review-travel-extras-decrease-btn.mat-mdc-button-disabled {
+    pointer-events: auto !important; 
+    cursor: not-allowed !important;
+}
+
+.review-travel-extras-increase-btn.mat-mdc-button-disabled:hover,
+.review-travel-extras-decrease-btn.mat-mdc-button-disabled:hover {
+    color: var(--neutrals-shadow-blue) !important;
+    background-color: var(--neutrals-bright-grey) !important;
+}
+
+.review-travel-extras-bike-amount-inner button .mdc-button__label {
+    height: 1.5rem !important;
+    width: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: -1px;
+}
+
+.review-common-checkbox .mdc-checkbox {
+    margin: 0;
+    padding: 0;
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.review-common-checkbox {
+    width: fit-content;
+}
+
+.review-common-checkbox:hover .mdc-checkbox__background {
+    border: 1px solid var(--graphene);
+    outline: 1px solid var(--graphene);
+}
+
+.review-common-checkbox .mdc-checkbox__native-control:focus-visible ~ .mdc-checkbox__background,
+.review-common-checkbox .mdc-checkbox__native-control:focus-visible:hover ~ .mdc-checkbox__background {
+    border: 1px solid var(--dark-radio);
+    outline: 3px solid var(--primary-coalescent);
+    outline-offset: 1px;
+}
+
+.review-common-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__native-control:focus-visible ~ .mdc-checkbox__background,
+.review-common-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__native-control:focus-visible:hover ~ .mdc-checkbox__background {
+    outline: 3px solid var(--primary-coalescent);
+    outline-offset: 1px;
+}
+
+.review-common-checkbox .mdc-checkbox input {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.review-common-checkbox .mdc-checkbox .mdc-checkbox__background {
+    top: 0;
+    left: 0;
+    height: 1.25rem;
+    width: 1.25rem;
+    border: 1px solid var(--dark-radio);
+    background-color: var(--shades-white);
+    border-radius: 0.188rem;
+}
+
+.review-common-checkbox .mdc-checkbox .mat-ripple,
+.review-common-checkbox .mat-mdc-checkbox-touch-target,
+.review-common-checkbox .mdc-checkbox__ripple {
+    display: none;
+}
+
+.review-common-checkbox.mat-mdc-checkbox-checked .mdc-checkbox .mdc-checkbox__background {
+    background-color: var(--dark-radio) !important;
+    border-color: var(--dark-radio) !important;
+}
+
+.review-common-checkbox.mat-mdc-checkbox-checked .mdc-checkbox .mdc-checkbox__background .mdc-checkbox__checkmark {
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    transform: translate(-50%, -50%);
+}
+
+.review-common-checkbox .mdc-label {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    font-weight: 600;
+    padding-left: 0.625rem;
+}
+
+.review-travel-extras-plusbus-checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+}
+
+.review-travel-extras-plusbus-checkbox .review-common-checkbox .mdc-form-field {
+    gap: 1rem;
+}
+
+.review-travel-extras-plusbus-checkbox .review-common-checkbox .mdc-form-field .mdc-label {
+    padding-left: 0;
+}
+
+.plusbus-more-info-btn,
+.plusbus-more-info-btn a {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+    color: var(--primary-graphene) !important;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.188rem;
+    width: fit-content;
+    font-weight: 400;
+}
+
+.plusbus-checkbox-list .outline-btn {
+    width: fit-content;
+}
+
+.delivery-border-card {
+    padding: 1.5rem;
+    border-radius: 0.313rem;
+    border: 1px solid var(--neutrals-light-periwinkle);
+    margin-top: 0.75rem;
+    margin-left: 2.125rem;
+}
+
+.delivery-mat-radio-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.delivery-mat-radio-group-list .mdc-form-field {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.delivery-mat-radio-group-list .mdc-radio {
+    padding: 0 !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+.delivery-mat-radio-group-list .mdc-radio .mat-mdc-radio-touch-target,
+.delivery-mat-radio-group-list .mdc-radio input {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+.delivery-mat-radio-group-list .mat-mdc-radio-button .mdc-radio:hover .mdc-radio__background::before,
+.delivery-mat-radio-group-list .mat-mdc-radio-button .mdc-radio:focus .mdc-radio__background::before  {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+.delivery-mat-radio-group-list .mat-mdc-radio-button:hover .mdc-radio__outer-circle {
+    outline: 1px solid var(--dark-radio) !important;
+}
+
+.delivery-mat-radio-group-list .mat-mdc-radio-button:focus-visible .mdc-radio__outer-circle,
+.delivery-mat-radio-group-list .mat-mdc-radio-button:focus-visible:hover .mdc-radio__outer-circle,
+.delivery-mat-radio-group-list .mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.delivery-mat-radio-group-list .mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.delivery-mat-radio-group-list .mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.delivery-mat-radio-group-list .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.delivery-mat-radio-group-list .mat-mdc-radio-checked .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.delivery-mat-radio-btn .mdc-label {
+    cursor: pointer;
+    padding-left: 0 !important;
+}
+
+.delivery-mat-radio-btn h5 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    font-weight: 700;
+    margin: 0;
+}
+
+.delivery-mat-radio-btn ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.delivery-mat-radio-btn ul li {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    position: relative;
+}
+
+.delivery-mat-radio-btn ul li::before {
+    content: "";
+    position: absolute;
+    top: 9px;
+    left: -0.563rem;
+    width: 0.188rem;
+    height: 0.188rem;
+    border-radius: 100%;
+    background-color: var(--primary-coalescent);
+}
+
+.smartcard-radio-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.smartcard-radio-btn .mdc-form-field {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    position: relative;
+}
+
+.smartcard-radio-btn .mdc-radio {
+    padding: 0 !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+.smartcard-radio-btn .mdc-label {
+    margin-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-right: 0;
+}
+
+.smartcard-radio-btn .mdc-label h6 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.smartcard-radio-btn .mdc-label p {
+    color: var(--primary-coalescent);
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    margin: 0;
+    font-weight: 400;
+}
+
+.smartcard-radio-btn .mdc-radio .mat-mdc-radio-touch-target,
+.smartcard-radio-btn .mdc-radio input {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+.smartcard-radio-btn .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.smartcard-radio-btn .mat-mdc-radio-checked .mdc-radio .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.smartcard-radio-mat-btn {
+    padding: 0;
+    border-radius: 0.313rem;
+    border: 1px solid var(--neutrals-shadow-blue);
+    background-color: var(--shades-white);
+    width: 100%;
+    display: inline-block;
+}
+
+/* .smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.cdk-keyboard-focused .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+} */
+
+.smartcard-radio-mat-btn:hover,
+.smartcard-radio-mat-btn:focus-visible,
+.smartcard-radio-mat-btn.cdk-keyboard-focused {
+    outline: 1px solid var(--primary-graphene);
+    border: 1px solid var(--primary-graphene);
+}
+
+.smartcard-radio-mat-btn.mat-mdc-radio-checked {
+    outline: 1px solid var(--primary-graphene);
+    border: 1px solid var(--primary-graphene);
+    background-color: var(--feel-good-green);
+}
+
+.smartcard-radio-mat-btn.mat-mdc-radio-disabled {
+    outline: 1px solid var(--neutrals-shadow-blue);
+    background-color: var(--neutrals-light-grey);
+}
+
+.smartcard-radio-mat-btn.mat-mdc-radio-disabled .mdc-radio.mdc-radio--disabled {
+    display: none;
+}
+
+.smartcard-radio-mat-btn.mat-mdc-radio-disabled + .disabled-smartcard-msg {
+    margin: 0;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: var(--primary-coalescent);
+}
+
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible .mdc-radio__outer-circle,
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button.cdk-keyboard-focused .mdc-radio__outer-circle,
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.cdk-keyboard-focused .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.cdk-keyboard-focused:hover .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle,
+.smartcard-radio-mat-btn.mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused:hover .mdc-radio__outer-circle {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-checked {
+    outline: 1px solid var(--primary-graphene);
+    border: 1px solid var(--primary-graphene);
+    background-color: var(--feel-good-green);
+}
+
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-disabled {
+    outline: 1px solid var(--neutrals-shadow-blue);
+    background-color: var(--neutrals-light-grey);
+}
+
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-disabled .mdc-radio.mdc-radio--disabled {
+    display: none;
+}
+
+.smartcard-only .smartcard-radio-mat-btn.mat-mdc-radio-disabled + .disabled-smartcard-msg {
+    margin: 0;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: var(--primary-coalescent);
+}
+
+.order-smartcard-checkbox .mdc-form-field {
+    gap: 0.625rem !important;
+}
+
+.order-smartcard-checkbox .checkbox-link {
+    color: var(--dark-spark) !important;
+    text-decoration: underline !important;
+    text-underline-offset: 0.188rem !important;
+}
+
+.order-smartcard-checkbox .checkbox-link:hover {
+    font-weight: 600;
+}
+
+.order-smartcard-checkbox .checkbox-link:focus,
+.order-smartcard-checkbox .checkbox-link:focus:hover {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 2px;
+    border-radius: 5px;
+    font-weight: 400;
+}
+
+.smartcard-address-edit-delete {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.smartcard-address-edit-delete button {
+    color: var(--primary-coalescent);
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.188rem;
+    min-width: auto;
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
+.smartcard-address-edit-delete button:hover {
+    font-weight: 600;
+}
+
+.smartcard-address-edit-delete button:focus-visible,
+.smartcard-address-edit-delete button:focus-visible:hover,
+.smartcard-address-edit-delete button.cdk-keyboard-focused {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+    border-radius: 5px; 
+    font-weight: 400;
+}
+
+.review-added-address .smartcard-radio-btn .mdc-form-field {
+    align-items: flex-start !important;
+    padding: 1.5rem !important;
+}
+
+.review-added-address .mdc-label p span {
+    display: block;
+    word-break: break-all;
+}
+
+.review-travel-extras-mat-header .mat-expansion-indicator {
+    transform: rotate(-45deg) !important;
+    height: 1.125rem;
+    width: 1.125rem;
+}
+
+.review-travel-extras-mat-header.mat-expanded .mat-expansion-indicator {
+    transform: rotate(135deg) !important;
+}
+
+.review-travel-extras-mat-header .mat-expansion-indicator::after {
+    border: none;
+    background-image: url('../images/new-design-img/mat-accordion-arrow.svg');
+    height: 1.125rem;
+    width: 1.125rem;
+    background-size: cover;
+    background-repeat: no-repeat;
+    margin-top: -0.75rem;
+}
+
+.smartcard-radio-btn label.mdc-label::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    cursor: pointer;
+}
+
+.removed-journey-edit-qtt {
+    height: calc(100dvh - 168.71px);
+}
+
+.removed-journey-footer,
+.removed-journey-hide-section {
+    display: none;
+}
+
+.enhanced-session-timeout-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(19,30,41) !important;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+}
+
+.journey-breakdown-detail-dialog .mdc-tab__text-label {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 22px !important;
+}
+
+.enhanced-common-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.enhanced-no-seats-available-dialog .enhanced-common-info-content {
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.enhanced-common-info-content p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    font-weight: 400;
+}
+
+.enhanced-go-back-dialog .enhanced-alert-dialogs header {
+    justify-content: center;
+}
+
+.enhanced-go-back-dialog .enhanced-alert-dialogs header .mat-mdc-dialog-actions {
+    display: none;
+}
+
+.two-btn-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.5rem;
+}
+
+.two-btn-footer button {
+    margin: inherit !important;
+    height: 3rem !important;
+}
+
+.journey-dialog-footer-center {
+    justify-content: center !important;
+}
+
+.review-column-ticket-class-pax .mdc-button__ripple,
+.review-column-ticket-class-pax .mdc-button__ripple::before,
+.review-column-ticket-class-pax .mat-mdc-button-ripple {
+    display: none !important;
+}
+
+.review-column-ticket-class-pax:hover {
+    font-weight: 600;
+}
+
+.review-column-ticket-class-pax:focus-visible,
+.review-column-ticket-class-pax:focus-visible:hover,
+.review-column-ticket-class-pax.cdk-keyboard-focused {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+    border-radius: 5px;
+    font-weight: 400;
+}
+
+.review-basket .review-basket-btn {
+    cursor: not-allowed;
+}
+
+.review-basket .review-basket-btn .mdc-button__ripple,
+.review-basket .review-basket-btn .mdc-button__ripple::before,
+.review-basket .review-basket-btn .mat-mdc-button-ripple {
+    display: none !important;
+}
+
+.review-basket-btn:hover .review-basket-btn {
+    border-bottom: 1px solid var(--primary-coalescent);
+}
+
+.review-basket-btn:focus-visible .review-basket-btn,
+.review-column-ticket-class-pax:focus-visible:hover .review-basket-btn,
+.review-column-ticket-class-pax.cdk-keyboard-focused .review-basket-btn {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px;
+    border-radius: 5px;
+}
+/*----- End Review buy page -----*/
+
+/*----- Payment page starts -----*/
+.enhanced-payment .mat-ripple,
+.enhanced-payment .mdc-radio__ripple,
+.enhanced-payment .mat-ripple-element {
+    display: none;
+    opacity: 0;
+}
+
+.express-checkout ul li button:focus-visible,
+.express-checkout ul li button:focus-visible:hover,
+.express-checkout ul li button.cdk-keyboard-focused {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button {
+    border: 1px solid var(--neutrals-shadow-blue);
+    align-items: center;
+    display: flex;
+    border-radius: 0.313rem;
+    padding: 1rem 1.5rem;
+    position: relative;
+    flex: 1 1 50%;
+    cursor: pointer;
+}
+
+.enhanced-payment .address-card-list .smartcard-radio-group mat-radio-button {
+    padding: 1.5rem;
+}
+
+.enhanced-payment .eVoucher-card mat-checkbox {
+    border: 1px solid var(--neutrals-shadow-blue);
+    align-items: center;
+    display: flex;
+    border-radius: 0.313rem;
+    padding: 1.5rem;
+    position: relative;
+    flex: 1 1 50%;
+    cursor: pointer;
+    z-index: 8;
+}
+
+.enhanced-payment .eVoucher-card mat-checkbox:hover, 
+.enhanced-payment .eVoucher-card mat-checkbox:focus-visible, 
+.enhanced-payment .eVoucher-card mat-checkbox.cdk-keyboard-focused .mat-checkbox-frame,
+.enhanced-payment .smartcard-radio-group mat-radio-button:hover,
+.enhanced-payment .smartcard-radio-group mat-radio-button:focus-visible,
+.enhanced-payment .smartcard-radio-group mat-radio-button.cdk-keyboard-focused {
+    outline: 1px solid var(--primary-graphene);
+    border: 1px solid var(--primary-graphene) !important;
+}
+
+.enhanced-payment .eVoucher-card mat-checkbox:focus-visible .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox:focus-visible:hover .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.cdk-keyboard-focused .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.cdk-keyboard-focused:hover .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-radio-checked.cdk-keyboard-focused:hover .mdc-radio__outer-circle {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.enhanced-payment .eVoucher-card mat-checkbox .mdc-label {
+    padding-left: 0;
+}
+
+.enhanced-payment .eVoucher-card mat-checkbox .mdc-label::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    cursor: pointer;
+    z-index: 999;
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button .mdc-radio__outer-circle {
+    border-color: var(--dark-radio) !important;
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button.mat-mdc-radio-checked,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-checkbox-checked {
+    border: 1px solid var(--primary-graphene);
+    outline: 1px solid var(--primary-graphene);
+    background: var(--tint-feel-good-green);
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button.mat-mdc-radio-disabled,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-checkbox-disabled {
+    border: 1px solid var(--neutrals-shadow-blue);
+    background-color: var(--neutrals-light-grey);
+    outline: none;
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button.mat-mdc-radio-disabled .mdc-radio--disabled,
+.enhanced-payment .eVoucher-card mat-checkbox.mat-mdc-checkbox-disabled .mdc-checkbox {
+    display: none !important;   
+}
+
+.enhanced-payment .smartcard-radio-group mat-radio-button.mat-mdc-radio-disabled .credit-subheader,
+.enhanced-payment .smartcard-radio-group mat-radio-button.mat-mdc-radio-disabled .card-expired-txt {
+    color: var(--destructive-watermellon);
+}
+
+.enhanced-payment .smartcard-radio-group .mdc-radio,
+.eVoucher-card .mdc-checkbox {
+    position: absolute !important;
+    right: 1.5rem;
+    top: 50%;
+    transform: translate(0px, -50%);
+    padding: 0; 
+    height: 1.25rem !important;
+    width: 1.25rem !important;
+}
+
+.enhanced-payment .address-card-list .smartcard-radio-group .mdc-radio {
+    position: absolute !important;
+    right: 1.5rem;
+    top: 26px;
+    transform: translate(0, 0);
+    padding: 0; 
+    height: 1.25rem !important;
+    width: 1.25rem !important;
+}
+
+.eVoucher-card .mdc-checkbox .mdc-checkbox__background {
+    border-color: var(--dark-radio) !important;
+}
+
+.enhanced-payment .smartcard-radio-group .mdc-radio .mat-mdc-radio-touch-target, 
+.eVoucher-card .mdc-checkbox .mat-mdc-radio-touch-target,
+.enhanced-payment .smartcard-radio-group .mdc-radio .mdc-radio__native-control, 
+.eVoucher-card .mdc-checkbox .mdc-checkbox__native-control {
+    height: 1.25rem !important;
+    width: 1.25rem !important;
+}
+
+.enhanced-payment .mat-internal-form-field {
+    height: 100%;
+    display: flex !important;
+    width: 100%;
+}
+
+.enhanced-payment .smartcard-radio-group label.mdc-label {
+    padding: 0px !important;
+    width: 100%;
+    cursor: pointer;
+}
+
+.enhanced-payment .smartcard-radio-group label.mdc-label::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.enhanced-payment .payment-save .mdc-checkbox {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.payment-common-checkbox .mdc-form-field {
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.enhanced-payment .enhanced-common-label-field label span {
+    color: var(--primary-dark-spark);
+}
+
+.enhanced-payment .review-common-checkbox .mdc-label {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    font-weight: 400;
+    padding-left: 1.125rem;
+}
+
+.enhanced-payment .mat-mdc-radio-button .mdc-radio:hover .mdc-radio__background::before,
+.enhanced-payment .mat-mdc-radio-button .mdc-radio:focus .mdc-radio__background::before  {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+.enhanced-payment .mat-mdc-radio-button:hover .mdc-radio__outer-circle {
+    outline: 1px solid var(--dark-radio) !important;
+}
+
+.enhanced-payment .mat-mdc-radio-button:focus-visible .mdc-radio__outer-circle,
+.enhanced-payment .mat-mdc-radio-button:focus-visible:hover .mdc-radio__outer-circle,
+.enhanced-payment .mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible .mdc-radio__outer-circle,
+.enhanced-payment .mat-mdc-radio-button.mat-mdc-radio-checked:focus-visible:hover .mdc-radio__outer-circle,
+.enhanced-payment .mat-mdc-radio-button.mat-mdc-radio-checked.cdk-keyboard-focused .mdc-radio__outer-circle {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.eVoucher-card-list .review-common-checkbox:hover,
+.eVoucher-card-list .review-common-checkbox:focus-visible,
+.eVoucher-card-list .review-common-checkbox.cdk-keyboard-focused,
+.eVoucher-card-list .review-common-checkbox:hover .mdc-checkbox__background {
+    border: 1px solid var(--graphene) !important;
+    outline: 1px solid var(--graphene);
+}
+
+.enhanced-payment .review-common-checkbox .mdc-checkbox {
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.enhanced-payment .review-common-checkbox .mdc-checkbox input {
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.enhanced-payment .review-common-checkbox .mdc-checkbox .mdc-checkbox__background {
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.enhanced-payment .voucher-section .review-common-checkbox .mdc-checkbox {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.enhanced-payment .voucher-section .review-common-checkbox .mdc-checkbox input {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.enhanced-payment .voucher-section .review-common-checkbox .mdc-checkbox .mdc-checkbox__background {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.express-checkout ul li apple-pay-button {
+    background: var(--shades-black);
+    min-width: 10rem;
+    border-radius: 0.313rem;
+    border: none;
+    justify-content: center;
+    align-items: center;
+    height: 3rem !important;
+    cursor: pointer;
+    font-size: 23px;
+    font-weight: 600;
+}
+
+.express-checkout ul li apple-pay-button:focus-visible {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+/*----- End Payment page -----*/
+
+.common-floting-input.error-border .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece {
+    border-color: var(--destructive-watermellon) !important;
+    border-width: 2px;
+}
+
+.railcard-not-applied-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.railcard-not-applied-btn .mdc-button__label img {
+    height: 1.375rem;
+    width: 1.375rem;
+}
+
+.railcard-not-applied-btn:hover {
+    font-weight: 700;
+}
+
+.railcard-not-applied-btn:focus-visible {
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    border: none;
+}
+
+.railcard-not-applied-btn:focus-visible:hover {
+    font-weight: 400;
+}
+
+/* .date-pickr-time .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece {
+    border-color: var(--neutrals-shadow-blue) !important;
+    border-width: 1px;
+} */
+
+.date-pickr-time .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mat-mdc-notch-piece {
+    border-color: var(--primary-coalescent) !important;
+    border-width: 2px;
+}
+
+.time-select-box.mat-focused .mat-mdc-form-field-focus-overlay {
+    display: none;
+}
+
+/*----- Stop focus on non CTA elements for accessibility -----*/
+.search-journey-header:focus,
+.search-journey-header:focus-within,
+.search-journey-header:focus-visible,
+.radio-card:focus,
+.radio-card:focus-within,
+.radio-card:focus-visible,
+.journey-details-route-stations-container:focus,
+.journey-details-route-stations-container:focus-within,
+.journey-details-route-stations-container:focus-visible,
+.journey-breakdown-card mat-card-title:focus,
+.journey-breakdown-card mat-card-title:focus-within,
+.journey-breakdown-card mat-card-title:focus-visible,
+.journey-breakdown-details-head:focus,
+.journey-breakdown-details-head:focus-within,
+.journey-breakdown-details-head:focus-visible,
+.journey-breakdown-details-table tbody tr:focus,
+.journey-breakdown-details-table tbody tr:focus-within,
+.journey-breakdown-details-table tbody tr:focus-visible,
+.ticket-class-section-title:focus,
+.ticket-class-section-title:focus-within,
+.ticket-class-section-title:focus-visible {
+    outline: none !important;
+    border: none !important;
+}
+/*----- End Stop focus on non CTA elements for accessibility -----*/
+.journey-breakdown-details-table thead .mat-mdc-header-row .mat-mdc-header-cell {
+    border-bottom-color: transparent !important;
+}
+.notrains-found-card.sold-out-card.open-return-card {
+    margin-top: 2.5rem;
+ }
+ 
+  .logout-popup.content-center footer button {
+     margin: inherit!important;
+ }
+ .enhanced-datepicker-info select{
+        
+     -webkit-appearance: none;
+     -moz-appearance: none;
+     appearance: none;
+     pointer-events: none;
+ }
+
+ .spark-text{color: var(--dark-spark);text-decoration: none;font-weight: 700;}
+ .desktop-label{display: block;}
+ .mobile-label{display: none;}
+ .mat-mdc-select-arrow svg{display: none;}
+ .mat-mdc-select-arrow{
+     background: url(../images/new-design-img/later-arrow.svg);
+     background-repeat: no-repeat;
+     background-size: cover;
+     width: 18px !important;
+     height: 18px !important;
+     background-position: center;
+ }
+ .padiing-footer {
+     padding-bottom: 100px; /* Adjust footer height for mobile */
+   }
+ 
+ .overflow-hidden{overflow: hidden;}
+ 
+ 
+ .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:not([aria-disabled=true]):hover,  .mat-mdc-tab.mdc-tab--active .mdc-tab__ripple::before, .mat-mdc-tab.mdc-tab--active .mat-ripple-element{
+ 
+     background: transparent!important;
+ }
+ 
+ 
+ .show-only-btn:hover .mdc-button__label{color: var(--primary-graphene)!important;}
+ .show-only-btn:hover {
+     background: var(--shades-white) !important;
+     outline: 0.125rem solid var(--primary-graphene) !important;
+     background-color: var(--shades-white) !important;
+    
+}
+ 
+.show-only-btn:focus-visible,
+.show-only-btn:focus-visible:hover {
+    background: var(--shades-white) !important;
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    border: 2px solid var(--neutrals-shadow-blue) !important;
+    background-color: var(--shades-white) !important;
+}
+
+ .mat-mdc-radio-button.mat-mdc-radio-checked .mat-ripple-element, .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background::before {
+     background-color: transparent !important;
+ }
+
+
+#enh-header-username {    
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+}
+
+/*----- Seat picker -----*/
+.enhanced-seat-picker .seat-selected-box .svg-container svg {
+    height: auto;
+    width: 100%;
+    background: #fff;
+    border-radius: 10px;
+    text-align: center;
+}
+ 
+.enhanced-seat-picker, 
+.enhanced-seat-picker .mat-mdc-dialog-container {
+    height: 92vh;
+}
+
+.enhanced-seat-picker .seat-select-popup .fare-heading-list-box {
+    max-height: 100%;
+}
+
+.enhanced-seat-picker .seat-change-txt .mat-expansion-panel-header {
+    margin: 15px auto 0; 
+    padding: 15px 20px;
+}
+
+.enhanced-seat-picker .seat-change-txt {
+    margin: 30px 20px 0;
+}
+
+.enhanced-seat-picker .seat-change-txt h2 {
+    margin-bottom: 15px;
+}
+
+.enhanced-seat-picker .seat-change-txt .seat-header::before {
+    height: 100%;
+}
+
+.enhanced-seat-picker {
+  min-width: 65vw !important;
+  max-width: 80vw !important;
+  width: 80%;
+}
+
+.enhanced-seat-picker .mat-mdc-dialog-container {
+    padding: 0 !important;
+}
+
+.enhanced-seat-picker svg text {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.enhanced-seat-picker .svg-container {
+    overflow-x: auto;
+    height: 1200px;
+}
+
+.enhanced-seat-picker .svg-container svg {
+    margin-bottom: 10px;
+}
+
+.enhanced-seat-picker svg rect[coachtype] {
+    height: 200px;
+}
+
+.enhanced-seat-picker g#sfseatselectedgrey {
+    cursor: not-allowed;
+}
+
+.enhanced-seat-picker g#sbseatselectedgrey {
+    cursor: not-allowed;
+}
+
+.enhanced-seat-picker g#sfseatselectedgrey rect:first-child,
+.enhanced-seat-picker g#sbseatselectedgrey rect:first-child {
+    fill: rgb(192, 192, 192);
+}
+
+.enhanced-seat-picker .seatpickerwarning-icn {
+    width: 20px;
+    margin-left: 6px;
+}
+
+.enhanced-seat-picker .seatpickerwarning-tooltip {
+    z-index: 99999 !important;
+}
+
+.enhanced-seat-picker .fare-heading-list-box  {
+    height: 100%; 
+    max-height: 100%; 
+    padding: 10px 0 0 !important; 
+    margin: 0;
+}
+
+.enhanced-seat-picker, 
+.enhanced-seat-picker mat-dialog-container {
+    background-color: #e7ebf3 !important;
+    border-radius: 4px;
+}
+
+.enhanced-seat-picker mat-dialog-container .mat-mdc-dialog-surface {
+    background-color: transparent !important;
+}
+
+.enhanced-seat-picker .prevent-pulldownRefresh-Scrolling-OnSeatPickerPopup {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: contain;
+    touch-action: none;
+    -webkit-touch-action: none;
+    -moz-touch-action: none;
+    -ms-touch-action: none;
+    overflow: hidden;
+}
+
+.enhanced-seat-picker mat-dialog-container {
+    overflow: hidden;
+}
+
+.enhanced-seat-picker .tooltip.show.coalescent.seatpickerwarning-tooltip .tooltip-inner {
+    max-width: 300px !important;
+    width: 300px !important;
+}
+
+.enhanced-seat-picker .tooltip.show.coalescent.tablet.seatpickerwarning-tooltip {
+    left: -100px !important;
+    width: 300px;
+}
+
+.enhanced-seat-picker .tooltip.show.coalescent.tablet.seatpickerwarning-tooltip .arrow {
+    left: calc(50% + 98px);
+}
+
+.enhanced-seat-picker .seatpicker-dialog-box #bike_space_available image {
+    filter: invert(3%) sepia(31%) saturate(62%) hue-rotate(158deg) brightness(90%) contrast(88%);
+}
+
+.enhanced-seat-picker-inner .close-mrgn .mdc-button__label {
+    line-height: 0 !important;
+}
+/*----- End Seat picker -----*/
+
+.enhanced-field-error {
+    color: var(--destructive-watermellon);
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin: 0;
+}
+
+.enhanced-field-success {
+    line-height: 1.375rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin: 0;
+    color: var(--primary-coalescent);
+}
+
+.enhanced-field-success-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.review-page-mat-expansion-panel-header .mat-expansion-indicator {
+    transform: rotate(-45deg) !important;
+    height: 1.125rem;
+    width: 1.125rem;
+}
+
+.review-page-mat-expansion-panel-header.mat-expanded .mat-expansion-indicator {
+    transform: rotate(135deg) !important;
+    margin-top: -0.25rem;
+}
+
+.review-page-mat-expansion-panel-header .mat-expansion-indicator::after {
+    border: none;
+    background-image: url(../images/new-design-img/mat-accordion-arrow.svg);
+    height: 1.125rem;
+    width: 1.125rem;
+    background-size: cover;
+    background-repeat: no-repeat;
+    margin-top: -0.5rem;
+}
+
+.review-page-mat-expansion-panel-header.mat-expanded .mat-expansion-indicator::after {
+    margin-top: -7px;
+}
+
+.add-another-journey-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.add-another-journey-btn:hover .mdc-button__label img {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(43%) saturate(0%) hue-rotate(257deg) brightness(106%) contrast(101%);
+}
+
+.add-another-journey-btn:focus:hover .mdc-button__label img {
+    filter: none;
+}
+
+.toast-success {
+    border-radius: 0.313rem;
+    background-color: var(--toast-success);
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toast-success p {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.toast-success button {
+    min-width: auto;
+    padding: 0;
+}
+
+.toast-success button .mdc-button__label {
+    line-height: 10px;
+}
+
+.toast-msg-top-space {
+    margin-top: 1.5rem;
+}
+
+.toast-msg-bottom-space {
+    margin-bottom: 1.5rem;
+}
+
+.toast-error {
+    border-radius: 0.313rem;
+    background-color: var(--toast-error);
+    padding: 0.5rem 1rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.toast-error p {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 700;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.toast-error img {
+    height: 1.125rem !important;
+    width: 1.125rem !important;
+}
+
+.hide-blank-div:empty {
+    display: none;
+}
+
+.journey-breakdown-detail-dialog header .mdc-button__label {
+    line-height: 0;
+}
+
+.hide-price-breakdown-tab-header .mat-mdc-tab-header {
+    display: none !important;
+}
+
+.EnhancedPriceBreakdownDialogs .mat-mdc-tab-header-pagination[aria-disabled="false"] {
+    display: flex !important;
+}
+
+.bike-reser-popup-list {
+    padding-left: 25px;
+    list-style: disc;
+}
+
+.bike-reser-popup-list li {
+    list-style: none;
+    position: relative;
+}
+
+.bike-reser-popup-list li::before {
+    content: "";
+    position: absolute;
+    left: -11px;
+    top: 8px;
+    height: 3px;
+    width: 3px;
+    background-color: #131E29;
+    border-radius: 100%;
+}
+
+.bike-reser-popup-list li::marker {
+    font-size: 3px;
+}
+
+.forgot-password-sucess ul li {
+    list-style: none;
+}
+
+.enhanced-common-notification .mdc-button__label {
+    line-height: 0;
+}
+
+.enhanced-common-notification header {
+    justify-content: center;
+}
+
+.enhanced-common-notification header h2 {
+    text-align: center;
+}
+
+.enhanced-common-notification header .mat-mdc-dialog-actions {
+    display: none;
+}
+
+.enhanced-common-notification .enhanced-common-info-content {
+    padding: 1.25rem;
+    gap: 1rem;
+}
+
+.enhanced-common-notification .enhanced-common-info-content p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+}
+
+.logout-style-popup header,
+.enhanced-railcard-not-applied-popup header {
+    justify-content: center;
+}
+
+.logout-style-popup header .mat-mdc-dialog-actions,
+.enhanced-railcard-not-applied-popup header .mat-mdc-dialog-actions {
+    display: none;
+}
+
+.outline-primary-btn-hover:hover {
+    background: var(--dark-spark) !important;
+    border: 0.125rem solid var(--dark-spark) !important;
+    color: var(--shades-white) !important;
+}
+
+.outline-primary-btn-hover.cdk-mouse-focused:hover .mdc-button__label,
+.outline-primary-btn-hover:not(.cdk-keyboard-focused):hover .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-primary-btn-hover:active {
+    background: var(--primary-pressed-btn-bg) !important;
+    border: 0.125rem solid var(--primary-pressed-btn-bg) !important;
+    color: var(--shades-white) !important;
+}
+
+.outline-primary-btn-hover.cdk-mouse-focused:active .mdc-button__label,
+.outline-primary-btn-hover:not(.cdk-keyboard-focused):active .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-primary-btn-hover.cdk-keyboard-focused:active .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-primary-btn-hover:active .mdc-button__label img,
+.outline-primary-btn-hover.cdk-mouse-focused:active .mdc-button__label img,
+.outline-primary-btn-hover.cdk-mouse-focused:hover .mdc-button__label img {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(43%) saturate(0%) hue-rotate(257deg) brightness(106%) contrast(101%);
+}
+
+.outline-primary-btn-hover.cdk-keyboard-focused:active .mdc-button__label img {
+    filter: none;
+}
+
+.outline-primary-btn-hover:focus-visible,
+.outline-primary-btn-hover:focus-visible:hover,
+.outline-primary-btn-hover.cdk-keyboard-focused {
+    background: var(--shades-white) !important;
+    border: 0.125rem solid var(--primary-spark) !important;
+    color: var(--primary-coalescent) !important;
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.outline-primary-btn-hover:focus-visible .mdc-button__label,
+.outline-primary-btn-hover.cdk-keyboard-focused .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-secondary-btn-hover:hover {
+    background: var(--graphene) !important;
+    border: 0.125rem solid var(--neutrals-auro-metal) !important;
+    color: var(--shades-white) !important;
+}
+
+.outline-secondary-btn-hover.cdk-mouse-focused:hover .mdc-button__label,
+.outline-secondary-btn-hover:not(.cdk-keyboard-focused):hover .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-secondary-btn-hover:active {
+    background: var(--secondary-pressed-btn-bg) !important;
+    border: 0.125rem solid var(--neutrals-auro-metal) !important;
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-secondary-btn-hover.cdk-mouse-focused:active .mdc-button__label,
+.outline-secondary-btn-hover:not(.cdk-keyboard-focused):active .mdc-button__label {
+    color: var(--shades-white) !important;
+}
+
+.outline-secondary-btn-hover.cdk-keyboard-focused:active .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.outline-secondary-btn-hover:focus-visible,
+.outline-secondary-btn-hover:focus-visible:hover,
+.outline-secondary-btn-hover.cdk-keyboard-focused {
+    background: var(--shades-white) !important;
+    border: 0.125rem solid var(--neutrals-auro-metal) !important;
+    color: var(--primary-coalescent);
+    outline: 3px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.outline-secondary-btn-hover:focus-visible .mdc-button__label,
+.outline-secondary-btn-hover.cdk-focused .mdc-button__label,
+.outline-secondary-btn-hover.cdk-keyboard-focused .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.enhanced-action-popup-close:hover .enhanced-popup-close-btn,
+.enhanced-action-popup-close:focus-visible .enhanced-popup-close-btn {
+    border: none !important;
+}
+
+.enhanced-popup-close-btn:focus-visible,
+.enhanced-popup-close-btn.cdk-keyboard-focused {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+}
+
+.mdc-tab .mdc-tab__ripple::before,
+.mdc-tab .mat-ripple {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+.price-breakdown-tab .mdc-tab:focus-visible .mdc-tab__content .mdc-tab__text-label {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 2px !important;
+    border-radius: 5px;
+}
+
+#passenger-panel,
+.mat-mdc-autocomplete-panel,
+.mat-mdc-select-panel {
+    padding: 0;
+}
+
+#passenger-panel .mat-mdc-option,
+.mat-mdc-autocomplete-panel .mat-mdc-option,
+.mat-mdc-select-panel .mat-mdc-option {
+    background: transparent !important;
+}
+
+#passenger-panel .mat-mdc-option:hover,
+.mat-mdc-autocomplete-panel .mat-mdc-option:hover,
+.mat-mdc-select-panel .mat-mdc-option:hover,
+#passenger-panel .mat-mdc-option.mdc-list-item--selected,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mdc-list-item--selected,
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected {
+    background: var(--tint-feel-good-green) !important;
+}
+
+#passenger-panel .mat-mdc-option:hover span,
+.mat-mdc-autocomplete-panel .mat-mdc-option:hover span,
+.mat-mdc-select-panel .mat-mdc-option:hover span,
+#passenger-panel .mat-mdc-option.mdc-list-item--selected span,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mdc-list-item--selected span,
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected span {
+    color: var(--graphene) !important;
+}
+
+#passenger-panel .mat-mdc-option.mat-mdc-option-active,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mat-mdc-option-active,
+.mat-mdc-select-panel .mat-mdc-option.mat-mdc-option-active {
+    background-color: transparent !important;
+    outline: 2px solid var(--primary-coalescent) !important; 
+    outline-offset: -4px !important; 
+    border-radius: 8px !important;
+}
+
+#passenger-panel .mat-mdc-option.mat-mdc-option-active span,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mat-mdc-option-active span,
+.mat-mdc-select-panel .mat-mdc-option.mat-mdc-option-active span,
+#passenger-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active,
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active {
+    color: var(--primary-coalescent) !important;
+}
+
+#passenger-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active,
+.mat-mdc-autocomplete-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active,
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected.mat-mdc-option-active {
+    background: var(--tint-feel-good-green) !important;
+    outline: none !important;
+    border-radius: 0 !important;
+}
+
+.enhanced-seat-picker-inner .close-mrgn:focus-within .mat-mdc-focus-indicator,
+.enhanced-seat-picker-inner .close-mrgn.cdk-keyboard-focused {
+    background: transparent !important;
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 1px !important;
+    border-radius: 2px;
+}
+
+.enhanced-seat-picker-inner .close-mrgn.cdk-focused {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.enhanced-session-timeout-popup .time-counter {
+    font-size: 20px;
+    line-height: 25px;
+    font-weight: 600;
+    color: var(--graphene);
+}
+.session-timeout-shadow p{
+    color: var(--primary-coalescent) !important;
+}
+
+.session-timeout-shadow h2:only-child {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+/*----- Seatpicker seat button fix for angular 15+ -----*/
+.enhanced-seat-picker-inner .booked-seats span,
+.enhanced-seat-picker-inner .booked-seats span.mdc-button__ripple,
+.enhanced-seat-picker-inner .booked-seats span.mdc-button__label,
+.enhanced-seat-picker-inner .booked-seats span.mat-mdc-focus-indicator,
+.enhanced-seat-picker-inner .booked-seats span.mat-mdc-button-touch-target,
+.enhanced-seat-picker-inner .booked-seats span.mat-ripple {
+    pointer-events: none !important;
+}
+/*----- Seatpicker seat button fix for angular 15+ -----*/
+
+/*----- Booking confirmation page -----*/
+.enhanced-booking-confirmation-header #enh-usp-section,
+.enhanced-booking-confirmation-header #enh-stepper-section {
+    display: none;
+}
+
+.enhanced-booking-confirmation-header .user-account-container {
+    padding: 0.813rem 0 !important;
+}
+
+.enhanced-booking-confirmation-header .user-account-logo {
+    display: block !important;
+}
+
+.enhanced-booking-confirmation-header .user-account-logo .header-avanti-logo {
+    margin-top: auto !important;
+}
+
+.enhanced-booking-confirmation-header .m-journey-section {
+    display: none !important;
+}
+
+.enhanced-booking-confirmation-section .mat-mdc-tab-header {
+    border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    position: sticky;
+    top: 0;
+    z-index: 11; background: #f9f7f6;
+    
+}
+
+/* .enhanced-booking-confirmation-section .mat-mdc-tab-header-pagination-controls-enabled .mat-mdc-tab-header-pagination {
+    display: flex;
+    background: #f9f7f6;
+} */
+
+.enhanced-booking-confirmation-section  .mat-mdc-tab .mdc-tab-indicator__content--underline {
+    border-color: var(--primary-spark) !important;
+    border-width: 0.25rem;
+    position: absolute;
+    bottom: -1.5px;
+    z-index: 11;
+}
+.enhanced-booking-confirmation-section .mat-mdc-tab-header .mat-mdc-tab-labels {
+    justify-content: center;
+    gap: 2.5rem;
+    background-color: var(--body-bg);
+}
+
+.enhanced-booking-confirmation-section .mat-mdc-tab-header .mat-mdc-tab {
+    width: auto;
+    flex-grow: initial !important;
+    min-width: 5.375rem !important;
+    padding: .875rem 0;
+}
+
+.enhanced-booking-confirmation-section .mat-mdc-tab-header .mdc-tab__text-label {
+    line-height: 1.375rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-coalescent) !important;
+}
+
+.enhanced-booking-confirmation-section .mat-mdc-tab-header .mat-mdc-tab:focus-visible .mdc-tab__text-label {
+    outline: 2px solid var(--primary-coalescent) !important;
+    outline-offset: 2px;
+    border-radius: 5px;
+}
+
+.payment-summary-accordion .mat-expansion-panel-header {
+    padding: 1.5rem;
+}
+
+.payment-summary-accordion .mat-expansion-panel-header-title h2 {
+    font-size: 1.25rem;
+    line-height: 1.563rem;
+    font-weight: 600;
+    color: var(--primary-graphene);
+    margin: 0;
+}
+
+.booking-payment-summary-content {
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+
+.ebc-journey-details-card .mat-expansion-panel.mat-expanded {
+    border-radius: 5px !important;
+}
+
+.bcp-download-btn .mdc-button__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bcp-download-btn:focus-visible:hover .mdc-button__label {
+    color: var(--primary-coalescent) !important;
+}
+
+.payment-summary-accordion .mat-accordion .mat-expansion-panel:hover {
+    outline: 2px solid var(--primary-coalescent);
+}
+
+.keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel:focus-within,
+.keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel.mat-expanded.focus-within {
+    outline: 2px solid var(--primary-coalescent);
+    outline-offset: 0.125rem;
+    background-color: transparent;
+    border: 1px solid var(--neutrals-light-periwinkle) !important;
+}
+
+.payment-summary-accordion .mat-accordion .mat-expansion-panel-header:focus,
+.payment-summary-accordion .mat-accordion .mat-expansion-panel-header:focus-within,
+.payment-summary-accordion .mat-accordion .mat-expansion-panel-header:focus-visible {
+    background-color: transparent !important;
+}
+
+.e-ticket-btn {
+    min-width: 200px;
+}
+
+.e-ticket-btn .mat-mdc-menu-item-text {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.e-ticket-btn-group ul li button .mdc-button__label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+
+.e-ticket-btn-group button {
+    border: 2px solid transparent;
+}
+
+.e-ticket-btn-group button:hover {
+    background-color: var(--tint-feel-good-green) !important;
+}
+
+.e-ticket-btn-group button:focus-visible {
+    border: 2px solid var(--primary-coalescent); 
+    border-radius: 5px;
+    background-color: transparent !important;
+}
+
+.e-ticket-btn-group button:focus-visible:hover {
+    background-color: transparent;
+}
+
+::ng-deep .mat-mdc-menu-content {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+::ng-deep .e-ticket-btn-group .mat-mdc-menu-item-highlighted:not(.cdk-program-focused) {
+  background: transparent !important;
+}
+
+::ng-deep .e-ticket-btn-group .mat-mdc-menu-item {
+  background: transparent !important;
+}
+
+.enhanced-booking-confirmation-section .mat-expansion-indicator::after {
+    color: var(--primary-coalescent) !important;
+}
+
+.usabilla_live_button_container {
+    top: 50% !important;
+    width: 40px !important;
+    height: 130px !important;
+    z-index: 999 !important;
+    left: auto !important;
+    transform: translateY(-50%) !important;
+    margin-top: auto !important;
+}
+
+.user-disabled-while-loader,
+.basket-disabled-while-loader .user-account-basket-txt,
+.basket-disabled-while-loader .basket-counter img {
+    opacity: 0.6;
+}
+
+.basket-disabled-while-loader .basket-counter .basket-counter-number {
+    background-color: var(--neutrals-auro-metal) !important;
+}
+/*----- End Booking confirmation page -----*/
+
+/*----- Media Query -----*/
+/*----- Greater than 1440px or equal to 1440px -----*/
+@media (width >= 1440px) {
+    .common-container {
+        max-width: 72rem;
+        width: 100%;
+        margin: 0 9rem;
+    } 
+}
+/*----- Greater than 1440px or equal to 1440px -----*/
+
+/*----- Between 1024px and 1440px or equal to 1024px and 1440px -----*/
+@media (1024px <= width <= 1440px) {
+    .common-container {
+        max-width: 72rem;
+        min-width: 61rem;
+        width: 100%;
+        margin: 0 1.5rem;
+    }
+}
+/*----- Between 1024px and 1440px or equal to 1024px and 1440px -----*/
+
+@media (width <= 1150px) {
+    .enhanced-seat-preferences-seat-option .mat-mdc-radio-group .mat-mdc-radio-button,
+    .enhanced-seat-preferences-seat-option .mat-mdc-checkbox-group .mat-mdc-checkbox {
+        height: auto;
+    }
+}
+
+@media(width <= 1024px){
+    .for-mobile-content {
+        display: block;
+    }
+    .for-desktop-content{display: none;}
+    .view-change-seat-btn {
+        width: 100%;
+    }
+}
+/*----- Less than 1024px or equal to 1024px -----*/
+@media (width <= 1023px) {
+    .usabilla_live_button_container {
+        top: 50% !important;
+        width: 40px !important;
+        height: 130px !important;
+        z-index: 999 !important;
+        left: auto !important;
+        transform: translateY(-50%) !important;
+        margin-top: auto !important;
+        margin-left: inherit !important;
+        right: 0;
+        bottom: inherit !important;
+        border-radius: 0.25rem 0 0 0.25rem;
+    }
+
+    .usabilla_live_button_container iframe.usabilla-live-button {
+        left: 0 !important;
+        top: 0 !important;
+    }
+
+    .journey-details-itinerary-popup {
+        height: 100dvh !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;  
+    }
+
+    .stations-popup {
+        max-width: 100% !important;
+        width: 100%;
+        height: 100dvh;
+        margin: 0 !important;
+    }
+
+    .ticket-detail-mobile, .EnhancedPriceBreakdownDialogs {
+        width: 100% !important;
+        padding: 0rem !important;
+        height: 100vh;
+        max-width: 100% !important;
+    }
+    
+    .class-detail-popup {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0px !important;
+        height: 100dvh !important;
+    }
+
+    .common-container {
+        max-width: 35rem;
+        width: 100%;
+        margin: 0 1.5rem;
+    }
+
+    .common-container.m-common-container {
+        max-width: 100%;
+        margin: 0 1rem;
+    }
+
+    .enhanced-datepicker-info .buttons-footer button {
+        flex: 1 1 50%;
+    }
+
+    .enhanced-datepicker-info .deperture-btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+  
+    .enhanced-datepicker-info .mat-mdc-form-field-infix {
+        justify-content: inherit;
+    }
+
+    .enhanced-datepicker-info .mat-mdc-form-field-infix mat-form-field {
+        width: 100%;
+    }
+
+    .enhanced-datepicker-info .datepicker-btns {
+        gap: 1rem;
+    }
+
+    .enhanced-datepicker-info .datepicker-btns,  .enhanced-datepicker-info .ngb-dp-header {
+        padding: 1rem;border-bottom: none !important;
+    }
+    .enhanced-datepicker-info .mat-mdc-dialog-content{border-bottom: 1px solid var(--neutrals-light-periwinkle);}
+
+    .enhanced-datepicker-info .arrive-by-btn {
+        width: 100%;
+    }
+
+    .enhanced-datepicker-info .mat-mdc-tab-body-wrapper {
+        min-height: 27.5rem;
+    }
+
+    .enhanced-datepicker-info .return-tab-content {
+        height: 100%;
+    }
+    
+    .common-edit-form-btn .mdc-button__label {
+        gap: 0.25rem;
+    }
+
+    .common-edit-form-btn .mdc-button__label img {
+        height: 0.75rem;
+    }
+
+    .back-btn button { 
+        font-weight: 400;
+        min-width: auto;
+    }
+
+    .search-journey-row .mat-mdc-tab-body-wrapper {
+        margin-top: 0.75rem !important;
+    }
+
+    .common-edit-form-btn:disabled {
+        background-color: transparent !important;
+        cursor: not-allowed !important;
+        border: 0 solid var(--neutrals-bright-grey) !important;
+    }
+
+    .common-edit-form-btn:disabled .mdc-button__label {
+        color: var(--primary-coalescent) !important;
+    }
+
+    .common-edit-form-btn:disabled .mdc-button__label img {
+        filter: none !important;
+    }
+    
+    .mobile-loader-d-none {
+        display: none;
+    }
+    
+    .e-ticket-btn-group {
+        width: 100vw;
+        max-width: 528px !important;
+    }
+
+    .review-basket-btn:focus-visible {
+        outline: 2px solid var(--primary-coalescent) !important;
+        outline-offset: 1px;
+        border-radius: 5px;
+    }
+}
+/*----- Less than 1024px or equal to 1024px -----*/
+
+/*----- Between 768px and 1024px or equal to 768px and 1024px -----*/
+@media (width <= 1024px){
+    .class-detail-popup{margin: 0 1.5rem;}
+}
+@media (width <= 1023px) {
+    .common-floting-input .mdc-text-field--outlined .mdc-text-field__input{opacity: 1!important}
+    .journey-details-train-facilities .mat-accordion .mat-expansion-panel-header-description{font-size: 14px!important;}
+    app-enhanced-journey-details-and-itinerary-dialogs .enhanced-common-popup-body {
+        overflow: auto;
+        max-height: calc(100vh - 60px);padding-bottom: 5rem !important;
+    }
+    app-enhanced-basic-dialog header h2 {
+        font-size: 18px !important;
+        line-height: 1.375rem !important;
+    }
+
+    .journey-info-header {
+        min-height: auto;
+    }
+    .ticket-tabs mat-tab-header {
+        box-shadow: 0 0.125rem 0.75rem 0.125rem rgba(19, 30, 41, 0.08);
+    }
+    .journey-breakdown-details-table .mat-mdc-header-cell, .journey-breakdown-details-head{
+        padding: 1rem !important;
+    }
+    .journey-breakdown-details-table .mdc-data-table__cell{
+        padding: 1rem !important;
+    }
+
+    .m-journey-section-container .common-edit-form-btn.ttc-edit .mdc-button__label img {
+        width: 1rem !important;
+        height: inherit;
+    }
+    .view-journey-form-container.new-design-journey .common-container {
+        margin: 0 !important;
+    }
+    .mt-4rem{margin-top: 4px;}
+    .view-journey-form-container.new-design-journey ul{padding: 0;margin: 0;font-size: 14px;}
+    .different-way{color: #fff;}
+    .view-journey-form-container.new-design-journey ul li {color: #fff;}
+    .view-journey-form-container.new-design-journey {
+        background-color: var(--primary-graphene);
+        padding: 12px 24px;
+    } 
+    .common-edit-form-btn.ttc-edit .mdc-button__label{color: #fff;}
+
+    enhanced-class-details-dialogs .enhanced-common-popup-theme {
+        max-height: calc(100vh - 60px);
+        overflow: auto;
+        height: 100%;
+        padding-bottom: 4rem !important;
+        min-height: inherit;
+    }
+    .time-show-mobile p {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 1rem !important;
+    }
+    
+    .matmenu-myaccount {
+        right: 1rem;
+        left: inherit;
+        min-width: 140px !important;
+        max-width: 300px !important;
+    }
+
+    .sign-in-popup-container {
+        margin-bottom: 1rem !important;
+    }
+
+    .logout-popup {
+        width: 35rem !important;
+    }
+
+    .logout-style-popup .enhanced-alert-dialogs .alert-content {
+        padding: 1rem;
+    }
+
+    enhanced-logout-dialogs footer .common-popup-theme-footer.ng-star-inserted button {
+        width: 100%;
+    }
+
+    .enhanced-forgot-password-btn {
+        display: flex!important;
+        justify-content: normal !important;
+        text-align: left;
+    }
+
+    .enhanced-create-account-btn {
+        padding: 0 !important;
+        min-width: inherit !important;
+        width: 50%;
+        display: flex !important;
+        justify-content: end !important;
+        text-align: right;
+    }
+
+    .enhanced-forgot-password-btn span {
+        font-size: 0.875rem !important;
+    }
+    
+    .btn-fullwidth button {
+        width: 100% !important;
+    }
+
+    .mobile-min-height-jrny-btn {
+        min-height: 18px;
+    }
+    
+    .notrains-found-card.sold-out-card.open-return-card {
+        margin-top: 0;
+    }
+
+    .label-hide-ondestop {
+        display: none !important;
+    }
+  
+    app-enhanced-ticket-type-and-class app-enhanced-basic-dialog header .mat-mdc-dialog-actions.mat-mdc-dialog-actions-align-end,
+    app-enhanced-ticket-type-and-class app-enhanced-basic-dialog header mat-button {
+        margin-top: -0.25rem;
+    }
+    
+    .class-details-row mat-card-subtitle {
+        font-size: 0.875rem;
+    }
+
+    .ticket-tabs .mat-mdc-tab.mdc-tab--active .tabname-main {
+        border-radius: 0.313rem;
+    }
+
+    .ticket-tabs .mat-mdc-tab.mdc-tab--active:nth-child(1) .tabname-main {
+        border-bottom-right-radius: 0;
+        border-top-right-radius: 0;
+    }
+    
+    .ticket-tabs .mat-mdc-tab-header .mat-mdc-tab {
+        flex: 1 1 33.33%;
+    }
+    
+    .mobile-label {
+        display: block;
+    }
+    
+    .desktop-label {
+        display: none;
+    }
+    
+    .ticket-tabs .mat-mdc-tab-header .mat-mdc-tab .tabname-main {
+        padding: 0.5rem 1rem;
+    }
+
+    /* .ticket-tabs .mat-mdc-tab-header .mat-mdc-tab:hover .tabname-main {background: rgba(234, 254, 232, 1) !important;color:#000 !important;} */
+
+    .ticket-class-section .ticket-class-section-title {
+        gap: 0!important;
+        flex-wrap: wrap;
+    }
+
+    .cdk-overlay-pane.EnhancedPriceBreakdownDialogs {
+        width: 100% !important;
+        max-width: 100dvw !important;
+        height: 100dvh;
+    }
+
+    .EnhancedPriceBreakdownDialogs .enhanced-common-popup-theme {
+        height: calc(100dvh - 150px);
+        padding-bottom: 5rem;
+        overflow: auto;
+    }
+
+    .journey-breakdown-detail-dialog footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .common-edit-form-btn {
+        padding: 0 !important;
+        border: none !important;
+        line-height: 1.375rem !important;
+        font-size: 0.875rem !important;
+        height: auto !important;
+    }
+    
+    app-enhanced-ticket-type-and-class .search-journey-cards-row {
+        max-width: 35rem !important;
+        margin: 0 auto;width: 100%;
+    }
+
+    .ticket-tabs .mdc-radio {
+        top: 2.813rem !important;
+    }
+
+    /* app-enhanced-ticket-type-and-class .search-journey-container .common-container, app-enhanced-ticket-type-and-class #ettacc-back-btn-container .common-container {
+        max-width: 100% !important;
+        width: 100% !important;
+    } */
+    app-enhanced-ticket-type-and-class #ettacc-back-btn-container .common-container {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    .journey-type img {
+        width: 12px;
+    }
+
+    .back-btn {
+        padding: 1rem 0 0 0 !important;
+    }
+
+    .back-btn button {
+        min-width: auto !important;
+    }
+    
+    .journey-class-card .journey-class-details .journey-class-list{
+        padding-left: 1.25rem!important;
+    }    
+    
+    enhanced-no-trains-available-dialogs button {
+        width: 100%;
+    }
+
+    .railcard-cheapest-card {
+        width: 100%;
+        bottom: 7.313rem;
+        right: 0;
+        gap: 0;
+    }
+
+    .railcard-applied-message .mat-mdc-card {
+        border-bottom: 1px solid var(--neutrals-light-periwinkle);
+        border-radius: 0;
+    }
+
+    .cheapest-ticket-message .mat-mdc-card {
+        border-radius: 0;
+    }
+
+    .cheapest-using-railcard .cheapest-ticket-message .mat-mdc-card {
+        box-shadow: none;
+        border-top: 1px solid var(--neutrals-light-periwinkle);
+    }
+
+    .cheapest-ticket-message p,
+    .railcard-applied-message p {
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.375rem;
+        margin-top: 0.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .cheapest-ticket-message .cheapest-ticket-content {
+        margin-bottom: 0;
+    }
+
+    .cheapest-ticket-message .ticket-label button {
+        display: none;
+    }
+
+    .cheapest-ticket-message .cheaper-option-txt {
+        display: none;
+    }
+
+    .cheapest-ticket-message .cheaper-mobile-arrow {
+        display: block;
+    }
+
+    .cheapest-ticket-message .select-button {
+        border: none !important;
+        padding: 0 !important;
+        background: transparent;
+        min-width: auto !important;
+    }
+
+    .cheapest-ticket-message .single-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .cheapest-ticket-message .select-button:active,
+    .cheapest-ticket-message .select-button:hover {
+        background-color: transparent !important;
+    }
+
+    .using-railcard-title span {
+        font-size: 1.125rem;
+        line-height: 1.375rem;
+        font-weight: 600;
+    }
+
+    .railcard-applied-message {
+        position: relative;
+    }
+
+    .railcard-applied-message .cheaper-option-close-btn {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+  
+    .field-error-space {
+        bottom: -0.25rem;
+    }
+
+
+    @keyframes slideUp {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .enhanced-datepicker-info {   
+        margin-top: auto;
+        animation: slideUp 1s ease-in-out;
+        position: fixed !important;
+        left: 0;
+        bottom: 0;
+        width: 100vw;
+        max-width: 100% !important;
+    }
+
+    .label-less-radio-card .mat-mdc-radio-button .mdc-radio {
+        top: 2.4rem!important;
+    }
+
+    .search-journey-card-row .radio-card .mat-mdc-radio-button .mdc-radio .mdc-radio__background {
+        height: 1.25rem!important;
+        width: 1.25rem!important;
+    }
+
+    /* .via-avoid-section button:hover {
+        background: #F1FEF0 !important;
+        color: var(--primary-graphene);
+    } */
+    
+    .journey-details-card-header {
+        padding: 1rem !important;   
+    }
+   
+    .via-avoid-section {
+        padding: 1rem;
+    }
+
+    .journey-details-train-facilities .mat-accordion .mat-expansion-panel-header {
+        padding: 0!important;
+    }
+
+    .mat-mdc-radio-button .mdc-radio, .mat-mdc-radio-button .mdc-radio__native-control, .mat-mdc-radio-touch-target {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+    }
+
+    .enhanced-datepicker-info .ngb-dp-months {
+        padding: 0 1rem 1rem 1rem;margin-top: 0;
+    }
+    .enhanced-datepicker-info ngb-datepicker{margin-top: 1rem;border: none;}
+
+    .enhanced-datepicker-info .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+        font-size: 0.875rem !important;
+    }
+
+    .enhanced-datepicker-info .ngb-dp-navigation-select {
+        display: none;
+    }
+
+    .enhanced-datepicker-info ngb-datepicker-navigation-select.ngb-dp-navigation-select select:first-child {
+        text-align: right;
+    }
+  
+    .enhanced-datepicker-info ngb-datepicker-navigation-select.ngb-dp-navigation-select select {
+        padding: 0 2px;
+        border: none;    
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        width: auto;
+        -ms-flex: none;
+        flex: none;
+        background: none;
+        font-size: 14px;
+        color: #131e29;
+        height: 2rem;
+        line-height: 2rem;
+        pointer-events: none;
+    }
+
+    .view-journey-form-container {
+        box-shadow: none !important;
+    }
+  
+    .search-station mat-icon {  
+        left: 2rem !important;      
+    }
+    
+    .service-arrive-ticket .stations-list {
+        overflow: auto;
+        height: calc(100vh - 260px);
+    }
+
+    .enhanced-common-popup-theme {
+        padding: 0;
+        min-height: 78.5dvh;
+    }
+
+    app-enhanced-basic-dialog.enhanced-alert-dialogs footer {
+        padding:1rem;
+    }
+    
+    app-enhanced-basic-dialog header {
+        padding: 1rem !important;
+    }
+
+    .full-width-mobile .enhanced-common-popup-theme {
+        max-height: 100dvh;
+    }
+    
+    .padiing-footer {
+        padding-bottom: 180px; /* Adjust footer height for mobile */
+    }
+
+    .padiing-footer.cheapest-ticket-footer {
+        padding-bottom: 250px !important;
+    }
+
+    .padiing-footer.using-railcard-footer {
+        padding-bottom: 216px !important;
+    }
+
+    .padiing-footer.cheapest-using-railcard {
+        padding-bottom: 306px !important;
+    }
+     
+    /*----- Filter modal starts -----*/
+    .Filter-modal .mdc-switch--selected .mdc-switch__icon--on, .Filter-modal .mdc-switch--unselected .mdc-switch__icon--off, .Filter-modal .mdc-switch__shadow{
+        display: none; 
+    }
+
+    .Filter-modal .mdc-switch--selected .mdc-switch__handle-track {
+        transform: none;
+        right: 0.55rem;
+        left: inherit;
+    }
+
+    .Filter-modal .mdc-switch--selected:enabled .mdc-switch__handle::after {
+        background: var(--shades-white) !important;
+    }
+
+    .Filter-modal .mdc-switch--selected .mdc-switch__track::after {
+        background: var(--primary-graphene)!important;
+    }
+
+    .Filter-modal span.mdc-switch__track::before {
+        background:var(--neutrals-light-periwinkle);
+    }
+
+    .Filter-modal .mdc-switch__track {
+        overflow: hidden;
+        position: relative;
+        width: 2.25rem;
+        height: 1.5rem;
+        border-radius: 1.563rem;
+    }
+
+    .Filter-modal  .mdc-form-field {
+        display: flex;
+        justify-content: space-between; 
+        width: 100%;
+    }
+
+    .Filter-modal  .mdc-label {
+        margin-left: 0px !important;
+        font-family: Averta, Helvetica, Verdana, Arial, Sans-Serif;
+    }
+
+    .Filter-modal mat-slide-toggle {
+        width: 100%;
+    } 
+
+    .Filter-modal .mdc-switch--unselected:enabled .mdc-switch__handle::after {
+        background: var(--shades-white)!important;
+    }
+
+    .Filter-modal .alert-content p:last-child {
+        border-bottom: none;
+    }
+
+    .Filter-modal .mdc-switch__handle {
+        left: 0.141rem;
+    }
+   
+    .Filter-modal {
+        max-width: 100% !important;
+        margin-top: auto;
+        animation: slideUp 1s ease-in-out;
+        width: 100% !important;
+    } 
+
+    .Filter-modal footer button {
+        flex: 1 1 auto;
+    }
+
+    .enhanced-datepicker-info mat-dialog-actions div {
+        display: flex;
+        max-width: 100% !important;
+        margin-top: auto;
+        width: 100%;
+    }
+
+    .enhanced-datepicker-info mat-dialog-actions div button {
+        width: 50%;
+        flex: 1 1 50%;
+    }
+
+    .station-list-popup {
+        grid-template-columns: repeat(1, 1fr)!important;
+    }
+
+    app-enhanced-edit-qtt {
+        position: fixed;
+        top: 0;
+        z-index: 999;
+        height: calc(100dvh - 139.5px);
+        bottom: 0;
+        width: 100%;       
+    }
+    
+    .edit-qtt-btn {
+        position: fixed;
+        bottom: env(safe-area-inset-bottom, 0);
+        left: 0;
+        right: 0;
+        justify-content: center !important;
+        z-index: 111;
+        background: #fff;
+        padding: 1rem;
+    }
+
+    .edit-qtt-btn button {
+        width: 50%;min-height: 48px;
+    }
+
+    .edit-journey-form-container { 
+        height: 100dvh;
+    }
+
+    .edit-qtt-form-top {
+        padding-bottom: 100px;
+        overflow:auto;
+        height: calc(100dvh - 100px);
+    }
+
+    .view-journey-form-flex {
+        gap: 0.5rem;
+    }
+
+    .view-edit-form-container {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .view-edit-form-container li:first-child {
+        border-left: none;
+        width: 100%;
+    }
+
+    .view-edit-form-container li {
+        font-size: 0.875rem;
+        line-height: 1.375rem;
+        gap: 0.5rem;
+        white-space: nowrap !important;
+        border-right: none;
+        padding: 0;
+        flex:1 1 100%;
+    }
+
+    .view-edit-form-container li .white-space-nowrap {
+        white-space: normal;
+    }
+
+    .view-edit-form-pax,
+    .view-edit-form-railcard {
+        padding-left: 0;
+        border-left: none;
+    }
+
+    .view-journey-mobile {
+        display: flex;
+        column-gap: 0.5rem !important;
+        row-gap: 0 !important;
+        flex-wrap: wrap;
+    }
+
+    .view-edit-form-pax-railcard {
+        display: none;
+    }
+
+    .view-edit-form-btn-area {
+        align-self: self-end;
+        position: absolute;
+        right: 1.5rem;
+    }
+
+    .view-edit-form-mobile-date {
+        display: flex;
+        column-gap: 0.25rem !important;
+        row-gap: 0 !important;
+        white-space: normal !important;
+        flex-wrap: wrap;
+        flex-wrap: nowrap !important;
+    }
+
+    .enhanced-datepicker-info .ngb-dp-header {
+        position: relative;
+        top: 0;
+    }
+
+    .enhanced-sign-in-dialog .enchanced-common-popup-header h1 {
+        width: calc(100% - 2.5rem);
+        font-size: 1.125rem;
+        line-height: 1.375rem;
+        font-weight: 600;
+    }
+
+    .enhanced-common-popup-theme.enhanced-sign-in-dialog {
+        min-height: auto;
+    }
+
+    .enchanced-common-popup-content {
+        padding: 1rem !important;
+    }
+
+    .sign-in-popup-container form {
+        gap: 1rem;
+    }
+
+    .enhanced-datepicker-info .mat-mdc-tab.mdc-tab {
+        flex-grow: 1 !important;    
+    }
+
+    .mobile-hide-tab-legends {
+        display: none !important;
+    }
+
+    .comfot-in-class {
+        margin-bottom: 1rem !important;
+        display: block;
+    }
+
+    .for-desktop-content {
+        display: none;
+    }
+
+    .review-travel-extras-mat-panel.mat-expanded .mat-expansion-panel-content {
+        padding-block: 1rem;
+        margin-inline: 1rem;
+    }
+
+    .review-travel-extras-bike-inner {
+        gap: 1.5rem;
+        flex-direction: column;
+    }
+
+    .review-travel-extras-plusbus-checkbox {
+        flex-direction: column !important;
+        align-items: flex-start;
+        gap: 0.5rem !important;
+    }
+
+    .plusbus-checkbox-price {
+        padding-left: 2.125rem;
+    }
+
+    .review-travel-extras-plusbus-checkbox .review-common-checkbox {
+        width: auto;
+    }
+
+    .delivery-mat-radio-group-list {
+        gap: 1rem;
+    }
+
+    .delivery-mat-radio-group-list .mdc-form-field {
+        align-items: flex-start;
+    }
+
+    .smartcard-radio-group {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1rem;
+    }
+
+    .plusbus-checkbox-list .outline-btn {
+        width: 100%;
+    }
+
+    .smartcard-radio-btn .mdc-form-field {
+        padding: 0.75rem 1rem;
+        align-items: center;
+    }
+
+    .personal-info-delivery-checkbox .mdc-form-field {
+        align-items: center;
+    }
+
+    .review-added-address .smartcard-radio-btn .mdc-form-field {
+        padding: 1rem !important;
+    }
+
+    .order-smartcard-checkbox-m .mdc-form-field {
+        align-items: center;
+    }
+
+    .review-travel-extras-mat-header .mat-content {
+        display: block;
+    }
+
+    .enhanced-session-timeout-popup {
+        width: 100% !important;
+        max-width: 90vw !important;
+   }
+
+   .enhanced-session-timeout-popup .enhanced-common-popup-theme {
+        height: auto !important;
+        min-height: auto !important;
+   }
+
+   .enhanced-alert-content {
+        padding: 1rem !important;
+   }
+
+   .review-travel-extras-bike-amount-inner .mat-mdc-form-field input {
+        padding-left: 0;
+   }
+
+   .review-column-seat-mat-header .mat-expansion-indicator::after {
+        left: -13px;
+    }
+
+    .review-column-seat-mat-header .mat-content {
+        padding-right: 0.75rem;
+    }
+
+    .review-travel-extras-mat-header .mat-expansion-indicator {
+        margin-top: 0.25rem;
+    }
+
+    .toast-success {
+        padding: 0.5rem;
+        gap: 10px;
+    }
+
+    .toast-msg-top-space {
+        margin-top: 1rem;
+    }
+
+    .toast-msg-bottom-space {
+        margin-bottom: 1rem;
+    }
+
+    .delivery-mat-radio-group-list .mdc-radio {
+        margin-block-start: 0.125rem;
+    }
+
+    .enhanced-common-popup-container.enchanced-seat-preferences-popup {
+        width: 100%;
+        max-width: 100vw;
+        height: 100dvh;
+    }
+
+    .enchanced-seat-preferences-popup .enhanced-common-popup-theme {
+        padding: 1rem;
+        height: calc(100dvh - 128px);
+        max-height: 100%;
+    }
+    
+    .bike-reser-popup-list .f-14,
+    .m-f-14 {
+        font-size: 14px !important;
+    }
+
+    .review-page-mat-expansion-panel:hover,
+    .review-page-mat-expansion-panel:focus,
+    .keyboard-mode .review-page-mat-expansion-panel:focus-within,
+    .review-page-mat-expansion-panel.mat-expanded,
+    .review-page-mat-expansion-panel.mat-expanded:focus,
+    .review-page-mat-expansion-panel.mat-expanded:hover,
+    .keyboard-mode .review-page-mat-expansion-panel.mat-expanded:focus-within {
+        outline: none;
+    }
+
+    .enhanced-payment .smartcard-radio-group mat-radio-button {
+        padding: 1rem !important;
+    }
+
+    .enhanced-payment .single-card {
+        gap: 0.75rem;
+    }
+
+    .eVoucher-card .mdc-checkbox,
+    .enhanced-payment .smartcard-radio-group .mdc-radio {
+        right: 1rem !important;
+    }
+
+    .enhanced-payment #epc-saved-address-area .smartcard-radio-group .mdc-radio {
+        right: 1rem !important;
+        top: 1rem !important;
+    }
+
+    .enhanced-payment .eVoucher-card mat-checkbox {
+        padding: 1rem;
+    }
+
+    .common-popup-footer-fill-btn {
+        flex-direction: column;
+    }
+
+    .common-popup-footer-fill-btn button {
+        width: 100% !important;
+    }
+
+    .enhanced-payment .smartcard-radio-group .payment-mode-save-mobile label.mdc-label {
+        padding-left: 1.125rem !important;
+    }
+
+    .enhanced-booking-confirmation-header .user-account-container {
+        padding: 0.75rem 0 !important;
+    }
+
+    .payment-summary-accordion .mat-expansion-panel-header {
+        padding: 1rem;
+    }
+
+    .payment-summary-accordion .mat-expansion-panel-header-title h2 {
+        font-size: 1.125rem;
+        line-height: 1.375rem;
+    }
+
+    .keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel:focus-within,
+    .keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel.mat-expanded.focus-within {
+        outline: 0 solid var(--primary-coalescent);
+        outline-offset: 0.125rem;
+        border: 0px solid var(--neutrals-light-periwinkle) !important;
+    }
+
+    .payment-summary-mat-panel {
+        border-top: 1px solid var(--neutrals-light-periwinkle);
+    }
+
+    .enhanced-booking-confirmation-section .mat-mdc-tab-header {
+        top: -1px;
+    }
+
+    .payment-summary-accordion .mat-accordion .mat-expansion-panel:hover {
+        outline: none;
+    }
+
+    .keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel:focus-within,
+    .keyboard-mode .payment-summary-accordion .mat-accordion .mat-expansion-panel.mat-expanded.focus-within {
+        outline: none;
+        border: 1px solid var(--shades-white) !important;
+    }
+}
+
+@media (width <= 992px) {
+    .cdk-overlay-pane.enhanced-seat-picker {
+        max-width: 100% !important; 
+        width: 100%;
+    }
+}
+
+@media (width<=960px) {
+    
+    enhanceddatepickerpopupcomponent mat-dialog-content{
+        height: 542px;
+        max-height: inherit !important;
+       }
+}
+/*----- Between 768px and 1024px or equal to 768px and 1024px -----*/
+@media (width <= 768px) {  
+    .ticket-detail-mobile .enhanced-common-popup-theme {
+        padding-bottom: 5rem !important;
+        min-height: inherit;
+        max-height: calc(100vh - 75px) !important;margin-bottom: 3rem;
+    }
+    /* .enhanced-datepicker-info{height: 550px;} */
+    enhanced-railcard-restrictions-dialogs app-enhanced-basic-dialog.enhanced-alert-dialogs.content-center footer button{width: 100%;}
+    .stations-popup {
+        max-width: 100% !important;
+        width: 100%;
+        height: 100vh;
+        margin: 0 !important;
+    }
+    
+    app-enhanced-basic-dialog mat-tab-header span.mdc-tab__content{font-size: 14px!important;}
+   
+
+    .mat-mdc-dialog-container .mat-mdc-dialog-title {
+        font-size: 18px;
+    }
+
+    .logout-popup {
+        width: 35rem !important;
+        max-width: 100%;
+    }
+   
+    enhanceddatepickerpopupcomponent mat-dialog-content{
+        height: 530px;
+        max-height: inherit !important;
+    }
+
+    .enhanced-common-info-popup {
+        margin: 0 1rem !important;
+        width: 100% !important;
+    }
+
+    .enhanced-common-info-content {
+        padding: 1rem !important;
+    }
+
+    .two-btn-footer {
+        gap: 1rem;
+    }
+
+    .two-btn-footer button {
+        width: 50%;
+    }
+
+    .two-btn-footer-full-btn {
+        flex-direction: column;
+    }
+
+    .two-btn-footer-full-btn button {
+        width: 100%;
+    }
+
+    .enhanced-no-seats-available-dialog .enhanced-common-info-content {
+        padding: 1rem;
+    }
+
+    .enhanced-no-seats-available-dialog header h2 {
+        text-align: center;
+    }
+
+    .enhanced-no-seats-available-dialog .two-btn-footer {
+        flex-direction: column;
+    }
+
+    .enhanced-no-seats-available-dialog .two-btn-footer button {
+        width: 100%;
+    }
+
+    /* .ebc-journey-details-card .mat-expansion-panel-header {
+        padding:1rem !important;
+        height: auto;
+    } */
+
+    .e-ticket-btn-group {
+        width: calc(100vw - 2rem);
+        max-width: 100% !important;
+    }
+}
+/*----- Less than 768px or equal to 768px -----*/
+@media (width <= 767px) {  
+    .mobile-hide{display: none;}
+.mobile-show{display: block;}
+.reviewbuy-adult{display: flex;flex: 0 0 100%;}
+.booking-journey-details-txt-flex p span.custom-block{
+    display: flex;
+    gap: 0.75rem;
+    margin-left: 0;}
+
+    .booking-journey-details-txt-flex p span.custom-block::before, .reviewbuy-adult::before{display: none;}
+    .enhanced-datepicker-info #ebd-base-dialog-body mat-dialog-actions {
+        padding: 1rem !important;
+    }
+    .qtt-footer-btn .mdc-button__label, .edit-qtt-btn .fill-btn, .dark-fill-btn, .dark-outline-btn {
+        font-size: 15px!important;
+    }
+    .view-edit-form-btn-area {
+
+        right: 1rem !important;
+    }
+    .view-journey-form-container.new-design-journey {
+        background-color: var(--primary-graphene);
+        padding: 12px 16px !important;
+    } 
+
+    .enhanced-datepicker-info ngb-datepicker-navigation{
+        grid-template-columns: auto 1fr auto;
+
+    }
+    .mat-mdc-dialog-container .mat-mdc-dialog-title{
+        font-size: 18px;
+    }
+    .enhanced-datepicker-info .ngb-dp-header {
+        min-width: 400px;
+        width: 400px;
+        margin: 0 auto  ;
+    }
+   
+    .enhanced-datepicker-info .ngb-dp-months {
+        padding: 1rem;
+        margin-top: 0;
+        min-width: 400px;
+        width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .logout-popup{width: 90%!important;max-width: 100%;}
+    .add-railcard .add-railcard-type .mat-mdc-option{
+        min-height: inherit!important;
+        padding: 6px 16px!important;
+    }
+    .login-popup .enchanced-common-popup-header{flex-wrap: wrap;}
+   .login-popup .enchanced-common-popup-header h1{font-size: 1.125rem !important;width: 85%;}
+    app-enhanced-ticket-type-and-class .search-journey-cards-row{max-width: 100%!important;margin: 0 auto;}
+    .common-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 1rem!important;
+    }
+
+    .datepicker-tabs mat-tab-body{min-height: 500px ;}
+
+    .alert-common {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        margin: 0 auto;
+    }
+    
+    .view-edit-form-station-stops {
+        flex-wrap: wrap;gap: 0 0.5rem!important;
+    }
+
+    .add-railcard-popup {
+        max-width: 100% !important;
+        padding: 0 1rem ;
+    }
+
+    .search-station, .stations-list {
+        padding: 1rem !important;
+    }
+    
+    .stations-list {
+      
+        height: calc(100vh - 176px);
+    }
+   
+    .class-details-row mat-card {
+        border: none;
+    }
+
+    .search-journey-card-row .radio-card .mat-mdc-radio-button .mdc-radio {
+        position: absolute;
+        right: 0.75rem;
+        top: 3.85rem;
+        padding: inherit;
+    }
+
+    .enhanced-sign-in-dialog {
+        max-width: 100dvw !important;
+        max-height: 100dvh!important;
+        margin: 0 1rem;
+    }
+
+    .ticket-tabs .mdc-radio {
+        top: 2.75rem !important;
+    }
+
+    .edit-qtt-btn .fill-btn,  .dark-fill-btn, .dark-outline-btn {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem!important;
+    }
+
+    .edit-qtt-pax-input .mdc-text-field__input {
+        color: var(--primary-coalescent) !important;
+        transition: inherit;
+    }
+    
+    .cdk-overlay-pane.enhanced-seat-picker {
+        max-width: 100% !important; 
+        width: 100%;
+    }
+
+    .enhanced-seat-picker, .enhanced-seat-picker .mat-mdc-dialog-container {
+        height: 100vh;
+    }
+
+    .enhanced-seat-picker .svg-container {
+        margin-top: 20px !important;
+    }
+
+    .enhanced-seat-picker .selected-box, 
+    .enhanced-seat-picker .available-box, 
+    .enhanced-seat-picker .unavailable-box {
+        font-weight: 600;
+        font-size: 11px;
+        white-space: nowrap;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .enhanced-seat-picker .svg-container svg {
+        margin-top: 0;
+        margin-right: -29px;
+        margin-bottom: 10px;
+        margin-left: -29px;
+    }
+
+    .enhanced-seat-picker .seat-change-txt h2 {
+        font-size: 24px;
+    }
+
+    .enhanced-seat-picker .seat-change-txt {
+        width: 100%;
+    }
+
+    .enhanced-seat-picker .seat-change-txt .mat-expansion-panel-header {
+        width: 100%;
+    }
+
+    .enhanced-seat-picker .seat-change-txt .seat-header {
+        padding-left: 10px;
+    }
+
+    .enhanced-seat-picker .seatpickerwarning-icn {
+        width: 20px;
+        margin-left: 6px;
+    }
+
+    .enhanced-seat-picker .seatpickerwarning-tooltip {
+        z-index: 99999 !important;
+    }
+
+    .two-btn-footer.journey-dialog-footer-center button {
+        width: 100%;
+        height: 2.5rem !important;
+    }
+
+    .enhanced-common-notification {
+        width: 100%;
+        margin: 0 1rem;
+    }
+
+    .enhanced-session-timeout-popup header {
+        flex-direction: column !important;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .enhanced-session-timeout-popup .time-counter {
+        font-size: 18px;
+        line-height: 22px;
+    }
+
+    .review-page-mat-expansion-panel .mat-expansion-panel-content {
+        border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    }
+
+    .common-popup-footer-fill-btn {
+        flex-direction: column;
+    }
+
+    .common-popup-footer-fill-btn button {
+        width: 100% !important;
+    }
+}
+/*----- Less than 768px or equal to 768px -----*/
+
+@media (min-width:992px) and (max-width:1140px){
+    .enhanced-seat-picker {
+        min-width: 65vw !important;
+        max-width: 95vw !important;
+        width: 95%;
+    }
+}
+
+@media (width <=540px) {
+    .edit-qtt-btn .fill-btn,  .dark-fill-btn, .dark-outline-btn {
+        font-size: 15px !important; 
+        min-height: 48px !important; 
+    }
+ 
+    .enhanced-datepicker-info .ngb-dp-months {
+        min-width: 400px;
+        width: 400px;
+    }
+
+    .enhanced-datepicker-info .ngb-dp-header {
+        min-width: 400px;
+        margin: 0 auto;
+        width: 400px;
+    }
+
+    enhanced-add-railcard-dialogs .add-railcard-type{
+        min-width: 60%;
+        width: 70%;
+        max-width: 70%;
+    }
+}
+
+@media (width <= 500px) {
+    .padiing-footer {
+        padding-bottom: 140px;
+    }
+
+    app-enhanced-ticket-type-and-class .qtt-footer-btn button {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+}
+
+@media (width <= 420px){
+    .enhanced-datepicker-info .ngb-dp-months {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .enhanced-datepicker-info .ngb-dp-header {
+        min-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .enhanced-datepicker-info button {
+        height: auto !important;
+    }
+
+    .add-railcard-amount {
+        position: relative;
+        width: 9.5rem !important;
+    }
+
+    .journey-breakdown-details-table .mat-mdc-table {
+        table-layout: fixed;
+    }    
+}
+
+@media (width <= 404px) {
+    .dark-fill-btn .mdc-button__label {
+        gap: 0.25rem !important;
+    }
+
+    .multi-label-class .mat-mdc-radio-button .mdc-radio {
+        top: 4.75rem !important;
+    }
+}
+
+@media (width <= 360px) {
+    app-enhanced-ticket-type-and-class .qtt-footer-btn,
+    .edit-qtt-btn {
+        min-width: 220px;
+    }
+
+    app-enhanced-ticket-type-and-class .qtt-footer-btn button {
+        min-height: auto;
+        height: 100% !important;
+    }
+
+    .edit-qtt-btn .fill-btn, .dark-fill-btn, .dark-outline-btn, .edit-qtt-btn .outline-btn {
+        font-size: 15px !important;
+        min-height: auto !important;
+        height: -webkit-fill-available !important;
+    }  
+}
+
+@media (width <= 320px) {
+    .edit-qtt-via-avoid span {
+        font-size: 0.875rem !important;
+    }
+   
+}
+/*----- End Media Query -----*/
+
+.radio-card .mat-mdc-radio-button.mat-mdc-radio-checked .mat-ripple-element, .radio-card .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background::before{    background-color: transparent !important;}
+.radio-card .mat-mdc-radio-button .mdc-radio__background::before{    background-color: #fff!important;}
+
+
+.delivery-radio-list .mat-mdc-radio-button.mat-mdc-radio-checked .mat-ripple-element, .delivery-radio-list .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background::before{    background-color: transparent !important;}
+.delivery-radio-list .mat-mdc-radio-button .mdc-radio__background::before{    background-color: #fff!important;}
+.mat-mdc-radio-button.mat-mdc-radio-checked .mat-ripple-element,  .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background::before{    background-color: transparent !important;}
+ .mat-mdc-radio-button .mdc-radio__background::before{    background-color: #fff!important;}
+
+ .e-ticket-btn-group ul li button .mat-button-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+ 
+.e-ticket-btn-group ul li button:hover .mat-button-focus-overlay {
+    opacity: 0 !important;
+}
+
+
+
+
+app-enhanced-validate .loader-center,  app-enhanced-validate-enrollment .loader-center{
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    position: relative;
+}
+
+app-enhanced-validate .loader-section, app-enhanced-validate-enrollment .loader-section{
+    text-align: center;
+    width: 90%;
+    margin: 0 auto;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translate(0px, -50%);
+}
+app-enhanced-validate .search-loader-icon,  app-enhanced-validate-enrollment .search-loader-icon {
+margin-top: 0 !important;
+}
+
+span.next-line-text {
+    font-size: 14px !important;
+    line-height: 1.5rem;
+    font-weight: 400 !important;
+    color: var(--primary-coalescent);
+}

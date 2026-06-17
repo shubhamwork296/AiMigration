@@ -1,0 +1,136 @@
+<div id="idLoginTooltipDiv" class="inner-login-tooltip">
+    <div class="login-tooltip-header" id="idLoginTooltipHeaderDiv">
+        <h6 id="ls-title" class="login-tooltip-title">
+            Sign in for quicker bookings
+        </h6>
+        <button id="ls-close-btn" mat-button type="button" class="min-width-0 close-mat-btn" (click)="onClose()">
+            <img id="ls-close-icon" src="assets/images/login-close-icon.svg" alt="close">
+        </button>
+    </div>
+    <div id="ls-error-container" class="common-error-container text-start white-space-initial" *ngIf="form.invalid && showBanner || invalidCredential && showBanner" role="alert">
+        <div id="ls-error-row" class="common-error-row">
+            <div id="ls-error-icon" class="common-error-icon">
+                <img src="assets/images/change-email-error.svg" alt="">
+            </div>
+            <div id="ls-error-body" class="common-error-msg">
+                <h2 id="ls-error-title" class="text-start">
+                    Please amend the errors in the following mandatory fields.
+                </h2>
+                
+                <div id="ls-error-msgs" class="login-tooltip-error" *ngIf="isSubmitted">
+                    <ul id="ls-error-list" class="signin-error-list">
+                        <li id="ls-error-list-li" *ngIf="form.get('username').hasError('emailRegexError')  && isSubmitted">
+                            <p id="ls-error-list-msg"><Span id="ls-error-list-msg-title" class="font-500">Email :</Span> Email is not valid.</p>
+                        </li>
+                        <li id="ls-error-list-li2" *ngIf="form.get('username').hasError('required') && isSubmitted">
+                            <p id="ls-error-list-msg2"><span id="ls-error-list-msg-title2" class="font-500">Email :</span> Please complete this mandatory field.</p>
+                        </li>
+                        <li id="ls-error-list-li2" *ngIf="form.get('username').hasError('maxlength') && isSubmitted">
+                            <p id="ls-error-list-msg3"><span id="ls-error-list-msg-title3" class="font-500">Email :</span> Invalid email address length. Please enter a valid email address.</p>
+                        </li>
+                        <li id="ls-error-list-li3" *ngIf="form.get('password').hasError('required') && isSubmitted">
+                            <p id="ls-error-list-msg3"><span id="ls-error-list-msg-title3" class="font-500">Password :</span> Please complete this mandatory field.</p>
+                        </li>
+                    </ul>
+                </div>
+                <div id="ls-invalid-error" *ngIf="invalidCredential">
+                    <p id="ls-invalid-error-msg">
+                        Hmm, that’s not quite right:​ ​The details you’ve typed are incorrect. Please try again
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="idLoginTooltipFormDiv" class="login-tooltip-body">
+        <form id="ls-form" [formGroup]="form">
+            <div class="login-tooltip-input-area" id="email">
+                <div id="ls-email-label" class="login-tooltip-label">
+                    Email Address
+                </div>
+                <mat-form-field id="ls-email-mat-form-field" class="d-block example-full-width default-input default-input-brdr new-input login-tooltip-error-space"
+                    floatLabel="never">
+                    <input id="email" [ngClass]="{'error-input-focus': form.controls['username'].invalid && isSubmitted}" matInput placeholder="Enter your email address" type="text" formControlName="username" autocomplete="off" aria-labelledby="email"
+                    [prevent-keys]="[32]">
+                    <mat-error id="ls-email-mat-error">
+                        <div id="ls-email-mand-error" *ngIf="form.get('username').hasError('emailRegexError')  && isSubmitted">
+                            <span id="ls-email-mand-error-txt" class="dark-spark f-12 lh-16 mb-0">
+                                Please complete this mandatory field.
+                            </span>
+                        </div>
+                        <div id="ls-email-valid-error" *ngIf="form.get('username').hasError('required') && isSubmitted">
+                            <span id="ls-email-valid-error-msg" class="dark-spark f-12 lh-16 mb-0">
+                                Email is not valid.
+                            </span>
+                        </div>
+                        <div id="ls-email-length-error" *ngIf="form.get('username').hasError('maxlength') && isSubmitted">
+                            <span id="ls-email-length-error-msg" class="dark-spark f-12 lh-16 mb-0">
+                                Invalid email address length. Please enter a valid email address.
+                            </span>
+                        </div>
+                    </mat-error>
+                </mat-form-field>
+            </div>
+            <div id="password" class="login-tooltip-input-area mt-20 new-version-input">
+                <div id="ls-passowrd-label" class="login-tooltip-label">
+                    Password
+                </div>
+                <mat-form-field id="ls-passowrd-mat-form-field" class="d-block example-full-width default-input default-input-brdr new-input login-tooltip-error-space"
+                    floatLabel="never">
+                    <input capsLockDetect (capsLockOn)="capsLock = $event" id="password" class="password-input-padding" [ngClass]="{'error-input-focus': form.controls['password'].invalid && isSubmitted}" [type]="loginPasswordFieldTextType ? 'text' : 'password'" matInput aria-label="password" placeholder="Enter your password" formControlName="password">
+                    <button id="eyeIcon" (click)="loginPasswordFieldTextType = !loginPasswordFieldTextType"
+                        type="button" mat-icon-button matSuffix
+                        attr.aria-label="{{loginPasswordFieldTextType ? 'Hide password' : 'Show password'}}"
+                        [attr.aria-pressed]="loginPasswordFieldTextType">
+                        <mat-icon id="ls-passowrd-mat-icon" class="sign-in-mat-icon upgrade-password-icon">
+                            <span id="ls-passowrd-hide-visible-icon" class="material-symbols-outlined icon-font-size">
+                                {{loginPasswordFieldTextType ? 'visibility' :
+                                'visibility_off'}}
+                            </span>
+                        </mat-icon>
+                    </button>
+                    <mat-error id="ls-passowrd-mat-error">
+                        <div id="ls-passowrd-mand-error" *ngIf="form.get('password').hasError('required') && isSubmitted">
+                            <span id="ls-passowrd-mand-error-txt" class="dark-spark f-12 lh-16 mb-0">
+                                Please complete this mandatory field.
+                            </span>
+                        </div>
+                    </mat-error>
+                </mat-form-field>
+            </div>
+            <p class="capslock-txt" *ngIf="capsLock === 1">
+                Caps lock is on
+            </p>
+            <button id="ls-forgot-passowrd-btn" type="button" mat-button class="dark-spark f-16 font-700 lh-20 p-0 mt-8 mb-24 login-tooltip-forgot"
+                (click)="forgotPassword()">Forgotten password?</button>
+            <div id="ls-remember-area" class="text-start mb-12">
+                <label id="ls-remember-label" class="c-pointer mb-0" for="remembermeInput">
+                    <p id="ls-remember-p" class="f-14 lh-21 font-400 mb-0 d-flex align-items-center gap-08 word-break-word">
+                        <span id="ls-remember-input-area" class="new-input-checkbox top-3 position-relative">
+                            <input type="checkbox" id="remembermeInput" formControlName="rememberme">
+                        </span>
+                        <span id="ls-remember-txt" class="text-21">
+                            Remember me on this device
+                        </span>
+                    </p>
+                </label>
+            </div>
+            <button id="ls-sign-in-btn" type="submit" mat-button class="new-default-btn w-100 w-xs-100" (click)="submit()">
+                Sign in
+            </button>
+            <div id="ls-creat-an-account" class="mt-24 mobile-mar text-center" *ngIf = "hideOrShowCreateAnAccount">
+                <button id="ls-creat-an-account-btn" mat-button
+                    class="font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 price-promise create-account-login"
+                    (click)="registerForm()">
+                    Create an account
+                    <span id="ls-creat-an-account-icon" class="ml-04 change-password-arrow">
+                        <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z"
+                                fill="#E42B00" />
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

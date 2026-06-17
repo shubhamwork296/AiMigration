@@ -65,6 +65,19 @@ public sealed class PromptLoaderTests
     }
 
     [Fact]
+    public void Angular_Critical_Dependency_Alignment_Prompt_Requires_Exact_Synchronized_Framework_Versions()
+    {
+        var prompt = new PromptLoader().Load("angular/angular-critical-dependency-alignment");
+
+        Assert.Contains("recommend one exact three-part version shared by all such packages", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("must not use ranges", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("manualReview instead of a range", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("never ^20.0.0, ~20.0.0, 20.x, latest", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Angular-owned packages: use target-major-compatible caret or tilde range", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("recommend the target Angular major range", prompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Angular_Remediation_Prompt_Uses_Risk_Based_Validation_Remediation_Contract()
     {
         var prompt = new PromptLoader().Load("remediation/validation-remediation");

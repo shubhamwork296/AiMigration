@@ -1,0 +1,203 @@
+<!----- Journey Edit QTT Form  ----->
+<section id="eeqc-edit-journey-section" [ngClass]="bannerAnimationClass">
+    <form [formGroup]="qttForm">
+        <div class="edit-journey-form-container horizontal-center" [ngClass]="{'removed-journey-edit-qtt': journeyRemovedClass}">
+            <div class="common-container m-common-container">
+                <!----- Edit QTT Form Area ----->
+                <div class="edit-journey-form-inner">
+                    <div class="edit-qtt-form-top">
+                        <!----- Edit QTT Form Title ----->
+                        <div class="edit-qtt-title-area">
+                            <h3 class="edit-qtt-title">{{ headingText }}<span>:</span></h3>
+                        </div>
+                        <!----- End Edit QTT Form Title ----->
+     
+                        <!----- Edit QTT Form From and To Inputs, Outward and Return Datepicker ----->
+                        <div class="edit-qtt-station-datepicker">
+                            <div class="edit-qtt-station">
+                                <div class="edit-qtt-station-from">
+                                    <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input" [ngClass]="{'error-border': isDepartureSameAsArrival}">
+                                        <mat-label>Leaving from</mat-label>
+                                        <input matInput class="cursor-pointer" placeholder="Leaving from" formControlName="departureLocationName" (click)="EnhancedSearchJourneyStationDialogs(true,false)" (keyup)="handleKeyup($event, 'leaveFrom')" readonly>
+                                    </mat-form-field>
+                                    <div *ngIf="isDepartureSameAsArrival" id="es-leaving-from-msg" class="enhaanced-validation-err field-error-space">Origin can't be the same as the destination</div>
+                                </div>
+                                <div class="edit-qtt-station-interchange">
+                                    <button  type="button" (click)="onChangeStationsSearch()" mat-button aria-label="Swap your departure and arrival station"  *ngIf="!isArrivalLocationSameAsDeparture && !isDepartureSameAsArrival">
+                                        <img src="assets/images/new-design-img/form-interchange-icon.svg" alt="Interchange" class="active-img"/>
+                                        <img src="assets/images/new-design-img/form-interchange-icon-hover.svg" alt="Interchange" class="hover-img" />
+                                    </button>
+
+                                    <button  type="button" disabled mat-button aria-label="Swap your departure and arrival station" *ngIf="isArrivalLocationSameAsDeparture || isDepartureSameAsArrival">
+                                        <img src="assets/images/new-design-img/disable-interchange.svg" alt="Interchange"  />
+                                    </button>
+
+                                </div>
+                                <div class="edit-qtt-station-to">
+                                    <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input" [ngClass]="{'error-border': isArrivalLocationSameAsDeparture}">
+                                        <mat-label>Going to</mat-label>
+                                        <input matInput class="cursor-pointer" placeholder="Going to" formControlName="arrivalLocationName" (click)="EnhancedSearchJourneyStationDialogs(false,false)" readonly (keyup)="handleKeyup($event, 'goingTo')">
+                                    </mat-form-field>
+                                    <div *ngIf="isArrivalLocationSameAsDeparture" id="es-leaving-from-msg" class="enhaanced-validation-err field-error-space">Destination can't be the same as the origin</div>
+                                </div>
+                            </div>
+                            <div class="edit-qtt-datepicker">
+                                <div class="edit-qtt-outward-date">
+                                    <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input" [ngClass]="{'error-border': pastDepart}">
+                                        <mat-label>Outward</mat-label>
+                                        <input matInput aria-label="Outward date" class="cursor-pointer" placeholder="Outward" formControlName="startDateTime" (click)="showDatepickerPopup(true)" readonly (keyup)="handleKeyup($event, 'depart')">
+                                    </mat-form-field>
+                                    <div *ngIf="pastDepart" id="es-outward-date-msg" class="enhaanced-validation-err field-error-space">Departure date must only be in future.</div>
+                                </div>
+                                <div class="edit-qtt-return-date">
+                                    <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input" [ngClass]="{'error-border': isReturnExceedStart || pastReturn}">
+                                        <mat-label>Return</mat-label>
+                                        <input matInput aria-label="Return date" class="cursor-pointer" placeholder="Return" formControlName="returnDateTime" (click)="showDatepickerPopup(false)" readonly autocomplete="off" (keyup)="handleKeyup($event, 'return')">
+                                        <button type="button" id="es-return-date-btn" aria-label="clear return field" *ngIf = "qttForm.controls['returnDateTime']?.value"
+                                        class="cursor-pointer-hover close-rtn-btn text-coalescent" (click)="clearDate()">
+                                            <span id="es-return-date-clear" class="cleardate-btn">Clear</span> 
+                                        </button>
+                                    </mat-form-field>
+                                    <div *ngIf="pastReturn" id="es-return-date-msg" class="enhaanced-validation-err field-error-space">Return date must only be in future.</div>
+                                    <div *ngIf="isReturnExceedStart" id="es-return-date-msg2" class="enhaanced-validation-err field-error-space">Return train should be after your outward train.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Edit QTT Form From and To Inputs, Outward and Return Datepicker ----->
+    
+                        <!----- Edit QTT Form Adults, Children, Railcard and Void and Avoid  ----->
+                        <div class="edit-qtt-pax-railcard-via-avoid">
+                            <div class="edit-qtt-pax-railcard">
+                                <div class="edit-qtt-pax">
+                                    <div class="sr-only" aria-live="polite">{{ passengerLiveMessage }}</div>
+                                    <div class="edit-qtt-adult-pax">
+                                        <button [attr.aria-label]="getFocusLabel(count, 'minus')" mat-button (click)="decrement()" class="pax-decrease-increase-btn pax-decrease-btn"
+                                        [ngClass]="count > 0 ? '' : 'pax-disabled-btn'">−</button>
+                                        <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input edit-qtt-pax-input" [ngClass]="{'error-border': qttForm.get('adultCount')?.errors?.adultValid}">
+                                            <mat-label>{{isPluralAdult==true?'Adults (16+)':'Adult (16+)'}}</mat-label>
+                                            <input matInput tabindex="-1" aria-hidden="true" [value]="customizeAdultOrChildCount(count)" disabled readonly formControlName="adultCount"/>
+                                        </mat-form-field>
+                                        <button mat-button (click)="increment()" [disabled]="count > 9" [ngClass]="{'pax-disabled-btn': count > 9}" [attr.aria-label]="getFocusLabel(count, 'plus')" class="pax-decrease-increase-btn pax-increase-btn">+</button>
+                                    </div>
+                                    <div class="edit-qtt-adult-pax">
+                                        <button mat-button [attr.aria-label]="getFocusLabel(count2, 'minus')" (click)="decrement2()" class="pax-decrease-increase-btn pax-decrease-btn"
+                                        [ngClass]="count2 > 0 ? '' : 'pax-disabled-btn'">−</button>
+                                        <mat-form-field appearance="outline" [floatLabel]="'always'" class="common-floting-input edit-qtt-pax-input" [ngClass]="{'error-border': qttForm.get('childCount')?.errors?.childValid}">
+                                            <mat-label>{{'Children (5-15)'}}</mat-label>
+                                            <input matInput tabindex="-1" aria-hidden="true" [value]="customizeAdultOrChildCount(count2)" disabled readonly formControlName="childCount"/></mat-form-field>
+                                        <button mat-button (click)="increment2()" [disabled]="count2 > 9" [ngClass]="{'pax-disabled-btn': count2 > 9}" [attr.aria-label]="getFocusLabel(count2, 'plus')" class="pax-decrease-increase-btn pax-increase-btn">+</button>
+                                    </div> 
+                                </div>
+                                <div class="w-205 mobile-label" [formGroup]="railcardForm" id="es-pax-railcard-msg" *ngIf="qttForm.get('adultCount')?.errors?.adultValid || qttForm.get('childCount')?.errors?.childValid">
+                                    <div class="info-card">
+                                        <img src="assets/images/new-design-img/Informative.svg" alt="" aria-hidden="true" />
+                                        <p>
+                                            Railcard passenger number cannot be higher than overall passenger number.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="edit-qtt-railcard" *ngIf="!sharedService?.journeySummaryModel?.IsPromo">
+                                    <button type="button" mat-button aria-label="Add railcard" (click)="showrailcard()">
+                                        <span>+</span>
+                                      <div class="underline">Add railcard</div>  
+                                    </button> 
+                                </div>
+                            </div>
+                            <div [ngClass]="!sharedService?.journeySummaryModel?.IsPromo ? 'edit-qtt-via-avoid' : 'edit-qtt-via-avoid-without-discount'"
+                            >
+                                <button type="button" aria-label="Add via or avoid station" (click)=showviaavoid() mat-button>
+                                    Add via/avoid station
+                                </button> 
+                            </div>
+                        </div>
+                        <!----- End Edit QTT Form Adults, Children, Railcard and Void and Avoid ----->
+    
+                        <!----- Edit QTT Form Applied Railcard ----->
+                        <div class="button-infor-message" *ngIf="!qttForm.get('adultCount')?.errors?.passengerCount && !qttForm.get('childCount')?.errors?.passengerCount && !sharedService?.journeySummaryModel?.IsPromo || (amendSearchRequest?.PathConstraintLocation !== 0 && showPathConstraint)">
+                            <div class="sr-only" aria-live="polite" aria-atomic="true" role="status">{{ railcardAnnouncement }}</div>
+                            <ng-container *ngFor="let railcard of qttForm.get('railcards')['controls']; let i = index;">
+                                    <div class="edit-qtt-applied-railcard-area" *ngIf="!sharedService?.journeySummaryModel?.IsPromo && qttForm.get(['railcards', i, 'railcardFullName']).value !== ''">
+                                        <div formArrayName="railcards" class="edit-qtt-applied-railcard-self">
+                                            <p >
+                                                {{qttForm.get(['railcards', i, 'railcardFullName']).value}} x{{qttForm.get(['railcards', i, 'railcardCount']).value}}
+                                            </p>
+                                            <button 
+                                            type="button" 
+                                            (click)="removeRailcard(i)" 
+                                            *ngIf="qttForm.get(['railcards', i, 'showRemoveRailcard']).value" 
+                                            mat-button class="applied-railcard-chip" [attr.aria-label]="getRemoveRailcardAriaLabel(i)">
+                                            <img src="assets/images/new-design-img/railcard-close.svg" alt="" aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                    </div>
+                            </ng-container>
+                            <div class="edit-qtt-applied-railcard-area" *ngIf="amendSearchRequest?.PathConstraintLocation !== 0 && showPathConstraint">
+                                <div class="edit-qtt-applied-railcard-self">
+                                    <p>{{showViaOrAvoidText(amendSearchRequest?.PathConstraintType)}}: {{findLocation(amendSearchRequest?.PathConstraintLocation)}}</p>
+                                    <button type="button" class="applied-railcard-chip" (click)="removePathConstraint()" *ngIf="amendSearchRequest?.PathConstraintLocation && amendSearchRequest?.PathConstraintLocation !== 0 && showPathConstraint"
+                                     mat-button>
+                                        <img src="assets/images/new-design-img/railcard-close.svg" alt="" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Edit QTT Form Applied Railcard ----->
+    
+                        <!----- Edit QTT Form Railcard Message ----->
+                        <div class="w-205 desktop-label" [formGroup]="railcardForm" id="es-pax-railcard-msg" *ngIf="qttForm.get('adultCount')?.errors?.adultValid || qttForm.get('childCount')?.errors?.childValid">
+                            <div class="info-card">
+                                <img src="assets/images/new-design-img/Informative.svg" alt="" aria-hidden="true" />
+                                <p>
+                                    Railcard passenger number cannot be higher than overall passenger number.
+                                </p>
+                            </div>
+                        </div>
+                       
+                          
+                        <div class="info-card grey-info" *ngIf="showGroupTravelLink">
+                            <img src="assets/images/new-design-img/graphene-circle-info.svg" alt="" aria-hidden="true" />
+                            <p>
+                                Booking for 10 or more passengers? Please contact  
+                                <a aria-label="Error. Booking for 10 or more passengers? Please contact. Link: Group Travel, opens in a new window." href="https://www.avantiwestcoast.co.uk/tickets-and-savings/group-travel" id="es-gtp" target="_blank" rel="noopener">
+                                    Group Travel.
+                                </a>
+                            </p>
+                            <span role="alert" aria-live="assertive" aria-atomic="true" class="sr-only" *ngIf="showGroupTravelLink">Error. Booking for 10 or more passengers? Please contact. Link: Group Travel, opens in a new window.</span>
+                        </div>
+                        <div class="info-card" *ngIf="(qttForm.get('adultCount').errors && qttForm.get('adultCount')?.errors.passengerCount) || (qttForm.get('childCount').errors && qttForm.get('childCount')?.errors.passengerCount)">
+                            <img src="assets/images/new-design-img/Informative.svg" alt="" aria-hidden="true" />
+                            <p>
+                                Minimum 1 passenger required.
+                            </p>
+                        </div>
+                        <div class="info-card grey-info" *ngIf="sharedService?.journeySummaryModel?.IsPromo">
+                            <img src="assets/images/new-design-img/graphene-circle-info.svg" alt="" aria-hidden="true" />
+                            <p>
+                                Trains and ticket types with special fares will show an offer label.
+                            </p>
+                        </div>
+                        <!----- End Edit QTT Form Railcard Message ----->
+                    </div>
+    
+                    <!----- Edit QTT Form Buttons ----->
+                    <div class="edit-qtt-btn" [ngClass]="!isCancelVisible ? 'btn-fullwidth' : ''">
+                        <button type="button" *ngIf="isCancelVisible" mat-button class="outline-btn outline-primary-btn-hover" aria-label="Cancel" (click)=onClose() [ngClass]="{'removed-journey-hide-section': journeyRemovedClass}">
+                            Cancel
+                        </button>
+                        <button type="button" *ngIf="isBackToHomeBtnVisible" mat-button class="outline-btn outline-primary-btn-hover" aria-label="BackToHome" (click)=backToHome()>
+                            Back to Home
+                        </button>
+                        <button aria-label="Find time & prices" [disabled]="conditionToDisabledFindTimeAndPrice()" (click)="applyChanges()" type="button" mat-button class="fill-btn fill-light-hover-btn" [ngClass]="{'m-100-btn': journeyRemovedClass}">
+                            Find times and prices
+                        </button>
+                    </div>
+                    <!----- End Edit QTT Form Buttons ----->
+                </div>
+                <!----- End Edit QTT Form Area ----->
+            </div>
+        </div>
+    </form>
+    
+</section>
+<!----- End Journey Edit QTT Form  ----->

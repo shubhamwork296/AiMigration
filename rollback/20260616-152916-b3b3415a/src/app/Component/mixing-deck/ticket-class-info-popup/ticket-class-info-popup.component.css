@@ -1,0 +1,78 @@
+.mat-dialog-container{
+  position: relative;
+}
+ticket-dialog{
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dialog-close{
+  position: absolute;
+  top: 14px;
+  right: 24px;
+  -webkit-appearance: unset;
+  -moz-appearance: unset;
+}
+.way-heading{
+  background: #F6F6F6;
+  padding: 14px 28px;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 30px;
+  color: rgb(19, 30, 41);
+  text-align: center;
+}
+.featr-bx{
+  padding: 20px;
+  background: #F6F6F6;
+  height: calc(100% - 70px);
+  color: #131e29;
+}
+.featr-bx p {
+  margin-bottom: 1rem !important;
+}
+.featr-bx p.mb-0 {
+  margin-bottom: 0 !important;
+}
+@media (max-width:767px){
+  .featr-bx{
+    height: 100%;
+  }
+}
+.login-signin-title {
+  margin-bottom: 0 !important;
+  font-size: 24px;
+  color: #131E29;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.travel-facilities{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.travel-facilities li{
+  padding-left: 40px;
+  position: relative;
+  margin-bottom: 15px;
+}
+.travel-facilities li svg{
+  position: absolute;
+  top: 7px;
+  left: 0;
+}
+.mat-dialog-content {
+  max-height: 80vh;
+  overflow: inherit;
+}
+.premium-heading{
+  background: #95E1BF;
+}
+.first-heading{
+  background: #E2F5E9;
+}
+@media(max-width:767px){
+  .mb-xs-3{
+    margin-bottom: 20px !important;
+  }
+}

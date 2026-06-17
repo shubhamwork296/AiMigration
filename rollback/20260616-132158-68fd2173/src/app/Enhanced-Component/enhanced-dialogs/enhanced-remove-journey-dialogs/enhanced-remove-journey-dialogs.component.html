@@ -1,0 +1,26 @@
+<app-enhanced-basic-dialog [dialogFooter]="dialogFooter" class="enhanced-alert-dialogs" [dialogTitle]="headerTitle" role="dialog" aria-modal="true" tabindex="-1">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+        <div class="enhanced-common-info-content" role="alert" aria-live="assertive" aria-atomic="true">
+          <span class="sr-only">{{ headerTitle }}</span>
+          <p>
+            Are you sure you want to remove this journey? You will not be able to recover it once removed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-content>
+  <ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+      <div class="two-btn-footer two-btn-footer-full-btn">
+        <button mat-dialog-close type="button" mat-button class="outline-btn outline-primary-btn-hover" (click)="dialogRef.close(false)">
+          Cancel
+        </button>
+        <button mat-dialog-close type="button" mat-button class="fill-btn fill-light-hover-btn" (click)="dialogRef.close(true)">
+          Remove journey
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</app-enhanced-basic-dialog>

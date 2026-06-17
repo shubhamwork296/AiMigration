@@ -1639,6 +1639,42 @@ Error: Can't resolve '~@ng-select/ng-select/themes/missing.theme.css' in 'src'
     }
 
     [Fact]
+    public async Task First_Attempt_Remediation_Uses_Compact_Validation_Context()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """{"scripts":{"build":"ng build"},"dependencies":{"@angular/core":"14.2.0"}}""");
+        var ai = new CapturingAi(new JsonObject
+        {
+            ["summary"] = "manual",
+            ["confidence"] = 0.0,
+            ["risk"] = "high",
+            ["requiresManualCorrection"] = true,
+            ["failureCategory"] = "compiler",
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray()
+        });
+        var hugeValidation = string.Join('\n', Enumerable.Range(1, 2000).Select(i => $"noise line {i}"))
+            + "\nsrc/app/problem.component.ts:10:5 - error TS2305: Module '\"ngx-barcode6\"' has no exported member 'NgxBarcode6Module'."
+            + "\n" + string.Join('\n', Enumerable.Range(2001, 2000).Select(i => $"trailing noise line {i}"));
+
+        await new AiRemediationPlanner(ai, new PromptLoader()).TryRemediateAsync(
+            Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } },
+            root,
+            new StubAdapter(),
+            new ValidationResult { Passed = false, Output = hugeValidation, FailureCommand = ["ng", "build"] },
+            1);
+
+        Assert.Contains("\"contextMode\": \"compact-validation\"", ai.LastUser);
+        Assert.Contains("\"validationOutputTail\"", ai.LastUser);
+        Assert.Contains("TS2305", ai.LastUser);
+        Assert.DoesNotContain("noise line 1", ai.LastUser);
+        Assert.DoesNotContain("trailing noise line 2001", ai.LastUser);
+        Assert.DoesNotContain("\"projectFiles\"", ai.LastUser);
+        Assert.DoesNotContain("\"stdoutStderr\"", ai.LastUser);
+        Assert.True(ai.LastUser.Length < 120000, $"Prompt was {ai.LastUser.Length} chars.");
+    }
+
+    [Fact]
     public async Task Angular_Ai_Remediation_Timeout_Retries_And_Stops_After_Remediation_Finishes()
     {
         var root = await AngularWorkspace();

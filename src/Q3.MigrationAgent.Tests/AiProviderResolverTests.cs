@@ -206,7 +206,7 @@ public sealed class AiProviderResolverTests
     [Fact]
     public void ParseJsonObject_Rejects_Fenced_Json_With_Trailing_Cli_Text()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.ThrowsAny<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             ```json
             [
               { "file": "package.json", "change": "script" }
@@ -215,7 +215,7 @@ public sealed class AiProviderResolverTests
             Done.
             """, "codex"));
 
-        Assert.Contains("no-parseable-json-object", ex.Message);
+        Assert.Contains("schema-validation-failed", ex.Message);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public sealed class AiProviderResolverTests
     [Fact]
     public void ParseJsonObject_Rejects_Truncated_Json()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.ThrowsAny<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             {
               "summary": "replace deprecated flag",
               "confidence": 0.91,
@@ -264,7 +264,7 @@ public sealed class AiProviderResolverTests
     [Fact]
     public void ParseJsonObject_Rejects_Wrong_Schema_Json()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.ThrowsAny<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             {"hello":"world"}
             """, "codex"));
 
@@ -301,7 +301,7 @@ public sealed class AiProviderResolverTests
     [Fact]
     public void ParseJsonObject_Rejects_ThirdParty_PackageUpdates_Missing_With_Clear_Message()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.ThrowsAny<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             {"manualReview":[]}
             """, "codex"));
 
@@ -343,7 +343,7 @@ public sealed class AiProviderResolverTests
     [Fact]
     public void ParseCodexResponse_Does_Not_Parse_Jsonl_Stream_As_Remediation_Schema()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
+        var ex = Assert.ThrowsAny<InvalidOperationException>(() => AiProviderResolver.ParseJsonObject("""
             {"type":"turn.started"}
             {"type":"turn.completed","message":{"role":"assistant","content":"not json"}}
             """, "codex"));
@@ -363,6 +363,88 @@ public sealed class AiProviderResolverTests
         Assert.Equal("ok", parsed["summary"]?.ToString());
         Assert.Equal(80, parsed["confidence"]?.GetValue<int>());
         Assert.Empty(parsed["packageUpdates"]!.AsArray());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Extracts_Critical_Dependency_Alignment_From_Jsonl_Agent_Message()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"turn.started\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidCriticalDependencyAlignmentJson("align")) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        var recommendation = parsed["recommendations"]!.AsArray().OfType<JsonObject>().Single();
+        Assert.Equal("typescript", recommendation["packageName"]?.ToString());
+        Assert.Equal("~5.8.3", recommendation["recommendedVersion"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Skips_Jsonl_Event_With_Duplicate_Id_Key()
+    {
+        var stdout = "{\"type\":\"item.completed\",\"id\":\"first\",\"id\":\"duplicate\",\"item\":{\"type\":\"agent_message\",\"text\":\"not used\"}}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidCriticalDependencyAlignmentJson("align")) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        var recommendation = parsed["recommendations"]!.AsArray().OfType<JsonObject>().Single();
+        Assert.Equal("typescript", recommendation["packageName"]?.ToString());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Strips_Markdown_Fence_From_Agent_Message_Text()
+    {
+        var fenced = "```json\n" + ValidCriticalDependencyAlignmentJson("align") + "\n```";
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(fenced) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        Assert.Single(parsed["recommendations"]!.AsArray());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Tries_Later_Agent_Message_When_First_Is_Not_Valid_Json()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString("I will return JSON next.") + "}}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidCriticalDependencyAlignmentJson("align")) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        Assert.Single(parsed["recommendations"]!.AsArray());
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Invalid_Critical_Dependency_Schema_Reports_Rejection_Details()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString(ValidCriticalDependencyAlignmentJson("destroy")) + "}}\n";
+
+        var ex = Assert.Throws<AiJsonParseException>(() => AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex"));
+
+        Assert.Equal("schema-validation-failed", ex.FailureReason);
+        Assert.Equal("action", ex.RejectedField);
+        Assert.Equal("destroy", ex.RejectedValue);
+        Assert.Contains("allowedValues", ex.Message);
+        Assert.True(ex.CandidatesAttempted >= 1);
+    }
+
+    [Fact]
+    public void ParseCodexResponse_Accepts_Minimal_Module_Import_Wiring_From_Jsonl()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"turn.started\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":" + JsonString(ValidMinimalModuleImportWiringJson()) + "}}\n" +
+                     "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        var change = parsed["changes"]!.AsArray().OfType<JsonObject>().Single();
+        Assert.Equal("third_party_angular_incompatibility", parsed["failureCategory"]?.ToString());
+        Assert.Equal("minimal_module_or_import_wiring", change["type"]?.ToString());
+        Assert.Equal("NgxBarcode6Module", change["before"]?.ToString());
+        Assert.Equal("NgxBarcode6", change["after"]?.ToString());
     }
 
     [Fact]
@@ -435,6 +517,30 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
+    public async Task Codex_Provider_Uses_Configured_Ai_Timeouts()
+    {
+        var runner = new FakeCommandRunner(command => new CommandResult
+        {
+            ReturnCode = 0,
+            Stdout = ValidRemediationJson()
+        });
+        var provider = new CodexCliProvider(runner, new PromptLoader());
+
+        await provider.AskAsync(new AiConfig { UseAi = true, CliCommand = ["codex", "exec"], TimeoutSeconds = 900, IdleTimeoutSeconds = 240 }, "system", "user");
+
+        Assert.Equal(900, runner.LastTimeoutSeconds);
+        Assert.Equal(240, runner.LastIdleTimeoutSeconds);
+    }
+
+    [Fact]
+    public void Parser_Accepts_Empty_Recommendation_Response()
+    {
+        var parsed = AiProviderResolver.ParseJsonObject("""{"recommendations":[],"warnings":[]}""", "codex");
+
+        Assert.Empty(parsed["recommendations"]!.AsArray());
+    }
+
+    [Fact]
     public async Task Codex_Provider_Rejects_Nonzero_Cli_Output_With_Logs()
     {
         var runner = new FakeCommandRunner(command => new CommandResult
@@ -499,6 +605,33 @@ public sealed class AiProviderResolverTests
         }
         """;
 
+    private static string ValidMinimalModuleImportWiringJson() => """
+        {
+          "summary": "replace unavailable exported Angular module symbol",
+          "confidence": 0.84,
+          "risk": "low",
+          "requiresManualCorrection": false,
+          "manualCorrectionReason": null,
+          "failureCategory": "third_party_angular_incompatibility",
+          "businessLogicChanged": false,
+          "changes": [
+            {
+              "file": "src/app/modules/my-account.module.ts",
+              "type": "minimal_module_or_import_wiring",
+              "reason": "The compiler reports TS2305 for NgxBarcode6Module from ngx-barcode6 and lists NgxBarcode6 as the available export.",
+              "before": "NgxBarcode6Module",
+              "after": "NgxBarcode6",
+              "sourceCodeImpact": true,
+              "validationDriven": true,
+              "requiresVersionVerification": false,
+              "manualReviewRequired": false
+            }
+          ],
+          "commandsToRunAfter": [],
+          "reportNotes": []
+        }
+        """;
+
     private static string ValidMigrationAnalysisJson() => """
         {
           "summary": "ok",
@@ -525,11 +658,37 @@ public sealed class AiProviderResolverTests
         }
         """;
 
+    private static string ValidCriticalDependencyAlignmentJson(string action) => $$"""
+        {
+          "sourceAngularMajor": 19,
+          "targetAngularMajor": 20,
+          "recommendations": [
+            {
+              "packageName": "typescript",
+              "currentVersion": "~5.5.4",
+              "recommendedVersion": "~5.8.3",
+              "dependencySection": "devDependencies",
+              "action": "{{action}}",
+              "criticality": "required",
+              "confidence": 95,
+              "risk": "low",
+              "reason": "Angular 20 compiler-cli peer dependency compatibility requires TypeScript >=5.8 <6.0.",
+              "blocksInstall": true,
+              "blocksBuild": true,
+              "manualReviewRequired": false
+            }
+          ],
+          "warnings": []
+        }
+        """;
+
     private static string JsonString(string value) => JsonValue.Create(value)!.ToJsonString();
 
     private sealed class FakeCommandRunner(Func<IReadOnlyList<string>, CommandResult> handler) : ICommandRunner
     {
         public List<IReadOnlyList<string>> Calls { get; } = [];
+        public int? LastTimeoutSeconds { get; private set; }
+        public int? LastIdleTimeoutSeconds { get; private set; }
 
         public Task<CommandResult> RunAsync(
             IReadOnlyList<string> command,
@@ -545,6 +704,8 @@ public sealed class AiProviderResolverTests
             CancellationToken cancellationToken = default)
         {
             Calls.Add(command.ToArray());
+            LastTimeoutSeconds = timeoutSeconds;
+            LastIdleTimeoutSeconds = idleTimeoutSeconds;
             return Task.FromResult(handler(command));
         }
     }

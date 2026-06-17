@@ -1,0 +1,34 @@
+.buynow-bttm-mixingdeck {
+    background: #D6D1CB;
+    width: 100%;
+    padding-top: 40px;
+}
+
+.timeout-bx {
+    background: #fff;
+    width: 440px;
+    max-width: 95%;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+}
+
+.timeout-bx img {
+    justify-content: start;
+    align-self: flex-start;
+    margin-top: 8px;
+}
+
+.timeout-bx div {
+    padding-left: 20px;
+}
+
+.timeout-bx div p {
+    margin-bottom: 0;
+}
+
+.cursor-pointer-hover:hover {
+    cursor: pointer!important;
+    color: #ff4713 !important;
+    text-decoration: underline !important;
+}

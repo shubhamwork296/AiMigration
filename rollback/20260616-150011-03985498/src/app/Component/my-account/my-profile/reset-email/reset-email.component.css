@@ -1,0 +1,53 @@
+.reset-email-page {
+    padding: 96px 0;
+}
+
+.reset-email-warning, .reset-email-success {
+    width: 398px;
+}
+
+.reset-email-success.reset-email-password {
+    width: 436px;
+}
+
+.width-54 {
+    width: 54px;
+}
+
+#rm-verify-password-input.error-input-focus {
+    border: 1px solid #E42B00 !important;
+    box-shadow: 0 0 0 0.1rem rgb(228 43 0 / 100%) !important;
+    border-radius: 5px;
+}
+
+@media (max-width:767px) {
+    #rm-main .f-32 {
+        font-size: 32px;
+    }
+
+    #rm-main #rm-warning-button,
+    #rm-main #rm-success-button {
+        height: 40px;
+        font-size: 16px;
+    }
+
+    #rm-verify-password-mat-icon {
+        font-size: 20px !important;
+    }
+
+    .icon-font-size {
+        font-size: 92% !important;
+    }
+}
+
+@media (max-width:450px) {
+    .reset-email-success.reset-email-password {
+        width: auto;
+    }
+}
+
+@media (max-width:420px) {
+    .reset-email-warning, .reset-email-success {
+        width: 320px;
+    }
+}

@@ -24,6 +24,7 @@ public sealed record EstimatedAiUsageStats
     public int? ExitCode { get; init; }
     public long? DurationMs { get; init; }
     public string? JsonParseStatus { get; init; }
+    public string? JsonParseDiagnostics { get; init; }
 }
 
 public sealed class AiUsageTracker(RunLog? runLog = null)
@@ -63,7 +64,7 @@ public sealed class AiUsageTracker(RunLog? runLog = null)
         return stats;
     }
 
-    public void RecordEstimatedOutput(EstimatedAiUsageStats inputStats, string output, int? exitCode, long? durationMs, string? jsonParseStatus)
+    public void RecordEstimatedOutput(EstimatedAiUsageStats inputStats, string output, int? exitCode, long? durationMs, string? jsonParseStatus, string? jsonParseDiagnostics = null)
     {
         var completed = inputStats with
         {
@@ -71,7 +72,8 @@ public sealed class AiUsageTracker(RunLog? runLog = null)
             EstimatedOutputTokens = AiTokenEstimator.EstimateTokens(output),
             ExitCode = exitCode,
             DurationMs = durationMs,
-            JsonParseStatus = jsonParseStatus
+            JsonParseStatus = jsonParseStatus,
+            JsonParseDiagnostics = jsonParseDiagnostics
         };
 
         lock (_lock)
@@ -80,7 +82,8 @@ public sealed class AiUsageTracker(RunLog? runLog = null)
             if (index >= 0) _estimatedCalls[index] = completed;
             else _estimatedCalls.Add(completed);
 
-            _runLog.Append(_logPath, $"[AI Usage] prompt={Value(completed.PromptName)}, outputChars={completed.OutputChars}, estimatedOutputTokens={completed.EstimatedOutputTokens}, estimatedTotalTokens={completed.EstimatedTotalTokens}, exitCode={Value(completed.ExitCode)}, durationMs={Value(completed.DurationMs)}, jsonParseStatus={Value(completed.JsonParseStatus)}");
+            var diagnostics = string.IsNullOrWhiteSpace(completed.JsonParseDiagnostics) ? "" : $", {completed.JsonParseDiagnostics}";
+            _runLog.Append(_logPath, $"[AI Usage] prompt={Value(completed.PromptName)}, outputChars={completed.OutputChars}, estimatedOutputTokens={completed.EstimatedOutputTokens}, estimatedTotalTokens={completed.EstimatedTotalTokens}, exitCode={Value(completed.ExitCode)}, durationMs={Value(completed.DurationMs)}, jsonParseStatus={Value(completed.JsonParseStatus)}{diagnostics}");
         }
     }
 

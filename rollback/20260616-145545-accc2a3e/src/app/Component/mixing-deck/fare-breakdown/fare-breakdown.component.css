@@ -1,0 +1,233 @@
+* {
+    font-size: 14px;
+}
+
+.fare-heading {
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.tod {
+    white-space: normal;
+    line-height: 20px;
+    min-width: 160px;
+    text-align: left;
+}
+
+div.outward {
+    line-height: 18px;
+    padding: 0;
+    font-size: 12px;
+    cursor: default;
+    max-height: 20px;
+}
+
+.row-header {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.journeyheader.row-header {
+    padding: 10px 0px;
+    border-top: 1px solid #131E29;
+    border-bottom: 1px solid #131E29;
+}
+
+.first-col,
+.heading.flex-end {
+    padding: 4px 0;
+}
+
+.fare-footer {
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    width: 100%;
+}
+
+.fare-header-list.header {
+    padding: 20px 10px 20px 0px;
+}
+
+.discount-class thead tr th:first-child,
+.discount-class tbody tr td:first-child {
+    min-width: 150px;
+    max-width: 150px;
+    width: 150px;
+}
+
+.journey-box .multi-journey-border {
+    border-top: 1px solid #C5CFD9 !important;
+}
+
+.journey-box:first-child .multi-journey-border {
+    border-top: none !important;
+}
+
+.dialog-close {
+    top: 14px;
+}
+
+@media only screen and (min-width:1024px) {
+    .fare-header-list,
+    .outward-journey-extras {
+        display: grid;
+        grid-template-columns: 240px 600px;
+    }
+    .fare-footer {
+        font-weight: 700;
+        font-size: 14px;
+        display: grid;
+        grid-template-columns: 690px 150px;
+        width: 100%;
+    }
+    .mat-dialog-actions {
+        display: grid !important;
+    }
+    .second-col {
+        display: grid;
+        grid-template-columns: 600px;
+    }
+    .fare-header-list.header {
+        grid-template-columns: 240px 150px 150px 150px 150px;
+        padding: 20px 10px 20px 0px;
+    }
+    .outward-journey {
+        display: grid;
+        grid-template-columns: 150px 150px 150px 150px;
+    }
+    .fare-header-list .first-col {
+        display: grid;
+        grid-template-columns: 70px 140px;
+    }
+}
+
+@media screen and (-ms-high-contrast: active),
+(-ms-high-contrast: none) {
+    .fare-header-list .first-col button {
+        margin-bottom: 5px;
+        width: fit-content;
+    }
+    .fare-header-list,
+    .outward-journey-extras {
+        display: flex;
+    }
+    .fare-header-list .heading {
+        flex-basis: 17.5%;
+    }
+    .fare-header-list .heading:first-child {
+        flex-basis: 30%;
+    }
+    .fare-header-list .first-col {
+        flex-basis: 30%;
+    }
+    .fare-header-list .second-col {
+        flex-basis: 70%;
+    }
+    .fare-break p:first-child {
+        flex-basis: 82.5%;
+    }
+    .fare-break p:last-child {
+        flex-basis: 17.5%;
+    }
+    .outward-journey {
+        display: flex;
+    }
+    .outward-journey .heading {
+        flex-basis: 25% !important;
+    }
+    .fare-header-list .outward-journey-extras {
+        flex-basis: 100%;
+    }
+}
+
+@media only screen and (min-width:320px) and (max-width:1024px) {
+    .fare-header-list .first-col button {
+        margin-bottom: 5px;
+        width: fit-content;
+        line-height: 19px !important;
+    }
+    .second-col {
+        grid-template-columns: 670px;
+    }
+    .j-ex-title {
+        white-space: normal;
+        line-height: 14px !important;
+    }
+    .tod {
+        min-width: auto !important;
+    }
+    .fare-header-list,
+    .outward-journey-extras {
+        display: flex;
+    }
+    .fare-header-list .heading {
+        flex-basis: 20%;
+    }
+    .fare-header-list .first-col {
+        flex-basis: 20%;
+        grid-template-columns: 70px;
+    }
+    .fare-header-list .second-col {
+        flex-basis: 80%;
+        align-items: flex-end;
+        flex-direction: column;
+    }
+    .fare-break p:first-child {
+        flex-basis: 80%;
+    }
+    .fare-break p:last-child {
+        flex-basis: 20%;
+    }
+    .outward-journey {
+        display: flex;
+        width: 100%;
+    }
+    .outward-journey .heading {
+        flex-basis: 25%;
+    }
+    .fare-header-list .outward-journey-extras {
+        flex-basis: 100%;
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    * {
+        font-size: 12px;
+    }
+    div.outward {
+        min-width: 50px;
+        line-height: 20px !important;
+        font-size: 10px;
+        padding: 0px !important;
+    }
+    .fare-heading-list-box .journey-box.mb-20 {
+        margin-bottom: 0px !important;
+    }
+
+    .common-popup-theme-fare-table table thead tr th:last-child .text-end {
+        text-align: center !important;
+    }
+}
+
+@media (min-width:768px) and (max-width:1023px) {
+    .extralabelclass {
+        padding-left: 0 !important;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width:1023px) {
+    .blank-ex-title-box {
+        display: none;
+    }
+}
+
+@media (max-width:576px) {
+    .discount-class thead tr th:first-child,
+    .discount-class tbody tr td:first-child {
+        min-width: 80px;
+        max-width: 80px;
+        width: 80px;
+    }
+}

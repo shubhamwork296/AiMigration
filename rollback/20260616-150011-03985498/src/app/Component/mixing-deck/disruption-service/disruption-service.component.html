@@ -1,0 +1,81 @@
+<div class="service-update-popup">
+    <div class="popup-header">
+        <h2 mat-dialog-title class="login-signin-title d-inline-block">Your Journey</h2>
+        <button mat-button class="dialog-close float-right upgrade-p-ralative" mat-dialog-close><img src="assets/images/Close.svg"
+        alt=""></button>
+    </div>
+    <mat-dialog-content>
+        <div class="mb-20">
+            <div class="row m-xs-0 m-0">
+                <div class="col-lg-5 col-md-12 service-popup-list">
+                    <h3 class="journey-heading">Journey</h3>
+                    <div *ngFor="let route of traveLChanges; let first= first" class="mb-15 route-directon">
+                        <div class="bx-1">
+
+                            <div class="train-logo" *ngIf="route.TravelSolutionName === 'Avanti West Coast'">
+                                <img class="avanti-logo" src="assets/images/avanti-logo-dark.svg" alt="Avanti West Coast">
+                            </div>
+                            <div class="train-logo" *ngIf="route.TravelSolutionName !== 'Avanti West Coast'">
+                                {{route.TravelSolutionName}}
+                            </div>
+
+                            <table aria-label="" mat-table [dataSource]="getRouteWiseDataSource(route)" class="mat-elevation-z8 routedetails-tbl route-dtl-tbl">
+                                <ng-container matColumnDef="DepartureTime">
+                                    <th mat-header-cell *matHeaderCellDef class="Departure-tm d-none"> </th>
+                                    <td mat-cell *matCellDef="let element; let i = index" class="Departure-tm">
+                                        <span class="d-block text-center departuretime-span" *ngIf="i==0 || dataSourceLength == i+1">{{element.DepartureTime}}</span>
+                                        <span class="d-block text-center departuretime-span" *ngIf="i!=0 && dataSourceLength != i+1">{{element.DepartureTime}}</span>
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="DarwinDepartureTime">
+                                    <th mat-header-cell *matHeaderCellDef class="Departure-tm-2 d-none"> Actual Departure Time </th>
+                                    <td mat-cell *matCellDef="let element; let i = index" class="Departure-tm-2 d-none">
+                                        <span *ngIf="i==0 || dataSourceLength == i+1">{{element.DarwinDepartureTime}}</span>
+                                        <span *ngIf="i!=0 && dataSourceLength != i+1">{{element.DarwinDepartureTime}}</span>
+
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="Location">
+                                    <th mat-header-cell class="d-none" *matHeaderCellDef></th>
+
+                                    <td mat-cell *matCellDef="let element; let i = index" [ngClass]="element.IsBusReplacementAvailable ? 'darwindeparturetd-removed' : '' ">
+                                        <div *ngIf="i==1">
+                                            <img *ngIf="route.RouteType == '' && route.TravelSolutionName != '' && route.TravelSolutionName == 'AVANTI WEST COAST'" class="avanti-logo" src="assets/images/avanti-logo-dark.svg" alt="avanti">
+                                            <span *ngIf="route.RouteType != ''" class="westcoast-highlight">{{route.RouteType}}</span>
+                                        </div>
+                                        <span *ngIf="i==0 || dataSourceLength == i+1" class="d-block mt--10">{{element.Location}} </span>
+                                        <span *ngIf="i!=0 && dataSourceLength != i+1" class="d-block mt--10">{{element.Location}}</span>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row></tr>
+                                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: displayedColumns; let i = index" [ngClass]="(route.TravelSolutionName != '' && route.TravelSolutionName == 'AVANTI WEST COAST') ? {'with-logo' : (i==1)} : {'with-other-logo' : (i==1)}" [hidden]="!row.IsRouteLocation"></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-lg-7 col-md-12 bx-2-containr pe-0 pl-15">
+                    <div class="bx-2" *ngIf="showdetailFlag && darwinText.length>0">
+                        <h3 class="facilities-heading">Travel information</h3>
+                        <p class="station-facilities ps-0 f-14" *ngFor="let text of darwinText">
+                            <span [innerHTML]="text"></span>
+                        </p>
+                    </div>
+                    <div class="bx-2-containr" *ngFor="let route of traveLChanges">
+                        <div class="bx-2" *ngIf="route.Facilities && route.Facilities.length > 0">
+                            <h3 class="facilities-heading">Train facilities</h3>
+                            <p class="station-facilities" *ngFor="let facility of route.Facilities">
+                                <img src="assets/images/tick.svg" alt=""> {{facility.FacilityType}}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </mat-dialog-content>
+
+</div>

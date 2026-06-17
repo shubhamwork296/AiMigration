@@ -1,0 +1,336 @@
+<div class="row h-100 m-0 enhanced-seat-picker-inner">
+  <div class="col-lg-6 col-md-12 overflow-hidden">
+    <mat-dialog-content class="fare-heading-list-box seatpicker-dialog-box">
+    <div class="svg-container">
+      <div class="row h-100">
+        <div class="col-sm-4 col-3 seat-select pe-0">
+          <div class="seat-select-coach">
+            <div class="seat-select-coach-list">
+            <div class="select-coach-list" id="coachParent">
+            <div class="svg-coach-header-wrapper" (keypress)="scrollToOnKeypress(coach.Coach)" (click)="scrollTo(coach.Coach)" [ngClass]="{ 'current-section': (currentSection === coach.Coach && coachOverlayClassArray[indexOfelement] == ''), 'active-seat': (currentSection === coach.Coach), 'unavailable-seat': coachOverlayClassArray[indexOfelement] == ''}"
+            [id]="coach.Coach"  *ngFor="let coach of seatPickerResponse.Coaches;let indexOfelement=index;"
+            attr.aria-label="coach {{coach.Coach}} Type {{coach.CoachType}}">
+            <div class="svg-coach-header hitachi-svg-coach-header" *ngIf="coach?.splitCoach">
+              <span>
+                <img src="assets/images/{{multipleSeatTypeInSameCoachObject[0]?.ticketClass == 'First Class' ? 'seatpicker-first-class-icon' : multipleSeatTypeInSameCoachObject[0]?.ticketClass === 'Standard Premium' ? 'seatpicker-standard-premium-icon': multipleSeatTypeInSameCoachObject[0]?.ticketClass === 'Standard' ? 'seatpicker-standard-icon': '' }}.svg" onerror="this.onerror=null; this.remove();" class="w-h-18 me-1 h-auto" alt="">
+              </span>
+              {{coach.Coach}}
+              <span>
+                <img src="assets/images/{{multipleSeatTypeInSameCoachObject[1]?.ticketClass == 'First Class' ? 'seatpicker-first-class-icon' : multipleSeatTypeInSameCoachObject[1]?.ticketClass === 'Standard Premium' ? 'seatpicker-standard-premium-icon': multipleSeatTypeInSameCoachObject[1]?.ticketClass === 'Standard' ? 'seatpicker-standard-icon': '' }}.svg" onerror="this.onerror=null; this.remove();" class="w-h-18 me-1 h-auto" alt="">
+              </span>
+            </div>
+            <div class="svg-coach-header"  *ngIf="!coach?.splitCoach">
+              {{coach.Coach}}
+              <span>
+                <img src="assets/images/{{coach.CoachType == 'First Class' ? 'seatpicker-first-class-icon' : coach.CoachType === 'Standard Premium' ? 'seatpicker-standard-premium-icon': (coach.Facilities | quietIcon) != -1 ? 'QUIE' : '' }}.svg" onerror="this.onerror=null; this.remove();" class="w-h-18 me-1 h-auto" alt="">
+              </span>
+            </div>
+          </div>
+          </div>
+
+          <div class="seat-row-direction seat-colors d-lg-inline-block enhanced-d-none d-md-none"> 
+           <div class="pb-3 text-center">
+            <img src="assets/images/up-arrow.png" alt="" aria-hidden="true">
+             <span>Travel Direction</span>
+           </div>
+           </div>
+
+          </div> 
+
+          <div class="seat-row-direction seat-colors d-lg-none enhanced-d-block d-md-block m-seat-row-direction"> 
+            <div class="pb-3 text-center">
+              <img src="assets/images/up-arrow.png" alt="" aria-hidden="true">
+              <span>Travel Direction</span>
+            </div>
+          </div>
+        
+         <div>
+           <div class="selected-box">Selected</div>
+           <div class="available-box pt-1">Available</div>
+           <div class="unavailable-box pt-1">Unavailable</div>
+         </div>
+        </div>
+        </div>
+        <div class="col-sm-8 ps-0 col-9">
+          <div id="parentDiv" class="seat-selected-box" scrollSpy [spiedTags]="['DIV']" (sectionChange)="onSectionChange($event)">
+            <div [id]="svgCoach.CoachIndex" *ngFor="let svgCoach of seatPickerResponse.SvgCoaches;let indexOfelement=index;">
+
+              <div class="text-center" [class.col-md-12]="coachOverlayClassArray[indexOfelement] != ''">
+              <div  [class.coach-unavailable-overlay]="coachOverlayClassArray[indexOfelement] === 'coach-unavailable-overlay'" [class.carriage-overlay]="coachOverlayClassArray[indexOfelement] === 'carriage-overlay'" [class.coach-overlay]="coachOverlayClassArray[indexOfelement] === 'coach-overlay'" [class.coach-unreservable-overlay]="coachOverlayClassArray[indexOfelement] === 'coach-unreservable-overlay'" [class.coach-unreservable-overlay-advance-travel]="coachOverlayClassArray[indexOfelement] === 'coach-unreservable-overlay-advance-travel'">
+                
+                <div id="seatContainerDiv">
+                  <div id="overlayNewhgt2"><span></span></div>
+                  <div id="overlayNewhgt"><span></span></div>
+                  <div *ngIf ="svgCoach.SvgLayout ===''" [innerHTML]="unavailableCoachSVG | svgSanitize" class="seatpicker-hide-entity-code"></div>
+                  <div *ngIf ="svgCoach.SvgLayout !==''" [innerHTML]="svgCoach.SvgLayout | svgSanitize" class="seatpicker-hide-entity-code"></div>
+                </div>
+
+              <p class="coach-unavailable-overlay-text">{{seatPickerMsgsEnum?.unavailableCoachMessage}}</p>
+              <p class="coach-overlay-text">{{seatPickerMsgsEnum?.coachOverlayText}}</p>
+              <p class="coach-unreservable-overlay-text">{{seatPickerMsgsEnum?.unreservableCoachesMessage}}</p>
+              <p class="carriage-overlay-text seat-picker-not-available">{{seatPickerMsgsEnum?.seatPickerOverlayText}}</p>
+              <p class="coach-unreservable-overlay-advance-travel-text">{{seatPickerMsgsEnum?.unreservedCoachesAndSeatsMessage}}</p>
+              
+             </div>
+             </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </mat-dialog-content>
+  </div>
+
+  <div [ngClass]="(sucessfullysaved || failToSave) ? 'col-lg-6 col-md-12 change-seat-scroll order-minus-one-m seat-success-msg' : 'col-lg-6 col-md-12 change-seat-scroll change-seat-section'">
+    <div class="row height-save-selection full-height-s" *ngIf="!closeSeatPickerDiv">
+      <div [ngClass]="(sucessfullysaved || failToSave) ? 'col-md-12 col-lg-12 height-save-selection after-seat-selection full-height-s' : 'col-md-12 col-lg-12 height-save-selection'" *ngIf="!closeSeatPikr">
+        <div class="change-seat-detail">
+          <div>
+            <h2 class="seat-picker-title text-graphene d-inline-block" *ngIf="!(sucessfullysaved || failToSave)">Change your seat<span *ngIf="seatPickerResponse?.Seat?.length > 1">s</span></h2>
+            <button class="dialog-close close-mrgn float-right" aria-label="close seat picker modal" mat-button *ngIf="updatedCount == 0 && !(sucessfullysaved || failToSave)" (click)="closeSeatPicker()">
+              <img src="assets/images/Close.svg" alt="" aria-hidden="true">
+            </button>
+          </div>
+    
+          <div class="seat-change-txt" *ngIf="sucessfullysaved || failToSave">
+            <h2 *ngIf="sucessfullysaved" class="success-title text-graphene">{{updateReservationResponseDto?.HeaderMessage}}</h2>
+            <h3 *ngIf="sucessfullysaved && !showMsgonSaveSeatSelection(updateReservationResponseDto?.Message)" class="reserved-seat-text">{{updateReservationResponseDto?.Message}}</h3>
+            <h2 *ngIf="failToSave" class="danger-title text-graphene unavailable-txt mb-8">
+              <svg width="25" height="26" viewBox="0 0 25 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 12.5676L12.4984 25.0377L25 12.4733L12.4984 0L0 12.5676ZM23.9024 12.4733L12.4984 23.9244L1.1102 12.5645L12.4984 1.11335L23.9024 12.4733Z" fill="#131E29"/>
+                <path d="M12.4983 16.2344C12.1646 16.2344 11.8446 16.3669 11.6087 16.6028C11.3728 16.8388 11.2402 17.1587 11.2402 17.4924C11.2402 17.7412 11.314 17.9844 11.4522 18.1913C11.5905 18.3982 11.787 18.5594 12.0168 18.6547C12.2467 18.7499 12.4996 18.7748 12.7437 18.7262C12.9877 18.6777 13.2119 18.5579 13.3878 18.3819C13.5637 18.206 13.6836 17.9819 13.7321 17.7378C13.7806 17.4938 13.7557 17.2408 13.6605 17.011C13.5653 16.7811 13.4041 16.5846 13.1972 16.4464C12.9903 16.3082 12.7471 16.2344 12.4983 16.2344Z" fill="#131E29"/>
+                <path d="M13.2718 14.8538L13.6052 6.32129H11.4917L11.8219 14.8538H13.2718Z" fill="#131E29"/>
+              </svg>        
+              <span class="pl-12">
+                {{updateReservationResponseDto?.HeaderMessage}}
+              </span>
+            </h2>
+            <h3 *ngIf="failToSave" class="reserved-seat-text">{{updateReservationResponseDto?.Message}}</h3>
+    
+            <div class="mat-expansion-panel-header p-relative bg-white seat-success-mgs h-auto" *ngIf="sucessfullysaved || failToSave">
+              <div class="mat-expansion-panel-header-title">
+                <div id="seat-header" class="seat-header">
+                  <div class="journey-stations reserved-seat c-p1">
+                    <p *ngIf="updatedCount==0" class="reserved-seat-text reserved-seat-text-width">Your reserved seat{{selectedSeatsArr.length > 1 ? 's' : ''}} {{selectedSeatsArr.length > 1 ? 'are' : 'is'}}: <span class="seat-number font-500 c-h5 enhanced-d-block">{{selectedSeats}}</span>
+                    </p>
+                  </div>
+                  <div class="bb-1 mb-7"></div>
+                  <div class="out-date font-500 text-coalescent c-h5 mb-7">
+                    {{seatPickerRequest.Traveldate | date : 'EEE, dd MMM yyyy'}}
+                  </div>
+                  <div class="out-date outwart-txt font-500 text-coalescent c-h5 mb-7">
+                    {{outwardText}}
+                  </div>
+                  <div class="journey-stations c-p1">
+                    <p class="text-graphene">{{seatPickerResponse.Departure}} <span class="arrival-stn enhanced-d-block d-md-inline">to {{seatPickerResponse.Arrival}}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+    
+          <div class="seat-select-no" *ngIf="!(sucessfullysaved || failToSave)">
+            <div class="booked-seats-wrapper" id="booked-seats" [ngClass]="{'active':( selButton === indexOfelement)}" *ngFor="let seat of seatPickerResponse.Seat;let indexOfelement=index;">
+              <button class="booked-seats" mat-button (click)="onSeatButtonClicked($event, indexOfelement)" attr.aria-label="coach {{seat.Coach}} seat {{seat.Seat}}">
+                  {{seat.Coach}}{{seat.Seat}}
+              </button>
+            </div>
+          </div>
+    
+          <div class="row services d-lg-flex d-services" *ngIf="!(sucessfullysaved || failToSave)">
+            <div class="col-md-4 col-6 col-sm-6" *ngFor="let facility of seatFacility;">
+              <div class="services-section">
+              <img src="assets/images/tick.svg" class="me-1 h-auto" alt="" aria-hidden="true" *ngIf="facility.Name !=  'Restricted view'">
+              <img src="assets/images/restricted-view.svg" class="me-0 h-auto restricted-icon" alt="" aria-hidden="true" *ngIf="facility.Name ==  'Restricted view'">
+              <span> {{(facility.Name == 'Backwards' || facility.Name == 'Forwards') ? facility.Name + ' Facing' : facility.Name}}</span>
+              </div>
+            </div>
+          </div>
+    
+          <div class="row services d-xl-none d-lg-none d-md-flex d-sm-flex" *ngIf="!(sucessfullysaved || failToSave)">
+            <div class="col-5" *ngFor="let facility of seatFacility?.slice(0,2);">
+              <div class="services-section">
+                <img src="assets/images/tick.svg" class=" me-1 h-auto" alt="" aria-hidden="true" *ngIf="facility.Name !=  'Restricted view'">
+                <img src="assets/images/restricted-view.svg" class="me-0 h-auto restricted-icon" alt="" aria-hidden="true" *ngIf="facility.Name ==  'Restricted view'">
+              <span class="align-middle"> {{facility.Name}}</span>
+              </div>
+            </div>
+            <div class="col-auto" *ngIf="seatFacility?.length > 2">
+              <i aria-hidden="true" (click)= "isFacilityExpanded=!isFacilityExpanded; scrollToEndOfSeatFacilities(isFacilityExpanded)" [class.fa-angle-down]="!isFacilityExpanded" [class.fa-angle-up]="isFacilityExpanded" class="fa f-18"></i>
+            </div>
+            <ng-container *ngIf="isFacilityExpanded">
+    
+              <div class="col-5" *ngFor="let facility of seatFacility?.slice(2,seatFacility?.length);">
+                <div class="services-section">
+                <img src="assets/images/tick.svg" class="me-1 h-auto" alt="" aria-hidden="true" *ngIf="facility.Name !=  'Restricted view'">
+                <img src="assets/images/restricted-view.svg" class="me-0 h-auto restricted-icon" alt="" aria-hidden="true" *ngIf="facility.Name ==  'Restricted view'">
+                <span> {{facility.Name}}</span>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+    
+          <div id = "idJourneyDetailDiv" class="journey-detail">
+            <hr/>
+          </div>
+    
+          <div class="journey-detail" *ngIf="!(sucessfullysaved || failToSave)">
+            <a href="javascript:;" class="mat-button-wrapper journey-details" (click)="toggleJourneyDetailFlag()">
+              See Journey Details
+              <i class="fa fa-angle-down" aria-hidden="true"></i>
+            </a>
+          </div>
+    
+          <div class="journey-detail-card">
+            <mat-card class="shadow-none p-0" *ngIf="journeyDetailFlag && !(sucessfullysaved || failToSave)">
+              <mat-card-content>
+                <div class="example-card">
+                  <p>{{(sharedService?.isFromAmendReservation && !data.isAmendReviewBuyData) ? (data.noOfAdult + ' Adult, ' +
+                    data.noOfChild + ' Child') : (data.journey.Adult + ' Adult, ' + data.journey.Child + ' Child')}}</p>
+                  <mat-divider class="ms-0" inset></mat-divider>
+                  <div class="out-date text-graphene ">
+                    {{seatPickerResponse.Traveldate}}
+                  </div>
+                  <span class="outbond-txt">{{outwardText}}</span>
+                  <div class="journey-stations">
+                    <p class="mb-0">{{seatPickerResponse.Departure}} <span class="arrival-stn enhanced-d-block d-md-inline">to {{seatPickerResponse.Arrival}}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <div class="all-tranis-have">
+                  <p class="text-black font-600 f-14 lh-21 all-tranis-heading">Seat picker key</p>
+                  <div class="all-tranis-content">
+                    <div class="m-0 p-0">
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9.9749 0H9.0249V19H9.9749V0Z" fill="#204555"/>
+                              <path d="M15.1999 2.85C15.5778 2.85 15.9403 2.69987 16.2075 2.43263C16.4748 2.16539 16.6249 1.80293 16.6249 1.425C16.6249 1.14316 16.5413 0.867653 16.3847 0.633313C16.2282 0.398973 16.0056 0.216327 15.7452 0.108472C15.4848 0.000617433 15.1983 -0.0276023 14.9219 0.0273816C14.6455 0.0823656 14.3916 0.218084 14.1923 0.417373C13.993 0.616663 13.8573 0.870574 13.8023 1.147C13.7473 1.42342 13.7755 1.70994 13.8834 1.97032C13.9912 2.23071 14.1739 2.45326 14.4082 2.60984C14.6426 2.76643 14.9181 2.85 15.1999 2.85Z" fill="#204555"/>
+                              <path d="M18.7339 8.51656L17.7317 4.84956C17.6706 4.62515 17.5556 4.41909 17.3966 4.24936C17.2377 4.07962 17.0396 3.95138 16.8197 3.87581C16.6664 3.82526 16.506 3.7996 16.3447 3.79981H14.0409C13.7782 3.80016 13.5208 3.8731 13.297 4.01057C13.0732 4.14804 12.8917 4.34469 12.7727 4.57881C12.7657 4.5951 12.7578 4.61096 12.7489 4.62631V4.66431C12.7198 4.72332 12.6974 4.78548 12.6824 4.84956L12.4117 5.82806L11.3999 9.49981H12.8249V18.9998H14.3782L15.1999 13.2998L16.0027 18.9998H17.5749V9.49981H18.9999L18.7339 8.51656Z" fill="#204555"/>
+                              <path d="M3.8 2.85008C4.08052 2.85078 4.35502 2.76868 4.58907 2.61405C4.82313 2.45941 5.00635 2.23914 5.11575 1.98083C5.18838 1.80457 5.2255 1.61571 5.225 1.42508C5.22418 1.12074 5.12595 0.824656 4.94469 0.580185C4.76342 0.335713 4.50865 0.155695 4.21768 0.0664919C3.92671 -0.0227116 3.61482 -0.0164148 3.32768 0.0844602C3.04055 0.185335 2.79325 0.375489 2.622 0.627078C2.4618 0.862431 2.37577 1.14038 2.375 1.42508C2.375 1.80301 2.52513 2.16547 2.79237 2.4327C3.05961 2.69994 3.42207 2.85008 3.8 2.85008Z" fill="#204555"/>
+                              <path d="M6.33175 4.84961C6.31671 4.78553 6.2944 4.72337 6.26525 4.66436V4.62636L6.2415 4.57886C6.12134 4.34257 5.93765 4.14449 5.71109 4.00688C5.48453 3.86926 5.22407 3.79757 4.959 3.79986H2.641C2.4071 3.80103 2.17708 3.85975 1.97125 3.97086C1.80055 4.06194 1.65019 4.18682 1.52933 4.3379C1.40847 4.48898 1.31964 4.66308 1.26825 4.84961L0.266 8.51661L0 9.49986H1.425L0.475 14.2499H2.43675V18.9999H5.168V14.2499H7.125L6.175 9.49986H7.6L6.6025 5.83286L6.33175 4.84961Z" fill="#204555"/>
+                            </svg>
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Toilets</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M15.5595 2.70604C15.562 2.47349 15.5183 2.24276 15.4308 2.02725C15.3434 1.81174 15.2141 1.61574 15.0503 1.45064C14.8937 1.29081 14.7064 1.16414 14.4998 1.07817C14.2932 0.992203 14.0714 0.948694 13.8476 0.950235H7.51791C7.28975 0.950126 7.06389 0.995861 6.85375 1.08473C6.64361 1.17359 6.45346 1.30378 6.2946 1.46755C6.13574 1.63132 6.01141 1.82534 5.92899 2.03809C5.84656 2.25084 5.80772 2.47799 5.81478 2.70604V3.75952V16.0501H15.5595V3.75952V2.70604ZM14.2426 3.75952H7.13163V2.70604C7.13163 2.60126 7.17325 2.50078 7.24734 2.42669C7.32143 2.3526 7.42191 2.31098 7.52669 2.31098H13.8476C13.9498 2.31151 14.0477 2.35255 14.1197 2.42511C14.1579 2.46138 14.1884 2.50492 14.2096 2.55316C14.2307 2.60141 14.2419 2.65338 14.2426 2.70604V3.75952Z" fill="#204555"/>
+                              <path d="M0.00317717 5.33948C-0.00105906 5.38914 -0.00105906 5.43907 0.00317717 5.48872V14.2677C0.00317717 14.4983 0.0485924 14.7266 0.13683 14.9397C0.225067 15.1527 0.354399 15.3462 0.51744 15.5093C0.680481 15.6723 0.87404 15.8017 1.08706 15.8899C1.30009 15.9781 1.52841 16.0235 1.75898 16.0235H4.48925V3.73292H1.75898C1.31805 3.73133 0.892665 3.89569 0.567361 4.19334C0.242057 4.49099 0.0406534 4.90015 0.00317717 5.33948Z" fill="#204555"/>
+                              <path d="M19.317 3.71534H16.8765V16.006H19.317C19.7827 16.006 20.2293 15.821 20.5586 15.4917C20.8878 15.1624 21.0728 14.7158 21.0728 14.2502V5.47114C21.0761 5.42731 21.0761 5.38329 21.0728 5.33946C21.0396 4.89698 20.84 4.48351 20.5142 4.1822C20.1885 3.88089 19.7608 3.71409 19.317 3.71534Z" fill="#204555"/>
+                            </svg>                      
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Luggage rack</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="20" height="19" viewBox="0 0 20 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M17.8103 0H1.34005C0.641491 0 0.0751953 0.566296 0.0751953 1.26486V17.7351C0.0751953 18.4337 0.641491 19 1.34005 19H17.8103C18.5089 19 19.0752 18.4337 19.0752 17.7351V1.26486C19.0752 0.566296 18.5089 0 17.8103 0Z" fill="#204555"/>
+                              <path d="M16.0134 15.6394C15.4392 13.8517 14.6653 12.1345 13.7062 10.5203C13.6603 10.4431 13.5973 10.3775 13.522 10.3286C13.4467 10.2796 13.3611 10.2486 13.272 10.238L10.8888 9.85799C10.799 9.84656 10.7147 9.80834 10.6469 9.74831C10.5791 9.68827 10.531 9.6092 10.5088 9.52141L10.3297 8.27827H12.4034C12.4438 8.27899 12.4839 8.27166 12.5214 8.25671C12.5589 8.24175 12.5931 8.21947 12.6219 8.19117C12.6507 8.16287 12.6735 8.12912 12.6892 8.09187C12.7048 8.05463 12.7128 8.01465 12.7128 7.97427V7.43141C12.7128 7.39103 12.7048 7.35105 12.6892 7.31381C12.6735 7.27657 12.6507 7.24281 12.6219 7.21451C12.5931 7.18621 12.5589 7.16393 12.5214 7.14898C12.4839 7.13402 12.4438 7.12669 12.4034 7.12741H10.156L9.83567 4.95598C9.82582 4.91026 9.80537 4.86749 9.77596 4.83113C9.7409 4.78523 9.69428 4.74949 9.64086 4.72755C9.58744 4.70561 9.52915 4.69826 9.47196 4.70627C9.13099 4.72315 8.79171 4.76488 8.45681 4.83113C8.18136 4.88746 7.90946 4.95997 7.64253 5.04827C7.58585 5.06249 7.53435 5.09247 7.494 5.13474C7.45365 5.17701 7.4261 5.22985 7.41453 5.28713C7.40349 5.33169 7.40349 5.37828 7.41453 5.42284C7.5269 7.47024 7.89156 9.49593 8.50024 11.454C8.52384 11.5365 8.57262 11.6097 8.63976 11.6632C8.7069 11.7167 8.78907 11.748 8.87481 11.7526H12.1048C12.195 11.7597 12.2819 11.7893 12.3578 11.8386C12.4336 11.8879 12.496 11.9553 12.5391 12.0348L14.792 16.204C14.8273 16.2756 14.888 16.3314 14.9623 16.3605C15.0366 16.3896 15.1191 16.3899 15.1937 16.3614L15.8777 16.0411C15.9501 16.0068 16.0068 15.9461 16.036 15.8715C16.0653 15.7968 16.0649 15.7138 16.0351 15.6394" fill="white"/>
+                              <path d="M8.27775 1.76953C8.0147 1.76953 7.75756 1.84753 7.53885 1.99368C7.32013 2.13982 7.14966 2.34754 7.04899 2.59056C6.94833 2.83359 6.92199 3.10101 6.97331 3.359C7.02463 3.617 7.1513 3.85398 7.3373 4.03998C7.52331 4.22599 7.76029 4.35266 8.01828 4.40398C8.27628 4.45529 8.5437 4.42896 8.78672 4.32829C9.02975 4.22763 9.23747 4.05716 9.38361 3.83844C9.52975 3.61972 9.60775 3.36258 9.60775 3.09953C9.60775 2.74679 9.46763 2.4085 9.21821 2.15908C8.96878 1.90966 8.63049 1.76953 8.27775 1.76953Z" fill="white"/>
+                              <path d="M12.3928 13.1477C12.2237 13.7816 11.8963 14.3622 11.4412 14.8348C10.9862 15.3075 10.4184 15.6567 9.79135 15.8496C9.16426 16.0426 8.49842 16.073 7.85637 15.9379C7.21432 15.8029 6.61713 15.5069 6.1209 15.0777C5.62467 14.6485 5.24569 14.1001 5.01956 13.4843C4.79344 12.8684 4.72758 12.2051 4.82818 11.5567C4.92879 10.9084 5.19255 10.2963 5.59468 9.77786C5.99682 9.25945 6.52414 8.85178 7.12711 8.59313C7.05111 8.18598 6.99139 7.80055 6.94796 7.45312C6.18215 7.7296 5.49544 8.18892 4.94753 8.79115C4.39961 9.39339 4.00706 10.1203 3.80399 10.9088C3.60093 11.6973 3.59349 12.5234 3.78233 13.3154C3.97117 14.1074 4.35057 14.8412 4.88756 15.4533C5.42455 16.0653 6.10288 16.5369 6.86359 16.8271C7.6243 17.1173 8.44438 17.2173 9.25255 17.1185C10.0607 17.0197 10.8325 16.725 11.5009 16.26C12.1693 15.7951 12.714 15.1739 13.0877 14.4506L12.3928 13.1477Z" fill="white"/>
+                            </svg>                      
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Wheelchair space</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="24" height="15" viewBox="0 0 24 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M19.2993 5.54494C18.9799 5.54305 18.6613 5.57659 18.3493 5.64494L16.9993 1.86494H18.7993C18.8718 1.86351 18.9438 1.87698 19.0109 1.9045C19.078 1.93202 19.1387 1.97301 19.1893 2.02494C19.2403 2.07623 19.2807 2.13708 19.3081 2.204C19.3356 2.27093 19.3496 2.34261 19.3493 2.41494C19.3467 2.55907 19.2876 2.69641 19.1847 2.7974C19.0819 2.89839 18.9435 2.95497 18.7993 2.95494C18.6675 2.9575 18.5418 3.011 18.4486 3.10422C18.3554 3.19744 18.3019 3.32314 18.2993 3.45494C18.2993 3.58755 18.352 3.71473 18.4457 3.80849C18.5395 3.90226 18.6667 3.95494 18.7993 3.95494C19.2104 3.95494 19.6046 3.79164 19.8953 3.50096C20.186 3.21028 20.3493 2.81603 20.3493 2.40494C20.3496 2.2026 20.31 2.00219 20.2328 1.81516C20.1556 1.62813 20.0422 1.45816 19.8993 1.31494C19.6064 1.02567 19.211 0.863921 18.7993 0.864941H16.2593C16.1793 0.865323 16.1005 0.884532 16.0292 0.921013C15.958 0.957495 15.8964 1.01023 15.8493 1.07494C15.8051 1.14205 15.7767 1.21833 15.7663 1.29803C15.7559 1.37772 15.7638 1.45874 15.7893 1.53494L16.3093 2.93494H8.8393L8.2593 1.37494H11.1293C11.1293 1.02923 10.9927 0.697536 10.7492 0.452149C10.5056 0.206762 10.175 0.0675804 9.8293 0.0649414H4.9993C4.99922 0.240391 5.03438 0.41407 5.1027 0.575671C5.17103 0.737272 5.27111 0.883503 5.39703 1.00569C5.52294 1.12787 5.67211 1.22351 5.83569 1.28694C5.99928 1.35037 6.17393 1.3803 6.3493 1.37494H7.1993L7.9393 3.37494L6.5393 5.93494C5.89935 5.66036 5.20629 5.53173 4.51043 5.55839C3.81457 5.58505 3.13338 5.76634 2.51632 6.08908C1.89926 6.41183 1.36181 6.86794 0.943002 7.42429C0.524192 7.98065 0.23453 8.62328 0.0950459 9.30554C-0.0444378 9.98779 -0.0302419 10.6926 0.136603 11.3686C0.303448 12.0447 0.618754 12.6752 1.05963 13.2142C1.5005 13.7532 2.05588 14.1873 2.68544 14.485C3.315 14.7826 4.00293 14.9363 4.6993 14.9349C5.85385 14.9336 6.96699 14.5047 7.82387 13.7309C8.68076 12.9571 9.22063 11.8934 9.3393 10.7449H9.7493C9.68649 10.5856 9.65263 10.4162 9.6493 10.2449C9.65057 10.0734 9.68451 9.90374 9.7493 9.74494H9.3393C9.26959 9.08545 9.06169 8.44805 8.72915 7.87428C8.3966 7.30052 7.94688 6.80327 7.4093 6.41494L8.4093 4.65494L10.0993 9.28494C10.3438 9.05793 10.6657 8.93275 10.9993 8.93494V8.93494L9.1993 3.93494H15.9093L11.3793 9.00494C11.5419 9.05956 11.692 9.14606 11.8208 9.25939C11.9496 9.37272 12.0545 9.51059 12.1293 9.66494L16.8393 4.39494L17.3993 5.93494C16.344 6.40838 15.5014 7.25582 15.0341 8.3138C14.5667 9.37178 14.5076 10.5654 14.8683 11.6643C15.229 12.7632 15.9838 13.6897 16.9872 14.265C17.9906 14.8403 19.1715 15.0236 20.3021 14.7796C21.4327 14.5356 22.4329 13.8817 23.1098 12.9438C23.7867 12.0059 24.0923 10.8506 23.9677 9.70075C23.8431 8.55086 23.2971 7.48784 22.4351 6.71674C21.573 5.94564 20.4559 5.52107 19.2993 5.52494V5.54494ZM4.6993 13.9349C4.1979 13.961 3.69643 13.8848 3.22543 13.7109C2.75442 13.537 2.32375 13.269 1.95961 12.9234C1.59548 12.5777 1.3055 12.1615 1.10735 11.7002C0.909201 11.2389 0.807014 10.742 0.807014 10.2399C0.807014 9.73786 0.909201 9.24103 1.10735 8.7797C1.3055 8.31837 1.59548 7.9022 1.95961 7.55652C2.32375 7.21085 2.75442 6.94289 3.22543 6.76899C3.69643 6.59508 4.1979 6.51885 4.6993 6.54494C5.14462 6.55393 5.58479 6.64196 5.9993 6.80494L3.7993 10.7449H8.2993C8.17983 11.6193 7.75097 12.4219 7.09049 13.0071C6.43002 13.5924 5.58167 13.9215 4.6993 13.9349V13.9349ZM8.3393 9.74494H5.5493L6.9093 7.30494C7.29719 7.59686 7.62332 7.96283 7.86878 8.38166C8.11424 8.8005 8.27417 9.26387 8.3393 9.74494V9.74494ZM19.2993 13.9349C18.4679 13.9266 17.6639 13.6369 17.0182 13.1132C16.3725 12.5894 15.9231 11.8625 15.7434 11.0507C15.5636 10.239 15.6641 9.39026 16.0283 8.64289C16.3926 7.89551 16.9992 7.2935 17.7493 6.93494L18.8293 9.93494C18.8599 10.0007 18.9003 10.0614 18.9493 10.1149L19.6193 10.7849L20.3293 10.0749L19.7393 9.48494L18.7393 6.64494C18.9375 6.61013 19.1381 6.59008 19.3393 6.58494C19.8407 6.55885 20.3422 6.63508 20.8132 6.80899C21.2842 6.98289 21.7149 7.25085 22.079 7.59652C22.4431 7.9422 22.7331 8.35837 22.9313 8.8197C23.1294 9.28103 23.2316 9.77786 23.2316 10.2799C23.2316 10.782 23.1294 11.2789 22.9313 11.7402C22.7331 12.2015 22.4431 12.6177 22.079 12.9634C21.7149 13.309 21.2842 13.577 20.8132 13.7509C20.3422 13.9248 19.8407 14.001 19.3393 13.9749L19.2993 13.9349Z" fill="#204555"/>
+                              <path d="M11.3795 9.02506C11.2571 8.97916 11.1294 8.94892 10.9995 8.93506V8.93506C10.6727 8.9379 10.3589 9.06273 10.1195 9.28506C9.97906 9.41413 9.86673 9.57071 9.78945 9.74506C9.72466 9.90386 9.69072 10.0736 9.68945 10.2451C9.69278 10.4163 9.72664 10.5857 9.78945 10.7451C9.90916 11.0188 10.1188 11.2433 10.3837 11.3815C10.6485 11.5197 10.9526 11.5633 11.2456 11.5049C11.5386 11.4465 11.8028 11.2898 11.9945 11.0607C12.1862 10.8315 12.2938 10.5437 12.2995 10.2451C12.2988 9.97521 12.2135 9.71237 12.0557 9.49351C11.8978 9.27466 11.6753 9.11082 11.4195 9.02506H11.3795Z" fill="#204555"/>
+                            </svg>                     
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Bike space</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M16.8003 17.625L17.9956 16.4297L2.19092 0.625L0.995605 1.82031L5.46696 6.29167H0.995605V11.9583H4.75863L9.4956 16.6953V10.3203L13.5243 14.349C12.8454 14.8507 12.1371 15.2196 11.3993 15.4557V17.4036C12.6683 17.1085 13.8194 16.533 14.8524 15.6771L16.8003 17.625ZM16.9497 13.375C17.647 12.0815 17.9956 10.711 17.9956 9.26359C17.9956 7.16938 17.3221 5.32156 15.9752 3.72011C14.6282 2.11866 12.9406 1.08696 10.9123 0.625V2.65761C12.3701 3.08877 13.5745 3.91259 14.5252 5.12908C15.476 6.34556 15.9514 7.72373 15.9514 9.26359C15.9514 10.1567 15.7771 11.019 15.4285 11.8505L16.9497 13.375ZM9.4956 6.29167V2.04167L8.07894 4.16667L9.4956 6.29167ZM13.6921 9.125C13.7278 8.92466 13.7456 8.73864 13.7456 8.56692C13.7456 7.76557 13.4872 7.03577 12.9704 6.37752C12.4537 5.71928 11.7676 5.21843 10.9123 4.875V6.89268L13.6921 9.125Z" fill="#204555"/>
+                            </svg>                      
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Quiet coaches</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" clip-rule="evenodd" d="M9 18.375C13.9706 18.375 18 14.3456 18 9.375C18 4.40444 13.9706 0.375 9 0.375C4.02944 0.375 0 4.40444 0 9.375C0 14.3456 4.02944 18.375 9 18.375ZM5.3456 13.5787C4.7812 13.5831 4.22212 13.4693 3.70438 13.2446C3.18664 13.0198 2.72173 12.6891 2.3396 12.2737L3.2396 11.1847C3.51265 11.5248 3.85666 11.8012 4.2476 11.9947C4.59716 12.1702 4.98151 12.2656 5.3726 12.2737C5.732 12.2973 6.08924 12.2025 6.3896 12.0037C6.50384 11.918 6.59607 11.8064 6.65867 11.6781C6.72126 11.5498 6.75243 11.4084 6.7496 11.2657C6.75787 11.1192 6.73021 10.9729 6.66904 10.8396C6.60786 10.7063 6.51502 10.5899 6.3986 10.5007C6.00911 10.2561 5.58828 10.0653 5.1476 9.93368C4.82412 9.82644 4.50838 9.69713 4.2026 9.54668C3.93264 9.41137 3.67383 9.25488 3.4286 9.07868C3.17138 8.89575 2.96408 8.65131 2.8256 8.36768C2.69699 8.06337 2.63559 7.73489 2.6456 7.40468C2.64437 7.09431 2.71146 6.78748 2.84211 6.50595C2.97277 6.22442 3.16378 5.9751 3.4016 5.77568C3.91461 5.3227 4.58049 5.08144 5.2646 5.10068C6.28093 5.10125 7.26494 5.45791 8.0456 6.10868L7.1456 7.21568C6.62673 6.71992 5.95294 6.41799 5.2376 6.36068C4.9399 6.35063 4.64772 6.44273 4.4096 6.62168C4.30234 6.70643 4.2158 6.81451 4.15654 6.9377C4.09728 7.0609 4.06686 7.19597 4.0676 7.33268C4.06258 7.46347 4.09043 7.59343 4.1486 7.71068C4.22695 7.84555 4.34259 7.95493 4.4816 8.02568C4.62799 8.11601 4.7815 8.19427 4.9406 8.25968L5.6246 8.53868C6.21283 8.74375 6.77954 9.00601 7.3166 9.32168C7.60985 9.51788 7.84702 9.78699 8.00481 10.1026C8.1626 10.4182 8.23559 10.7694 8.2166 11.1217C8.22317 11.4721 8.14473 11.8189 7.98799 12.1324C7.83125 12.4459 7.60088 12.7167 7.3166 12.9217C6.74828 13.3487 6.05648 13.5793 5.3456 13.5787ZM9.79175 5.17986V13.4869H11.2047V10.5259H12.6357C13.4247 10.5693 14.2034 10.3299 14.8317 9.85086C15.1089 9.6045 15.326 9.29799 15.4664 8.95479C15.6068 8.61159 15.6667 8.24082 15.6417 7.87086C15.6593 7.51301 15.6055 7.15524 15.4835 6.81839C15.3614 6.48154 15.1735 6.17236 14.9307 5.90886C14.644 5.64795 14.3067 5.44864 13.9398 5.32325C13.5729 5.19786 13.1842 5.14906 12.7977 5.17986H9.79175ZM12.4917 9.24786H11.2047V6.43986H12.5997C13.0221 6.41304 13.4392 6.5446 13.7697 6.80886C13.9073 6.9424 14.0147 7.10388 14.0845 7.28242C14.1544 7.46097 14.1852 7.65242 14.1747 7.84386C14.1845 8.03469 14.1525 8.22535 14.081 8.40255C14.0095 8.57975 13.9002 8.73923 13.7607 8.86986C13.3983 9.147 12.9468 9.2815 12.4917 9.24786Z" fill="#204555"/>
+                            </svg>                                             
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">Standard Premium coaches</span>
+                        </span>                  
+                      </span>
+                      <span class="single-train-content">
+                        <span class="single-train-content-in">
+                          <span class="all-trains-icon">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M8.99999 1.42235e-05C7.21928 1.70325e-05 5.47859 0.528263 3.9982 1.5179C2.51781 2.50754 1.36427 3.91409 0.683556 5.55956C0.00284 7.20502 -0.174455 9.01544 0.174109 10.7617C0.522674 12.508 1.38143 14.1116 2.6417 15.3696C3.90197 16.6276 5.50711 17.4835 7.25399 17.829C9.00088 18.1745 10.811 17.994 12.4552 17.3103C14.0995 16.6267 15.504 15.4706 16.491 13.9885C17.478 12.5064 18.0031 10.7647 18 8.98402C18 7.80288 17.7671 6.63333 17.3146 5.54229C16.8621 4.45126 16.1989 3.46016 15.363 2.62571C14.527 1.79126 13.5348 1.12983 12.4429 0.679287C11.3511 0.22874 10.1811 -0.00208745 8.99999 1.42235e-05ZM7.59324 13.0284H6.2824V6.8739L4.89164 7.9929L4.2682 7.03376L6.53818 5.43518H7.59324V13.0284ZM10.0551 9.33571C9.58047 9.34964 9.1181 9.1841 8.7602 8.87212L9.12788 8.3286C9.24991 8.44887 9.39487 8.5434 9.55414 8.60655C9.71342 8.66971 9.88376 8.70023 10.0551 8.69628C10.3428 8.69628 10.5027 8.56839 10.5027 8.37656C10.5027 8.18473 10.2948 8.13677 9.87921 7.9929C9.46358 7.84903 8.90407 7.57727 8.90407 6.95383C8.90407 6.33038 9.36766 6.04264 10.0231 6.04264C10.4373 6.03399 10.8406 6.176 11.1581 6.44228L10.7904 7.01777C10.5752 6.81009 10.2901 6.69035 9.99111 6.68207C9.84723 6.68207 9.63942 6.762 9.63942 6.95383C9.63942 7.14566 9.83125 7.22558 10.135 7.33748C10.8224 7.60924 11.254 7.73713 11.254 8.37656C11.254 9.01599 10.8703 9.33571 10.0551 9.33571ZM12.9325 9.33571C12.373 9.33571 12.0373 9 12.0373 8.28065V6.68207H11.6376V6.09059H12.0373V5.03553H12.7726V6.17052H13.6998V6.71404H12.7726V8.20072C12.7726 8.53642 12.8685 8.64832 13.0764 8.64832C13.2431 8.63783 13.4061 8.59436 13.5559 8.52043L13.7478 9.14388C13.5007 9.28636 13.2172 9.35307 12.9325 9.33571Z" fill="#204555"/>
+                            </svg>                      
+                          </span>
+                          <span class="all-trains-icon-content f-14 text-black lh-18">First Class coaches</span>
+                        </span>                  
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-12 col-lg-12" *ngIf="!closeSeatPikr">
+        <div class="save-section-btn" *ngIf="!seatPickerNotAvailable">
+          <div class="text-end button-container" *ngIf="!(sucessfullysaved || failToSave)">
+            <button id="saveseat" [disabled] ="onlyIFSeatChanged" (click)="saveSeat()" mat-button class="fill-btn returnjournry-btn save-seat fill-light-hover-btn">
+              Save Selection
+            </button>
+          </div>
+          <div class="text-end button-container" *ngIf="(sucessfullysaved || failToSave)">
+            <button (click)="changeOtherSeat()" *ngIf="updatedCount>=1 && failToSave" mat-button class="fill-btn pull-right returnjournry-btn closeOnFailure fill-light-hover-btn">
+              Try another seat
+            </button>
+          </div>
+          <div class="text-end button-container">
+            <button *ngIf="updatedCount == 0 && sucessfullysaved "  mat-dialog-close mat-button class="fill-btn pull-right returnjournry-btn closeOnSuccess fill-light-hover-btn">
+              Exit seat picker
+            </button>
+          </div>
+        </div>
+      </div>
+    </div> 
+    <div class="row height-save-selection" *ngIf="closeSeatPickerDiv">
+      <div class="col-md-12 col-lg-12 seat-colse-section" *ngIf="closeSeatPikr">
+        <div class="seat-colse-detail">
+        <h2>Quit seat picker?</h2>
+        <p>You are leaving the seat picker without <span></span> saving your changes.</p>
+        <div class="d-flex">
+          <button (click)="closeSeatPickerBtn()" mat-button class="outline-btn exit-without-save seat-picker-h-40 outline-primary-btn-hover">
+            Cancel
+          </button>
+          <button (click)="exitSeatPicker()" mat-button class="fill-btn exit-without-save ms-3 seat-picker-h-40 fill-light-hover-btn">
+            Exit seat picker
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+

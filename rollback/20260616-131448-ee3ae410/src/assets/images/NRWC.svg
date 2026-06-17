@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <g id="toilets" transform="translate(-880 -1279.978)">
+    <rect id="Rectangle_595" data-name="Rectangle 595" width="1.5" height="24" transform="translate(891.251 1279.978)" fill="#204555"/>
+    <path id="Path_1573" data-name="Path 1573" d="M899.2,1283.579a1.8,1.8,0,1,0-1.8-1.8A1.8,1.8,0,0,0,899.2,1283.579Z" fill="#204555"/>
+    <path id="Path_1574" data-name="Path 1574" d="M902.64,1286.989a3,3,0,0,0-2.9-2.21h-1.093a3,3,0,0,0-2.894,2.21l-1.361,4.985h1.8v12h1.964l1.009-7.2h.052l1.011,7.2H902.2v-12H904Z" fill="#204555"/>
+    <path id="Path_1575" data-name="Path 1575" d="M884.8,1283.578a1.8,1.8,0,1,0-1.8-1.8A1.8,1.8,0,0,0,884.8,1283.578Z" fill="#204555"/>
+    <path id="Path_1576" data-name="Path 1576" d="M885.348,1284.779h-1.093a3,3,0,0,0-2.9,2.21l-1.36,4.985,0,0h1.8l-1.2,6h2.477v6h3.445v-6H889l-1.2-6h1.8v0l-1.361-4.985A3,3,0,0,0,885.348,1284.779Z" fill="#204555"/>
+  </g>
+</svg>

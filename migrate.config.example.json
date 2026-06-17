@@ -16,6 +16,8 @@
     "aiCli": "auto",
     "aiProvider": "codex",
     "aiMode": "cli",
+    "aiTimeoutSeconds": 300,
+    "aiIdleTimeoutSeconds": 120,
     "rollbackMode": "manual",
     "commandTimeoutSeconds": 600,
     "verbosity": "default"
@@ -37,6 +39,8 @@
     "aiCli": "auto",
     "aiProvider": "codex",
     "aiMode": "cli",
+    "aiTimeoutSeconds": 300,
+    "aiIdleTimeoutSeconds": 120,
     "rollbackMode": "manual",
     "commandTimeoutSeconds": 600,
     "packageVersionVerificationMode": "install-first",

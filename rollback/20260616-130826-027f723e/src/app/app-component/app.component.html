@@ -1,0 +1,54 @@
+<router-outlet *ngIf="themeLoaded"></router-outlet>
+<toastr-notification *ngIf="themeLoaded"></toastr-notification>
+<ngx-spinner bdColor="rgba(51, 51, 51, 0.8)" size="default" type="ball-spin-clockwise" 
+*ngIf="!sharedService.isSearchResultPage && (!commonServices?.checkNewBookingFlowKeyInLocalStorage() || router.url.includes(this.appRouteEnum.myAccountPrefix) || !commonServices.checkIsSeasonInLocalStorage() || commonServices.setIsUpgradeInLocalStorage() || commonServices.setIsCOJInLocalStorage()) && themeLoaded">
+  <div class="loader-bg">
+    <div class="loading" style="font-size:32px;--duration:2s;--num-dot:8;">
+      <!--  index start from 0  -->
+        <div style="--index:0"></div>
+        <div style="--index:1"></div>
+        <div style="--index:2"></div>
+        <div style="--index:3"></div>
+        <div style="--index:4"></div>
+        <div style="--index:5"></div>
+        <div style="--index:6"></div>
+        <div style="--index:7"></div>
+      <!--  index ended with (var(--num-dot) - 1)  -->
+      </div>
+      <p style="color: white;text-align: center;font-size: 1rem;max-width: 100%;width: 100%;">{{ sharedService.loaderMessage }} </p>
+  </div>
+</ngx-spinner>
+
+<ngx-spinner bdColor="rgba(255, 255, 255, 0.8)" size="default" type="None" 
+  *ngIf="sharedService.isSearchResultPage && 
+  (!commonServices?.checkNewBookingFlowKeyInLocalStorage() || router.url.includes(this.appRouteEnum.myAccountPrefix) || !commonServices.checkIsSeasonInLocalStorage() || commonServices.setIsUpgradeInLocalStorage() || commonServices.setIsCOJInLocalStorage()) && themeLoaded">
+  <div class="new-loader-dsn">
+    <img src='assets/images/loader.gif' width='100px' alt="loader" />
+    <p>{{ sharedService.loaderMessage }} </p>
+  </div>
+</ngx-spinner>
+
+<ngx-spinner bdColor="rgba(255, 255, 255, 0.90)" size="default" type="None" class="loader-body" 
+    *ngIf="sharedService?.isNewLoaderForNewFlow 
+    && commonServices?.checkNewBookingFlowKeyInLocalStorage() && commonServices?.checkIsSeasonInLocalStorage() 
+    && !commonServices.setIsUpgradeInLocalStorage() && !commonServices.setIsCOJInLocalStorage() 
+    && !router.url.includes(this.appRouteEnum.myAccountPrefix) && themeLoaded">
+    <div class="new-loader-dsn-new" aria-live="assertive" aria-busy="true" role="alertdialog" aria-modal="true" tabindex="-1" >
+      <img src='assets/images/loader.gif' width='100px' alt="loader"/>
+      <h4>{{enhancedLoaderTextEnum?.updatingAPI_LoaderTitle}}...</h4>
+      <p>{{enhancedLoaderTextEnum?.updatingAPI_LoaderMessage}} </p>
+    </div>
+   <div class="sr-only" aria-live="assertive" aria-atomic="true" role="alert">
+    <ng-container *ngIf="sharedService?.isNewLoaderForNewFlow && commonServices?.checkNewBookingFlowKeyInLocalStorage() && commonServices?.checkIsSeasonInLocalStorage() && !commonServices.setIsUpgradeInLocalStorage() && !commonServices.setIsCOJInLocalStorage() && !router.url.includes(this.appRouteEnum.myAccountPrefix) && themeLoaded">
+      {{enhancedLoaderTextEnum?.updatingAPI_LoaderTitle}} {{enhancedLoaderTextEnum?.updatingAPI_LoaderMessage}}
+    </ng-container>
+   </div> 
+</ngx-spinner>
+    
+
+
+
+
+
+
+ 

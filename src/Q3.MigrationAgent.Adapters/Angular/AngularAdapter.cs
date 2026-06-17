@@ -23,16 +23,16 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     ];
     private static readonly HashSet<string> AngularRuntimeSupportPackages = ["zone.js", "rxjs", "tslib"];
     private static readonly HashSet<string> AngularCoupledRuntimePackages = ["zone.js", "rxjs", "tslib", "typescript"];
-    private static readonly HashSet<string> AngularFrameworkPackages = ["@angular/core", "@angular/common", "@angular/compiler", "@angular/forms", "@angular/router", "@angular/platform-browser", "@angular/platform-browser-dynamic", "@angular/animations"];
+    private static readonly HashSet<string> AngularFrameworkPackages = new(AngularCriticalDependencyPolicy.SynchronizedAngularPackages, StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> AngularToolingPackages = ["@angular/cli", "@angular-devkit/build-angular", "@angular/compiler-cli", "@ngtools/webpack"];
-    private static readonly HashSet<string> AngularComponentPackages = ["@angular/cdk", "@angular/material"];
+    private static readonly HashSet<string> AngularComponentPackages = ["@angular/cdk", "@angular/material", "@angular/material-moment-adapter"];
     private static readonly HashSet<string> AngularAiPackageCategories = ["angular_framework_package", "angular_tooling_package", "angular_runtime_support_package", "typescript_runtime_or_compiler_package", "angular_ui_or_extension_package", "third_party_runtime_package", "third_party_build_or_test_tooling", "business_or_unknown_package"];
     private static readonly HashSet<string> AngularAiPackageActions = ["upgrade", "preserve", "remove", "manual_review"];
     private static readonly HashSet<string> AngularAiConfigFiles = ["angular.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.spec.json", "package.json"];
     private static readonly HashSet<string> AngularAiConfigChangeTypes = ["update_builder", "update_option", "remove_deprecated_option", "update_tsconfig", "manual_review"];
     private static readonly IReadOnlyDictionary<(int From, int To), OfficialAngularUpdatePolicy> OfficialAngularUpdatePolicies = new Dictionary<(int From, int To), OfficialAngularUpdatePolicy>
     {
-        [(18, 19)] = new(true, false, ["@angular/cli@19", "@angular/core@19"])
+        [(18, 19)] = new(false, true, ["@angular/cli", "@angular/core"])
     };
     private enum MigrationChangeClassification { ConfigurationMigration, FrameworkMigration, BusinessImpactingMigration }
     private const double MinimumInstallDecisionConfidence = 0.70;
@@ -279,7 +279,6 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             if (validation["buildVerificationCommandResult"] is JsonObject postMigrateBuildCommandResult) commands.Add(postMigrateBuildCommandResult.DeepClone());
             if (!validation.BoolValue("passed")) validationFailures.Add(ValidationFailureObject(validation, hop, false));
         }
-        ApplyOfficialMigrationAcceptance(officialAngularUpdate, validation);
         if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries > 0)
         {
             for (var attempt = 1; attempt <= config.MaxAiRemediationRetries && !validation.BoolValue("passed"); attempt++)
@@ -435,6 +434,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
                 if (validation["buildVerificationCommandResult"] is JsonObject retryBuildCommandResult) commands.Add(retryBuildCommandResult.DeepClone());
             }
         }
+        ApplyOfficialMigrationAcceptance(officialAngularUpdate, validation);
         if (!validation.BoolValue("passed") && config.MaxAiRemediationRetries == 0 && manualCorrectionRequests.Count == 0)
         {
             manualCorrectionRequests.Add(ManualCorrectionObject(validation, "AI remediation disabled or maxAiRemediationRetries is 0"));
@@ -505,7 +505,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, packages, "ng");
 
     private static IReadOnlyList<string> OfficialAngularMigrateOnlyCommand(int sourceMajor, int targetMajor, IReadOnlyList<string> packages, string ngExecutable) =>
-        [ngExecutable, "update", .. packages, "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString()];
+        ["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", $"@angular/cli@{targetMajor}", "ng", "update", .. packages, "--migrate-only", "--from", sourceMajor.ToString(), "--to", targetMajor.ToString(), "--allow-dirty"];
 
     private static IReadOnlyList<IReadOnlyList<string>> OfficialAngularMigrateOnlyCommands(int sourceMajor, int targetMajor, IReadOnlyList<string> packages, string ngExecutable) =>
         packages.Select(packageName => OfficialAngularMigrateOnlyCommand(sourceMajor, targetMajor, [packageName], ngExecutable)).ToArray();
@@ -570,7 +570,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             {
                 deps[name] = $"^{version}";
             }
-            if (deps.ContainsKey("typescript")) deps["typescript"] = target switch { 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => deps["typescript"] };
+            if (deps.ContainsKey("typescript")) deps["typescript"] = TypeScriptVersionForAngular(target);
         }
         File.WriteAllText(path, data.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         return new JsonObject { ["success"] = true, ["commands"] = new JsonArray(), ["package"] = "@angular/core", ["reason"] = "" };
@@ -582,13 +582,14 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var path = Path.Combine(projectPath, "package.json");
         var data = ReadJson(path);
         var entries = DependencyEntries(data).Where(d => d.Section is "dependencies" or "devDependencies").ToArray();
-        var targetAngularVersion = $"{hop.ToVersion}.0.0";
+        var targetAngularVersion = await ResolveAngularTargetVersionAsync(hop.ToVersion, projectPath, logPath, cancellationToken) ?? $"{hop.ToVersion}.0.0";
+        progress?.Stage(stage, $"[Package Resolution] Selected Angular framework version: {targetAngularVersion}");
         var targetVersionByPackage = DefaultAngularTargetVersions(entries, hop.ToVersion, targetAngularVersion);
         var classification = await GetAngularAiPackageClassificationAsync(data, entries, hop, targetVersionByPackage, config, cancellationToken);
         var versionRecommendations = await GetAngularPackageVersionRecommendationsAsync(data, classification, targetVersionByPackage, hop, config, progress, stage, cancellationToken);
         var criticalAlignment = await GetAngularCriticalDependencyAlignmentAsync(projectPath, data, classification, versionRecommendations, hop, config, progress, stage, cancellationToken: cancellationToken);
-        var acceptedVersionRecommendations = versionRecommendations["accepted"]?.AsArray()?.OfType<JsonObject>().ToDictionary(r => r.StringValue("packageName"), StringComparer.OrdinalIgnoreCase) ?? [];
-        var acceptedCriticalAlignments = criticalAlignment["accepted"]?.AsArray()?.OfType<JsonObject>().ToDictionary(r => r.StringValue("packageName"), StringComparer.OrdinalIgnoreCase) ?? [];
+        var acceptedVersionRecommendations = PackageRecommendationMap(versionRecommendations["accepted"]?.AsArray());
+        var acceptedCriticalAlignments = PackageRecommendationMap(criticalAlignment["accepted"]?.AsArray());
         var accepted = new JsonArray();
         var rejected = new JsonArray();
         var preserved = new JsonArray();
@@ -669,7 +670,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             }
 
             var originalTargetVersion = SuggestedTargetVersion(item);
-            var targetVersion = NormalizedTargetVersion(originalTargetVersion, targetVersionByPackage.GetValueOrDefault(name), category, hop.ToVersion, acceptedVersionRecommendations.ContainsKey(name));
+            var targetVersion = NormalizedTargetVersion(name, originalTargetVersion, targetVersionByPackage.GetValueOrDefault(name), category, hop.ToVersion, acceptedVersionRecommendations.ContainsKey(name));
+            targetVersion = ForceAngularOwnedExactTarget(name, targetVersion, targetVersionByPackage.GetValueOrDefault(name));
             if (targetVersion is null)
             {
                 rejected.Add(RejectedPackageSuggestion(item, InvalidTargetVersionReason(name, originalTargetVersion, targetVersion, "NormalizeTargetVersion")));
@@ -781,6 +783,33 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             });
         }
 
+        var synchronization = ValidateSynchronizedAngularPackageVersions(data);
+        if (!synchronization.BoolValue("valid"))
+        {
+            progress?.Stage(stage, $"[Package Resolution] Rejected mixed-version Angular-owned recommendation: {synchronization.StringValue("reason")}");
+            return new JsonObject
+            {
+                ["success"] = false,
+                ["packageCategorisationCompleted"] = classification["packages"] is JsonArray,
+                ["aiPackageCategorisation"] = classification.DeepClone(),
+                ["packageUpgradesApplied"] = applied,
+                ["packagesPreserved"] = preserved,
+                ["packagesManualReview"] = manual,
+                ["thirdPartyPackageDecisions"] = thirdParty,
+                ["rejectedAiPackageSuggestions"] = rejected,
+                ["packageTargetValidation"] = validation,
+                ["angularOwnedVersionSynchronization"] = synchronization,
+                ["aiPackageVersionRecommendations"] = versionRecommendations.DeepClone(),
+                ["aiPackageVersionRecommendationsAccepted"] = versionRecommendations["accepted"]?.DeepClone() ?? new JsonArray(),
+                ["aiPackageVersionRecommendationsRejected"] = FilterOutPackages(versionRecommendations["rejected"]?.AsArray(), acceptedCriticalNames),
+                ["angularCriticalDependencyAlignment"] = criticalAlignment.DeepClone(),
+                ["angularCriticalDependencyAlignmentAccepted"] = criticalAlignment["accepted"]?.DeepClone() ?? new JsonArray(),
+                ["angularCriticalDependencyAlignmentRejected"] = FilterOutPackages(criticalAlignment["rejected"]?.AsArray(), acceptedCriticalNames),
+                ["package"] = "@angular/core",
+                ["reason"] = synchronization.StringValue("reason")
+            };
+        }
+
         File.WriteAllText(path, data.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         return new JsonObject
         {
@@ -845,7 +874,11 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         {
             progress?.Stage(stage, $"Rejected Angular critical dependency alignment: {item.StringValue("packageName", "unknown")} ({item.StringValue("rejectionReason")})");
         }
-        if (alignment.BoolValue("fallbackUsed")) progress?.Stage(stage, "Angular critical dependency alignment fallback used.");
+        if (alignment.BoolValue("fallbackUsed"))
+        {
+            var reason = alignment["warnings"]?.AsArray()?.Select(w => w?.ToString()).FirstOrDefault(w => !string.IsNullOrWhiteSpace(w)) ?? "unknown";
+            progress?.Stage(stage, $"Angular critical dependency alignment fallback used. Reason={reason}");
+        }
         return alignment;
     }
 
@@ -963,7 +996,8 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         foreach (var entry in entries)
         {
             var category = DefaultPackageCategory(entry.Name);
-            if (category is "angular_framework_package" or "angular_tooling_package") result[entry.Name] = $"^{targetAngularVersion}";
+            if (AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(entry.Name)) result[entry.Name] = targetAngularVersion;
+            else if (AngularCriticalDependencyPolicy.IndependentAngularPackages.Contains(entry.Name)) result[entry.Name] = targetMajor.ToString();
             if (category == "typescript_runtime_or_compiler_package" && entry.Name == "typescript") result[entry.Name] = TypeScriptVersionForAngular(targetMajor);
             if (entry.Name == "rxjs" && targetMajor >= 15 && VersionTuple(entry.Version) is { } rx && rx[0] < 7) result[entry.Name] = "~7.5.0";
             if (entry.Name == "zone.js" && targetMajor >= 16 && VersionTuple(entry.Version) is { } zone && zone[0] == 0 && zone.Length > 1 && zone[1] < 13) result[entry.Name] = "~0.13.0";
@@ -1014,13 +1048,36 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
     private static bool IsThirdPartyAngularPackageCategory(string category) =>
         category is "angular_ui_or_extension_package" or "third_party_runtime_package" or "third_party_build_or_test_tooling" or "business_or_unknown_package";
 
-    private static string? NormalizedTargetVersion(string aiTarget, string? defaultTarget, string category, int targetMajor, bool fromAcceptedVersionRecommendation = false)
+    private static string? NormalizedTargetVersion(string name, string aiTarget, string? defaultTarget, string category, int targetMajor, bool fromAcceptedVersionRecommendation = false)
     {
         var value = NpmVersionRange.Normalize(string.IsNullOrWhiteSpace(aiTarget) || aiTarget == "null" ? defaultTarget : aiTarget);
         if (string.IsNullOrWhiteSpace(value) || !NpmVersionRange.IsSafe(value)) return null;
+        if (AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(name))
+        {
+            if (NpmVersionRange.Major(value) != targetMajor) return fromAcceptedVersionRecommendation ? null : NpmVersionRange.Normalize(defaultTarget);
+            return value;
+        }
+        if (AngularCriticalDependencyPolicy.IndependentAngularPackages.Contains(name))
+        {
+            return NpmVersionRange.Normalize(defaultTarget) ?? targetMajor.ToString();
+        }
         if (category is "angular_framework_package" or "angular_tooling_package" && NpmVersionRange.Major(value) != targetMajor) return fromAcceptedVersionRecommendation ? null : NpmVersionRange.Normalize(defaultTarget);
         if (category == "typescript_runtime_or_compiler_package" && !IsTypeScriptCompatibleWithAngular(value, targetMajor)) return NpmVersionRange.Normalize(defaultTarget);
         return value;
+    }
+
+    private static string? ForceAngularOwnedExactTarget(string name, string? targetVersion, string? defaultTarget)
+    {
+        if (!AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name)) return targetVersion;
+        if (AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(name) && IsExactVersion(defaultTarget)) return defaultTarget;
+        if (AngularCriticalDependencyPolicy.IndependentAngularPackages.Contains(name))
+        {
+            var major = NpmVersionRange.Major(defaultTarget) ?? NpmVersionRange.Major(targetVersion);
+            return major is null ? targetVersion : major.Value.ToString();
+        }
+        if (IsExactVersion(targetVersion)) return targetVersion;
+        if (IsExactVersion(defaultTarget)) return defaultTarget;
+        return targetVersion;
     }
 
     private async Task<JsonObject> ValidateAndResolvePackageTargetsAsync(IReadOnlyList<PendingPackageUpdate> updates, MigrationHop hop, JsonObject packageJson, MigrationConfig config, string projectPath, string? logPath, CancellationToken cancellationToken)
@@ -1034,6 +1091,33 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         var upfrontResolutions = await ResolveSelectedPackageTargetsAsync(updates, hop, mode, config, projectPath, logPath, cancellationToken);
         foreach (var update in updates)
         {
+            if (update.FromVersion.Equals(update.NormalizedTargetVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                var noOp = new JsonObject
+                {
+                    ["packageName"] = update.Name,
+                    ["fromVersion"] = update.FromVersion,
+                    ["section"] = update.Section,
+                    ["category"] = update.Category,
+                    ["role"] = AngularPackageRole(update.Name, update.Category),
+                    ["requestedTarget"] = update.NormalizedTargetVersion,
+                    ["originalSuggestedVersion"] = string.IsNullOrWhiteSpace(update.OriginalSuggestedVersion) ? update.NormalizedTargetVersion : update.OriginalSuggestedVersion,
+                    ["source"] = update.Source,
+                    ["reason"] = update.Reason,
+                    ["aiConfidence"] = update.Confidence,
+                    ["verificationMode"] = mode,
+                    ["npmValidationResult"] = "skipped_no_op",
+                    ["finalResolvedVersion"] = update.FromVersion,
+                    ["finalAcceptedVersion"] = update.FromVersion,
+                    ["packageJsonUpdated"] = false,
+                    ["discardedNoOpRecommendation"] = true,
+                    ["warning"] = $"Discarded no-op package target {update.Name}@{update.NormalizedTargetVersion}; current version already matches."
+                };
+                warnings.Add(noOp.StringValue("warning"));
+                discarded.Add(noOp);
+                continue;
+            }
+
             var role = AngularPackageRole(update.Name, update.Category);
             var shouldVerify = ShouldVerifyPackageTargetUpfront(update, role, hop.ToVersion, mode);
             if (!shouldVerify && (string.IsNullOrWhiteSpace(update.NormalizedTargetVersion) || !NpmVersionRange.IsSafe(update.NormalizedTargetVersion)))
@@ -1057,7 +1141,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             if (!shouldVerify) upfrontSkipped++;
             JsonObject? alternative = null;
             var canDiscardInvalidTarget = CanDiscardInvalidPackageTarget(update);
-            if (!canDiscardInvalidTarget && resolution.ValidationResult == "E404" && update.Source == "ai-package-version-recommendation" && ai is not null && promptLoader is not null)
+            if (!canDiscardInvalidTarget && resolution.ValidationResult == "E404" && ai is not null && promptLoader is not null)
             {
                 alternative = await RequestAiPackageVersionAlternativeAsync(update, hop, packageJson, resolution, config, cancellationToken);
                 if (alternative is not null)
@@ -1224,7 +1308,16 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
         if (proposedResult.Status == "notFound")
         {
-            return new NpmPackageTargetResolution(null, "E404", "E404", command, $"Requested {packageName}@{proposedRange} was unavailable. npm returned E404. No package@{targetMajor} discovery was attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
+            var discoveryCommand = $"npm view {packageName}@{targetMajor} version --json";
+            var discoveryResult = await NpmViewWithRetryAsync($"{packageName}@{targetMajor}", "version", "--json", Math.Max(0, config.NpmLookupRetries), config.NpmLookupTimeoutSeconds, config.NpmLookupIdleTimeoutSeconds, projectPath, logPath, cancellationToken);
+            var discoveryVersion = SelectLatestStableMajorVersion(discoveryResult.Value, targetMajor);
+            if (!string.IsNullOrWhiteSpace(discoveryVersion))
+            {
+                var resolvedDiscoveryTarget = ShouldMaterializeResolvedRange(discoveryVersion) ? discoveryVersion : discoveryVersion;
+                return new NpmPackageTargetResolution(resolvedDiscoveryTarget, "verified", "verified", discoveryCommand, $"Requested {packageName}@{proposedRange} was unavailable. npm returned E404. Resolved via package@{targetMajor} discovery.", proposedResult.Error, discoveryResult.AttemptCount, proposedRange, "", "", false, "E404");
+            }
+
+            return new NpmPackageTargetResolution(null, "E404", "E404", discoveryCommand, $"Requested {packageName}@{proposedRange} was unavailable. npm returned E404. package@{targetMajor} discovery was also unavailable.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
         }
 
         return new NpmPackageTargetResolution(null, "inconclusive", "inconclusive", command, $"npm verification returned no stable version for {packageName}@{proposedRange}; broad discovery was not attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
@@ -1274,6 +1367,39 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return "third-party";
     }
 
+    private static JsonObject ValidateSynchronizedAngularPackageVersions(JsonObject packageJson)
+    {
+        var entries = DependencyEntries(packageJson)
+            .Where(d => AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(d.Name))
+            .Select(d => new JsonObject { ["packageName"] = d.Name, ["version"] = d.Version, ["section"] = d.Section, ["exactVersion"] = ExactVersionText(d.Version) })
+            .ToArray();
+        var invalidRanges = entries.Where(e => string.IsNullOrWhiteSpace(e.StringValue("exactVersion"))).ToArray();
+        var versions = entries
+            .Select(e => e.StringValue("exactVersion"))
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var valid = invalidRanges.Length == 0 && versions.Length <= 1;
+        var reason = valid
+            ? ""
+            : invalidRanges.Length > 0
+                ? $"Angular-owned framework packages must use exact synchronized versions, not ranges: {string.Join(", ", invalidRanges.Select(e => $"{e.StringValue("packageName")}={e.StringValue("version")}"))}."
+                : $"Angular-owned framework packages must use one synchronized patch version, but package.json contains: {string.Join(", ", entries.Select(e => $"{e.StringValue("packageName")}={e.StringValue("version")}"))}.";
+        return new JsonObject
+        {
+            ["valid"] = valid,
+            ["selectedAngularFrameworkVersion"] = versions.Length == 1 ? versions[0] : "",
+            ["reason"] = reason,
+            ["packages"] = new JsonArray(entries.Select(e => (JsonNode?)e.DeepClone()).ToArray())
+        };
+    }
+
+    private static string AngularOwnedPackageVersionSummary(JsonObject packageJson) =>
+        string.Join(", ", DependencyEntries(packageJson)
+            .Where(d => AngularCriticalDependencyPolicy.IsAngularOwnedPackage(d.Name))
+            .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(d => $"{d.Name}={d.Version}"));
+
     private static bool IsAngularOwnedPackageName(string name) => AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name);
 
     private static string SuggestedTargetVersion(JsonObject item) =>
@@ -1296,34 +1422,35 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
     private static bool TryReviseAngularRuntimeMismatch(string projectPath, int? targetMajor, InstallAttemptResult attempt, IProgressReporter? progress, string stage)
     {
-        var conflict = attempt.PeerDependencyConflict;
-        if (conflict is null || conflict.StringValue("classification") != "angularRuntimeMismatch" || conflict.StringValue("decision") != "revisePackagePlan") return false;
-        var package = conflict.StringValue("conflictingPackage");
-        var requiredRange = conflict.StringValue("requiredPeerRange");
-        if (!AngularCoupledRuntimePackages.Contains(package) || string.IsNullOrWhiteSpace(requiredRange)) return false;
-
-        var compatibleVersion = CompatibleRuntimeVersionFromPeerRange(package, requiredRange, targetMajor);
-        if (string.IsNullOrWhiteSpace(compatibleVersion)) return false;
-
         var packageJsonPath = Path.Combine(projectPath, "package.json");
         var data = ReadJson(packageJsonPath);
         var updated = false;
-        foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
+        foreach (var conflict in PeerConflictItems(attempt.PeerDependencyConflict).Where(c => c.StringValue("classification") == "angularRuntimeMismatch" && c.StringValue("decision") == "revisePackagePlan"))
         {
-            if (data[section] is JsonObject deps && deps.ContainsKey(package))
+            var package = conflict.StringValue("conflictingPackage");
+            var requiredRange = conflict.StringValue("requiredPeerRange");
+            if (!AngularCoupledRuntimePackages.Contains(package) || string.IsNullOrWhiteSpace(requiredRange)) continue;
+
+            var compatibleVersion = CompatibleRuntimeVersionFromPeerRange(package, requiredRange, targetMajor);
+            if (string.IsNullOrWhiteSpace(compatibleVersion)) continue;
+
+            foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
             {
-                deps[package] = compatibleVersion;
-                updated = true;
+                if (data[section] is JsonObject deps && deps.ContainsKey(package) && deps[package]?.ToString() != compatibleVersion)
+                {
+                    deps[package] = compatibleVersion;
+                    updated = true;
+                }
             }
+            conflict["decision"] = "revisePackagePlan";
+            conflict["revisedVersion"] = compatibleVersion;
+            progress?.Stage(stage, $"Revised Angular runtime support package {package} to {compatibleVersion} after peer dependency conflict.");
         }
         if (!updated) return false;
 
         File.WriteAllText(packageJsonPath, data.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         var lockPath = Path.Combine(projectPath, "package-lock.json");
         if (File.Exists(lockPath)) File.Delete(lockPath);
-        conflict["decision"] = "revisePackagePlan";
-        conflict["revisedVersion"] = compatibleVersion;
-        progress?.Stage(stage, $"Revised Angular runtime support package {package} to {compatibleVersion} after peer dependency conflict.");
         return true;
     }
 
@@ -2712,10 +2839,23 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
     private sealed record BuildVerificationCommand(IReadOnlyList<string> Command, string Executor);
     private sealed record BuildVerificationResult(bool Attempted, bool Passed, string CommandText, string Executor, string FailureReason, string FailureCategory, string Output, JsonObject? CommandResult);
     private static JsonObject ReadJson(string path) => JsonNode.Parse(File.ReadAllText(path))?.AsObject() ?? new JsonObject();
-    private static Dictionary<string, string> AllDependencies(JsonObject data) => new[] { "dependencies", "devDependencies", "optionalDependencies" }.SelectMany(s => data[s]?.AsObject() ?? []).ToDictionary(k => k.Key, v => v.Value?.ToString() ?? "", StringComparer.OrdinalIgnoreCase);
+    private static Dictionary<string, string> AllDependencies(JsonObject data)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies" })
+        {
+            foreach (var item in data[section]?.AsObject() ?? [])
+            {
+                result[item.Key] = item.Value?.ToString() ?? "";
+            }
+        }
+        return result;
+    }
     private static int? MajorVersion(string? version) => Regex.Match(version ?? "", @"\d+") is { Success: true } m ? int.Parse(m.Value) : null;
     private static int? MajorFromSpec(string version) => Regex.Match(version, @"\d+") is { Success: true } m ? int.Parse(m.Value) : null;
     private static int[]? VersionTuple(string? version) => Regex.Match(version ?? "", @"(\d+)(?:\.(\d+))?(?:\.(\d+))?") is { Success: true } m ? m.Groups.Values.Skip(1).Where(g => g.Success).Select(g => int.Parse(g.Value)).ToArray() : null;
+    private static bool IsExactVersion(string? version) => Regex.IsMatch(version?.Trim() ?? "", @"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$");
+    private static string ExactVersionText(string? version) => Regex.Match(version?.Trim() ?? "", @"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$") is { Success: true } m ? m.Value : "";
     private static int Compare(int[] left, int[] right) { for (var i = 0; i < Math.Max(left.Length, right.Length); i++) { var l = i < left.Length ? left[i] : 0; var r = i < right.Length ? right[i] : 0; if (l != r) return l.CompareTo(r); } return 0; }
     private static bool IsAngularPackageJsonUpdateCandidate(string name) => name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) || name is "@angular-devkit/build-angular";
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').TrimStart('/').Replace("../", "", StringComparison.Ordinal);
@@ -2725,7 +2865,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         return full.Equals(rootFull, StringComparison.OrdinalIgnoreCase) || full.StartsWith(rootFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
-    private static string TypeScriptVersionForAngular(int targetMajor) => targetMajor switch { 13 => "~4.5.5", 14 => "~4.8.4", 15 => "~4.9.5", 16 => "~5.1.6", 17 => "~5.4.5", 18 => "~5.5.4", _ => "~5.5.4" };
+    private static string TypeScriptVersionForAngular(int targetMajor) => AngularCriticalDependencyPolicy.TypeScriptVersionForAngular(targetMajor);
     private static bool IsTypeScriptCompatibleWithAngular(string version, int targetMajor)
     {
         var tuple = VersionTuple(version);
@@ -2738,6 +2878,8 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             16 => Compare(tuple, [4, 9, 3]) >= 0 && Compare(tuple, [5, 2, 0]) < 0,
             17 => Compare(tuple, [5, 2, 0]) >= 0 && Compare(tuple, [5, 5, 0]) < 0,
             18 => Compare(tuple, [5, 4, 0]) >= 0 && Compare(tuple, [5, 6, 0]) < 0,
+            19 => Compare(tuple, [5, 5, 0]) >= 0 && Compare(tuple, [5, 9, 0]) < 0,
+            20 => Compare(tuple, [5, 8, 0]) >= 0 && Compare(tuple, [6, 0, 0]) < 0,
             _ => true
         };
     }
@@ -3570,6 +3712,34 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             return [await RunInstallAttemptAsync(projectPath, InstallCommand(manager), deterministic, "deterministic-clean-install", false, false, 0, false, false, "", false, config, progress, stage, logPath, cancellationToken)];
         }
 
+        var packageJson = ReadJson(Path.Combine(projectPath, "package.json"));
+        progress?.Stage(stage, $"[Package Resolution] Angular-owned package versions before install: {AngularOwnedPackageVersionSummary(packageJson)}");
+        var synchronization = ValidateSynchronizedAngularPackageVersions(packageJson);
+        if (!synchronization.BoolValue("valid"))
+        {
+            progress?.Stage(stage, $"[Package Resolution] Failing before npm install: {synchronization.StringValue("reason")}");
+            var decision = DeterministicDecision("normalInstall", "Blocked before npm install because Angular-owned framework package versions are not synchronized.", "high", false, false, "angularOwnedVersionMismatch");
+            return
+            [
+                new InstallAttemptResult
+                {
+                    Decision = decision,
+                    Command = NormalNpmInstallCommand,
+                    Result = new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = synchronization.StringValue("reason"),
+                        FailureCategory = "angularOwnedVersionMismatch",
+                        FailureReason = synchronization.StringValue("reason"),
+                        SuggestedNextAction = "Set Angular framework, component, compiler, compiler-cli, and language-service packages to one exact patch version before running npm install."
+                    },
+                    StrategySource = "pre-install-angular-owned-version-validation",
+                    ManualActionRequired = true,
+                    FailureClassification = new InstallFailureClassification("angularOwnedVersionMismatch", synchronization.StringValue("reason"), "Set Angular-owned framework packages to one exact synchronized version.")
+                }
+            ];
+        }
+
         if (!config.Ai.UseAi || ai is null)
         {
             return await RunDeterministicCleanInstallAsync(projectPath, manifest, config, cleanInstall, progress, stage, logPath, cancellationToken);
@@ -3578,6 +3748,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         var attempts = new List<InstallAttemptResult>();
         InstallAttemptResult? previous = null;
         var retryCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var peerPatchSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (true)
         {
             var attemptNumber = attempts.Count + 1;
@@ -3613,6 +3784,11 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             if (installAttempt.Result.ReturnCode == 0) return attempts;
 
             var classification = installAttempt.FailureClassification?.Category ?? "unknownFailure";
+            if (classification == "peerDependencyConflict" && HasRepeatedPeerPatchSignature(projectPath, hop.ToVersion, installAttempt, peerPatchSignatures, cleanInstall))
+            {
+                progress?.Stage(stage, "Dependency install reported the same peer dependency patch signature again; stopping retries for manual review.");
+                return attempts;
+            }
             if (classification == "packageVersionNotFound" && await TryRemediatePackageVersionNotFoundAsync(projectPath, hop, config, installAttempt, progress, stage, logPath, cancellationToken))
             {
                 previous = null;
@@ -3660,6 +3836,16 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
 
         var finalRange = verify.FinalTarget ?? alternativeRange;
         if (packageJson[section] is not JsonObject deps) return false;
+        if (AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(packageName))
+        {
+            var synchronization = ValidateSynchronizedAngularPackageVersions(packageJson);
+            var selectedFrameworkVersion = synchronization.StringValue("selectedAngularFrameworkVersion");
+            if (!IsExactVersion(finalRange) || !string.IsNullOrWhiteSpace(selectedFrameworkVersion) && !finalRange.Equals(selectedFrameworkVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                progress?.Stage(stage, $"[Package Resolution] Rejected mixed-version recommendation for {packageName}: {finalRange} does not match selected Angular framework version {selectedFrameworkVersion}.");
+                return false;
+            }
+        }
         deps[packageName] = finalRange;
         File.WriteAllText(path, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         progress?.Stage(stage, $"[Package Resolution] Patched {packageName} to {finalRange} after npm install version-not-found failure.");
@@ -3668,48 +3854,52 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
 
     private async Task<bool> TryRemediateThirdPartyPeerConflictAsync(string projectPath, MigrationHop hop, MigrationConfig config, InstallAttemptResult installAttempt, JsonObject cleanInstall, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
     {
-        var conflict = installAttempt.PeerDependencyConflict;
-        if (conflict is null || conflict.StringValue("classification") != "thirdPartyPeerConflict") return false;
-
-        var requiredByPackage = conflict.StringValue("requiredByPackage");
-        var requiredRange = conflict.StringValue("requiredPeerRange");
-        if (!LooksAngularCoupledThirdParty(requiredByPackage)) return false;
-        if (!conflict.StringValue("conflictingPackage").StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) return false;
-
         var path = Path.Combine(projectPath, "package.json");
         if (!File.Exists(path)) return false;
         var packageJson = ReadJson(path);
-        var section = DependencySection(packageJson, requiredByPackage);
-        if (section is null || packageJson[section] is not JsonObject deps || !deps.ContainsKey(requiredByPackage)) return false;
+        var remediations = cleanInstall["thirdPartyPeerConflictRemediations"] as JsonArray ?? new JsonArray();
+        if (cleanInstall["thirdPartyPeerConflictRemediations"] is null) cleanInstall["thirdPartyPeerConflictRemediations"] = remediations;
+        var changed = false;
 
-        var currentRange = deps[requiredByPackage]?.ToString() ?? "";
-        var targetRange = ThirdPartyPeerConflictTargetRange(conflict, hop.ToVersion);
-        if (string.IsNullOrWhiteSpace(targetRange)) return false;
+        foreach (var conflict in PeerConflictItems(installAttempt.PeerDependencyConflict).Where(c => c.StringValue("classification") == "thirdPartyPeerConflict"))
+        {
+            var requiredByPackage = conflict.StringValue("requiredByPackage");
+            var requiredRange = conflict.StringValue("requiredPeerRange");
+            if (!LooksAngularCoupledThirdParty(requiredByPackage)) continue;
+            if (!conflict.StringValue("conflictingPackage").StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) continue;
 
-        progress?.Stage(stage, $"[Package Resolution] npm install reported Angular peer conflict from {requiredByPackage}; verifying {requiredByPackage}@{targetRange}.");
-        var verified = await ResolveNpmPackageTargetAsync(requiredByPackage, hop.ToVersion, targetRange, "third-party", config, projectPath, logPath, cancellationToken);
-        if (verified.FinalTarget is null) return false;
+            var section = DependencySection(packageJson, requiredByPackage);
+            if (section is null || packageJson[section] is not JsonObject deps || !deps.ContainsKey(requiredByPackage)) continue;
 
-        deps[requiredByPackage] = verified.FinalTarget;
+            var currentRange = deps[requiredByPackage]?.ToString() ?? "";
+            var targetRange = ThirdPartyPeerConflictTargetRange(conflict, hop.ToVersion);
+            if (string.IsNullOrWhiteSpace(targetRange)) continue;
+
+            progress?.Stage(stage, $"[Package Resolution] npm install reported Angular peer conflict from {requiredByPackage}; verifying {requiredByPackage}@{targetRange}.");
+            var verified = await ResolveNpmPackageTargetAsync(requiredByPackage, hop.ToVersion, targetRange, "third-party", config, projectPath, logPath, cancellationToken);
+            if (verified.FinalTarget is null || currentRange.Equals(verified.FinalTarget, StringComparison.OrdinalIgnoreCase)) continue;
+
+            deps[requiredByPackage] = verified.FinalTarget;
+            changed = true;
+            remediations.Add(new JsonObject
+            {
+                ["packageName"] = requiredByPackage,
+                ["fromVersion"] = currentRange,
+                ["toVersion"] = verified.FinalTarget,
+                ["section"] = section,
+                ["conflictingPackage"] = conflict.StringValue("conflictingPackage"),
+                ["requiredPeerRange"] = requiredRange,
+                ["requiredBy"] = conflict.StringValue("requiredBy"),
+                ["verificationCommand"] = verified.VerificationCommand,
+                ["reason"] = "npm reported an Angular peer dependency conflict from an Angular-coupled third-party package; upgraded the package before using legacy peer deps."
+            });
+            progress?.Stage(stage, $"[Package Resolution] Patched {requiredByPackage} from {currentRange} to {verified.FinalTarget} after Angular peer conflict.");
+        }
+
+        if (!changed) return false;
         File.WriteAllText(path, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
         var lockPath = Path.Combine(projectPath, "package-lock.json");
         if (File.Exists(lockPath)) File.Delete(lockPath);
-
-        var remediations = cleanInstall["thirdPartyPeerConflictRemediations"] as JsonArray ?? new JsonArray();
-        if (cleanInstall["thirdPartyPeerConflictRemediations"] is null) cleanInstall["thirdPartyPeerConflictRemediations"] = remediations;
-        remediations.Add(new JsonObject
-        {
-            ["packageName"] = requiredByPackage,
-            ["fromVersion"] = currentRange,
-            ["toVersion"] = verified.FinalTarget,
-            ["section"] = section,
-            ["conflictingPackage"] = conflict.StringValue("conflictingPackage"),
-            ["requiredPeerRange"] = requiredRange,
-            ["requiredBy"] = conflict.StringValue("requiredBy"),
-            ["verificationCommand"] = verified.VerificationCommand,
-            ["reason"] = "npm reported an Angular peer dependency conflict from an Angular-coupled third-party package; upgraded the package before using legacy peer deps."
-        });
-        progress?.Stage(stage, $"[Package Resolution] Patched {requiredByPackage} from {currentRange} to {verified.FinalTarget} after Angular peer conflict.");
         return true;
     }
 
@@ -3771,6 +3961,40 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
 
     private async Task<InstallAttemptResult> RunInstallAttemptAsync(string projectPath, IReadOnlyList<string> command, InstallStrategyDecision decision, string source, bool fallback, bool retry, int retryCount, bool aiUsed, bool aiAccepted, string rejectedReason, bool manualActionRequired, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
     {
+        if (IsNpmInstall(command) && File.Exists(Path.Combine(projectPath, "package.json")))
+        {
+            var packageJson = ReadJson(Path.Combine(projectPath, "package.json"));
+            progress?.Stage(stage, $"[Package Resolution] Angular-owned package versions before install: {AngularOwnedPackageVersionSummary(packageJson)}");
+            var synchronization = ValidateSynchronizedAngularPackageVersions(packageJson);
+            if (!synchronization.BoolValue("valid"))
+            {
+                var reason = synchronization.StringValue("reason");
+                progress?.Stage(stage, $"[Package Resolution] Failing before npm install: {reason}");
+                return new InstallAttemptResult
+                {
+                    Decision = decision,
+                    Command = command,
+                    Result = new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = reason,
+                        FailureCategory = "angularOwnedVersionMismatch",
+                        FailureReason = reason,
+                        SuggestedNextAction = "Set Angular framework, component, compiler, compiler-cli, and language-service packages to one exact patch version before running npm install."
+                    },
+                    StrategySource = source,
+                    FallbackUsed = fallback,
+                    RetryUsed = retry,
+                    RetryCount = retryCount,
+                    AiStrategyUsed = aiUsed,
+                    AiStrategyAccepted = aiAccepted,
+                    AiStrategyRejectedReason = rejectedReason,
+                    ManualActionRequired = true,
+                    FailureClassification = new InstallFailureClassification("angularOwnedVersionMismatch", reason, "Set Angular-owned framework packages to one exact synchronized version.")
+                };
+            }
+        }
+
         progress?.Stage(stage, $"Running dependency install: {string.Join(" ", command)}");
         var result = await commandRunner.RunAsync(command, projectPath, timeoutSeconds: config.CommandTimeoutSeconds, progress: progress, stage: stage, description: string.Join(" ", command.Take(2)), logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: config.CommandIdleTimeoutSeconds, cancellationToken: cancellationToken);
         return new InstallAttemptResult
@@ -3934,15 +4158,24 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
     {
         if (!IsPeerDependencyConflict(result)) return null;
         var output = $"{result.Stdout}\n{result.Stderr}";
-        var peer = Regex.Match(output, @"peer\s+(@?[\w./-]+)@""([^""]+)""\s+from\s+(@?[\w./-]+)@([^\s]+)", RegexOptions.IgnoreCase);
-        if (!peer.Success) return new JsonObject { ["classification"] = "unknownPeerConflict", ["decision"] = "manualReview" };
+        var matches = Regex.Matches(output, @"peer\s+(@?[\w./-]+)@""([^""]+)""\s+from\s+(@?[\w./-]+)@([^\s]+)", RegexOptions.IgnoreCase);
+        if (matches.Count == 0) return new JsonObject { ["classification"] = "unknownPeerConflict", ["decision"] = "manualReview", ["conflicts"] = new JsonArray() };
 
+        var data = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
+        var conflicts = new JsonArray(matches.Select(match => (JsonNode?)BuildPeerDependencyConflict(output, data, match)).ToArray());
+        var primary = conflicts.OfType<JsonObject>().FirstOrDefault(c => c.StringValue("classification") != "unknownPeerConflict") ?? conflicts.OfType<JsonObject>().First();
+        var resultObject = primary.DeepClone().AsObject();
+        resultObject["conflicts"] = conflicts;
+        return resultObject;
+    }
+
+    private static JsonObject BuildPeerDependencyConflict(string output, JsonObject packageJson, Match peer)
+    {
         var package = peer.Groups[1].Value;
         var requiredRange = peer.Groups[2].Value;
         var requiredBy = peer.Groups[3].Value;
         var requiredByVersion = peer.Groups[4].Value.TrimEnd(',', ')');
-        var data = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
-        var plannedVersion = AllDependencies(data).GetValueOrDefault(package, "");
+        var plannedVersion = AllDependencies(packageJson).GetValueOrDefault(package, "");
         var installed = Regex.Match(output, $@"Found:\s+{Regex.Escape(package)}@([^\s]+)", RegexOptions.IgnoreCase);
         var currentInstalledVersion = installed.Success ? installed.Groups[1].Value.TrimEnd(',', ')') : "";
         var angularRuntimeMismatch = requiredBy.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) && AngularCoupledRuntimePackages.Contains(package);
@@ -3965,6 +4198,58 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             ["classification"] = classification,
             ["decision"] = decision
         };
+    }
+
+    private static IEnumerable<JsonObject> PeerConflictItems(JsonObject? conflict)
+    {
+        if (conflict is null) yield break;
+        if (conflict["conflicts"] is JsonArray conflicts)
+        {
+            foreach (var item in conflicts.OfType<JsonObject>()) yield return item;
+            yield break;
+        }
+        yield return conflict;
+    }
+
+    private static bool HasRepeatedPeerPatchSignature(string projectPath, int targetMajor, InstallAttemptResult attempt, HashSet<string> seen, JsonObject cleanInstall)
+    {
+        var repeated = new JsonArray();
+        foreach (var signature in PeerPatchSignatures(projectPath, targetMajor, attempt))
+        {
+            var parts = signature.Split('|');
+            if (parts.Length == 3 && parts[1].Equals(parts[2], StringComparison.OrdinalIgnoreCase))
+            {
+                repeated.Add(signature);
+                continue;
+            }
+            if (!seen.Add(signature)) repeated.Add(signature);
+        }
+        if (repeated.Count == 0) return false;
+        cleanInstall["repeatedPeerConflictSignatures"] = repeated;
+        cleanInstall["manualActionRequired"] = true;
+        cleanInstall["reason"] = "The peer dependency package/currentVersion/targetVersion remediation signature repeated or was a no-op; automatic install retries stopped.";
+        return true;
+    }
+
+    private static IEnumerable<string> PeerPatchSignatures(string projectPath, int targetMajor, InstallAttemptResult attempt)
+    {
+        var packageJson = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
+        foreach (var conflict in PeerConflictItems(attempt.PeerDependencyConflict))
+        {
+            var classification = conflict.StringValue("classification");
+            if (classification == "angularRuntimeMismatch")
+            {
+                var package = conflict.StringValue("conflictingPackage");
+                var target = CompatibleRuntimeVersionFromPeerRange(package, conflict.StringValue("requiredPeerRange"), targetMajor);
+                if (!string.IsNullOrWhiteSpace(target)) yield return $"{package}|{AllDependencies(packageJson).GetValueOrDefault(package, "")}|{target}";
+            }
+            else if (classification == "thirdPartyPeerConflict")
+            {
+                var package = conflict.StringValue("requiredByPackage");
+                var target = ThirdPartyPeerConflictTargetRange(conflict, targetMajor);
+                if (!string.IsNullOrWhiteSpace(target)) yield return $"{package}|{AllDependencies(packageJson).GetValueOrDefault(package, "")}|{target}";
+            }
+        }
     }
 
     private static bool IsAngularRuntimeMismatchOutput(string output)
@@ -4125,8 +4410,8 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             return OfficialAngularUpdateSkipped(hop, trigger.Reason);
         }
 
-        var cli = ValidateLocalAngularCli(projectPath, hop.ToVersion);
-        if (!cli.Valid)
+        var cli = trigger.FullUpdate ? ValidateLocalAngularCli(projectPath, hop.ToVersion) : (Valid: true, NgPath: "npx", Reason: "");
+        if (trigger.FullUpdate && !cli.Valid)
         {
             return new JsonObject
             {
@@ -4160,13 +4445,14 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         {
             lastCommand = command;
             var description = trigger.FullUpdate ? "Angular official update" : "Angular migrate-only";
-            progress?.Stage(stage, $"Running official Angular update using local Angular CLI: {string.Join(" ", command)}");
+            progress?.Stage(stage, $"Running official Angular update: {string.Join(" ", command)}");
             var result = await commandRunner.RunAsync(command, projectPath, timeoutSeconds: angularCliTimeoutSeconds, progress: progress, stage: stage, description: description, logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: angularCliIdleTimeoutSeconds, cancellationToken: cancellationToken);
             commands.Add(CommandObject(command, result));
             if (result.ReturnCode != 0)
             {
                 var failure = ClassifyFailure(command, result, hop.ToVersion);
                 var timedOut = IsTimeoutResult(result);
+                var cliSource = trigger.FullUpdate ? "local node_modules" : $"npx @angular/cli@{hop.ToVersion}";
                 return new JsonObject
                 {
                     ["required"] = true,
@@ -4175,10 +4461,10 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
                     ["skipped"] = false,
                     ["triggered"] = true,
                     ["triggerReason"] = trigger.Reason,
-                    ["failureReason"] = timedOut ? "Angular CLI command timed out while running from local node_modules." : failure.Reason,
+                    ["failureReason"] = timedOut ? $"Angular CLI command timed out while running from {cliSource}." : failure.Reason,
                     ["failureCategory"] = timedOut ? "timeout" : failure.Category,
-                    ["suggestedNextAction"] = timedOut ? "Inspect the migration log and rerun migration after Angular CLI responds from local node_modules." : failure.SuggestedNextAction,
-                    ["source"] = "local node_modules",
+                    ["suggestedNextAction"] = timedOut ? $"Inspect the migration log and rerun migration after Angular CLI responds from {cliSource}." : failure.SuggestedNextAction,
+                    ["source"] = cliSource,
                     ["mode"] = trigger.FullUpdate ? "full-update" : "migrate-only",
                     ["command"] = new JsonArray(command.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
                     ["commands"] = commands,
@@ -4198,11 +4484,11 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             ["triggered"] = true,
             ["triggerReason"] = trigger.Reason,
             ["skippedReason"] = "",
-            ["source"] = "local node_modules",
+            ["source"] = trigger.FullUpdate ? "local node_modules" : $"npx @angular/cli@{hop.ToVersion}",
             ["mode"] = trigger.FullUpdate ? "full-update" : "migrate-only",
             ["message"] = trigger.FullUpdate
                 ? $"Official Angular full update executed for Angular {hop.FromVersion} -> {hop.ToVersion} using local Angular CLI."
-                : $"Official Angular migrate-only executed for Angular {hop.FromVersion} -> {hop.ToVersion} using local Angular CLI.",
+                : $"Official Angular migrate-only executed for Angular {hop.FromVersion} -> {hop.ToVersion} using npx-pinned Angular CLI {hop.ToVersion}.",
             ["command"] = new JsonArray(lastCommand.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
             ["commands"] = commands,
             ["filesChangedByAngularCli"] = new JsonArray(changedFiles.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()),
@@ -4242,7 +4528,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         if (fullUpdate) return (true, true, "adapter policy requires full official Angular update for this hop.", packages);
         if (!string.IsNullOrWhiteSpace(forceReason)) return (true, false, forceReason, packages);
         if (HasAngularOfficialMigrationMetadata(projectPath, hop.FromVersion, hop.ToVersion)) return (true, false, "Angular CLI metadata contains applicable migration for this source-to-target range.", packages);
-        if (hasPolicy && policy!.RequiresOfficialMigrateOnly && HasFrameworkSourceMigrationEvidence(configPlan, analysis)) return (true, false, "adapter policy and source/framework migration evidence require official Angular migration.", packages);
+        if (hasPolicy && policy!.RequiresOfficialMigrateOnly) return (true, false, "adapter policy requires official Angular migrate-only for this hop.", packages);
         if (HasFrameworkSourceMigrationEvidence(configPlan, analysis)) return (true, false, "source/framework migration detected by analysis.", packages);
         if (HasPackageOrConfigOnlyMigrationEvidence(configPlan, analysis)) return (false, false, "skipped because package/config-only migration", packages);
         return (false, false, "skipped because no official Angular migration evidence found", packages);
@@ -4472,13 +4758,17 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         var hasBusiness = classifications.Any(c => string.Equals(c.StringValue("classification"), nameof(MigrationChangeClassification.BusinessImpactingMigration), StringComparison.Ordinal));
         foreach (var item in classifications)
         {
-            var business = string.Equals(item.StringValue("classification"), nameof(MigrationChangeClassification.BusinessImpactingMigration), StringComparison.Ordinal);
-            item["accepted"] = !business || validationPassed;
-            item["highRisk"] = business && !validationPassed;
+            item["accepted"] = true;
+            item["highRisk"] = false;
+            item["validationRequired"] = true;
+            item["validationPassed"] = validationPassed;
         }
-        officialMigrateOnly["businessImpactingAccepted"] = hasBusiness && validationPassed;
-        officialMigrateOnly["businessImpactingHighRisk"] = hasBusiness && !validationPassed;
-        officialMigrateOnly["acceptanceStatus"] = !hasBusiness ? "accepted-with-validation" : validationPassed ? "business-impacting-accepted-after-validation" : "business-impacting-high-risk-validation-failed";
+        officialMigrateOnly["businessImpactingAccepted"] = hasBusiness;
+        officialMigrateOnly["businessImpactingHighRisk"] = false;
+        officialMigrateOnly["accepted"] = true;
+        officialMigrateOnly["highRisk"] = false;
+        officialMigrateOnly["validationPassed"] = validationPassed;
+        officialMigrateOnly["acceptanceStatus"] = validationPassed ? "accepted-after-validation" : "accepted-command-succeeded-validation-failed";
     }
 
     private static (bool Valid, string NgPath, string Reason) ValidateLocalAngularCli(string projectPath, int targetMajor)
@@ -4739,6 +5029,17 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
                 yield return (item.Key, item.Value?.ToString() ?? "", section);
             }
         }
+    }
+
+    private static Dictionary<string, JsonObject> PackageRecommendationMap(JsonArray? recommendations)
+    {
+        var result = new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase);
+        foreach (var recommendation in recommendations?.OfType<JsonObject>() ?? [])
+        {
+            var name = recommendation.StringValue("packageName");
+            if (!string.IsNullOrWhiteSpace(name)) result[name] = recommendation;
+        }
+        return result;
     }
 
     private static string? DependencySection(JsonObject data, string packageName)

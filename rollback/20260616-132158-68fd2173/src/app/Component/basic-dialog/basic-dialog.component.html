@@ -1,0 +1,99 @@
+<header class="basic-dialog-header" [ngClass]="showIdleTimer ? 'time-counter-header' : ''">
+    <div class="d-flex align-items-center gap-24 track-my-train-header-live-icon">
+        <div class="d-block" *ngIf="trainLiveStatusIcon">
+            <div class="track-my-train-live-status-popup">
+                <span></span>
+                <p>Live</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-24">
+            <div *ngIf="sentEmailSuccessCheck">
+                <div>
+                    <img src="assets/images/success-check.svg" alt="check Icon">
+                </div>
+            </div>
+            <div *ngIf="commonDisplayedIcon">
+                <div>
+                    <img [src]="commonDisplayedIcon" alt="commonPopupIcon">
+                </div>
+            </div>
+            <div *ngIf="trackMyTrainInfoIcon">
+                <div>
+                    <img src="assets/images/exclamation_icon.svg" alt="Train my train info icon">
+                </div>
+            </div>
+            <div *ngIf="changeEmailIcon">
+                <div>
+                    <img src="assets/images/change-email.svg" alt="Change email icon">
+                </div>
+            </div>
+            <div *ngIf="verifyEmailError">
+                <div class="mt--4">
+                    <img src="assets/images/exclamation_warning.svg" alt="Warning icon">
+                </div>
+            </div>
+            <div *ngIf="clubAvantiTrainTicketIcon">
+                <div class="mt--4">
+                    <img src="assets/images/club-avanti/ca-standard-return.svg" alt="Standard return icon" class="ca-popup-icon">
+                </div>
+            </div>
+            <div *ngIf="clubAvantiRewardHotDrinkIcon">
+                <div class="mt--4">
+                    <img src="assets/images/club-avanti/ca-hot-drink.svg" alt="Hot drink icon" class="ca-popup-icon">
+                </div>
+            </div>
+            <div *ngIf="clubAvantiPreviousJourney">
+                <div class="mt--4">
+                    <img src="assets/images/club-avanti/previous-journeys.svg" alt="Previous journeys icon" class="ca-previous-journeys-icon">
+                </div>
+            </div>
+            <div *ngIf="discountCodeIconInCaseOfCOJ">
+                <div class="mt--4">
+                    <img src="assets/images/discount-orange.svg" alt="Discount icon" class="ca-previous-journeys-icon">
+                </div>
+            </div>
+            <ng-container *ngIf='dialogTitle'>
+                <h2 class="m-0 f-22 lh-27 font-600 link-tag">
+                    {{dialogTitle}}
+                </h2>
+            </ng-container>
+        </div>
+    </div>
+    <div *ngIf="iconClose" class="tmt-align-self-baseline">
+        <div>
+            <button *ngIf="!accountClosureCloseBtn" type="button" mat-button class="common-popup-theme-close-icon" mat-dialog-close aria-label="Close">
+                <img src="assets/images/theme-close-icon.svg" alt="Close Icon">
+            </button>
+            <button *ngIf="accountClosureCloseBtn" type="button" mat-button class="common-popup-theme-close-icon" (click)="closeAccount()" mat-dialog-close aria-label="Close">
+                <img src="assets/images/theme-close-icon.svg" alt="Close Icon">
+            </button>
+        </div>
+    </div>
+    <div *ngIf="showIdleTimer">
+        <div [ngClass]="showIdleTimer ? 'time-counter' : ''">
+            {{showIdleTimer}}
+        </div>
+    </div>
+</header>
+<div class="basic-dialog-body">
+    <ng-content></ng-content>
+</div>
+<footer class="basic-dialog-footer" *ngIf="isShowFooter">
+    <ng-container *ngIf="dialogFooter; else defaultFooter">
+        <ng-container [ngTemplateOutlet]="dialogFooter"></ng-container>
+    </ng-container>
+    <ng-template #defaultFooter>
+        <ng-container [ngSwitch]="cancelButtonType()">
+            <ng-container *ngSwitchCase="'template'">
+                <ng-container [ngTemplateOutlet]="buttonCancel"></ng-container>
+            </ng-container>
+            <ng-container *ngSwitchDefault>
+                <button class="" type="button" *ngIf="buttonCancel" (click)="handleCancel()">
+                    {{buttonCancel}}
+                </button>
+            </ng-container>
+        </ng-container>
+        <button *ngIf="buttonAcceptTitle" class="" type="button" (click)="handleAccept()">{{buttonAcceptTitle}}
+        </button>
+    </ng-template>
+</footer>

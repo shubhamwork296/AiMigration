@@ -1,0 +1,5 @@
+.track-my-train-header-live-icon {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px !important;
+}

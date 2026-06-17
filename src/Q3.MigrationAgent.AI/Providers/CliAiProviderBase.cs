@@ -20,10 +20,11 @@ public abstract class CliAiProviderBase(ICommandRunner commandRunner, IPromptLoa
         var inputUsage = usageTracker?.RecordEstimatedInput(InferCallName(system), null, prompt);
         CommandResult? completed = null;
         var jsonParseStatus = "not-attempted";
+        string? jsonParseDiagnostics = null;
         var outputLogged = false;
         try
         {
-            completed = await commandRunner.RunAsync([.. command, "-"], input: prompt, timeoutSeconds: 300, idleTimeoutSeconds: 120, cancellationToken: cancellationToken);
+            completed = await commandRunner.RunAsync([.. command, "-"], input: prompt, timeoutSeconds: config.TimeoutSeconds, idleTimeoutSeconds: config.IdleTimeoutSeconds, cancellationToken: cancellationToken);
             if (completed.ReturnCode == 127) throw new InvalidOperationException($"{Name} CLI was not found. Install it or set aiCliCommand to the CLI executable.");
             if (completed.TimeoutKind is not null)
             {
@@ -44,9 +45,10 @@ public abstract class CliAiProviderBase(ICommandRunner commandRunner, IPromptLoa
                 outputLogged = true;
                 return parsed;
             }
-            catch
+            catch (AiJsonParseException ex)
             {
                 jsonParseStatus = "failed";
+                jsonParseDiagnostics = JsonParseDiagnostics(ex);
                 throw;
             }
         }
@@ -54,14 +56,14 @@ public abstract class CliAiProviderBase(ICommandRunner commandRunner, IPromptLoa
         {
             if (!outputLogged && completed is not null)
             {
-                LogEstimatedOutput(inputUsage, completed, jsonParseStatus);
+                LogEstimatedOutput(inputUsage, completed, jsonParseStatus, jsonParseDiagnostics);
             }
         }
     }
 
     protected virtual IReadOnlyList<string> PrepareCommand(IReadOnlyList<string> command) => command;
 
-    private void LogEstimatedOutput(EstimatedAiUsageStats? inputUsage, CommandResult completed, string jsonParseStatus)
+    private void LogEstimatedOutput(EstimatedAiUsageStats? inputUsage, CommandResult completed, string jsonParseStatus, string? jsonParseDiagnostics = null)
     {
         if (inputUsage is null) return;
         usageTracker?.RecordEstimatedOutput(
@@ -69,7 +71,23 @@ public abstract class CliAiProviderBase(ICommandRunner commandRunner, IPromptLoa
             completed.Stdout + "\n" + completed.Stderr,
             completed.ReturnCode,
             (long)Math.Ceiling(completed.DurationSeconds * 1000),
-            jsonParseStatus);
+            jsonParseStatus,
+            jsonParseDiagnostics);
+    }
+
+    private static string JsonParseDiagnostics(AiJsonParseException ex)
+    {
+        var parts = new List<string>
+        {
+            $"parseFailureReason={ex.FailureReason}",
+            $"rawOutputPath={ex.RawOutputPath}",
+            $"candidatesAttempted={ex.CandidatesAttempted}"
+        };
+        if (!string.IsNullOrWhiteSpace(ex.ParsedCandidatePath)) parts.Add($"parsedCandidatePath={ex.ParsedCandidatePath}");
+        if (!string.IsNullOrWhiteSpace(ex.RejectedField)) parts.Add($"rejectedField={ex.RejectedField}");
+        if (!string.IsNullOrWhiteSpace(ex.RejectedValue)) parts.Add($"rejectedValue={ex.RejectedValue}");
+        if (!string.IsNullOrWhiteSpace(ex.AllowedValues)) parts.Add($"allowedValues={ex.AllowedValues}");
+        return string.Join(", ", parts);
     }
 
     private static string InferCallName(string system)

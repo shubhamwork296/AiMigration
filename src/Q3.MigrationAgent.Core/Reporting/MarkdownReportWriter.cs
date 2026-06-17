@@ -250,9 +250,9 @@ public sealed class MarkdownReportWriter
             if (r.BoolValue("officialAngularUpdateExecuted", r.BoolValue("officialAngularMigrateOnlyExecuted")))
             {
                 var files = string.Join(", ", (r["officialAngularUpdateChangedFiles"] ?? r["officialAngularMigrateOnlyChangedFiles"])?.AsArray()?.Select(x => x?.ToString()) ?? []);
-                var businessFiles = string.Join(", ", r["officialAngularMigrationBusinessImpactingFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
-                var highRisk = r.BoolValue("officialAngularMigrationBusinessImpactingHighRisk") ? "; high-risk business-impacting changes=yes" : "";
-                return $"- {label}: official update triggered=yes; mode={r.StringValue("officialAngularUpdateMode", "migrate-only")}; reason={r.StringValue("officialAngularUpdateTriggerReason", r.StringValue("officialAngularMigrateOnlyTriggerReason"))}; source={r.StringValue("officialAngularUpdateSource", r.StringValue("officialAngularMigrateOnlySource"))}; command=`{command}`; Angular CLI generated changes={FilesText(files)}; acceptance={r.StringValue("officialAngularMigrationAcceptanceStatus")}; business-impacting files={FilesText(businessFiles)}{highRisk}";
+                var sourceFiles = string.Join(", ", r["officialAngularMigrationBusinessImpactingFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                var validationNote = r.StringValue("officialAngularMigrationAcceptanceStatus").Contains("validation-failed", StringComparison.OrdinalIgnoreCase) ? "; validation failed after Angular CLI changes, changes retained" : "";
+                return $"- {label}: official update triggered=yes; mode={r.StringValue("officialAngularUpdateMode", "migrate-only")}; reason={r.StringValue("officialAngularUpdateTriggerReason", r.StringValue("officialAngularMigrateOnlyTriggerReason"))}; source={r.StringValue("officialAngularUpdateSource", r.StringValue("officialAngularMigrateOnlySource"))}; command=`{command}`; Angular CLI generated changes={FilesText(files)}; acceptance={r.StringValue("officialAngularMigrationAcceptanceStatus")}; source/template files changed by Angular CLI={FilesText(sourceFiles)}{validationNote}";
             }
 
             var required = r.BoolValue("officialAngularUpdateRequired", r.BoolValue("officialAngularMigrateOnlyRequired"));
@@ -327,7 +327,7 @@ public sealed class MarkdownReportWriter
                 .ToDictionary(i => i.StringValue("name"), StringComparer.OrdinalIgnoreCase) ?? [];
             foreach (var item in hop["aiPackageVersionRecommendationsAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var action = item.StringValue("action", "upgrade") == "upgrade" ? "accepted" : item.StringValue("action");
+                var action = item.StringValue("action", "upgrade") == "upgrade" ? "recommended" : item.StringValue("action");
                 var packageName = item.StringValue("packageName");
                 var applied = acceptedTargets.GetValueOrDefault(packageName);
                 var final = applied?.StringValue("finalAcceptedVersion", applied.StringValue("toVersion")) ?? item.StringValue("recommendedVersion", item.StringValue("action"));
@@ -342,11 +342,11 @@ public sealed class MarkdownReportWriter
             }
             foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                lines.Add($"- [packageVersionNotFound] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalResolvedVersion", "none")}; fallbackReason={item.StringValue("npmFallbackReason", item.StringValue("failureReason", "none"))}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}; packageJsonUpdated={item.BoolValue("packageJsonUpdated")}");
+                lines.Add($"- [rejected/blocker] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalResolvedVersion", "none")}; fallbackReason={item.StringValue("npmFallbackReason", item.StringValue("failureReason", "none"))}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}; packageJsonUpdated={item.BoolValue("packageJsonUpdated")}");
             }
             foreach (var item in hop["packageTargetValidation"]?["resolved"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var tag = string.IsNullOrWhiteSpace(item.StringValue("npmFallbackReason")) ? "npmVerified" : "resolvedFallback";
+                var tag = string.IsNullOrWhiteSpace(item.StringValue("npmFallbackReason")) ? "accepted" : "fallbackResolved";
                 lines.Add($"- [{tag}] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalAcceptedVersion", "unknown")}; fallbackReason={item.StringValue("npmFallbackReason", "none")}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}");
             }
         }
@@ -374,7 +374,7 @@ public sealed class MarkdownReportWriter
             }
             foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                lines.Add($"- {item.StringValue("packageName", "unknown")}");
+                lines.Add($"- [rejected/blocker] {item.StringValue("packageName", "unknown")}");
                 lines.Add($"  - AI recommended: {item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}");
                 lines.Add($"  - verification mode: {item.StringValue("verificationMode", hop["packageTargetValidation"]?.AsObject().StringValue("verificationMode", "install-first") ?? "install-first")}");
                 lines.Add($"  - npm view: {FormatNpmViewStatus(item)}");
@@ -404,7 +404,7 @@ public sealed class MarkdownReportWriter
             var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
             foreach (var item in hop["angularCriticalDependencyAlignmentAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var action = item.StringValue("action") switch { "align" or "add" => "accepted", "preserve" => "preserved", _ => item.StringValue("action") };
+                var action = item.StringValue("action") switch { "align" or "add" => "recommended", "preserve" => "preserved", _ => item.StringValue("action") };
                 var versionText = item.StringValue("action") == "preserve"
                     ? item.StringValue("currentVersion")
                     : $"{item.StringValue("currentVersion")} -> {item.StringValue("recommendedVersion")}";

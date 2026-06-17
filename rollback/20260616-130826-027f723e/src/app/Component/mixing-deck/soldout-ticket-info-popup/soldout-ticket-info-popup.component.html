@@ -1,0 +1,29 @@
+<app-basic-dialog [dialogTitle]="headerTitle" [dialogFooter]="dialogFooter">
+    <div class="common-popup-theme-in">
+        <div class="common-popup-theme-border">
+            <div class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle">
+                <p class="m-0 f-16 lh-22 font-400 popup-p-sapce text-justify">
+                    If you're searching at quite short notice or if there's a big event going on, this train might be fully booked. If you're planning ahead and tickets aren't showing for a specific train, we might still be awaiting confirmation that the train will run at the scheduled time advertised. 
+                    <a href="https://www.avantiwestcoast.co.uk/travel-information/plan-your-journey/timetables" rel="noopener" target="_blank" class="dark-spark">
+                        Check out our timetables page
+                    </a> 
+                    for more information.
+                </p>
+                <h3 class="f-18 lh-22 font-700 mb-16 mt-16">
+                    Still want to go?
+                </h3>
+                <p class="m-0 f-16 lh-22 font-400 popup-p-sapce text-justify">
+                    If this train is the one for you, you have a couple of options. We have unreserved coaches on all our trains so, if you don't mind not being guaranteed a seat, you can buy a flexible Off-Peak or Anytime ticket at the station without a reservation, then use your ticket's flexibility to hop on your preferred train. Head to coach C on our Pendolino trains (and also coach U on 11-coach trains) or coach C on Evero (and also coach J on 10-coach trains) to find unreserved Standard Class seats.
+                </p>
+                <p class="m-0 f-16 lh-22 font-400 popup-p-sapce text-justify">
+                    If you'd rather be sure of a seat, try either another class of travel on this train, or a train at another time.
+                </p>
+            </div>
+        </div>
+    </div>
+</app-basic-dialog>
+<ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+        <button class="new-default-btn w-xs-100" mat-dialog-close mat-button>Got it</button>
+    </div>
+</ng-template>

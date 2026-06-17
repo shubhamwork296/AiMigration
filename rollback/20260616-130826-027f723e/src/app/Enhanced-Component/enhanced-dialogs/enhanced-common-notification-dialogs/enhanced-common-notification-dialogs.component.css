@@ -1,0 +1,14 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.icon-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+@media (width <= 1023px) {
+    .forgot-password-sucess .f-14 {
+        font-size: 14px !important;
+    }
+}
+

@@ -1,0 +1,609 @@
+<app-header></app-header>
+<div id="cmd-main" class="ptb-15 pb-85 buynow-bttm-mixingdeck journey-details-new min-auto bg-f6">
+  <div id="cmd-container" class="container plr-xs-5">
+    <div id="cmd-row" class="row m-0 m-md-2">
+      <div id="cmd-col" class="col-md-8">
+        <div id="cmd-goBackDiv" class="mb-2">
+          <a id="cmd-goBackATag" href="javascript:void(2)" (click)="onGoBack()" class="f-14 font-600 text-coalescent cursor-pointer-hover price-promise"><img id="cmd-goBackIcon" src="assets/images/left-arrow-dark.svg"
+              alt="go_back1" class="me-2 mt--4">Go back</a>
+        </div>
+        <div id="cmd-totalPax" class="mb-3">
+          <h1 id="cmd-changeMyBookingTitle" class="f-32 f-600">Change my booking </h1>
+          <p id="cmd-totalPaxTitle" class="f-16 mb-0">{{this.searchRequest?.SearchRequestDto?.DepartureLocationName}} to
+            {{this.searchRequest?.SearchRequestDto?.ArrivalLocationName}} for 
+            <span id="cmd-numberOfAdult" *ngIf="this.noOfAdult > 0">{{this.noOfAdult > 1 ? this.noOfAdult + ' Adults ' : this.noOfAdult + ' Adult '}} </span>
+            <span id="cmd-numberOfChild" *ngIf="this.noOfChild > 0">{{this.noOfChild > 1 ? this.noOfChild + ' Children' : this.noOfChild + ' Child'}}</span>
+          </p>
+        </div>
+        <div class="coj-with-discount">          
+            <div class="coj-with-discount-form" *ngIf="searchResponse?.IsDiscountCodeAvailableOnOriginalJourney && commonService.checkDiscountCodeActive(searchResponse?.OutwordDiscountCodeStatus,searchResponse?.ReturnDiscountCodeStatus)">
+            <mat-slide-toggle [checked]="searchResponse?.IsDiscountCodeAvailable"
+            (change)="ontoggleChange($event, false)">
+              Show only trains eligible for discount code
+            </mat-slide-toggle>
+          </div>
+
+          <div class="coj-with-discount-m">
+            <ul>
+              <li *ngIf="searchResponse?.IsDiscountCodeAvailable  && commonService.checkDiscountCodeActive(searchResponse?.OutwordDiscountCodeStatus,searchResponse?.ReturnDiscountCodeStatus)">
+                <img src="assets/images/coj-discount-check-circle.svg" alt="Discount code" />
+                Discount code will be applied on the next page.
+              </li>
+              <li>
+                <img src="assets/images/coj-discoount-exclamation-mark-icon.svg" alt="Admin fee info" />
+                {{searchResponse?.IsComplimentaryDiscountApplied ? "No" : "An"}} admin fee will be applied to your booking.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="cmd-row2" class="row d-md-flex m-0">
+      <div id="cmd-col2" class="col-lg-8 col-md-8 col-sm-12 col-12 upgrade-right-col">
+        <app-coj-single-list id="cmd-oneWay" #CojSingleList *ngIf="journeyDirection === travelSolutionDirectionEnum.oneWay || journeyDirection === travelSolutionDirectionEnum.openReturn && !sharedSibling.IsNOResultsForOutwardEarlierLater">
+        </app-coj-single-list>
+        <app-coj-return-list id="cmd-forward" #CojReturnList *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && !sharedSibling.IsNOResultsForOutwardEarlierLater && !sharedSibling.IsNOResultsForReturnEarlierLater">
+        </app-coj-return-list>
+      </div>
+
+      <div id="cmd-col3" class="col-lg-4 col-md-4 col-sm-12 col-12 upgrade-left-col coj-right-card" *ngIf="!sharedSibling.IsNOResultsForOutwardEarlierLater && !sharedSibling.IsNOResultsForReturnEarlierLater">
+        <div class="card-shadow">
+          <div id="cmd-stickeyMenu" class="md-new-price plr-30 text-center" #stickyMenu [class.sticky] = "sticky" >
+            <p id="cmd-priceYouPayTitle" class="mb-0 f-18">Price you pay</p>
+            <h2 id="cmd-journey" class="mb-1 f-46 font-500"><span id="cmd-currencySymbol">£</span>
+            <span id="cmd-oneWayJourney" *ngIf="journeyDirection === travelSolutionDirectionEnum.oneWay || journeyDirection === travelSolutionDirectionEnum.openReturn && this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare" class="cost-value">{{this.sharedSibling.IsNOResultsForOutwardEarlierLater || this.sharedSibling.IsNOResultsForReturnEarlierLater ? 0 : this.sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+            <span id="cmd-forwardJourney" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0 && this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare || this.sharedSibling?.COJjourneySummaryModel?.ReturnSelectedFare" class="cost-value">{{sharedSibling.formatPrice((this.sharedSibling.IsNOResultsForOutwardEarlierLater ? 0 : (+this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)) + (this.sharedSibling.IsNOResultsForReturnEarlierLater ? 0 : (+this.sharedSibling?.COJjourneySummaryModel?.ReturnPrice)))}}</span>
+            <span id="cmd-singlePrice" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 1" class="cost-value">{{sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+          </h2>
+          <button id="cmd-continueBtn" mat-button class="default-btn mb-2 w-100" (click)="onContinue()" [disabled]="this.sharedSibling.IsNOResultsForOutwardEarlierLater || this.sharedSibling.IsNOResultsForReturnEarlierLater">Continue</button>
+          <div id="cmd-discount-code-area" class="discount-code-area">
+            <p id="cmd-discount-code-applied" class="mb-0" *ngIf="searchResponse?.IsDiscountCodeAvailable  && commonService.checkDiscountCodeActive(searchResponse?.OutwordDiscountCodeStatus,searchResponse?.ReturnDiscountCodeStatus)">
+              <img id="cmd-discount-code-applied-img" src="assets/images/white-circle-check.svg" alt="Check icon" />
+              Discount code will be applied on the next page.
+            </p>
+            <p id="cmd-admin-fee-code" class="mt-04 mb-0">
+              {{searchResponse?.IsComplimentaryDiscountApplied ? "No" : "An"}} admin fee will be applied to your booking.
+            </p>
+          </div>
+          </div>
+          <div id="cmd-totalJourneyDetails" class="md-new-tktdtl">
+            <p id="cmd-totalPax2" class="mb-0"><span id="cmd-totalPaxIcon"><img id="cmd-totalPaxImg" src="assets/images/ticket-icn.png" class="railcards-icon-small-24-x-24" alt="Ticket Icon"></span>
+            <span id="cmd-numberOfAdult2" *ngIf="this.noOfAdult > 0">{{this.noOfAdult > 1 ? this.noOfAdult + ' Adults ' : this.noOfAdult + ' Adult '}} </span>
+            <span id="cmd-numberOfChild2" *ngIf="this.noOfChild > 0">{{this.noOfChild > 1 ? this.noOfChild + ' Children' : this.noOfChild + ' Child'}}</span>
+            </p>
+            <p id="cmd-railcardMain" class="mb-0" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards"><span id="cmd-railcardIcon"><img id="cmd-railcardImg" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon5"></span>{{this.sharedSibling?.COJjourneySummaryModel?.RailCards}} applied</p>
+            <mat-accordion id="cmd-matAccordion" class="md-new-accordian upgrade-coj-card-accordion">
+              <mat-expansion-panel id="cmd-matExpansionPanel" [expanded]="step === 0" (opened)="setStep(0)">
+                <mat-expansion-panel-header id="cmd-matPanelHeader">
+                  <mat-panel-title id="cmd-matPanelTitle">
+                    <span id="cmd-journeySummaryTitle" class="font-500">Journey summary</span>
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+                <div id="cmd-journey2" class="bt-1 ptb-10" *ngIf = "(!this.sharedSibling.IsNOResultsForOutwardEarlierLater && !isReturnTicketTypeForCoj) || ((isReturnTicketTypeForCoj && searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.outward_Leg) || this.searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both) ">
+                  <p id="cmd-journeyDate" class="mb-0 upgrade-date-text"><span id="cmd-journeyDateIcon"><img id="cmd-journeyDateImg" src="assets/images/arrow-left-dark.svg" class="rotate180 mr-10" alt="left-arrow-dark"></span>{{sharedSibling?.COJjourneySummaryModel?.outwardDate | date:'EEE dd MMM yyyy'}}</p>
+                  <div id="cmd-stationMain" class="md-new-stationdtl">
+                    <p id="cmd-stationName" class="mb-0 upgrade-date-text"><span id="cmd-departStation" class="font-500">{{this.searchRequest?.SearchRequestDto?.DepartureLocationName}}</span> to
+                      <span id="cmd-arrivalStation" class="font-500">{{this.searchRequest?.SearchRequestDto?.ArrivalLocationName}}</span></p>
+                    <table id="cmd-table" class="mt-10 w-100 mb-10" aria-label="" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution">
+                      <tr id="cmd-tableEmptyTr">
+                        <th id="cmd-tableEmptyTh" style="display: none;" colspan="3">Empty</th>
+                      </tr>
+                      <tr id="cmd-tableTrTime">
+                        <td id="cmd-cojSingleTime" class="text-start upgrade-date-text">{{this.sharedSibling?.COJjourneySummaryModel?.SingleTime}}</td>
+                        <td id="cmd-cojSingleDurtaion" class="text-center upgrade-date-text">{{this.sharedSibling?.COJjourneySummaryModel?.SingleDuration}}</td>
+                        <td id="cmd-changeDirectTd" class="text-end"><button id="cmd-cojChangeDirectBtn" mat-button class="coj-btn-change c-pointer text-graphene text-underline upgrade-season-permitted-link" (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution, false)">{{this.sharedSibling?.COJjourneySummaryModel?.SingleChanges ? this.sharedSibling?.COJjourneySummaryModel?.SingleChanges + " Changes" : "Direct" }}</button></td>
+                      </tr>
+                    </table>
+                    <mat-accordion id="cmd-matAccordion2" class="md-advancetkt-acrdn bt-1" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution && (journeyDirection === travelSolutionDirectionEnum.oneWay || this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0)">
+                      <mat-expansion-panel id="cmd-matExpansionPanel2" [expanded]="step1 === 1" (opened)="setStep1(1)">
+                        <mat-expansion-panel-header id="cmd-matPanelHeader2">
+                          <mat-panel-title id="cmd-matPanelTitle2">
+                            <span id="cmd-cojSingleTicketTypeTitle" class="font-500">{{this.sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}</span>
+                          </mat-panel-title>
+                          <mat-panel-description id="cmd-matPanelDesc">
+                            <span id="cmd-cojSinglePriceIcon" class="font-500 upgrade-date-text" *ngIf="!isReturnTicketTypeForCoj || (isReturnTicketTypeForCoj && searchRequest?.SearchRequestDto?.ChoosedTrainleg != travelSolutionDirectionEnum.both)"><img id="cmd-cojSinglePriceImg" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon6">£{{this.sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                          </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <div id="cmd-singleTicketMoreBtn" class="f-14 ln-21 ptb-10">
+                            <ul id="cmd-ul">
+                                <li id="cmd-singleTicketDesc">{{this.sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                            </ul>
+                            <button id="cmd-moreDetailsBtn" mat-button class="text-coalescent text-underline c-pointer font-500 upgrade-season-permitted-link" (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)">More details</button>
+                        </div>
+                      </mat-expansion-panel>
+                    </mat-accordion>
+                    <div id="cmd-tableDiv" class="ptb-10">
+                      <table id="cmd-table2" class="w-100" aria-label="">
+                        <tr id="cmd-tableEmptyTr2">
+                          <th id="cmd-tableEmptyTh2" style="display: none;" colspan="2">Empty</th>
+                        </tr>
+                          <tr id="cmd-tableTrOperator">
+                            <td id="cmd-travelWithTitle" class="text-center w-50perc upgrade-date-text">Travelling with:</td>
+                            <td id="cmd-operatorMainTd" class="text-center w-50perc">
+                              <div id="cmd-singleOperatorDiv" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.SingleOperator === 1 || +this.sharedSibling?.COJjourneySummaryModel?.SingleOperator === 2">
+                                <img id="cmd-singleOperatorImg" class="avanti-logo" src="assets/images/avanti-logo-dark.svg" alt="avanti">
+                                  <span id="cmd-singleOperatorTitle" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.SingleOperator === 2">&nbsp;+ {{this.sharedSibling?.COJjourneySummaryModel?.SingleOperatorChange}}</span>
+                              </div>
+                              <span id="cmd-trainOperatorTitle" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.SingleOperator === 3">{{this.sharedSibling?.COJjourneySummaryModel?.SingleSaleCompany}}</span>
+                              <span id="cmd-multiOperatorTitle" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.SingleOperator === 4">Multiple operators</span>
+                            </td>
+                          </tr>
+                        </table>
+                    </div>
+                  </div>
+
+                  <!--Open return in case of Web-->
+                  <div id="md-rs-or-main" class="pb-10 mt-20"
+                    *ngIf="searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.openReturn">
+                    <div id="md-rs-or-inner" class="md-new-stationdtl mt-0">
+                      <table id="md-rs-or-table" class="mb-10" aria-label="">
+                        <tr id="md-rs-or-emptyTr">
+                          <th id="md-rs-or-emptyTh" colspan="2" style="display: none;">Empty</th>
+                        </tr>
+                        <tr id="md-rs-or-ticketTypeTr">
+                          <td id="md-rs-or-ticketTypeTd" class="text-start">
+                            <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'First'" width="20"
+                              height="20" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path
+                                d="M60 0C56.0444 0 52.1776 1.17298 48.8886 3.37061C45.5996 5.56824 43.0362 8.69181 41.5224 12.3463C40.0087 16.0009 39.6126 20.0222 40.3843 23.9018C41.156 27.7814 43.0608 31.3451 45.8579 34.1421C48.6549 36.9392 52.2186 38.844 56.0982 39.6157C59.9778 40.3874 63.9992 39.9913 67.6537 38.4776C71.3082 36.9638 74.4318 34.4004 76.6294 31.1114C78.827 27.8224 80 23.9556 80 20C80 14.6957 77.8929 9.60859 74.1421 5.85786C70.3914 2.10714 65.3043 0 60 0ZM56.85 29H54V15.29L50.9 17.61L49.52 15.46L54.52 11.81H56.87L56.85 29ZM62.34 20.79C61.2894 20.8243 60.2633 20.468 59.46 19.79L60.28 18.57C60.5464 18.8445 60.8674 19.0601 61.2221 19.2031C61.5769 19.346 61.9577 19.4131 62.34 19.4C62.96 19.4 63.34 19.12 63.34 18.7C63.34 18.28 62.87 18.16 61.94 17.84C60.77 17.43 59.77 16.91 59.77 15.51C59.77 14.34 60.77 13.51 62.27 13.51C63.1857 13.4896 64.0776 13.8023 64.78 14.39L64 15.62C63.5249 15.1496 62.8884 14.8779 62.22 14.86C61.9 14.86 61.44 15.04 61.44 15.47C61.44 15.9 61.88 16.07 62.57 16.33C64.08 16.93 65.03 17.21 65.03 18.62C65 19.82 64.14 20.78 62.34 20.78V20.79ZM68.72 20.79C67.5 20.79 66.72 20.02 66.72 18.43V14.93H65.84V13.55H66.72V11.19L68.37 11V13.54H70.46V14.92H68.37V18.25C68.37 18.98 68.59 19.25 69.06 19.25C69.4124 19.2232 69.7542 19.1172 70.06 18.94L70.48 20.36C69.943 20.6588 69.3341 20.8041 68.72 20.78V20.79Z"
+                                fill="#131E29" />
+                              <path
+                                d="M60 48.78H42.31L25.83 24.07C25.4621 23.4645 24.9457 22.9629 24.3297 22.6129C23.7137 22.2629 23.0185 22.076 22.31 22.07H19C19.2328 21.1731 19.3039 20.2418 19.21 19.32C20.4935 18.78 21.6138 17.9143 22.4602 16.8086C23.3066 15.7028 23.8497 14.3953 24.0358 13.0153C24.2219 11.6353 24.0446 10.2307 23.5214 8.94023C22.9982 7.64977 22.1473 6.51823 21.0527 5.65749C19.9581 4.79674 18.6578 4.23661 17.2803 4.03248C15.9029 3.82834 14.496 3.98728 13.1989 4.49357C11.9017 4.99986 10.7591 5.83597 9.88416 6.91921C9.00918 8.00246 8.43211 9.29533 8.21 10.67L0 7.99998L2.57 27.11C3.3393 32.8737 5.36723 38.3976 8.51 43.29L24.58 68.34C25.6511 69.9927 27.2943 71.1922 29.1948 71.7089C31.0953 72.2255 33.1196 72.023 34.88 71.14L53.48 61.69L56 80H64V52.78C64 51.7191 63.5786 50.7017 62.8284 49.9516C62.0783 49.2014 61.0609 48.78 60 48.78ZM16 6.49998C17.2327 6.49392 18.4314 6.90367 19.4025 7.663C20.3736 8.42234 21.0603 9.48692 21.3517 10.6847C21.643 11.8825 21.522 13.1436 21.0082 14.2641C20.4944 15.3846 19.6178 16.2992 18.52 16.86C18.071 15.8465 17.4145 14.9384 16.5929 14.1944C15.7713 13.4503 14.8029 12.8867 13.75 12.54L10.53 11.47C10.6616 10.1102 11.2947 8.84802 12.3058 7.9293C13.317 7.01059 14.6338 6.50108 16 6.49998ZM33.75 68.91C32.5454 69.5214 31.1569 69.6645 29.8529 69.3117C28.549 68.959 27.422 68.1353 26.69 67L10.62 42C7.68077 37.4129 5.77974 32.2388 5.05 26.84L3 11.63L13 14.91C14.316 15.3494 15.4157 16.2725 16.0767 17.4924C16.7377 18.7122 16.9104 20.1376 16.56 21.48L14 31C13.6345 32.2666 13.5662 33.6005 13.8004 34.8978C14.0345 36.1952 14.5648 37.421 15.35 38.48L21.17 47.21L21.91 48.32H30.64L35.72 55.93L36.46 57.05H53.54L54.12 58.56L33.75 68.91ZM61.5 77.5H58.18L55.83 60.5L57.25 59.78L55.25 54.56H37.82L32 45.82H23.27L17.45 37.09C16.8613 36.3269 16.4633 35.4342 16.2894 34.4862C16.1155 33.5382 16.1705 32.5624 16.45 31.64L18.31 24.58H22.31C22.5914 24.5814 22.8677 24.6547 23.1127 24.793C23.3577 24.9312 23.5634 25.1299 23.71 25.37L40.23 50.17L41 51.28H60C60.3978 51.28 60.7794 51.438 61.0607 51.7193C61.342 52.0006 61.5 52.3822 61.5 52.78V77.5Z"
+                                fill="#131E29" />
+                            </svg>
+                            <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'Standard'" width="20"
+                              height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path
+                                d="M30 0C28.0222 0 26.0888 0.58649 24.4443 1.6853C22.7998 2.78412 21.5181 4.3459 20.7612 6.17317C20.0043 8.00043 19.8063 10.0111 20.1922 11.9509C20.578 13.8907 21.5304 15.6725 22.9289 17.0711C24.3275 18.4696 26.1093 19.422 28.0491 19.8079C29.9889 20.1937 31.9996 19.9957 33.8268 19.2388C35.6541 18.4819 37.2159 17.2002 38.3147 15.5557C39.4135 13.9112 40 11.9778 40 10C40 7.34784 38.9464 4.8043 37.0711 2.92893C35.1957 1.05357 32.6522 0 30 0ZM30.08 14.75C29.449 14.7491 28.8249 14.6181 28.2468 14.3652C27.6687 14.1122 27.1489 13.7428 26.72 13.28L27.72 12.07C28.0053 12.4322 28.3659 12.7279 28.7769 12.9369C29.1878 13.1458 29.6393 13.2629 30.1 13.28C31.1 13.28 31.65 12.84 31.65 12.16C31.65 11.48 31.03 11.09 29.85 10.67C28.44 10.17 27.04 9.54 27.04 7.84C27.0642 7.47553 27.1599 7.11939 27.3217 6.79193C27.4836 6.46448 27.7084 6.17213 27.9833 5.9316C28.2582 5.69107 28.5778 5.50707 28.9238 5.39012C29.2699 5.27316 29.6356 5.22555 30 5.25C31.1285 5.25773 32.2184 5.66116 33.08 6.39L32.14 7.63C31.5622 7.06149 30.8068 6.70849 30 6.63C29.8426 6.60908 29.6826 6.62097 29.5301 6.66492C29.3775 6.70888 29.2357 6.78395 29.1136 6.8854C28.9914 6.98685 28.8917 7.1125 28.8205 7.25441C28.7493 7.39633 28.7083 7.55145 28.7 7.71C28.7 8.39 29.31 8.63 30.44 9.06C32.03 9.69 33.31 10.12 33.31 11.91C33.3012 12.3142 33.2086 12.7122 33.038 13.0788C32.8673 13.4454 32.6225 13.7725 32.3188 14.0395C32.0152 14.3064 31.6594 14.5075 31.274 14.6298C30.8886 14.7521 30.482 14.793 30.08 14.75Z"
+                                fill="#131E29" />
+                              <path
+                                d="M30 23.3898H20.49L12.92 11.9998C12.7361 11.697 12.4779 11.4462 12.1699 11.2712C11.8618 11.0962 11.5142 11.0028 11.16 10.9998H9.48C9.59208 10.5523 9.62591 10.0888 9.58 9.62977C10.2225 9.35846 10.7829 8.92388 11.2056 8.36913C11.6283 7.81439 11.8986 7.15877 11.9897 6.46731C12.0808 5.77585 11.9895 5.07259 11.7249 4.4273C11.4603 3.78201 11.0316 3.21711 10.4813 2.78865C9.93102 2.36019 9.27825 2.08306 8.58778 1.98476C7.89731 1.88646 7.19313 1.97039 6.54512 2.22824C5.8971 2.48609 5.32776 2.9089 4.89359 3.45471C4.45942 4.00051 4.1755 4.65036 4.07 5.33977L0 3.99976L1.29 13.5598C1.3827 14.2768 1.51625 14.988 1.69 15.6898C2.20937 17.818 3.0778 19.8455 4.26 21.6898L12.26 34.2098C12.3889 34.395 12.5291 34.572 12.68 34.7398L12.8 34.8598C12.9337 35 13.0774 35.1303 13.23 35.2498H13.29C13.4637 35.375 13.6477 35.4854 13.84 35.5798L13.99 35.6398C14.1507 35.7179 14.318 35.7814 14.49 35.8298H14.6C14.8047 35.877 15.0116 35.9137 15.22 35.9398H15.37H15.61L16 35.9998H16.1C16.3133 35.9998 16.5233 35.9598 16.73 35.8798H16.87C17.0836 35.819 17.2912 35.7387 17.49 35.6398L26.79 30.9198L28 39.9998H32V25.3898C32 24.8593 31.7893 24.3506 31.4142 23.9756C31.0391 23.6005 30.5304 23.3898 30 23.3898ZM8 3.99976C8.44972 4.00248 8.88541 4.15668 9.2367 4.43749C9.588 4.71829 9.8344 5.1093 9.93612 5.54738C10.0378 5.98546 9.98893 6.44504 9.79731 6.8519C9.60568 7.25877 9.28252 7.58917 8.88 7.78976C8.40033 7.07533 7.69678 6.54063 6.88 6.26977L6 5.99976C6 5.46933 6.21071 4.96062 6.58579 4.58555C6.96086 4.21048 7.46957 3.99976 8 3.99976ZM30 37.9998H29.74L28.44 28.5798L28.21 26.8498H18.63L16 22.9098H11.64L10.54 21.2698L8.73 18.5498C8.59203 18.3383 8.46842 18.1178 8.36 17.8898L8.14 17.2098C8.0595 16.7464 8.08688 16.2708 8.22 15.8198L8.83 13.5198L9 12.9998H11.2C11.2094 12.9953 11.2196 12.993 11.23 12.993C11.2404 12.993 11.2506 12.9953 11.26 12.9998L18.83 24.4998L19.42 25.3898H30V37.9998Z"
+                                fill="#131E29" />
+                            </svg>
+                            <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'Standard Premium'"
+                              width="20" height="20" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M40.0601 10C40.0601 15.5228 35.5829 20 30.0601 20C24.5372 20 20.0601 15.5228 20.0601 10C20.0601 4.47715 24.5372 0 30.0601 0C35.5829 0 40.0601 4.47715 40.0601 10ZM24.1763 14.2987C24.7516 14.5485 25.3728 14.6749 25.9999 14.67C26.7898 14.6707 27.5585 14.4145 28.1899 13.94C28.5058 13.7122 28.7617 13.4113 28.9359 13.063C29.1101 12.7147 29.1972 12.3293 29.1899 11.94C29.211 11.5485 29.1299 11.1583 28.9546 10.8076C28.7793 10.457 28.5157 10.158 28.1899 9.93997C27.5932 9.58922 26.9635 9.29783 26.3099 9.06997L25.5499 8.75997C25.3731 8.68729 25.2026 8.60034 25.0399 8.49997C24.8855 8.42136 24.757 8.29982 24.6699 8.14997C24.6053 8.01969 24.5743 7.87529 24.5799 7.72997C24.5791 7.57807 24.6129 7.42799 24.6787 7.29111C24.7446 7.15422 24.8407 7.03414 24.9599 6.93997C25.2245 6.74114 25.5491 6.6388 25.8799 6.64997C26.6747 6.71365 27.4234 7.04913 27.9999 7.59997L28.9999 6.36997C28.1325 5.64689 27.0392 5.2506 25.9099 5.24997C25.1498 5.22859 24.4099 5.49666 23.8399 5.99997C23.5757 6.22155 23.3634 6.49857 23.2183 6.81138C23.0731 7.12419 22.9985 7.46512 22.9999 7.80997C22.9888 8.17687 23.057 8.54185 23.1999 8.87997C23.3538 9.19511 23.5841 9.46671 23.8699 9.66997C24.1424 9.86575 24.43 10.0396 24.7299 10.19C25.0697 10.3571 25.4205 10.5008 25.7799 10.62C26.2696 10.7663 26.7371 10.9782 27.1699 11.25C27.2993 11.3491 27.4024 11.4784 27.4704 11.6266C27.5384 11.7747 27.5691 11.9372 27.5599 12.1C27.5631 12.2586 27.5284 12.4157 27.4589 12.5582C27.3893 12.7008 27.2868 12.8248 27.1599 12.92C26.8262 13.1408 26.4292 13.2462 26.0299 13.22C25.5954 13.211 25.1683 13.105 24.7799 12.91C24.3455 12.695 23.9633 12.3879 23.6599 12.01L22.6599 13.22C23.0845 13.6815 23.6011 14.049 24.1763 14.2987ZM30.9399 14.57V5.34003H34.2799C34.7094 5.30581 35.1413 5.36004 35.5489 5.49936C35.9566 5.63868 36.3313 5.86013 36.6499 6.15003C36.9197 6.44281 37.1284 6.78635 37.2641 7.16062C37.3997 7.5349 37.4595 7.93242 37.4399 8.33003C37.4677 8.7411 37.4011 9.15307 37.2451 9.5344C37.0891 9.91573 36.8479 10.2563 36.5399 10.53C35.8417 11.0624 34.9766 11.3283 34.0999 11.28H32.5099V14.57H30.9399ZM32.5099 9.86003H33.9399C34.4455 9.89741 34.9472 9.74797 35.3499 9.44003C35.5049 9.29489 35.6263 9.1177 35.7058 8.92081C35.7852 8.72392 35.8208 8.51207 35.8099 8.30003C35.8215 8.08732 35.7873 7.8746 35.7097 7.67622C35.6321 7.47784 35.5128 7.29841 35.3599 7.15003C34.9927 6.85642 34.5292 6.71024 34.0599 6.74003H32.5099V9.86003ZM20.49 23.4449H30C30.5304 23.4449 31.0391 23.6557 31.4142 24.0307C31.7893 24.4058 32 24.9145 32 25.4449V40.0549H28L26.79 30.9749L17.49 35.6949C17.2912 35.7938 17.0836 35.8742 16.87 35.9349H16.73C16.5233 36.0149 16.3133 36.0549 16.1 36.0549H16L15.61 35.9949H15.37H15.22C15.0116 35.9688 14.8047 35.9321 14.6 35.8849H14.49C14.318 35.8366 14.1507 35.773 13.99 35.6949L13.84 35.6349C13.6477 35.5406 13.4637 35.4302 13.29 35.3049H13.23C13.0774 35.1855 12.9337 35.0552 12.8 34.9149L12.68 34.7949C12.5291 34.6272 12.3889 34.4502 12.26 34.2649L4.26 21.7449C3.0778 19.9006 2.20937 17.8732 1.69 15.7449C1.51625 15.0431 1.3827 14.332 1.29 13.6149L0 4.05494L4.07 5.39494C4.1755 4.70553 4.45942 4.05569 4.89359 3.50988C5.32776 2.96407 5.8971 2.54127 6.54512 2.28342C7.19313 2.02557 7.89731 1.94163 8.58778 2.03994C9.27825 2.13824 9.93102 2.41537 10.4813 2.84383C11.0316 3.27229 11.4603 3.83718 11.7249 4.48248C11.9895 5.12777 12.0808 5.83103 11.9897 6.52249C11.8986 7.21395 11.6283 7.86957 11.2056 8.42431C10.7829 8.97905 10.2225 9.41363 9.58 9.68494C9.62591 10.144 9.59208 10.6075 9.48 11.0549H11.16C11.5142 11.058 11.8618 11.1514 12.1699 11.3264C12.4779 11.5014 12.7361 11.7522 12.92 12.0549L20.49 23.4449ZM9.2367 4.49266C8.88541 4.21186 8.44972 4.05765 8 4.05494C7.46957 4.05494 6.96086 4.26565 6.58579 4.64073C6.21071 5.0158 6 5.52451 6 6.05494L6.88 6.32494C7.69678 6.59581 8.40033 7.13051 8.88 7.84494C9.28252 7.64435 9.60568 7.31394 9.79731 6.90708C9.98893 6.50021 10.0378 6.04064 9.93612 5.60256C9.8344 5.16448 9.588 4.77347 9.2367 4.49266ZM29.74 38.0549H30V25.4449H19.42L18.83 24.5549L11.26 13.0549C11.2506 13.0505 11.2404 13.0482 11.23 13.0482C11.2196 13.0482 11.2094 13.0505 11.2 13.0549H9L8.83 13.5749L8.22 15.8749C8.08688 16.326 8.0595 16.8016 8.14 17.2649L8.36 17.9449C8.46842 18.173 8.59203 18.3935 8.73 18.6049L10.54 21.3249L11.64 22.9649H16L18.63 26.9049H28.21L28.44 28.6349L29.74 38.0549Z"
+                                fill="#131E29" />
+                            </svg>
+                            {{sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketType}}
+                          </td>
+                          <td id="md-rs-or-TicketClass" class="text-end ps-3">
+                            {{sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass
+                            == 'First' ?
+                            'First Class' :
+                            sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass}}
+                          </td>
+                        </tr>
+                      </table>
+                  
+                      <table id="md-rs-or-TicketTitle" class="mb-10 w-100" aria-label="">
+                        <tr id="md-rs-or-emptyTr2">
+                          <th id="md-rs-or-emptyTh2" colspan="2" style="display: none;">Empty</th>
+                        </tr>
+                        <tr id="md-rs-or-returnTr">
+                          <td id="md-rs-or-returnTd">
+                            <p id="md-rs-or-returnTxt" class="f-16 mb-0 font-500">Return</p>
+                          </td>
+                        </tr>
+                      </table>
+                      <p id="md-rs-or-ticketLocation" class="mb-0 bt-1 pt-10 f-18 text-graphene"><span id="md-rs-or-ticketLocationTxt"
+                          class="font-500">{{searchRequest?.SearchRequestDto?.ArrivalLocationName}}
+                        </span><br /><span id="md-rs-or-ticketLocation2" class="font-500">
+                          {{searchRequest?.SearchRequestDto?.DepartureLocationName}}</span></p>
+                      <h2 id="md-rs-or-title" class="f-32 ">Open return</h2>
+                  
+                      <table id="md-rs-or-table2" class="mb-10 w-100" aria-label=""
+                        *ngIf="!(sharedSibling?.isSearchErrorSoldOut || sharedSibling?.isTrainDepartedOrCancelled)">
+                        <tr id="md-rs-or-emptyTr3">
+                          <th id="md-rs-or-emptyTh3" colspan="2" style="display: none;">Empty</th>
+                        </tr>
+                        <tr id="md-rs-or-ticketInfo">
+                          <td id="md-rs-or-blankTd">
+                            <p id="md-rs-or-blankP" class="f-16 mb-0 font-500"></p>
+                          </td>
+                          <td id="md-rs-or-ticketInfoTd" class="right-text">
+                            <button id="md-rs-or-ticketInfoBtn" class="simple-btn text-underline px-0 text-graphene font-400"
+                              (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)">Ticket
+                              info</button>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                  <div id="md-rs-fr-main" class="pb-10"
+                    *ngIf="(searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.openReturn ? true : (searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.return ? (sharedSibling?.COJjourneySummaryModel?.IsSingleFareSelected == true ? false : true) : false) && isReturnTicketTypeForCoj)">
+                    <div id="md-rs-fr-row" class="row" *ngIf="!(sharedSibling.isTrainDepartedOrCancelled)">
+                      <div id="md-rs-fr-col" class="col-6">
+                        <p id="md-rs-fr-title" class="mb-10 ln-32 font-500 f-16">{{
+                          (searchRequest?.SearchRequestDto?.TravelSolutionDirection ==
+                          'OPEN_RETURN') ? 'Open Return' : 'Flexible Return'}}</p>
+                      </div>
+                      <div id="md-rs-fr-col2" class="col-6 text-end or-tct-price f-24">
+                        <span id="md-rs-fr-icon" class="font-500"><img id="md-rs-fr-img"
+                            *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined"
+                            src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon">
+                          {{sharedSibling.currencySymbol(sharedSibling?.COJjourneySummaryModel?.SingleCurrency)}}{{this.sharedSibling.IsNOResultsForOutwardEarlierLater
+                          || this.sharedSibling.IsNOResultsForReturnEarlierLater ? 0 :
+                          this.sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                      </div>
+                    </div>
+                    <div id="md-rs-fr-ticketType" class="md-advancetkt-acrdn bt-1 pt-10"
+                      *ngIf="!(sharedSibling.isTrainDepartedOrCancelled)">
+                      <div id="md-rs-fr-innerTicketType" class="text-graphene f-16">
+                        <span id="md-rs-fr-singleTicketType" class="font-500">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}
+                          ticket</span>
+                        <div id="md-rs-fr-ticketDescDiv" class="ln-21 pb-10">
+                          <button id="md-rs-fr-ticketDescBtn"
+                            (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)"
+                            mat-button
+                            class="text-graphene simple-btn c-pointer text-underline font-400 discription-btn coj-msg-btn">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="cmd-journey3" class="bt-1 ptb-10" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && (!this.sharedSibling.IsNOResultsForReturnEarlierLater && !isReturnTicketTypeForCoj) || ((isReturnTicketTypeForCoj && searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.return_Leg) || this.searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both) ">
+                  <p id="cmd-journey3Time" class="mb-0 upgrade-date-text"><span id="cmd-journey3TimeIcon"><img id="cmd-journey3TimeImg" src="assets/images/arrow-right-dark.svg" class="rotate180 mr-10" alt="right-arrow-dark"></span>{{sharedSibling?.COJjourneySummaryModel?.returnDate | date:'EEE dd MMM yyyy'}}</p>
+                  <div id="cmd-journey3Details" class="md-new-stationdtl">
+                    <p id="cmd-journey3Station" class="mb-0 upgrade-date-text">
+                      <span id="cmd-journey3DeparStation" class="font-500">{{isReturnTicketTypeForCoj && this.searchRequest.SearchRequestDto.ChoosedTrainleg == 'Return_Leg'  ? this.searchRequest?.SearchRequestDto?.DepartureLocationName : this.searchRequest?.SearchRequestDto?.ArrivalLocationName}}</span> to
+                      <span id="cmd-journey3ArrivalStation" class="font-500">{{isReturnTicketTypeForCoj && this.searchRequest.SearchRequestDto.ChoosedTrainleg == 'Return_Leg' ? this.searchRequest?.SearchRequestDto?.ArrivalLocationName : this.searchRequest?.SearchRequestDto?.DepartureLocationName}}</span>
+                      
+                    </p>
+                    <table id="cmd-journey3Table" class="mt-10 w-100 mb-10" aria-label="" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution">
+                      <tr id="cmd-journey3EmptyTr">
+                        <th id="cmd-journey3EmptyTh" style="display: none;" colspan="3">Empty</th>
+                      </tr>
+                      <tr id="cmd-journey3ChangeDirectTr">
+                        <td id="cmd-journey3ReturnTime" class="text-start upgrade-date-text">{{this.sharedSibling?.COJjourneySummaryModel?.ReturnTime}}</td>
+                        <td id="cmd-journey3ReturnDuration" class="text-center upgrade-date-text">{{this.sharedSibling?.COJjourneySummaryModel?.ReturnDuration}}</td>
+                        <td id="cmd-journey3ChangeDirectTd" class="text-end"><button id="cmd-journey3ChangeDirectBtn" mat-button class="coj-btn-change c-pointer text-graphene text-underline upgrade-season-permitted-link" (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution, true)">{{this.sharedSibling?.COJjourneySummaryModel?.ReturnChanges ? this.sharedSibling?.COJjourneySummaryModel?.ReturnChanges + " Changes" : "Direct"}}</button></td>
+                      </tr>
+                    </table>
+                    <mat-accordion id="cmd-journey3MatAccordion" class="md-advancetkt-acrdn bt-1" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0">
+                      <mat-expansion-panel id="cmd-journey3MatExpanPanel" [expanded]="step2 === 2" (opened)="setStep2(2)">
+                        <mat-expansion-panel-header id="cmd-journey3PanelHeader">
+                          <mat-panel-title id="cmd-journey3PanelTitle">
+                            <span id="cmd-journey3ReturnTicketType" class="font-500">{{!this.isReturnTicketTypeForCoj || (this.isReturnTicketTypeForCoj && this.searchRequest?.SearchRequestDto?.ChoosedTrainleg != 'Both') ? this.sharedSibling?.COJjourneySummaryModel?.ReturnTicketType : this.sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}</span>
+                          </mat-panel-title>
+                          <mat-panel-description id="cmd-journey3MatPacelDesc"
+                            *ngIf="!isReturnTicketTypeForCoj || (isReturnTicketTypeForCoj && searchRequest?.SearchRequestDto?.ChoosedTrainleg != travelSolutionDirectionEnum.both)">
+                            <span id="cmd-journey3CojPriceIcon" class="font-500 upgrade-date-text"><img id="cmd-journey3CojPriceImg"
+                                *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards" src="assets/images/railcard-icn.png"
+                                class="railcards-icon-small-24-x-24"
+                                alt="Railcard Icon7">£{{this.sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.ReturnPrice)}}</span>
+                          </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <div id="cmd-journey3ReturnMore" class="f-14 ln-21 ptb-10">
+                            <ul id="cmd-journey3Ul">
+                              <li id="cmd-journey3ReturnTicketDesc">{{!this.isReturnTicketTypeForCoj || (this.isReturnTicketTypeForCoj && this.searchRequest?.SearchRequestDto?.ChoosedTrainleg != 'Both') ? this.sharedSibling?.COJjourneySummaryModel?.ReturnTicketDescription : this.sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                            </ul>
+                            <button id="cmd-journey3MoreDetailsBtn" mat-button class="text-coalescent text-underline c-pointer font-500" (click)="moreDetails(moreDetailForTicketTypeInCaseOfAdvanceSingleAndPureReturn(), moreDetailForOutAndRetInCaseOfAdvanceSingleAndPureReturn())">More details</button>
+                        </div>
+                      </mat-expansion-panel>
+                    </mat-accordion>
+                    <div id="cmd-journey3OperatorDiv" class="ptb-10">
+                      <table id="cmd-journey3Table2" class="w-100" aria-label="">
+                        <tr id="cmd-journey3EmptyTr2">
+                          <th id="cmd-journey3EmptyTh2" style="display: none;" colspan="2">Empty</th>
+                        </tr>
+                          <tr id="cmd-journey3OperatorTr">
+                            <td id="cmd-journey3TravelWith" class="text-center w-50perc upgrade-date-text">Travelling with:</td>
+                            <td id="cmd-journey3OperatorTd" class="text-center w-50perc">
+                              <div id="cmd-journey3ReturnOperator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.ReturnOperator === 1 || +this.sharedSibling?.COJjourneySummaryModel?.ReturnOperator === 2">
+                                <img id="cmd-journey3ReturnOperatorImg" class="avanti-logo" src="assets/images/avanti-logo-dark.svg" alt="avanti_1">
+                                  <span id="cmd-journey3ReturnOperatorTitle" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.ReturnOperator === 2">&nbsp;+ {{this.sharedSibling?.COJjourneySummaryModel?.ReturnOperatorChange}}</span>
+                                </div>
+                                <span id="cmd-journey3ReturnSaleCompany" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.ReturnOperator === 3">{{this.sharedSibling?.COJjourneySummaryModel?.ReturnSaleCompany}}</span>
+                                <span id="cmd-journey3MultiOperators" class="train-operator" *ngIf="+this.sharedSibling?.COJjourneySummaryModel?.ReturnOperator === 4">Multiple operators</span>
+                            </td>
+                          </tr>
+                        </table>
+                    </div>
+                  </div>
+                </div>
+                <div id="cmd-journey4" class="bt-1 ptb-10" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 1 && !isReturnTicketTypeForCoj || (searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both && isReturnTicketTypeForCoj)">
+                  <p id="cmd-journey4FlexReturn" class="mb-10"><span id="cmd-journey4FlexReturnIcon"></span>Flexible Return</p>
+                  <div id="cmd-journey4TicketDetail" class="md-advancetkt-acrdn bt-1 pt-10">
+                    <div id="cmd-journey4TicketDetailDiv" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution && this.sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution">
+                      <div id="cmd-journey4Row" class="row">
+                        <div id="cmd-journey4Col" class="col-6 or-tct-typ">
+                          <span id="cmd-journey4SingleTicket" class="font-500 font-dark">{{this.sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}</span>
+                        </div>
+                        <div id="cmd-journey4SinglePrice" class="col-6 text-end or-tct-price">
+                          <span id="cmd-journey4SinglePriceIcon" class="font-500"><img id="cmd-journey4SinglePriceImg" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon1">£{{this.sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                        </div>
+                      </div>
+                      <div id="cmd-journey4MoreDetailsDiv" class="f-14 ln-21 ptb-10">
+                          <ul id="cmd-journey4Ul">
+                              <li id="cmd-journey4SingleTicketDesc">{{this.sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                          </ul>
+                          <button id="cmd-journey4MoreDetailsBtn" mat-button class="text-coalescent text-underline c-pointer font-500" (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)">More details</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </mat-expansion-panel>
+            </mat-accordion>
+          </div>
+          <div id="cmd-rightArea" class="new-prc-dtl-mbl d-block d-xl-none">
+            <div id="cmd-rightRow" class="row">
+              <div id="cmd-rightCol" class="col-8">
+                <p id="cmd-rightPriceYouPay" class="mb-0 f-16 ln-30">Price you pay for
+                  <span id="cmd-rightNumberOfAdult" *ngIf="this.noOfAdult > 0">{{this.noOfAdult > 1 ? this.noOfAdult + ' Adults ' : this.noOfAdult + ' Adult '}} </span>
+                  <span id="cmd-rightNumberOfChild" *ngIf="this.noOfChild > 0">{{this.noOfChild > 1 ? this.noOfChild + ' Children' : this.noOfChild + ' Child'}}</span></p>
+                  <p id="cmd-rightCurrencySymbol" class="mb-0 f-20"><span id="cmd-rightCurrencySymbolSpan">{{sharedSibling.currencySymbol('')}}</span>
+                    
+                    <span id="cmd-rightSinglePrice" *ngIf="journeyDirection === travelSolutionDirectionEnum.oneWay || journeyDirection === travelSolutionDirectionEnum.openReturn && this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare" class="cost-value">{{this.sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                    <span id="cmd-rightReturnPrice" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0 && this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare || this.sharedSibling?.COJjourneySummaryModel?.ReturnSelectedFare" class="cost-value">{{sharedSibling.formatPrice((+this.sharedSibling?.COJjourneySummaryModel?.SinglePrice) + (+this.sharedSibling?.COJjourneySummaryModel?.ReturnPrice))}}</span>
+                    <span id="cmd-rightSinglePrice2" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 1" class="cost-value">{{sharedSibling.formatPrice(this.sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                  </p>
+                  <a id="cmd-rightShowMoreDetailsBtn" href="javascript:void(1)" class="text-fff price-promise" (click)="showclickEvent()">Show more details <img id="cmd-rightShowMoreDetailsImg" src="assets/images/up-arrow-white.svg" alt="show_more_logo"></a>
+                </div>
+              <div id="cmd-rightContinueDiv" class="col-4 ps-0 text-end">
+                <button id="cmd-rightContinueBtn" mat-button class="default-btn" (click)="onContinue()">Continue</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="cmd-jd-main" class="md-new-price-3" [ngClass]="showclasstoggle ? 'show' : ''">
+            <a id="cmd-jd-showMoreDetaildIcon" href="javascript:void(0)" class="text-fff price-promise" (click)="showclickEvent()">Show less details <img id="cmd-jd-showMoreDetaildImg" src="assets/images/down-arrow-white.svg" alt="coj_downArrow"></a>
+            <div id="cmd-jd-innerDiv" class="md-new-tktdtl">
+              <p id="cmd-jd-railcard" class="mb-0" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined"><span id="cmd-jd-railcardIcon"><img id="cmd-jd-railcardImg" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon2"></span>{{sharedSibling?.COJjourneySummaryModel?.RailCards}} applied</p>
+              <p id="cmd-jd-promoApplied" class="mb-0" *ngIf="sharedSibling?.COJjourneySummaryModel?.IsPromo">1 promotion applied</p>
+              <mat-accordion id="cmd-jd-matAccordion" class="md-new-accordian" *ngIf="sharedSibling.COJjourneySummaryModel != null">
+                <mat-expansion-panel id="cmd-jd-matPanel" [expanded]="step === 0" (opened)="setStep(0)">
+                  <mat-expansion-panel-header id="cmd-jd-matPanelHeader">
+                    <mat-panel-title id="cmd-jd-matPanelTitle">
+                      <span id="cmd-jd-jsTitle" class="font-500 upgrade-f-12">Journey summary</span>
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+                  <div id="cmd-journey5Main" class="bt-1 ptb-10" *ngIf = "(!this.sharedSibling.IsNOResultsForOutwardEarlierLater && !isReturnTicketTypeForCoj) || ((isReturnTicketTypeForCoj && searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.outward_Leg) || this.searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both) ">
+                    <p id="cmd-journey5Time" class="mb-0"><span id="cmd-journey5TimeIcon"><img id="cmd-journey5TimeImg" src="assets/images/arrow-left-dark.svg" class="rotate180 mr-10" alt="left-arrow-2"></span>{{sharedSibling?.COJjourneySummaryModel?.outwardDate | date:'EEE dd MMM yyyy'}}</p>
+                    <div id="cmd-journey5Inner" class="md-new-stationdtl">
+                      <div id="cmd-journey5Row" class="row">
+                        <div id="cmd-journey5Col" class="col-9">
+
+                          <p id="cmd-journey5Station" class="mb-0"><span id="cmd-journey5DeparStation" class="font-500">{{this.searchRequest?.SearchRequestDto?.DepartureLocationName}}</span> to <span id="cmd-journey5ArrivalStation" class="font-500">{{this.searchRequest?.SearchRequestDto?.ArrivalLocationName}}</span></p>
+                        </div>
+                        <div id="cmd-journey5Col2" class="col-3">
+                          <img id="cmd-journey5Logo" src="assets/images/avanti-logo-dark.svg" class="img-fluid" alt="coj_avantiLogo">
+                        </div>
+                      </div>
+                      <table id="cmd-journey5Table" class="mt-10 w-100 mb-10 upgrade-coj-table upgrade-coj-table" aria-label="">
+                        <tr id="cmd-journey5EmptyTr">
+                          <th id="cmd-journey5EmptyTd" style="display: none;" colspan="4">Empty</th>
+                        </tr>
+                        <tr id="cmd-journey5DirectChangeTr">
+                          <td id="cmd-journey5SingleTime" class="text-start m-signle-time">{{sharedSibling?.COJjourneySummaryModel?.SingleTime}}</td>
+                          <td id="cmd-journey5SignleDuration" class="text-center">{{sharedSibling?.COJjourneySummaryModel?.SingleDuration}}  </td>
+                          <td id="cmd-journey5Direct" *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleChanges!=undefined && sharedSibling?.COJjourneySummaryModel?.SingleChanges!=null && (sharedSibling?.COJjourneySummaryModel?.SingleChanges=='0' || sharedSibling?.COJjourneySummaryModel?.SingleChanges=='Direct')" class="text-end m-direct-title"><button id="cmd-journey5DirectBtn" mat-button (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution, false)" class="c-pointer text-graphene text-underline upgrade-coj-direct-changes">Direct</button></td>
+                          <td id="cmd-journey5SingleChnages" *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleChanges!=undefined && sharedSibling?.COJjourneySummaryModel?.SingleChanges!=null && sharedSibling?.COJjourneySummaryModel?.SingleChanges!='0' && sharedSibling?.COJjourneySummaryModel?.SingleChanges!='Direct'" class="text-end"><button id="cmd-journey5SingleChangeBtn" mat-button (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution, false)" class="c-pointer text-graphene text-underline upgrade-coj-direct-changes">{{sharedSibling?.COJjourneySummaryModel?.SingleChanges}} changes</button></td>
+                        </tr>
+                      </table>
+                      <mat-accordion id="cmd-journey5MatAccordion" class="md-advancetkt-acrdn bt-1" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.SingleChoosedTravelSolution && (journeyDirection === travelSolutionDirectionEnum.oneWay || this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0)">
+                        <mat-expansion-panel id="cmd-journey5MatPanel" [expanded]="step1 === 1" (opened)="setStep1(1)">
+                          <mat-expansion-panel-header id="cmd-journey5MatPanelHeader">
+                            <mat-panel-title id="cmd-journey5MatPanelTitle">
+                              <span id="cmd-journey5SingleTicektType" class="font-500 upgrade-f-12">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}</span>
+                            </mat-panel-title>
+                            <mat-panel-description id="cmd-journey5MatPanelDesc" class="font-500 upgrade-f-12" *ngIf="!isReturnTicketTypeForCoj || (isReturnTicketTypeForCoj && searchRequest?.SearchRequestDto?.ChoosedTrainleg != travelSolutionDirectionEnum.both)">
+                              <img id="cmd-journey5RailcardImg" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon0"> {{sharedSibling.currencySymbol(sharedSibling?.COJjourneySummaryModel?.SingleCurrency)}}{{sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}
+                            </mat-panel-description>
+                          </mat-expansion-panel-header>
+                          <div id="cmd-journey5SingleMore" class="f-14 ln-21 ptb-10">
+                              <ul id="cmd-journey5Ul">
+                                  <li id="cmd-journey5SingleTicketDesc">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                              </ul>
+                              <button id="cmd-journey5MoreDetailsBtn" mat-button (click)="moreDetails(sharedSibling?.COJjourneySummaryModel?.SingleTicketType,sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)" class="text-coalescent text-underline c-pointer font-500 upgrade-f-12">More details</button>
+                          </div>
+                        </mat-expansion-panel>
+                      </mat-accordion>
+                    </div>
+
+                    <!--Open return in case of mobile-->
+                    <div id="cmd-rs-or-main" class="pb-10 mt-20"
+                      *ngIf="searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.openReturn">
+                      <div id="cmd-rs-or-inner" class="md-new-stationdtl mt-0">
+                        <table id="cmd-rs-or-table" class="mb-10" aria-label="">
+                          <tr id="cmd-rs-or-emptyTr">
+                            <th id="cmd-rs-or-emptyTh" colspan="2" style="display: none;">Empty</th>
+                          </tr>
+                          <tr id="cmd-rs-or-ticketTypeTr" class="m-ticket-type-class">
+                            <td id="cmd-rs-or-ticketTypeTd" class="text-start m-ticket-type-class-td">
+                              <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'First'" width="20"
+                                height="20" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                  d="M60 0C56.0444 0 52.1776 1.17298 48.8886 3.37061C45.5996 5.56824 43.0362 8.69181 41.5224 12.3463C40.0087 16.0009 39.6126 20.0222 40.3843 23.9018C41.156 27.7814 43.0608 31.3451 45.8579 34.1421C48.6549 36.9392 52.2186 38.844 56.0982 39.6157C59.9778 40.3874 63.9992 39.9913 67.6537 38.4776C71.3082 36.9638 74.4318 34.4004 76.6294 31.1114C78.827 27.8224 80 23.9556 80 20C80 14.6957 77.8929 9.60859 74.1421 5.85786C70.3914 2.10714 65.3043 0 60 0ZM56.85 29H54V15.29L50.9 17.61L49.52 15.46L54.52 11.81H56.87L56.85 29ZM62.34 20.79C61.2894 20.8243 60.2633 20.468 59.46 19.79L60.28 18.57C60.5464 18.8445 60.8674 19.0601 61.2221 19.2031C61.5769 19.346 61.9577 19.4131 62.34 19.4C62.96 19.4 63.34 19.12 63.34 18.7C63.34 18.28 62.87 18.16 61.94 17.84C60.77 17.43 59.77 16.91 59.77 15.51C59.77 14.34 60.77 13.51 62.27 13.51C63.1857 13.4896 64.0776 13.8023 64.78 14.39L64 15.62C63.5249 15.1496 62.8884 14.8779 62.22 14.86C61.9 14.86 61.44 15.04 61.44 15.47C61.44 15.9 61.88 16.07 62.57 16.33C64.08 16.93 65.03 17.21 65.03 18.62C65 19.82 64.14 20.78 62.34 20.78V20.79ZM68.72 20.79C67.5 20.79 66.72 20.02 66.72 18.43V14.93H65.84V13.55H66.72V11.19L68.37 11V13.54H70.46V14.92H68.37V18.25C68.37 18.98 68.59 19.25 69.06 19.25C69.4124 19.2232 69.7542 19.1172 70.06 18.94L70.48 20.36C69.943 20.6588 69.3341 20.8041 68.72 20.78V20.79Z"
+                                  fill="#131E29" />
+                                <path
+                                  d="M60 48.78H42.31L25.83 24.07C25.4621 23.4645 24.9457 22.9629 24.3297 22.6129C23.7137 22.2629 23.0185 22.076 22.31 22.07H19C19.2328 21.1731 19.3039 20.2418 19.21 19.32C20.4935 18.78 21.6138 17.9143 22.4602 16.8086C23.3066 15.7028 23.8497 14.3953 24.0358 13.0153C24.2219 11.6353 24.0446 10.2307 23.5214 8.94023C22.9982 7.64977 22.1473 6.51823 21.0527 5.65749C19.9581 4.79674 18.6578 4.23661 17.2803 4.03248C15.9029 3.82834 14.496 3.98728 13.1989 4.49357C11.9017 4.99986 10.7591 5.83597 9.88416 6.91921C9.00918 8.00246 8.43211 9.29533 8.21 10.67L0 7.99998L2.57 27.11C3.3393 32.8737 5.36723 38.3976 8.51 43.29L24.58 68.34C25.6511 69.9927 27.2943 71.1922 29.1948 71.7089C31.0953 72.2255 33.1196 72.023 34.88 71.14L53.48 61.69L56 80H64V52.78C64 51.7191 63.5786 50.7017 62.8284 49.9516C62.0783 49.2014 61.0609 48.78 60 48.78ZM16 6.49998C17.2327 6.49392 18.4314 6.90367 19.4025 7.663C20.3736 8.42234 21.0603 9.48692 21.3517 10.6847C21.643 11.8825 21.522 13.1436 21.0082 14.2641C20.4944 15.3846 19.6178 16.2992 18.52 16.86C18.071 15.8465 17.4145 14.9384 16.5929 14.1944C15.7713 13.4503 14.8029 12.8867 13.75 12.54L10.53 11.47C10.6616 10.1102 11.2947 8.84802 12.3058 7.9293C13.317 7.01059 14.6338 6.50108 16 6.49998ZM33.75 68.91C32.5454 69.5214 31.1569 69.6645 29.8529 69.3117C28.549 68.959 27.422 68.1353 26.69 67L10.62 42C7.68077 37.4129 5.77974 32.2388 5.05 26.84L3 11.63L13 14.91C14.316 15.3494 15.4157 16.2725 16.0767 17.4924C16.7377 18.7122 16.9104 20.1376 16.56 21.48L14 31C13.6345 32.2666 13.5662 33.6005 13.8004 34.8978C14.0345 36.1952 14.5648 37.421 15.35 38.48L21.17 47.21L21.91 48.32H30.64L35.72 55.93L36.46 57.05H53.54L54.12 58.56L33.75 68.91ZM61.5 77.5H58.18L55.83 60.5L57.25 59.78L55.25 54.56H37.82L32 45.82H23.27L17.45 37.09C16.8613 36.3269 16.4633 35.4342 16.2894 34.4862C16.1155 33.5382 16.1705 32.5624 16.45 31.64L18.31 24.58H22.31C22.5914 24.5814 22.8677 24.6547 23.1127 24.793C23.3577 24.9312 23.5634 25.1299 23.71 25.37L40.23 50.17L41 51.28H60C60.3978 51.28 60.7794 51.438 61.0607 51.7193C61.342 52.0006 61.5 52.3822 61.5 52.78V77.5Z"
+                                  fill="#131E29" />
+                              </svg>
+                              <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'Standard'" width="20"
+                                height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                  d="M30 0C28.0222 0 26.0888 0.58649 24.4443 1.6853C22.7998 2.78412 21.5181 4.3459 20.7612 6.17317C20.0043 8.00043 19.8063 10.0111 20.1922 11.9509C20.578 13.8907 21.5304 15.6725 22.9289 17.0711C24.3275 18.4696 26.1093 19.422 28.0491 19.8079C29.9889 20.1937 31.9996 19.9957 33.8268 19.2388C35.6541 18.4819 37.2159 17.2002 38.3147 15.5557C39.4135 13.9112 40 11.9778 40 10C40 7.34784 38.9464 4.8043 37.0711 2.92893C35.1957 1.05357 32.6522 0 30 0ZM30.08 14.75C29.449 14.7491 28.8249 14.6181 28.2468 14.3652C27.6687 14.1122 27.1489 13.7428 26.72 13.28L27.72 12.07C28.0053 12.4322 28.3659 12.7279 28.7769 12.9369C29.1878 13.1458 29.6393 13.2629 30.1 13.28C31.1 13.28 31.65 12.84 31.65 12.16C31.65 11.48 31.03 11.09 29.85 10.67C28.44 10.17 27.04 9.54 27.04 7.84C27.0642 7.47553 27.1599 7.11939 27.3217 6.79193C27.4836 6.46448 27.7084 6.17213 27.9833 5.9316C28.2582 5.69107 28.5778 5.50707 28.9238 5.39012C29.2699 5.27316 29.6356 5.22555 30 5.25C31.1285 5.25773 32.2184 5.66116 33.08 6.39L32.14 7.63C31.5622 7.06149 30.8068 6.70849 30 6.63C29.8426 6.60908 29.6826 6.62097 29.5301 6.66492C29.3775 6.70888 29.2357 6.78395 29.1136 6.8854C28.9914 6.98685 28.8917 7.1125 28.8205 7.25441C28.7493 7.39633 28.7083 7.55145 28.7 7.71C28.7 8.39 29.31 8.63 30.44 9.06C32.03 9.69 33.31 10.12 33.31 11.91C33.3012 12.3142 33.2086 12.7122 33.038 13.0788C32.8673 13.4454 32.6225 13.7725 32.3188 14.0395C32.0152 14.3064 31.6594 14.5075 31.274 14.6298C30.8886 14.7521 30.482 14.793 30.08 14.75Z"
+                                  fill="#131E29" />
+                                <path
+                                  d="M30 23.3898H20.49L12.92 11.9998C12.7361 11.697 12.4779 11.4462 12.1699 11.2712C11.8618 11.0962 11.5142 11.0028 11.16 10.9998H9.48C9.59208 10.5523 9.62591 10.0888 9.58 9.62977C10.2225 9.35846 10.7829 8.92388 11.2056 8.36913C11.6283 7.81439 11.8986 7.15877 11.9897 6.46731C12.0808 5.77585 11.9895 5.07259 11.7249 4.4273C11.4603 3.78201 11.0316 3.21711 10.4813 2.78865C9.93102 2.36019 9.27825 2.08306 8.58778 1.98476C7.89731 1.88646 7.19313 1.97039 6.54512 2.22824C5.8971 2.48609 5.32776 2.9089 4.89359 3.45471C4.45942 4.00051 4.1755 4.65036 4.07 5.33977L0 3.99976L1.29 13.5598C1.3827 14.2768 1.51625 14.988 1.69 15.6898C2.20937 17.818 3.0778 19.8455 4.26 21.6898L12.26 34.2098C12.3889 34.395 12.5291 34.572 12.68 34.7398L12.8 34.8598C12.9337 35 13.0774 35.1303 13.23 35.2498H13.29C13.4637 35.375 13.6477 35.4854 13.84 35.5798L13.99 35.6398C14.1507 35.7179 14.318 35.7814 14.49 35.8298H14.6C14.8047 35.877 15.0116 35.9137 15.22 35.9398H15.37H15.61L16 35.9998H16.1C16.3133 35.9998 16.5233 35.9598 16.73 35.8798H16.87C17.0836 35.819 17.2912 35.7387 17.49 35.6398L26.79 30.9198L28 39.9998H32V25.3898C32 24.8593 31.7893 24.3506 31.4142 23.9756C31.0391 23.6005 30.5304 23.3898 30 23.3898ZM8 3.99976C8.44972 4.00248 8.88541 4.15668 9.2367 4.43749C9.588 4.71829 9.8344 5.1093 9.93612 5.54738C10.0378 5.98546 9.98893 6.44504 9.79731 6.8519C9.60568 7.25877 9.28252 7.58917 8.88 7.78976C8.40033 7.07533 7.69678 6.54063 6.88 6.26977L6 5.99976C6 5.46933 6.21071 4.96062 6.58579 4.58555C6.96086 4.21048 7.46957 3.99976 8 3.99976ZM30 37.9998H29.74L28.44 28.5798L28.21 26.8498H18.63L16 22.9098H11.64L10.54 21.2698L8.73 18.5498C8.59203 18.3383 8.46842 18.1178 8.36 17.8898L8.14 17.2098C8.0595 16.7464 8.08688 16.2708 8.22 15.8198L8.83 13.5198L9 12.9998H11.2C11.2094 12.9953 11.2196 12.993 11.23 12.993C11.2404 12.993 11.2506 12.9953 11.26 12.9998L18.83 24.4998L19.42 25.3898H30V37.9998Z"
+                                  fill="#131E29" />
+                              </svg>
+                              <svg *ngIf="sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass == 'Standard Premium'"
+                                width="20" height="20" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M40.0601 10C40.0601 15.5228 35.5829 20 30.0601 20C24.5372 20 20.0601 15.5228 20.0601 10C20.0601 4.47715 24.5372 0 30.0601 0C35.5829 0 40.0601 4.47715 40.0601 10ZM24.1763 14.2987C24.7516 14.5485 25.3728 14.6749 25.9999 14.67C26.7898 14.6707 27.5585 14.4145 28.1899 13.94C28.5058 13.7122 28.7617 13.4113 28.9359 13.063C29.1101 12.7147 29.1972 12.3293 29.1899 11.94C29.211 11.5485 29.1299 11.1583 28.9546 10.8076C28.7793 10.457 28.5157 10.158 28.1899 9.93997C27.5932 9.58922 26.9635 9.29783 26.3099 9.06997L25.5499 8.75997C25.3731 8.68729 25.2026 8.60034 25.0399 8.49997C24.8855 8.42136 24.757 8.29982 24.6699 8.14997C24.6053 8.01969 24.5743 7.87529 24.5799 7.72997C24.5791 7.57807 24.6129 7.42799 24.6787 7.29111C24.7446 7.15422 24.8407 7.03414 24.9599 6.93997C25.2245 6.74114 25.5491 6.6388 25.8799 6.64997C26.6747 6.71365 27.4234 7.04913 27.9999 7.59997L28.9999 6.36997C28.1325 5.64689 27.0392 5.2506 25.9099 5.24997C25.1498 5.22859 24.4099 5.49666 23.8399 5.99997C23.5757 6.22155 23.3634 6.49857 23.2183 6.81138C23.0731 7.12419 22.9985 7.46512 22.9999 7.80997C22.9888 8.17687 23.057 8.54185 23.1999 8.87997C23.3538 9.19511 23.5841 9.46671 23.8699 9.66997C24.1424 9.86575 24.43 10.0396 24.7299 10.19C25.0697 10.3571 25.4205 10.5008 25.7799 10.62C26.2696 10.7663 26.7371 10.9782 27.1699 11.25C27.2993 11.3491 27.4024 11.4784 27.4704 11.6266C27.5384 11.7747 27.5691 11.9372 27.5599 12.1C27.5631 12.2586 27.5284 12.4157 27.4589 12.5582C27.3893 12.7008 27.2868 12.8248 27.1599 12.92C26.8262 13.1408 26.4292 13.2462 26.0299 13.22C25.5954 13.211 25.1683 13.105 24.7799 12.91C24.3455 12.695 23.9633 12.3879 23.6599 12.01L22.6599 13.22C23.0845 13.6815 23.6011 14.049 24.1763 14.2987ZM30.9399 14.57V5.34003H34.2799C34.7094 5.30581 35.1413 5.36004 35.5489 5.49936C35.9566 5.63868 36.3313 5.86013 36.6499 6.15003C36.9197 6.44281 37.1284 6.78635 37.2641 7.16062C37.3997 7.5349 37.4595 7.93242 37.4399 8.33003C37.4677 8.7411 37.4011 9.15307 37.2451 9.5344C37.0891 9.91573 36.8479 10.2563 36.5399 10.53C35.8417 11.0624 34.9766 11.3283 34.0999 11.28H32.5099V14.57H30.9399ZM32.5099 9.86003H33.9399C34.4455 9.89741 34.9472 9.74797 35.3499 9.44003C35.5049 9.29489 35.6263 9.1177 35.7058 8.92081C35.7852 8.72392 35.8208 8.51207 35.8099 8.30003C35.8215 8.08732 35.7873 7.8746 35.7097 7.67622C35.6321 7.47784 35.5128 7.29841 35.3599 7.15003C34.9927 6.85642 34.5292 6.71024 34.0599 6.74003H32.5099V9.86003ZM20.49 23.4449H30C30.5304 23.4449 31.0391 23.6557 31.4142 24.0307C31.7893 24.4058 32 24.9145 32 25.4449V40.0549H28L26.79 30.9749L17.49 35.6949C17.2912 35.7938 17.0836 35.8742 16.87 35.9349H16.73C16.5233 36.0149 16.3133 36.0549 16.1 36.0549H16L15.61 35.9949H15.37H15.22C15.0116 35.9688 14.8047 35.9321 14.6 35.8849H14.49C14.318 35.8366 14.1507 35.773 13.99 35.6949L13.84 35.6349C13.6477 35.5406 13.4637 35.4302 13.29 35.3049H13.23C13.0774 35.1855 12.9337 35.0552 12.8 34.9149L12.68 34.7949C12.5291 34.6272 12.3889 34.4502 12.26 34.2649L4.26 21.7449C3.0778 19.9006 2.20937 17.8732 1.69 15.7449C1.51625 15.0431 1.3827 14.332 1.29 13.6149L0 4.05494L4.07 5.39494C4.1755 4.70553 4.45942 4.05569 4.89359 3.50988C5.32776 2.96407 5.8971 2.54127 6.54512 2.28342C7.19313 2.02557 7.89731 1.94163 8.58778 2.03994C9.27825 2.13824 9.93102 2.41537 10.4813 2.84383C11.0316 3.27229 11.4603 3.83718 11.7249 4.48248C11.9895 5.12777 12.0808 5.83103 11.9897 6.52249C11.8986 7.21395 11.6283 7.86957 11.2056 8.42431C10.7829 8.97905 10.2225 9.41363 9.58 9.68494C9.62591 10.144 9.59208 10.6075 9.48 11.0549H11.16C11.5142 11.058 11.8618 11.1514 12.1699 11.3264C12.4779 11.5014 12.7361 11.7522 12.92 12.0549L20.49 23.4449ZM9.2367 4.49266C8.88541 4.21186 8.44972 4.05765 8 4.05494C7.46957 4.05494 6.96086 4.26565 6.58579 4.64073C6.21071 5.0158 6 5.52451 6 6.05494L6.88 6.32494C7.69678 6.59581 8.40033 7.13051 8.88 7.84494C9.28252 7.64435 9.60568 7.31394 9.79731 6.90708C9.98893 6.50021 10.0378 6.04064 9.93612 5.60256C9.8344 5.16448 9.588 4.77347 9.2367 4.49266ZM29.74 38.0549H30V25.4449H19.42L18.83 24.5549L11.26 13.0549C11.2506 13.0505 11.2404 13.0482 11.23 13.0482C11.2196 13.0482 11.2094 13.0505 11.2 13.0549H9L8.83 13.5749L8.22 15.8749C8.08688 16.326 8.0595 16.8016 8.14 17.2649L8.36 17.9449C8.46842 18.173 8.59203 18.3935 8.73 18.6049L10.54 21.3249L11.64 22.9649H16L18.63 26.9049H28.21L28.44 28.6349L29.74 38.0549Z"
+                                  fill="#131E29" />
+                              </svg>
+                              {{sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}
+                            </td>
+                            <td id="cmd-rs-or-TicketClass" class="text-end ps-3">
+                              {{sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass
+                              == 'First' ?
+                              'First Class' :
+                              sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare?.TicketClass}}
+                            </td>
+                          </tr>
+                        </table>
+                    
+                        <table id="cmd-rs-or-TicketTitle" class="mb-10 w-100" aria-label="">
+                          <tr id="cmd-rs-or-emptyTr2">
+                            <th id="cmd-rs-or-emptyTh2" colspan="2" style="display: none;">Empty</th>
+                          </tr>
+                          <tr id="cmd-rs-or-returnTr">
+                            <td id="cmd-rs-or-returnTd" class="m-return-title">
+                              <p id="cmd-rs-or-returnTxt" class="f-16 mb-0 font-500">Return</p>
+                            </td>
+                          </tr>
+                        </table>
+                        <p id="cmd-rs-or-ticketLocation" class="mb-0 bt-1 pt-10 text-graphene"><span id="cmd-rs-or-ticketLocationTxt"
+                            class="font-500">{{searchRequest?.SearchRequestDto?.ArrivalLocationName}}
+                          </span> to <span id="cmd-rs-or-ticketLocation2" class="font-500">
+                            {{searchRequest?.SearchRequestDto?.DepartureLocationName}}</span></p>
+                            <h2 id="cmd-rs-or-title" class="f-32">Open return</h2>
+                    
+                        <table id="cmd-rs-or-table2" class="mb-10 w-100" aria-label=""
+                          *ngIf="!(sharedSibling?.isSearchErrorSoldOut || sharedSibling?.isTrainDepartedOrCancelled)">
+                          <tr id="cmd-rs-or-emptyTr3">
+                            <th id="cmd-rs-or-emptyTh3" colspan="2" style="display: none;">Empty</th>
+                          </tr>
+                          <tr id="cmd-rs-or-ticketInfo">
+                            <td id="cmd-rs-or-blankTd">
+                              <p id="cmd-rs-or-blankP" class="f-16 mb-0 font-500"></p>
+                            </td>
+                            <td id="cmd-rs-or-ticketInfoTd" class="right-text m-ticket-info">
+                              <button id="cmd-rs-or-ticketInfoBtn" class="simple-btn text-underline px-0 text-graphene font-400"
+                                (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)">Ticket
+                                info</button>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
+                    <div id="cmd-rs-fr-main" class="pb-10"
+                      *ngIf="(searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.openReturn ? true : (searchRequest?.SearchRequestDto?.TravelSolutionDirection == travelSolutionDirectionEnum.return ? (sharedSibling?.COJjourneySummaryModel?.IsSingleFareSelected == true ? false : true) : false) && isReturnTicketTypeForCoj)">
+                      <div id="cmd-rs-fr-row" class="row" *ngIf="!(sharedSibling?.isTrainDepartedOrCancelled)">
+                        <div id="cmd-rs-fr-col" class="col-6">
+                          <p id="cmd-rs-fr-title" class="mb-10 ln-32 font-500 f-16">{{
+                            (searchRequest?.SearchRequestDto?.TravelSolutionDirection ==
+                            'OPEN_RETURN') ? 'Open Return' : 'Flexible Return'}}</p>
+                        </div>
+                        <div id="cmd-rs-fr-col2" class="col-6 text-end or-tct-price f-24">
+                          <span id="cmd-rs-fr-icon" class="font-500"><img id="md-rs-fr-img"
+                              *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined"
+                              src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon">
+                            {{sharedSibling.currencySymbol(sharedSibling?.COJjourneySummaryModel?.SingleCurrency)}}{{sharedSibling?.IsNOResultsForOutwardEarlierLater
+                            || this.sharedSibling?.IsNOResultsForReturnEarlierLater ? 0 :
+                            this.sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}</span>
+                        </div>
+                      </div>
+                      <div id="cmd-rs-fr-ticketType" class="md-advancetkt-acrdn bt-1 pt-10"
+                        *ngIf="!(sharedSibling?.isTrainDepartedOrCancelled)">
+                        <div id="cmd-rs-fr-innerTicketType" class="text-graphene f-16">
+                          <span id="cmd-rs-fr-singleTicketType" class="font-500">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}
+                            ticket</span>
+                          <div id="cmd-rs-fr-ticketDescDiv" class="ln-21 pb-10">
+                            <button id="cmd-rs-fr-ticketDescBtn"
+                              (click)="moreDetails(this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare.TicketType, this.sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)"
+                              mat-button
+                              class="text-graphene simple-btn c-pointer text-underline font-400 discription-btn m-desc-btn coj-msg-btn">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="cmd-journey6Main" class="bt-1 ptb-10" *ngIf="journeyDirection === travelSolutionDirectionEnum.forward && (!this.sharedSibling.IsNOResultsForReturnEarlierLater && !isReturnTicketTypeForCoj) || ((isReturnTicketTypeForCoj && searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.return_Leg) || this.searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both) ">
+                    <p id="cmd-journey6Time" class="mb-0"><span id="cmd-journey6TimeIcon"><img id="cmd-journey6TimeImg" src="assets/images/arrow-right-dark.svg" class="rotate180 mr-10" alt="right-arrow-dark3"></span>{{sharedSibling?.COJjourneySummaryModel?.returnDate | date:'EEE dd MMM yyyy'}}</p>
+                    <div id="cmd-journey6Inner" class="md-new-stationdtl">
+                      <div id="cmd-journey6Row" class="row">
+                        <div id="cmd-journey6Col" class="col-9">
+                          <p id="cmd-journey6Station" class="mb-0"><span id="cmd-journey6DeparStation" class="font-500">{{isReturnTicketTypeForCoj && this.searchRequest.SearchRequestDto.ChoosedTrainleg == 'Return_Leg'  ? this.searchRequest?.SearchRequestDto?.DepartureLocationName : this.searchRequest?.SearchRequestDto?.ArrivalLocationName}}</span> to <span id="cmd-journey6ArrivalStation" class="font-500">{{isReturnTicketTypeForCoj && this.searchRequest.SearchRequestDto.ChoosedTrainleg == 'Return_Leg'  ? this.searchRequest?.SearchRequestDto?.ArrivalLocationName : this.searchRequest?.SearchRequestDto?.DepartureLocationName}}</span></p>
+                        </div>
+                        <div id="cmd-journey6LogoDiv" class="col-3">
+                          <img id="cmd-journey6Logo" src="assets/images/avanti-logo-dark.svg" class="img-fluid" alt="coj_avantiLogo1">
+                        </div>
+                      </div>
+                      <table id="cmd-journey6Table" class="mt-10 w-100 mb-10 upgrade-coj-table" aria-label="">
+                        <tr id="cmd-journey6EmptyTr">
+                          <th id="cmd-journey6EmptyTh" style="display: none;" colspan="4">Empty</th>
+                        </tr>
+                        <tr id="cmd-journey6DirectChangeTr">
+                          <td id="cmd-journey6ReturnTime" class="text-start m-signle-time">{{sharedSibling?.COJjourneySummaryModel?.ReturnTime}}</td>
+                          <td id="cmd-journey6ReturnDuration" class="text-center">{{sharedSibling?.COJjourneySummaryModel?.ReturnDuration}}  </td>
+                          <td id="cmd-journey6Direct" *ngIf="sharedSibling?.COJjourneySummaryModel?.ReturnChanges!=undefined && sharedSibling?.COJjourneySummaryModel?.ReturnChanges!=null && (sharedSibling?.COJjourneySummaryModel?.ReturnChanges=='0' || sharedSibling?.COJjourneySummaryModel?.ReturnChanges=='Direct')" class="text-end m-direct-title"><button id="cmd-journey6DirectBtn" mat-button (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution, true)" class="simple-btn c-pointer text-graphene text-underline upgrade-coj-direct-changes">Direct</button></td>
+                          <td id="cmd-journey6Changes" *ngIf="sharedSibling?.COJjourneySummaryModel?.ReturnChanges!=undefined && sharedSibling?.COJjourneySummaryModel?.ReturnChanges!=null && (sharedSibling?.COJjourneySummaryModel?.ReturnChanges!='0' && sharedSibling?.COJjourneySummaryModel?.ReturnChanges!='Direct')" class="text-end"><button id="cmd-journey6ChnagesBtn" mat-button (click)="showRouteDetails(sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution, true)" class=" c-pointer text-graphene text-underline upgrade-coj-direct-changes">{{sharedSibling?.COJjourneySummaryModel?.ReturnChanges}} changes</button></td>
+                        </tr>
+                      </table>
+                      <mat-accordion id="cmd-journey6MatAccourdion" class="md-advancetkt-acrdn" *ngIf="this.sharedSibling?.COJjourneySummaryModel?.ReturnChoosedTravelSolution && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 0">
+                        <mat-expansion-panel id="cmd-journey6MatPanel" [expanded]="step2 === 2" (opened)="setStep2(2)">
+                          <mat-expansion-panel-header id="cmd-journey6MatPanelHeader">
+                            <mat-panel-title id="cmd-journey6MatPanelTitle">
+                              <span id="cmd-journeyReturnTicketType12" class="font-500 upgrade-f-12">{{!this.isReturnTicketTypeForCoj || (this.isReturnTicketTypeForCoj && this.searchRequest?.SearchRequestDto?.ChoosedTrainleg != 'Both') ? sharedSibling?.COJjourneySummaryModel?.ReturnTicketType : sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}</span>
+                            </mat-panel-title>
+                            <mat-panel-description id="cmd-journey6MatPanelDesc" class="font-500 upgrade-f-12" *ngIf="!isReturnTicketTypeForCoj || (isReturnTicketTypeForCoj && searchRequest?.SearchRequestDto?.ChoosedTrainleg != travelSolutionDirectionEnum.both)">
+                              <img id="cmd-journey6RailcardImg" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon3"> {{sharedSibling.currencySymbol(sharedSibling?.COJjourneySummaryModel?.ReturnCurrency)}}{{sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.ReturnPrice)}}
+                            </mat-panel-description>
+                          </mat-expansion-panel-header>
+                          <div id="cmd-journey6MoreReturn" class="f-14 ln-21 ptb-10">
+                              <ul id="cmd-journey6Ul">
+                                <li id="cmd-journey6ReturnTicketDesc">{{!this.isReturnTicketTypeForCoj || (this.isReturnTicketTypeForCoj && this.searchRequest?.SearchRequestDto?.ChoosedTrainleg != 'Both') ? sharedSibling?.COJjourneySummaryModel?.ReturnTicketDescription : sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                              </ul>
+                              <button id="cmd-journey6MoreDetailsBtn" mat-button (click)="moreDetails(moreDetailForTicketTypeInCaseOfAdvanceSingleAndPureReturn(), moreDetailForOutAndRetInCaseOfAdvanceSingleAndPureReturn())" class="text-coalescent text-underline c-pointer font-500 upgrade-f-12">More details</button>
+                          </div>
+                        </mat-expansion-panel>
+                      </mat-accordion>
+                      
+                    </div>
+                  </div>
+                  <div id="cmd-journey7Main" class="bt-1 ptb-10" *ngIf="(journeyDirection === travelSolutionDirectionEnum.forward && this.sharedSibling?.COJjourneySummaryModel?.activeTab === 1 && !isReturnTicketTypeForCoj) || (searchRequest.SearchRequestDto.ChoosedTrainleg == travelSolutionDirectionEnum.both && isReturnTicketTypeForCoj)">
+                    
+                    <p id="cmd-journey7Direction" class="mb-0 pb-10"><span id="cmd-journey7DirectionIcon"></span>{{ (searchRequest?.SearchRequestDto?.TravelSolutionDirection == 'OPEN_RETURN') ? 'Open Return' : 'Flexible Return'}}</p>
+                    <div id="cmd-journey7Inner" class="md-advancetkt-acrdn bt-1 pt-10">
+                      <div id="cmd-journey7InnerDiv">
+                        <div id="cmd-journey7SingleTypeDiv" class="d-flex justify-between">
+                          <div id="cmd-journey7SingleTypeTitle" class="font-500">
+                            {{sharedSibling?.COJjourneySummaryModel?.SingleTicketType}}
+                          </div>
+                          <div id="cmd-journey7RailcardDiv" class="font-500">
+                            <img id="cmd-journey7RailcardImg" *ngIf="sharedSibling?.COJjourneySummaryModel?.RailCards && sharedSibling?.COJjourneySummaryModel?.RailCards != null && sharedSibling?.COJjourneySummaryModel?.RailCards != undefined" src="assets/images/railcard-icn.png" class="railcards-icon-small-24-x-24" alt="Railcard Icon4"> {{sharedSibling.currencySymbol(sharedSibling?.COJjourneySummaryModel?.SingleCurrency)}}{{sharedSibling.formatPrice(sharedSibling?.COJjourneySummaryModel?.SinglePrice)}}
+                          </div>
+                        </div>
+                        <div id="cmd-journey7SingleTicketDescDiv" class="f-14 ln-21 ptb-10">
+                            <ul id="cmd-journey7Ul">
+                                <li id="cmd-journey7SingleTicketDescTitle">{{sharedSibling?.COJjourneySummaryModel?.SingleTicketDescription}}</li>
+                                
+                            </ul>
+                            <button id="cmd-journey7MoreDetailsBtn" mat-button (click)="moreDetails(sharedSibling?.COJjourneySummaryModel?.SingleTicketType,sharedSibling?.COJjourneySummaryModel?.SingleSelectedFare)" class="text-coalescent text-underline c-pointer font-500">More details </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </mat-expansion-panel>
+              </mat-accordion>
+            </div>
+            <div id="cmd-totalPax3" class="new-prc-dtl-mbl">
+              <div id="cmd-totalPax3Row" class="row">
+                <div id="cmd-totalPax3Col" class="col-8">
+                  <p id="cmd-totalPax3Title" class="mb-0 f-16 ln-30">Total for {{searchRequest?.SearchRequestDto?.Adult=='0' ? searchRequest?.SearchRequestDto?.Child + (searchRequest?.SearchRequestDto?.Child == 1 ? ' Child' : ' Children') : (searchRequest?.SearchRequestDto?.Child=='0' ? searchRequest?.SearchRequestDto?.Adult + (searchRequest?.SearchRequestDto?.Adult == 1 ? ' Adult' : ' Adults') : searchRequest?.SearchRequestDto?.Adult + (searchRequest?.SearchRequestDto?.Adult == 1 ? ' Adult' : ' Adults') + ' , ' + searchRequest?.SearchRequestDto?.Child + (searchRequest?.SearchRequestDto?.Child == 1 ? ' Child' : ' Children')) }}</p>
+                </div>
+                
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="cmd-earlierlater-main" class="coj-earlier-later-error-msg" *ngIf="sharedSibling.IsNOResultsForOutwardEarlierLater || sharedSibling.IsNOResultsForReturnEarlierLater">
+  <div id="cmd-earlierlatertimeout">
+    <div id="cmd-earlierlatertimeout-col">
+      <div id="cmd-earlierlatertimeout-inner">
+        <app-earlierlater-timeout-error></app-earlierlater-timeout-error>
+      </div>
+    </div>
+  </div>
+</div>

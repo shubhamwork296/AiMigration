@@ -1,0 +1,30 @@
+<app-enhanced-basic-dialog [dialogFooter]="dialogFooter" class="enhanced-alert-dialogs content-center" [dialogTitle]="headerTitle" role="dialog" aria-modal="true" tabindex="-1">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+        <div class="alert-content" role="alert" aria-live="assertive" aria-atomic="true">
+          <span class="sr-only">{{ headerTitle }}</span>
+          <p>
+            Your railcard discount hasn’t been applied to this journey. This may be due to certain restrictions, such as time limitations or minimum fare conditions.
+          </p>
+          <p class="mt-4">
+            Please check the full 
+            <a target="_blank" href="https://www.avantiwestcoast.co.uk/tickets-and-savings/railcards">
+              railcard terms and conditions
+            </a>
+            for more details.
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-content>
+  <ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+      <div class="d-flex gap-24 justify-between">
+        <button id="efc-qtt-footer-next-btn" type="button" mat-button class="fill-btn railcard-not-applied-popup-btn fill-light-hover-btn" mat-dialog-close>
+          Back to tickets
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</app-enhanced-basic-dialog>

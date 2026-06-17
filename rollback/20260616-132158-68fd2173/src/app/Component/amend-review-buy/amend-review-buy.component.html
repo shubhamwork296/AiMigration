@@ -1,0 +1,259 @@
+<app-header></app-header>
+<div class="ptb-15 pb-85 buynow-bttm-mixingdeck min-auto bg-e1 bg-f6">
+    <div class="container plr-xs-5">
+      <div class="row m-0 m-md-2">
+        <div class="col-md-8">
+          <div class="mb-2">
+            <a href="javascript:void(0)" (click) ="goBack()" class="f-14 font-600 cursor-pointer-hover text-coalescent price-promise"><img src="assets/images/left-arrow-dark.svg"
+                alt="" class="me-2 mt--4"> Go back</a>
+          </div>
+          <div class="mb-3">
+            <h1 class="f-32 f-600 text-graphene">Review your journey</h1>
+          </div>
+        </div>
+      </div>
+      <div class="row d-md-flex mlr-xs--5">
+        <div class="col-md-8">
+          <div class="bg-fff">
+            <mat-accordion class="journey-extra-accordian">
+              <mat-expansion-panel [expanded]="step === 0">
+                <mat-expansion-panel-header>
+                  <mat-panel-title class="mw-310 f-24 font-500 text-graphene">
+                    {{journeyText}}
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="p-20 pt-0 bt-1">
+                  <div class=" plr-15">
+                    <h3 class="f-24 mt-4 mb-3 font-500 text-graphene">Seats reserved</h3>
+                    <div class="row">
+                      <div class="col-md-6" *ngIf= "outwardLegs.length > 0">
+                          <div class="ps-3">
+                            <div class="pt-10">
+                              <h3 class="f-16 mb-0 text-graphene">Outbound</h3>  
+                          </div>
+                          <ng-Container *ngFor="let leg of outwardLegs">
+                            <div class="j-dtls pt-10">
+                              <p class="f-14 font-500 mb-2">{{leg.Departure}} <img src="assets/images/arrow-right-dark.svg" alt="" width="10"> {{leg.Arrival}}</p>
+                              <p class="d-flex mb-3 mt-2" *ngFor="let seat of leg.Seat">
+                                <span class="f-24 font-500 lh-29">{{seat.CoachNumber + seat.Seat}}</span>
+                                <span class="ps-4 f-12 lh-14">
+                                  <span>{{(seat.CoachType !== "NoPreference") ? seat.CoachType : ''}}{{(seat.CoachType !== "NoPreference" && seat.CoachType !== "") ? ',' : ''}}</span>
+                                  <span>{{formattedSeat(seat.SeatFacing, seat.SeatPosition)}}</span>
+                                  <span>{{(seat.SeatType !== "-" && seat.SeatType!=="") ? formattedSeatType(seat.SeatType) : ''}}</span>
+                                </span>
+                              </p>
+                            </div>
+                          </ng-Container>
+
+                          <div class="">
+                            <button mat-button class="default-btn-dark mt-4 mb-3" (click)="onModifySeatBtnClick()">Modify seat</button>
+                          </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6" *ngIf= "returnLegs.length > 0">
+                          <div class="ps-3">
+                            <div class="pt-10">
+                              <h3 class="f-16 mb-0 text-graphene">Return</h3>  
+                          </div>
+                          <ng-Container *ngFor="let leg of returnLegs">
+                            <div class="j-dtls pt-10">
+                              <p class="f-14 font-500 mb-2">{{leg.Departure}} <img src="assets/images/arrow-right-dark.svg" alt="" width="10"> {{leg.Arrival}}</p>
+                              <p class="d-flex mb-3 mt-2" *ngFor="let seat of leg.Seat">
+                                <span class="f-24 font-500 lh-29">{{seat.CoachNumber + seat.Seat}}</span>
+                                <span class="ps-4 f-12 lh-14">
+                                  <span>{{(seat.CoachType !== "NoPreference") ? seat.CoachType : ''}}{{(seat.CoachType !== "NoPreference" && seat.CoachType !== "") ? ',' : ''}}</span>
+                                  <span>{{formattedSeat(seat.SeatFacing, seat.SeatPosition)}}</span>
+                                  <span>{{(seat.SeatType !== "-" && seat.SeatType!=="") ? formattedSeatType(seat.SeatType) : ''}}</span>
+                                </span>
+                              </p>
+                            </div>
+                          </ng-Container>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-Container *ngIf="isOpenSeatpicker" id="selectTrainLegsDiv">
+                    <div class="p-relative">
+                      <button mat-button class="closeicon" (click)="onClosingTrainLegs()" >
+                        <img src="assets/images/Close.svg" alt="close_div">
+                      </button>
+                      <h2 class="f-24 mt-5 mb-3 font-500">Select the train</h2>
+                      <div class="row">
+                        <div class="col-md-6 col-12" *ngFor="let leg of outwardLegs">
+                          <div >
+                            <button mat-button class="slct-trn-bx w-100" [class.disabled-trn] ="!leg.IsSeatPicker" [class.active-trn] ="leg === choosedTrainLeg" [disabled] = "!leg.IsSeatPicker" (click)="onTrainLegClick(leg,true)">
+                              <div class="d-flex">
+                                <span class="me-3">
+                                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                    <rect width="32" height="32" fill="url(#pattern0)"/>
+                                    <defs>
+                                    <pattern id="pattern0" patternContentUnits="objectBoundingBox" width="1" height="1">
+                                    <use xlink:href="#image0" transform="scale(0.00990099)"/>
+                                    </pattern>
+                                    <image id="image0" width="101" height="101" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGUAAABlCAYAAABUfC3PAAAAAXNSR0IArs4c6QAACDxJREFUeAHtXDFy40YQlFwOXOVADFzlUHDqRHTkULgq58K94HgvOP7g6BdYeoGlF5j3goNeYCpxaii/gAocy926hQqCSHB3ZhZYStiqOQC7M7M90zsLkBDv8P7+/mDf2g/HP2fATOlsX27/KTsVEh08TJUUJH6KnFEySA5hO/16CP73DhYrSOWk5BGk8Tq5lgwpICFHdmqRJj80wbcwIFklZJkKSYORAhImSETh5AzHFBpJWkJKEMTjIK1XUhIlYlviueWRGFZQrwT1QorbmuYIMJWK2EbEtn5W0CWljy0uKikgY4ZAFpBjyEtpVwhkEZOcKKS4bYol39cNewjCfwcxixgTfxPDKXy+dEKYto9YfEWM/JlXCoBOAfTvGGDh8waydr4rHCnbGnFM3GCGY4wt9AbVwnlM27em3r46myt91p8dVvBDWSPwUunzwRwLJsMJZdo4arbYEy5C4CNOsxajUtZAdxSA8Bq6JYSB8fMB7XttrrqnmDR3ElJVF8A8twRsSgqCY1CfdwBkJZSQJY9DkIB5O5urqAJKOWTXY/wtYsigZ9asSTkHsg9d6BDAYdd4amMgiFXwxw5cPyGuaoeO97D101fuPfP+KK48oLKqzJoZKVhRE6A62YGMT08vseWWQZmRAlA+wNaW4BPy5RO7N9y+SfEGtmeKR9gpplaYR1KsMum3U3jNZknKrvuJF6A9VkqrUlC6+R4n0wq6WQ6sKsVslVhlaAA/x+4JVD21FSm+q2SiRpy2A5PFaUWKL5h9vO+ELCTfxdm5tNSkuJIN+QKvE1CCg74LjtBDdLeGqiYlFIjl8/zWqGwHQiplP0lBvjLbnEX3FpJok5t975WCFIYEGT3jHhOE4g3VfwbBgpTsmdfujrx7OJ1RbLUZ0BwFIkqClNDXqaH6gTkxVc8F3oYlRXrThl0hCHYIEwnOTAtUu31NhAAkwQqnkplh4TC2M4G1eifQkpILQNOkcEELzXsxEy8cxJZpEGpJkU7Om+dcA7wH24VijkxhezAUKcQ8T7VagGsGfJpvKaYMUNq0pGgmZ7UspMBj2bmFcq70P9HYa0kJfYZvY/2AJOTtzoGvSYg2LlVMYlIMk7l0q3NgLg4OgGMGEO8MgAxWKaqJG4FzVZZDE+MI+bOBS3N6ojEWVwomnWombtkyCBKTtfp7uTQm5AGzZpFpSLFOGIlZIZjC2vE2f0wc5BLjVhXSnEq8aDWk5E0ERudH8PMXEsX7TGbkc6Mb+J9hYAWxuIdsmmOyqdOnT0OKj3+pzhkM/+UqhohXXHty+GJlzCAVxlgdx20dw2sxbs2PhsSTBgTOVfwOSeTPJ5ZOViE/n4BtBrvcSYEjqzHpJv4pBIK9HzAyklRBVpA1pN0ydFCmkKFI+ITFw0UQ3DSVEjyZoQG3HcqpoU9rVxOpQ9E9BVXCFTi2SBkQkQIs4lUQKY4U3WZSUFJSpPO9Jjtur6I2kiJKW1yjWKTwfwB6D3kDeQu5gux7u0UAFxDG9AvkEyRKi/X0dY7HwcsGYn5Cn+O6gCwg4tKGbd+NC4r/e1HZmrhATBX6zGOJVSntAA74gY9EQTIEwtV2DUm5kQz+FHsGKbcArbb0q7pjkdIJikFCcihxa7vtVO5/kNtSTUbV//QH6nf02zBn2waa/SBmiesp5KLZP9D5HeZ9C0wFpBoIw8O0sSol8w0KCeC2Nof+e1+bCHo38DkFDi6SkBblG4VYpOQhkVEXCbnE4S3Pe24kJMf8Vci8uMlnIfohurFI4ZYU3NxK7bNi7gCShKyDwdq+eX0yfSxSxD/2dxVz/QRlvIuZkBAiKmLBikUK8eYK0HOFra8p/1e7pa/yBr18Q1+zi9uiqMUkRZxYJGuFaGI/KosJwf0kB75dHxrXIkZgJCWFSdvV+FOzfJdSx3jVMWYxVCqczBW2O01FpATsw4udCIZTyCRTu4XGvyGI1kSkBKA5RRDBqwo2E8wR5TNAA3veOA85PQ9RlujGJoWYFkjyNBBcMJGB/qnOP8jIQuygfwn9E0+b0lPvmZqGFN+nC/7hAv/60YsY6OXQ//gMaZwOfns98XHtCHnno6vV0ZCyDpi8JqazAhA4xz8H+NWqctV3LhhgyiBL6PVCCAPS/IlRCftTOglsfNRlkCVkDWErnBw/XA3zzydMW0JWbvoMR+I6c9ehhzd4ICpDjaiveclF8BJSmPgPTnBIpjH5UgJMg+hr+zIFvSfOKilODSniSaVg98kOW5c4PyMpcZhWfUU0khKHFHGVEI6YFE15xslDUl7rJzgRKDEpbra+3nuIghvQqNLMrSVFNbkGeOK2g1aKavLEEyuGJ/3QWE+orZSydjQeHzPg+53go0H7REUKVgQr5a7t9JVfl9r4VaS4ydUgtEEkZq/OhwUpy8SSMiScO+we6nyMpNhSqCaEcNSkYGWs4efKNra99XZpgVxNigOxsACz5z6utY/CdfwmpABMBYcXtdNXepxbxS1+87gJAF6bnqOfL7Carf2N6ZBvF5u4fM//g+KXhvJ3OP+xcc345hY3+NqnKSl0ynfaOBSQHPIb5HvIPjcmvb2Q+AFxBVlaklEnyZyU2jGPICjH4TPPG40BrSGnjb4UT0lGBWFl/Ap5bCDi8PEiwonmHb0UDku9rI1B3ATn0/oax8xJo+vhNG93BF5zIaw22LCPY2xrYHuiA3wL9D8hhYox2xCkPIkHSWBCyiedr/zC5OnrlefQPPyRFPOU6h2OpOhzaO5hJMU8pXqHIyn6HJp7GEkxT6ne4UiKPofmHkZSzFOqdziSos+huYeRFPOU6h2OpOhzaO7hfz+U5yijHKXbAAAAAElFTkSuQmCC"/>
+                                    </defs>
+                                  </svg>   
+                                </span>
+                              <div class="train-select-inner-bx">
+                              <p class="mb-0 f-14">
+                                {{leg.Departure}} <img src="assets/images/arrow-right-dark.svg" alt="" class="mx-2 w-12"> {{leg.Arrival}}</p>
+                              </div>
+                            </div>
+                              </button>
+                          </div>
+                        </div>
+                        <div class="col-md-6 col-12" *ngFor="let leg of returnLegs">
+                          <div  >
+                            <button mat-button class="slct-trn-bx w-100"  [class.disabled-trn] ="!leg.IsSeatPicker" [class.active-trn] ="leg === choosedTrainLeg" [disabled] = "!leg.IsSeatPicker" (click)="onTrainLegClick(leg,false)">
+                              <div class="d-flex">
+                                <span class="me-3">
+                                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                                    <rect width="32" height="32" fill="url(#pattern0)"/>
+                                    <defs>
+                                    <pattern id="pattern0" patternContentUnits="objectBoundingBox" width="1" height="1">
+                                    <use xlink:href="#image0" transform="scale(0.00990099)"/>
+                                    </pattern>
+                                    <image id="image0" width="101" height="101" xlink:href="data:image/png;base64,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"/>
+                                    </defs>
+                                  </svg>   
+                                </span>
+                                <div class="train-select-inner-bx">
+                                  <p class="mb-0 f-14" >
+                                    {{leg.Departure}} <img src="assets/images/arrow-right-dark.svg" alt="" class="mx-2 w-12"> {{leg.Arrival}}</p>
+                                </div>
+                              </div>
+                              
+                            </button>
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <button mat-button [disabled] ="!isLegChoosed" class="default-btn-dark" (click)="onSelectTrainClick()">Select train</button>
+                        </div>
+                      </div>
+                      </div>
+                    
+                  </ng-Container>
+                </div>
+              </mat-expansion-panel>
+            </mat-accordion>
+
+            <mat-accordion class="journey-extra-accordian">
+              <mat-expansion-panel [expanded]="step === 0">
+                <mat-expansion-panel-header class="bt-1">
+                  <mat-panel-title class="mw-310 f-24 font-500 text-graphene">
+                    Booking summary
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="p-20 pt-0 bt-1">
+                  <div class="bg-f6 mt-4">
+                    <div class="j-smry plr-15">
+                      <div class="row">
+                        <div class="col-md-6 br-1" *ngIf="isOutwardJourneyExist" [class.col-md-12]="isOutwardJourneyExist && !isReturnJourneyExist">
+                            <div class="ptb-10 bb-1">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h2 class="f-16 mb-0">Outbound</h2>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <p class="f-16 mb-0">{{DepartureDate}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="j-dtls ptb-10 bb-1">
+                                <h3 class="f-18 mb-30 text-graphene">{{departureLocation}} to {{arrivalLocation}}</h3>
+                                <h2 class="f-32 font-500 lh-40 mb-0">{{DepartureTimeOutward}} <img src="assets/images/arrow-right-dark.svg" alt=""> {{ArrivalTimeOutward}}</h2>
+                                <p class="f-16 text-graphene">{{outwardDuration}} • {{outwardChanges ? outwardChanges + " Changes" : "Direct"}}</p>
+                            </div>
+                            <div class="ptb-10 mb-10">
+                                <div class="row">
+                                    <div class="col-6" *ngIf="OperatorOutward">
+                                      <span *ngIf="OperatorOutward === 1 || OperatorOutward === 2">
+                                        <img src="assets/images/avanti-logo-dark.svg" alt="">
+                                      </span>
+                                      <span *ngIf="OperatorOutward === 2">&nbsp;+ {{OperatorChangeOutward}}</span>
+                                      <span *ngIf="OperatorOutward === 3">{{saleCompanyOutward}}</span>
+                                      <span *ngIf="OperatorOutward === 4">Multiple operators</span>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 br-1" *ngIf="isReturnJourneyExist">
+                          <div class="ptb-10 bb-1">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h3 class="f-16 mb-0">Return</h3>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <p class="f-16 mb-0">{{ArrivalDate}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="j-dtls ptb-10 bb-1">
+                                <h3 class="f-18 mb-30 text-graphene">{{arrivalLocation}} to {{departureLocation}}</h3>
+                                <h2 class="f-32 font-500 lh-40 mb-0">{{DepartureTimeReturn}} <img src="assets/images/arrow-right-dark.svg" alt=""> {{ArrivalTimeReturn}}</h2>
+                                <p class="f-16 text-graphene">{{returnDuration}} • {{returnChanges ? returnChanges + " Changes" : "Direct"}}</p>
+                            </div>
+                            <div class="ptb-10 mb-10">
+                                <div class="row">
+                                    <div class="col-6" *ngIf="OperatorReturn">
+                                      <span *ngIf="OperatorReturn === 1 || OperatorReturn === 2">
+                                        <img src="assets/images/avanti-logo-dark.svg" alt="">
+                                      </span>
+                                      <span *ngIf="OperatorReturn === 2">&nbsp;+ {{OperatorChangeReturn}}</span>
+                                      <span *ngIf="OperatorReturn === 3">{{saleCompanyReturn}}</span>
+                                      <span *ngIf="OperatorReturn === 4">Multiple operators</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="p-20">
+                      <div class="row">
+                        <div class="col-md-6" *ngIf="isOutwardJourneyExist">
+                            <p class="text-graphene font-500 f-16 mb-10 text-graphene">{{outwardTicketType}}</p>
+                            <ul class="f-14 mb-10 ps-0 ml-16">
+                                <li *ngIf="isNonRefundableTicketOutward">Non refundable ticket</li>
+                                <li *ngIf="!isNonRefundableTicketOutward">Refundable ticket</li>
+                                <li>{{outwardTicketDescription}}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6" *ngIf="isReturnJourneyExist">
+                            <p class="text-graphene font-500 f-16 mb-10">{{returnTicketType}}</p>
+                            <ul class="f-14 mb-10 ps-0 ml-16">
+                                <li *ngIf="isNonRefundableTicketReturn">Non refundable ticket</li>
+                                <li *ngIf="!isNonRefundableTicketReturn">Refundable ticket</li>
+                                <li>{{returnTicketDescription}}</li>
+                            </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </mat-expansion-panel>
+            </mat-accordion>
+
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="md-new-price plr-30 text-center" #stickyMenu [class.sticky] = "sticky" >
+            <p class="mb-0 f-18">Total price</p>
+            <h2 class="mb-1 f-46 font-500"><span>Free</span> </h2>
+          <button mat-button class="default-btn mb-2 w-100" (click)="onContinue()" [disabled]="!isOutwardJourneyExist || !isReturnJourneyExist">Continue</button>
+        </div>
+        <div class="md-new-price-2">
+          <div class="row">
+            <div class="col-8">
+              <p class="mb-0 f-16">Total cost: Free</p>
+            </div>
+            <div class="col-4 text-end">
+              <button class="default-btn" mat-button  (click)="onContinue()" [disabled]="!isOutwardJourneyExist || !isReturnJourneyExist">Continue</button>
+            </div>
+          </div>
+        </div>
+        </div>
+    </div>
+    </div>
+</div>

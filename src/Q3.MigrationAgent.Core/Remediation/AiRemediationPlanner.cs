@@ -12,6 +12,8 @@ namespace Q3.MigrationAgent.Core.Remediation;
 public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoader = null)
 {
     private const double MinimumConfidence = 0.75;
+    private const int MaxValidationPromptLines = 160;
+    private const int MaxValidationPromptChars = 100000;
     private static readonly HashSet<string> SafeStructuralNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", "NuGet.config",
@@ -21,7 +23,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
     };
     private static readonly HashSet<string> AllowedChangeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "script_update", "package_update", "config_update", "type_shim", "source_update", "style_import_update", "test_config_update", "dependency", "package"
+        "script_update", "package_update", "config_update", "type_shim", "source_update", "style_import_update", "minimal_module_or_import_wiring", "test_config_update", "dependency", "package"
     };
     private static readonly string[] ManifestFileNames = ["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".csproj", ".sln", "pom.xml", "build.gradle", "build.gradle.kts", "pyproject.toml", "requirements.txt", "go.mod", "go.sum", "Gemfile", "Gemfile.lock"];
     private static readonly IReadOnlyDictionary<string, string> AngularMaterialM2SassFunctionMap = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -156,27 +158,31 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             : RemediationAttempt.AppliedResult(changes);
     }
 
-    private static async Task<JsonObject> BuildFullPromptAsync(MigrationConfig config, string outputPath, IMigrationAdapter adapter, ValidationResult validation, int attempt, JsonObject manifest, CancellationToken cancellationToken)
+    private static Task<JsonObject> BuildFullPromptAsync(MigrationConfig config, string outputPath, IMigrationAdapter adapter, ValidationResult validation, int attempt, JsonObject manifest, CancellationToken cancellationToken)
     {
-        var projectFiles = await adapter.CollectProjectFilesAsync(outputPath, cancellationToken);
+        _ = cancellationToken;
         var prompt = BasePrompt(config, adapter, validation, attempt, manifest);
-        prompt["stdoutStderr"] = validation.Output.Length > 0 ? validation.Output : validation.Errors;
-        prompt["logTail"] = LogTail(validation.Output.Length > 0 ? validation.Output : validation.Errors);
+        var validationText = ValidationText(validation);
+        var compactValidation = CompactValidationOutput(validationText);
+        var artifact = ExtractRelevantArtifact(compactValidation);
+        prompt["validationOutputTail"] = compactValidation;
+        prompt["relevantArtifact"] = artifact;
+        prompt["relevantManifestExcerpts"] = RelevantManifestExcerpts(outputPath, manifest, artifact);
         prompt["manifestFilesInvolved"] = new JsonArray(FindManifestFiles(outputPath).Select(f => (JsonNode?)JsonValue.Create(f)).ToArray());
         prompt["lockfilesPresent"] = new JsonArray(FindLockfiles(outputPath).Select(f => (JsonNode?)JsonValue.Create(f)).ToArray());
-        prompt["projectFiles"] = JsonSerializer.SerializeToNode(projectFiles, JsonHelpers.SerializerOptions);
         prompt["cssDependencyImportFailures"] = BuildCssDependencyImportContext(outputPath, validation, manifest);
-        prompt["contextMode"] = "full";
-        return prompt;
+        prompt["contextMode"] = "compact-validation";
+        return Task.FromResult(prompt);
     }
 
     private static JsonObject BuildReducedPrompt(MigrationConfig config, string outputPath, IMigrationAdapter adapter, ValidationResult validation, int attempt, JsonObject manifest)
     {
-        var validationText = validation.Output.Length > 0 ? validation.Output : validation.Errors;
-        var artifact = ExtractRelevantArtifact(validationText);
+        var validationText = ValidationText(validation);
+        var compactValidation = CompactValidationOutput(validationText);
+        var artifact = ExtractRelevantArtifact(compactValidation);
         var prompt = BasePrompt(config, adapter, validation, attempt, ReducedManifest(manifest, artifact));
         prompt["contextMode"] = "reduced-after-ai-timeout";
-        prompt["validationOutputTail"] = LineTail(validationText, 160);
+        prompt["validationOutputTail"] = compactValidation;
         prompt["relevantArtifact"] = artifact;
         prompt["relevantManifestExcerpts"] = RelevantManifestExcerpts(outputPath, manifest, artifact);
         prompt["cssDependencyImportFailures"] = BuildCssDependencyImportContext(outputPath, validation, manifest);
@@ -243,7 +249,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["changes"] = new JsonArray(new JsonObject
             {
                 ["file"] = "package.json",
-                ["type"] = "script_update|package_update|config_update|type_shim|source_update|style_import_update|test_config_update",
+                ["type"] = "script_update|package_update|config_update|type_shim|source_update|style_import_update|minimal_module_or_import_wiring|test_config_update",
                 ["reason"] = "exact reason tied to validation failure",
                 ["packageName"] = "package name for package remediations",
                 ["oldImport"] = "old Angular module import when replacement wiring is needed",
@@ -279,9 +285,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             if (cssPlan && !IsStyleFile(file)) return (false, $"CSS dependency import remediation cannot edit non-style file {file}.");
             if (TouchesBlockedPath(file)) return (false, $"AI remediation change touches blocked path {file}.");
             if (change.BoolValue("delete") || string.Equals(type, "delete", StringComparison.OrdinalIgnoreCase)) return (false, "AI remediation cannot delete files.");
-            if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && HasThirdPartyAngularRootCause(validation) && !IsEntryComponentsSourceUpdate(change, validation)) return (false, $"Source file {file} cannot be edited while a node_modules Angular package is the validation root cause.");
-            if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !ValidationMentionsFile(validation, file)) return (false, $"Source file {file} is not directly tied to the validation failure.");
-            if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !ValidationOutputHasCompilerEvidence(validation, file)) return (false, $"Source file {file} lacks exact compiler/build evidence in the validation failure.");
+            if (IsCompilerTargetedSourceUpdate(type) && string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && HasThirdPartyAngularRootCause(validation) && !IsEntryComponentsSourceUpdate(change, validation)) return (false, $"Source file {file} cannot be edited while a node_modules Angular package is the validation root cause.");
+            if (IsCompilerTargetedSourceUpdate(type) && !ValidationMentionsFile(validation, file)) return (false, $"Source file {file} is not directly tied to the validation failure.");
+            if (IsCompilerTargetedSourceUpdate(type) && !ValidationOutputHasCompilerEvidence(validation, file)) return (false, $"Source file {file} lacks exact compiler/build evidence in the validation failure.");
             if (string.Equals(type, "script_update", StringComparison.OrdinalIgnoreCase) && !IsSafeScriptUpdate(change, validation)) return (false, $"Script update in {file} is not tied to a deprecated CLI flag validation failure.");
             if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !change.BoolValue("requiresVersionVerification")) return (false, $"Package update in {file} must require npm version verification before applying.");
             if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !IsValidationProvenPackageUpdate(change, validation)) return (false, $"Package update in {file} is not limited to a validation-proven blocker package.");
@@ -291,12 +297,12 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
                 var styleSafety = ValidateStyleImportUpdate(change, validation, outputPath);
                 if (!styleSafety.Safe) return styleSafety;
             }
-            if (string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && change.StringValue("after").Length > change.StringValue("before").Length + 2000) return (false, $"Source update for {file} is too large for automatic remediation.");
+            if (IsCompilerTargetedSourceUpdate(type) && change.StringValue("after").Length > change.StringValue("before").Length + 2000) return (false, $"Source update for {file} is too large for automatic remediation.");
             if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeTypeShim(file)) return (false, $"Type shim {file} is not a safe project-level declaration file.");
             if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeTypeShimMetadata(plan, change)) return (false, $"Type shim {file} is missing required validation-driven no-runtime-impact safety metadata.");
             if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsDeclarationOnlyTypeShim(change.StringValue("after"))) return (false, $"Type shim {file} must contain declarations only.");
             if (string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !CanEnsureTypeShimIncluded(outputPath, file)) return (false, $"Type shim {file} is not included by tsconfig and no safe tsconfig include update is possible.");
-            if (!string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) && !string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) && !string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeManifest(file)) return (false, $"File {file} is not a safe remediation target.");
+            if (!IsCompilerTargetedSourceUpdate(type) && !string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) && !string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && !IsSafeManifest(file)) return (false, $"File {file} is not a safe remediation target.");
             if (!string.Equals(type, "type_shim", StringComparison.OrdinalIgnoreCase) && (string.IsNullOrEmpty(change.StringValue("before")) || change["after"] is null)) return (false, $"Change for {file} must include exact before and after text.");
             if (IsBroadPackageUpdate(change, validation)) return (false, $"Package update in {file} is broad or unrelated to the failure.");
         }
@@ -315,7 +321,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         }
 
         var file = NormalizeRelativePath(change.StringValue("file"));
-        if (!IsSafeManifest(file) && !IsSafeTypeShim(file) && !(IsSourceFile(file) && ValidationMentionsFile(validation, file)) && !(string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) && IsStyleFile(file) && ValidationMentionsFile(validation, file))) return null;
+        if (!IsSafeManifest(file) && !IsSafeTypeShim(file) && !(IsSourceFile(file) && ValidationMentionsFile(validation, file) && IsCompilerTargetedSourceUpdate(type)) && !(string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase) && IsStyleFile(file) && ValidationMentionsFile(validation, file))) return null;
         var full = Path.GetFullPath(Path.Combine(outputPath, file));
         if (!IsUnderRoot(full, outputPath)) return null;
         var exists = File.Exists(full);
@@ -1455,6 +1461,22 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
     private static int? ExtractExitCode(ValidationResult validation) => Regex.Match(validation.Output + "\n" + validation.Errors, @"exit code:\s*(?<code>-?\d+)", RegexOptions.IgnoreCase) is { Success: true } m ? int.Parse(m.Groups["code"].Value) : null;
     private static string LogTail(string text) => string.Join(Environment.NewLine, (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.None).TakeLast(80));
     private static string LineTail(string text, int maxLines) => string.Join(Environment.NewLine, (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.None).TakeLast(maxLines));
+    private static string ValidationText(ValidationResult validation) => string.IsNullOrWhiteSpace(validation.Output) ? validation.Errors : validation.Output;
+    private static string CompactValidationOutput(string text)
+    {
+        var lines = (text ?? "").Split(["\r\n", "\n"], StringSplitOptions.None);
+        var focused = lines
+            .Where(line => Regex.IsMatch(line, @"\b(error|failed|exception|ERESOLVE|TS\d{4}|NG\d{4}|CS\d{4}|Cannot find|Can't resolve|not exported|not a known element|known property)\b", RegexOptions.IgnoreCase))
+            .Take(MaxValidationPromptLines)
+            .ToList();
+
+        var tail = lines.TakeLast(Math.Min(40, MaxValidationPromptLines)).ToArray();
+        var compact = string.Join(Environment.NewLine, focused.Concat(tail).Distinct());
+        if (string.IsNullOrWhiteSpace(compact)) compact = LineTail(text ?? "", MaxValidationPromptLines);
+        if (compact.Length <= MaxValidationPromptChars) return compact;
+
+        return compact[^MaxValidationPromptChars..];
+    }
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').TrimStart('/').Replace("../", "", StringComparison.Ordinal);
     private static bool IsUnderRoot(string fullPath, string root) => fullPath.StartsWith(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     private static string planSummaryFallback(ValidationResult validation) => string.IsNullOrWhiteSpace(validation.Errors) ? LogTail(validation.Output) : validation.Errors;
@@ -2104,6 +2126,10 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         file.EndsWith(".scss", StringComparison.OrdinalIgnoreCase) ||
         file.EndsWith(".sass", StringComparison.OrdinalIgnoreCase) ||
         file.EndsWith(".less", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCompilerTargetedSourceUpdate(string type) =>
+        string.Equals(type, "source_update", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "minimal_module_or_import_wiring", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsCssFile(string file) =>
         file.EndsWith(".css", StringComparison.OrdinalIgnoreCase);

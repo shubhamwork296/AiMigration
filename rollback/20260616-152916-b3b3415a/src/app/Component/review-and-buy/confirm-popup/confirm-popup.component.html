@@ -1,0 +1,27 @@
+<div class="py-3 new-theme confirm-popup upgrade-payment-page-popup">
+    <div class="pe-3 pe-md-4" *ngIf="confirmTitle == 'Remove this journey?'">
+        <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.5 0C13.2366 0 10.0465 0.967708 7.3331 2.78075C4.61969 4.59379 2.50484 7.17074 1.25599 10.1857C0.00714919 13.2007 -0.319606 16.5183 0.31705 19.719C0.953706 22.9197 2.52518 25.8597 4.83274 28.1673C7.14031 30.4748 10.0803 32.0463 13.281 32.6829C16.4817 33.3196 19.7993 32.9929 22.8143 31.744C25.8293 30.4952 28.4062 28.3803 30.2192 25.6669C32.0323 22.9535 33 19.7634 33 16.5C33 14.3332 32.5732 12.1876 31.744 10.1857C30.9148 8.18385 29.6994 6.3649 28.1673 4.83274C26.6351 3.30057 24.8162 2.08519 22.8143 1.25599C20.8124 0.426785 18.6668 0 16.5 0ZM16.5 31.9687C13.4406 31.9687 10.4499 31.0615 7.90603 29.3618C5.36221 27.6621 3.37954 25.2462 2.20875 22.4196C1.03795 19.5931 0.73162 16.4828 1.32849 13.4822C1.92535 10.4815 3.39861 7.72528 5.56195 5.56194C7.72529 3.3986 10.4816 1.92534 13.4822 1.32848C16.4828 0.731613 19.5931 1.03795 22.4196 2.20874C25.2462 3.37953 27.6621 5.3622 29.3618 7.90602C31.0615 10.4498 31.9688 13.4406 31.9688 16.5C31.9633 20.6009 30.3318 24.5323 27.432 27.432C24.5323 30.3318 20.6009 31.9633 16.5 31.9687Z" fill="#131E29"/>
+            <path d="M17.9851 10.1269C17.7916 10.3242 17.5605 10.4807 17.3054 10.587C17.0503 10.6933 16.7764 10.7472 16.5001 10.7456C16.0817 10.7594 15.669 10.6455 15.3169 10.4191C14.9648 10.1928 14.6899 9.86462 14.5287 9.47829C14.3676 9.09195 14.3278 8.66572 14.4146 8.25623C14.5015 7.84674 14.7109 7.47338 15.0151 7.18575C15.2075 6.98739 15.4386 6.83054 15.694 6.72483C15.9494 6.61913 16.2237 6.56682 16.5001 6.57112C16.7782 6.5673 17.0542 6.61978 17.3116 6.72541C17.5689 6.83103 17.8022 6.98762 17.9974 7.18575C18.1968 7.37532 18.3554 7.60344 18.4639 7.85623C18.5723 8.10903 18.6283 8.38124 18.6283 8.65631C18.6283 8.93138 18.5723 9.20359 18.4639 9.45638C18.3554 9.70918 18.1968 9.9373 17.9974 10.1269H17.9851ZM14.9161 26.4247V12.7586H18.0552V26.4247H14.9161Z" fill="#131E29"/>
+        </svg>            
+    </div>
+    <div>
+     <div class="delete-heade">   
+        <h2 mat-dialog-title class="login-signin-title f-32imp" *ngIf="!isMyProfilePopUp">{{confirmTitle != 'Remove this journey?' ? 'Confirm' : confirmTitle }}</h2>
+        <h2 mat-dialog-title class="f-22 lh-27 font-600 link-tag delete-popup-title" *ngIf="isMyProfilePopUp">{{confirmTitle}}</h2>
+        <button role="button" aria-label="close button" class="dialog-close b-none p0 dialog-close-focus upgrade-confirm-close-btn" mat-dialog-close><img src="assets/images/Close.svg" alt="" *ngIf="confirmTitle != 'Remove this journey?'"></button>
+</div>
+        <mat-dialog-content class="upgrade-confirm-content">
+            <div class="shadow-none font-weight-500 f-16imp" *ngIf="!isMyProfilePopUp">{{confirmMessage}}</div>
+            <div class="shadow-none f-14 lh-20 font-dark mobile-pb-14" *ngIf="isMyProfilePopUp">{{confirmMessage}}</div>
+        </mat-dialog-content>
+        <mat-dialog-actions class="bt-1 button-h" *ngIf="confirmTitle != 'Remove this journey?'">
+            <button class="new-default-outline-btn mr-16" mat-button mat-dialog-close (click)="dialogRef.close(false)">Cancel</button>
+            <button mat-button class="new-default-btn ms-0" [mat-dialog-close]="true" (click)="dialogRef.close(true)">Confirm</button>
+        </mat-dialog-actions>
+        <mat-dialog-actions class="bt-0" *ngIf="confirmTitle == 'Remove this journey?'">
+            <button class="simple-btn text-spark-dark me-3 text-underline" mat-button mat-dialog-close (click)="dialogRef.close(false)">Cancel</button>
+            <button mat-button class="default-btn plr-60 upgrade-remove-journey-btn" [mat-dialog-close]="true" (click)="dialogRef.close(true)">Remove Journey</button>
+        </mat-dialog-actions>
+    </div>
+</div>

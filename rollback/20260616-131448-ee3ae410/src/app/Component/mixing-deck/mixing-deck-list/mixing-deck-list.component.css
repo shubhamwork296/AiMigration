@@ -1,0 +1,788 @@
+mat-table {
+    width: 100%;
+}
+
+mat-row.example-detail-row.mat-row.ng-tns-c14-5.ng-star-inserted {
+    display: none;
+}
+
+mat-row.mat-row.ng-tns-c14-5.example-element-row.ng-star-inserted.example-expanded-row mat-row.example-detail-row {
+    display: flex;
+    padding: 0;
+    border: 0;
+}
+
+.mat-elevation-z8 {
+    box-shadow: none;
+}
+
+mat-row.example-element-row:not(.example-expanded-row):active {
+    background: #efefef;
+}
+
+.example-element-row mat-cell {
+    border-bottom-width: 0;
+}
+
+.example-element-detail {
+    overflow: hidden;
+    display: block;
+}
+
+.example-element-diagram {
+    min-width: 80px;
+    border: 2px solid black;
+    padding: 8px;
+    font-weight: lighter;
+    margin: 8px 0;
+    height: 104px;
+}
+
+.example-element-symbol {
+    font-weight: bold;
+    font-size: 40px;
+    line-height: normal;
+}
+
+.example-element-description {
+    padding: 16px;
+}
+
+.example-element-description-attribution {
+    opacity: 0.5;
+}
+
+mat-row.mat-header-row {
+    height: 44px;
+}
+
+.list-bx {
+    margin: 6px 2px;
+    padding: 5px;
+    display: -ms-flexbox;
+    display: flex;
+    position: relative;
+    color: #131E29;
+    text-align: center;
+}
+
+.price-value {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+    line-height: 36px;
+}
+
+.price-value span.curr-symbol {
+    font-size: 18px;
+}
+
+p.deck-disc {
+    margin: 0 10px;
+    line-height: 36px;
+}
+
+.mixing-deck-tbl {
+    border-spacing: 0 5px;
+    border-collapse: separate;
+    background: transparent;
+}
+
+.viewmore-btn {
+    color: #D02D00;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 8px 0 !important;
+}
+
+.tkt-class {
+    line-height: 25px;
+    font-size: 20px;
+    color: #131e29;
+    margin: 7px 0 0 7px;
+}
+
+.single-return-heading {
+    color: #FF4713;
+    font-size: 20px;
+    font-weight: 500;
+    text-align: center;
+    margin: 10px 0 0 7px;
+}
+
+.single-return-bx {
+    border-right: 1px solid #D6D1CA;
+    border-bottom: 1px solid #D6D1CA;
+}
+
+.deck-popup-btn2 {
+    right: 45px;
+}
+
+.small-qtt {
+    padding: 15px 0;
+    background: #204555;
+}
+
+.routing_icon {
+    width: 40px;
+}
+
+.seatnotavailable {
+    margin-left: 0 !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    margin-top: -14px !important;
+    color: #7F8FA1 !important;
+}
+
+.seatnotavailabletckt {
+    color: #7F8FA1 !important;
+}
+
+.descriptions td.active a:hover {
+    color: #204555;
+    text-decoration: none;
+}
+
+.Journey-theader {
+    padding: 8px;
+    background: #204555;
+}
+
+.Journey-theader p {
+    color: #fff;
+    margin: 8px 0 0 0;
+}
+
+.Journey-theader .arrow-img {
+    margin: 0 4px;
+}
+
+.pre-btn {
+    color: #fff;
+}
+
+.mid-btn {
+    color: #131E29;
+    background: #E2F5E9;
+    line-height: 16px;
+    padding: 5px 22px;
+    font-size: 14px;
+    min-width: 90px;
+    cursor: default;
+}
+
+.nxt-btn {
+    color: #fff;
+}
+
+.mix-day-btns {
+    float: right;
+    display: flex;
+    width: fit-content;
+}
+
+.mixing-deck-tbl table-header-cell {
+    background: #D6D1CA;
+    color: #131E29;
+    font-size: 14px;
+    width: 16.66%;
+    text-align: center !important;
+}
+
+.mixing-deck-tbl mat-cell.mat-column-DepartureTime,
+.mixing-deck-tbl mat-cell.mat-column-ArrivalTime,
+.mixing-deck-tbl mat-cell.mat-column-Changes,
+.mixing-deck-tbl mat-cell.mat-column-Duration,
+.mixing-deck-tbl mat-cell.mat-column-SingleFare {
+    text-align: center !important;
+}
+
+.mixing-deck-tbl mat-cell.mat-column-actions {
+    text-align: right !important;
+}
+
+.mat-row-disabled {
+    background-color: lightgrey !important;
+}
+
+.saleable-label {
+    position: absolute;
+    right: 50%;
+    top: 50%;
+    z-index: 999;
+    width: 250px;
+    text-align: center;
+    transform: translate(-90%, -50%);
+    background: #9E9E9E;
+}
+
+.mid-btn.mat-button.mat-button-base {
+    cursor: default;
+}
+
+.cursor-no-drop {
+    cursor: no-drop;
+}
+
+mat-cell.mat-cell.cdk-column-expandedDetail.mat-column-expandedDetail.ng-tns-c14-5.ng-star-inserted.expanded .example-element-detail {
+    overflow: visible;
+}
+
+.mat-expansion-panel-header {
+    min-height: 64px !important;
+    height: auto !important;
+}
+
+.mat-expansion-panel.seat-reserv-panel {
+    overflow: visible;
+    box-shadow: 0px 4px 16px rgb(0 0 0 / 10%), 0px 2px 8px rgb(0 0 0 / 10%) !important;
+    border-radius: 5px;
+}
+
+.mat-expansion-panel.seat-reserv-panel .mat-expansion-panel-header {
+    padding: 0 2px;
+}
+
+.journey-header {
+    padding-left: 15px;
+    position: relative;
+    padding-top: 15px;
+}
+
+@media (max-width:1024px) {
+    .list-bx {
+        padding: 7px 0px 7px 10px;
+    }
+}
+
+.btn-blue-outline {
+    color: #204555;
+    padding: 2px 10px !important;
+    border: 1px solid #204555 !important;
+    line-height: 33px !important;
+    transition: 0.5s;
+    border-radius: 0;
+}
+
+.btn-blue-outline.selected {
+    background: #204555;
+    color: #ffffff;
+    padding: 2px 10px !important;
+    border: 1px solid #204555 !important;
+    line-height: 33px !important;
+    transition: 0.5s;
+}
+
+.c-label {
+    width: 100% !important;
+    height: 43px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 400;
+    font-size: 12px;
+    margin: 0 2px;
+    background: #f6f6f6;
+}
+
+.c-label.label-standard-premium {
+    width: 140px;
+    border-left: none;
+}
+
+.c-label.label-first {
+    background: #E2F5E9;
+}
+
+.c-label p .mat-button {
+    height: auto;
+    width: auto;
+    max-width: inherit;
+}
+
+.c-label p span {
+    width: 3px;
+    height: 3px;
+    background: #204555;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 2px 6px 2px 6px;
+}
+
+.c-label .mat-icon-button {
+    height: 24px;
+    width: 24px;
+}
+
+.c-label .mat-icon-button mat-icon {
+    height: 16px;
+    width: 16px;
+}
+
+.no-premium .c-label {
+    width: 138px;
+}
+
+.no-premium .label-first {
+    background-color: #E2F5E9;
+    color: #131E29;
+    border: none;
+}
+
+.label-standard-premium {
+    background-color: #95E1BF;
+    color: #131E29;
+    border: none;
+}
+
+.label-standard button,
+.label-first button,
+.label-standard-premium button {
+    padding: 0;
+    margin: 0;
+    height: auto;
+    min-width: auto;
+}
+
+.label-standard button .mat-icon,
+.label-first button .mat-icon,
+.label-standard-premium button .mat-icon {
+  font-size: x-small;
+  height: 16px;
+  width: 16px;
+  margin-right: 6px;
+}
+
+.label-heading,
+.deck-disc {
+    flex-basis: 20%;
+}
+
+.label-other,
+.ticket-box,
+.label-desc {
+    flex-basis: 80%;
+}
+
+.label-other {
+    display: flex;
+}
+
+.first-ticket,
+.standard-ticket,
+.standardPremium-ticket {
+    min-width: 125px;
+}
+
+.no-premium .first-ticket,
+.no-premium .standard-ticket {
+    flex-basis: 50%;
+}
+
+.no-premium .standardPremium-ticket {
+    display: none;
+}
+
+.flex-75 {
+    flex: 75%;
+}
+
+.flex-25 {
+    flex: 25%;
+}
+
+.flex-60 {
+    flex: 60%;
+}
+
+.flex-55 {
+    flex: 55%;
+}
+
+.flex-40 {
+    flex: 40%;
+}
+
+.flex-35 {
+    flex: 35%;
+}
+
+.flex-80 {
+    flex: 80%;
+}
+
+.flex-20 {
+    flex: 20%;
+}
+
+.flex-70 {
+    flex: 70%;
+}
+
+.flex-30 {
+    flex: 30%;
+}
+
+.w-80 {
+    width: 80%;
+}
+
+.advance-desc p {
+    color: #204555;
+    font-size: 16px;
+}
+
+.advance-desc ul li {
+    margin-bottom: 10px;
+}
+
+.single-ticket {
+    border-bottom: 1px solid #D6D1CA;
+}
+
+.prevent-click {
+    pointer-events: none;
+}
+
+.mat-expansion-panel-header-title {
+    padding-top: 5px;
+}
+
+.lable-ticket-class .c-label,
+.label-other .c-label {
+    padding: 2px;
+    height: 58px;
+}
+
+.deck-disc.deck-disc-txt {
+    padding-top: 6px !important;
+    align-items: baseline !important;
+    margin-top: 8px;
+}
+
+@media (max-width:767px) {
+    .journey-header {
+        margin-left: 0px;
+        margin-top: 15px;
+    }
+    .journey-header::before {
+        top: 3px;
+        height: calc(100% - 20px);
+    }
+    .c-label {
+        width: 33%;
+        min-width: 130px;
+    }
+    .no-premium .c-label {
+        width: 50%;
+    }
+    .label-other,
+    .ticket-box,
+    .label-desc {
+        flex-basis: 100%;
+    }
+    .first-ticket,
+    .standard-ticket {
+        min-width: 131px;
+        max-width: initial;
+    } 
+    .seatnotavailable {
+        margin-top: -8px !important;
+    }
+
+    .label-standard button,
+    .label-first button,
+    .label-standard-premium button {
+        width: auto;
+    }
+
+    .upgrade-plusbut-btn {
+        padding: 0 !important;
+    }
+}
+
+.dep-code::after {
+    content: '' !important;
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    z-index: 999;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.cdk-column-DepartureTime.mat-column-DepartureTime.ng-star-inserted {
+    min-width: 16%;
+    justify-content: flex-start;
+}
+
+.cdk-column-ArrivalTime.mat-column-ArrivalTime.ng-star-inserted {
+    min-width: 18%;
+    justify-content: flex-start;
+    padding-left: 10px !important;
+}
+
+.cdk-column-Duration.mat-column-Duration.ng-star-inserted {
+    min-width: 10%;
+    justify-content: flex-start;
+}
+
+.cdk-column-Changes.mat-column-Changes.ng-star-inserted {
+    min-width: 8%;
+    padding-right: 0px;
+    justify-content: center;
+}
+
+.cdk-column-DepartureTime {
+    position: relative;
+}
+
+.cdk-column-DepartureTime::after {
+    content: '→';
+    position: absolute;
+    margin-left: 0px;
+    z-index: 999;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+    right: 0px;
+}
+
+@media(max-width:767px) {
+    mat-cell.cdk-column-ArrivalTime.mat-column-ArrivalTime.ng-star-inserted {
+        -ms-flex-order: 4;
+        order: 4;
+        min-width: 61%!important;
+    }
+    mat-cell.cdk-column-DepartureTime.mat-column-DepartureTime.ng-star-inserted {
+        -ms-flex-order: 3;
+        order: 3;
+        min-width: 39%!important;
+    }
+    mat-cell.cdk-column-Duration.mat-column-Duration.ng-star-inserted {
+        -ms-flex-order: 5;
+        order: 5;
+        min-width: 20%!important;
+    }
+    mat-cell.cdk-column-SingleFare.mat-column-SingleFare.ng-star-inserted {
+        -ms-flex-order: 8;
+        order: 8;
+        min-width: 35%!important;
+        position: static;
+    }
+}
+
+.mat-row-disabled .cdk-column-SingleFare {
+    min-width: 35% !important;
+    text-align: right !important;
+    justify-content: flex-end !important;
+    padding-right: 10px;
+}
+
+.mat-row-disabled .icn-box,
+.mat-row-disabled .mat-column-expand-collapse,
+.mat-row-disabled .cdk-column-fastest {
+    display: none;
+}
+
+@media only screen and (min-width: 768px) {
+    .no-premium .w-md-67 {
+        width: 67% !important;
+    }
+    .w-md-67 {
+        width: 70% !important;
+    }
+}
+
+@media (max-width:521px) {
+    mat-row.mat-row.example-element-row.ng-star-inserted.example-expanded-row mat-row.example-detail-row mat-cell {
+        max-width: calc(100vw - 30px);
+        overflow-x: auto !important;
+    }
+    .example-element-detail {
+        overflow: visible;
+    }
+}
+
+.list-bx .text-strikeout {
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.soldOutClass {
+    top: 15px;
+    position: relative;
+}
+
+@media (max-width:767px) {
+    .journey-header .out-date {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    .mobileview-tickets mat-radio-group {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .mobileview-tickets mat-radio-group .d-flex.single-ticket.flex-column {
+        width: 50%;
+    }
+    .mobileview-tickets .ticket-details-box mat-radio-group .d-flex.single-ticket.flex-column {
+        align-content: flex-start;
+    }
+    .mobileview-tickets .ticket-details-box mat-radio-group .list-bx {
+        align-items: center;
+    }
+    .mobileview-tickets .ticket-details-box mat-radio-group .list-bx .deck-disc {
+        justify-content: center;gap: 0.25rem;
+    }
+    .mobileview-tickets .ticket-details-box mat-radio-group .single-ticket {
+        border: 0px;
+    }
+    .mobileview-tickets .ticket-details-box {
+        border-bottom: 1px solid #D6D1CA;
+    }
+    .mobileview-tickets .ticket-details-box mat-radio-group {
+        align-items: baseline;
+    }
+    .mobileview-tickets mat-radio-group .list-bx {
+        align-items: start;
+    }
+    .mobileview-tickets .ticket-details-box .ticketinfo-btn-new {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+    }
+    .mobileview-tickets .d-flex.flex-column {
+        width: 100%;
+    }
+    .ticket-box {
+        display: block !important;
+    }
+
+    .soldOutClass {
+        top: 10px;
+    }
+
+    .soldOutClass .deck-disc {
+        padding-bottom: 6px;
+    }
+}
+
+input[type="radio"] {
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    height: 20px;
+    margin-right: 10px;
+    position: relative;
+    width: 20px;
+    -webkit-appearance: none;
+    border: 1px solid #204555;
+    background: transparent;
+}
+
+input[type="radio"]:after {
+    border-radius: 25px;
+    content: '';
+    display: block;
+    height: 10px;
+    left: 4px;
+    position: relative;
+    top: 4px;
+    width: 10px;
+}
+
+input[type="radio"]:checked:after {
+    background-color: #204555;
+}
+
+input[type="radio"]:focus {
+    box-shadow: 0px 0px 0px 6px #ccc;
+    outline: none !important;
+    border: 1px solid #204555 !important;
+}
+
+.new-mixing input[type='radio'] {
+    margin-bottom: -2px;
+}
+
+.new-tbl-ticket tr th {
+    width: 23%;
+    padding-right: 8px;
+}
+
+.new-tbl-ticket tr td,
+.new-tbl-ticket tr th {
+    border-bottom: 1px solid #D6D1CA;
+}
+
+.new-tbl-ticket tr:first-child td:last-child {
+    border-bottom: 0px solid #D6D1CA;
+}
+
+.new-tbl-ticket tr:first-child th:last-child {
+    border-bottom: 0px solid #D6D1CA;
+}
+
+.bg-fff {
+    background: #fff !important;
+}
+
+span.duration::before,
+span.duration::after,
+span.changes::after {
+    display: none;
+}
+
+.ticketinfo-btn-new svg {
+    margin-top: 0px;
+}
+
+.ticketinfo-btn-new {
+    padding-right: 5px !important;
+    padding-left: 0 !important;
+}
+
+@media (min-width:768px) and (max-width:991px) {
+    .select-ticket-collapse span {
+        display: none !important;
+    }
+    .lable-ticket-class .c-label {
+        height: auto;
+    }
+}
+
+div .no-tickt-dtl .c-label {
+    height: 36px;
+}
+
+mat-table .mat-row-sold-out {
+    background-color: #fff !important;
+}
+
+.train-cancelled,
+.train-cancelled mat-cell {
+    color: #131E29 !important;
+}
+
+.train-cancelled mat-cell .dep-code,
+.train-cancelled mat-cell .arr-code {
+    color: #131E29 !important;
+}
+
+.old-flow-example-detail-row {
+    display: none;
+}
+
+.old-flow-example-detail-row.example-expanded-row {
+    display: block;
+}
+
+@media only screen and (max-width: 1400px) and (min-width: 1199px) {
+    .lable-ticket-class .c-label,
+    .label-other .c-label {
+        min-height: 70px;
+    }
+}

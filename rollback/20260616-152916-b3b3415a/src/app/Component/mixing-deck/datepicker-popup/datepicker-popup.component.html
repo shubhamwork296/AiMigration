@@ -1,0 +1,50 @@
+<h2 mat-dialog-title class="login-signin-title border-bottom-0 mb-0 old-flow-datepicker-title" *ngIf="isDeparture">Departure</h2>
+<h2 mat-dialog-title class="login-signin-title border-bottom-0 mb-0 old-flow-datepicker-title" *ngIf="!isDeparture">Returning</h2>
+<button aria-label="Close button" class="dialog-close text-coalescent cursor-pointer-hover simple-btn" (click)="onclose()">
+    <img aria-label="Close" src="assets/images/close-orange.svg" alt="close_logo"> Close
+</button>
+
+<mat-dialog-content class="fare-heading-list-box mt-3 ticket-dialog-box old-flow-datepicker">
+    <mat-tab-group animationDuration="0ms" [(selectedIndex)]="tabIndex">
+        <mat-tab label="Specific Date" class="upgrade-datpicker-tab-header">
+            <form [formGroup]="dateTimeForm">
+                <ngb-datepicker #dp *ngIf="!deviceInfo" [displayMonths]="2" [minDate]="ngbMinDate" [maxDate]="ngbMaxDate" [markDisabled]="isDisabled" (click)="onSelectDate(model)" [(ngModel)]="model" [ngModelOptions]="{standalone: true}" (navigate)="date = $event.next">
+                </ngb-datepicker>
+                <ngb-datepicker #dp *ngIf="deviceInfo" [displayMonths]="1" [minDate]="ngbMinDate" [maxDate]="ngbMaxDate" [markDisabled]="isDisabled" (click)="onSelectDate(model)" [(ngModel)]="model" [ngModelOptions]="{standalone: true}" (navigate)="date = $event.next">
+                </ngb-datepicker>
+                <div class="row mt-3">
+                    <div class="col-lg-8 deperture-btn">
+                        <label for="travel" class="f-12 l-h-5 lbl-tgl-grp-dprt-after">&nbsp;</label>
+                        <mat-button-toggle-group id="travel" formControlName="travelType">
+                            <mat-button-toggle value="DEPARTAFTER">Depart After</mat-button-toggle>
+                            <mat-button-toggle value="ARRIVEBY">Arrive By</mat-button-toggle>
+                        </mat-button-toggle-group>
+                    </div>
+                    <div class="col-lg-4 old-flow-datepicker-time-select">
+                        <mat-form-field class="one-three-3 w-100 d-block time-select-box" floatLabel="never">
+                            <label for="time" class="f-12">Time</label>
+                            <mat-form-field id="time" class="d-block date-pickr-time example-full-width default-input default-input-brdr" floatLabel="never">
+                                <mat-select class="border-gray f-16" formControlName="travelTime">
+                                    <mat-option *ngFor="let time of timeList" [value]="time">{{time}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </mat-form-field>
+                    </div>
+                </div>
+                <div class="row mt-0 mt-md-3">
+                    <button mat-button class="default-btn w-m-100 w-100 mt-0 mt-m-10 old-flow-h-40 old-flow-apply-btn-m" (click)="applyChanges()">Apply</button>
+                </div>
+            </form>
+        </mat-tab>
+        <mat-tab label="Anytime" *ngIf="!isDeparture">
+            <p class="upgrade-anytime-txt">If you don't want to be tied down to a specific train time, choose one of our open return tickets.</p>
+            <div class="row mt-3">
+                <button mat-button class="default-btn w-m-100 w-100 mt-m-10 old-flow-h-40 old-flow-apply-btn-m" (click)="openReturn()">Apply</button>
+            </div>
+        </mat-tab>
+    </mat-tab-group>
+
+</mat-dialog-content>
+<!-- <mat-dialog-actions>
+
+</mat-dialog-actions> -->

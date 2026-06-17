@@ -61,6 +61,16 @@ public sealed class AngularAdapterTests
     }
 
     [Fact]
+    public void Official_Angular_Migrate_Only_Command_Uses_Npx_Pinned_Cli_With_Version_Check_Disabled()
+    {
+        var adapter = new AngularAdapter(new CommandRunner());
+
+        var command = adapter.OfficialAngularMigrateOnlyCommand(18, 19, ["@angular/core"]);
+
+        Assert.Equal(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/core", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"], command);
+    }
+
+    [Fact]
     public void Ai_Normal_Install_Converts_To_Safe_Npm_Command()
     {
         var decision = new InstallStrategyDecision
@@ -297,8 +307,8 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var deps = packageJson["dependencies"]!.AsObject();
         var devDeps = packageJson["devDependencies"]!.AsObject();
 
-        Assert.Equal("^15.2.10", deps["@angular/core"]!.ToString());
-        Assert.Equal("^15.2.10", deps["@angular/cli"]!.ToString());
+        Assert.Equal("15.2.10", deps["@angular/core"]!.ToString());
+        Assert.Equal("15.2.10", deps["@angular/cli"]!.ToString());
         Assert.Equal("~4.9.5", devDeps["typescript"]!.ToString());
         Assert.Equal("^4.17.0", deps["lodash"]!.ToString());
         Assert.Contains(result["packagesManualReview"]!.AsArray().OfType<JsonObject>(), p => p.StringValue("name") == "mystery-business");
@@ -384,7 +394,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var devDeps = packageJson["devDependencies"]!.AsObject();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^14.2.13", devDeps["@angular-devkit/build-angular"]!.ToString());
+        Assert.Equal("14.3.0", devDeps["@angular-devkit/build-angular"]!.ToString());
         Assert.Equal("^13.0.0", deps["@angular-slider/ngx-slider"]!.ToString());
         Assert.DoesNotContain("^14.3.0", packageJsonText);
         Assert.Equal(1, ai.SystemPrompts.Count(IsPackageVersionPrompt));
@@ -416,12 +426,12 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var rejected = result["rejectedAiPackageSuggestions"]!.AsArray().OfType<JsonObject>().Select(r => r.StringValue("rejectionReason")).ToArray();
 
         Assert.True(result.StringValue("status") == "done", result.ToJsonString(JsonHelpers.SerializerOptions));
-        Assert.Equal("^14.3.0", deps["@angular/core"]!.ToString());
-        Assert.Equal("^14.3.0", deps["@angular/common"]!.ToString());
-        Assert.Equal("^14.3.0", deps["@angular/compiler"]!.ToString());
-        Assert.Equal("^14.3.0", devDeps["@angular/cli"]!.ToString());
-        Assert.Equal("^14.3.0", devDeps["@angular/compiler-cli"]!.ToString());
-        Assert.Equal("^14.2.13", devDeps["@angular-devkit/build-angular"]!.ToString());
+        Assert.Equal("14.3.0", deps["@angular/core"]!.ToString());
+        Assert.Equal("14.3.0", deps["@angular/common"]!.ToString());
+        Assert.Equal("14.3.0", deps["@angular/compiler"]!.ToString());
+        Assert.Equal("14.3.0", devDeps["@angular/cli"]!.ToString());
+        Assert.Equal("14.3.0", devDeps["@angular/compiler-cli"]!.ToString());
+        Assert.Equal("14.3.0", devDeps["@angular-devkit/build-angular"]!.ToString());
         Assert.Equal("~4.8.4", devDeps["typescript"]!.ToString());
         Assert.DoesNotContain(rejected, reason => reason.Contains("Upgrade target version was missing or invalid"));
     }
@@ -488,6 +498,186 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
     }
 
     [Fact]
+    public async Task Critical_Dependency_NoOp_Target_Is_Discarded_Without_Package_Patch()
+    {
+        var root = await Angular13Workspace();
+        var packagePath = Path.Combine(root, "package.json");
+        var packageJson = JsonNode.Parse(await File.ReadAllTextAsync(packagePath))!.AsObject();
+        packageJson["devDependencies"]!.AsObject()["typescript"] = "~4.8.4";
+        await File.WriteAllTextAsync(packagePath, packageJson.ToJsonString(JsonHelpers.SerializerOptions) + Environment.NewLine);
+        var ai = new SequenceAi(new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/common", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/cli", "~13.1.2", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "~13.1.0", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "^13.3.10", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+                PackageDecision("typescript", "~4.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~4.8.4", "upgrade")),
+            ["notes"] = new JsonArray()
+        }, EmptyVersionRecommendations(14),
+            CriticalAlignment(CriticalRecommendation("typescript", "~4.8.4", "~4.8.4", "Angular compiler-cli peer is already satisfied.")),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
+        var runner = new RecordingRunner(command => command[0] == "npm" && command[1] == "view" ? new CommandResult { ReturnCode = 0, Stdout = """["14.2.13"]""" } : new CommandResult { ReturnCode = 0 });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var devDeps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["devDependencies"]!.AsObject();
+
+        Assert.Equal("~4.8.4", devDeps["typescript"]!.ToString());
+        Assert.DoesNotContain(result["packageUpgradesApplied"]!.AsArray().OfType<JsonObject>(), p => p.StringValue("name") == "typescript");
+        Assert.Contains(result["packageTargetValidation"]!["discarded"]!.AsArray().OfType<JsonObject>(), p => p.StringValue("packageName") == "typescript" && p.BoolValue("discardedNoOpRecommendation"));
+    }
+
+    [Fact]
+    public async Task Peer_Conflict_Runtime_Mismatch_Patches_Actual_Peer_Package_Not_Requesting_Package()
+    {
+        var root = await Angular19Workspace();
+        var ai = new SequenceAi(PackagePlan20(preserveTypeScript: true), EmptyVersionRecommendations(20), EmptyCriticalAlignment(19, 20), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
+        var firstInstall = true;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["20.0.0","5.8.3"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]) && firstInstall)
+            {
+                firstInstall = false;
+                return new CommandResult
+                {
+                    ReturnCode = 1,
+                    Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! peer typescript@">=5.8 <6.0" from @angular/compiler-cli@20.0.0
+"""
+                };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(19, 20, "Angular 19 to 20"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "19"), To = new RuntimeSpec("angular", "20"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var devDeps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["devDependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("~5.8.3", devDeps["typescript"]!.ToString());
+        Assert.Equal("20.0.0", devDeps["@angular/compiler-cli"]!.ToString());
+        Assert.Contains(result["peerDependencyConflicts"]!.AsArray().OfType<JsonObject>(), c => c.StringValue("conflictingPackage") == "typescript" && c.StringValue("requiredByPackage") == "@angular/compiler-cli");
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+    }
+
+    [Fact]
+    public async Task Peer_Conflict_Remediation_Patches_All_Conflicts_Before_Retry()
+    {
+        var root = await Angular18Workspace(extraDependencies: @",""@ng-bootstrap/ng-bootstrap"":""^17.0.0"",""ngx-bootstrap"":""^6.0.0""");
+        var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
+        var firstInstall = true;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap@^18.0.0") return new CommandResult { ReturnCode = 0, Stdout = """["18.0.4"]""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "ngx-bootstrap@^11.0.0") return new CommandResult { ReturnCode = 0, Stdout = """["11.0.2"]""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.0.0","5.5.4","0.15.1"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]) && firstInstall)
+            {
+                firstInstall = false;
+                return new CommandResult
+                {
+                    ReturnCode = 1,
+                    Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
+npm ERR! peer @angular/core@"^14.0.0" from ngx-bootstrap@6.2.0
+"""
+                };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+        var remediations = result["cleanInstallSummary"]!["thirdPartyPeerConflictRemediations"]!.AsArray().OfType<JsonObject>().ToArray();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^18.0.0", deps["@ng-bootstrap/ng-bootstrap"]!.ToString());
+        Assert.Equal("^11.0.0", deps["ngx-bootstrap"]!.ToString());
+        Assert.Equal(2, remediations.Length);
+        Assert.Equal(2, runner.Calls.Count(c => c.Command.Take(2).SequenceEqual(["npm", "install"])));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+    }
+
+    [Fact]
+    public async Task Preinstall_Validation_Fails_Fast_For_Mixed_Angular_Framework_Patches()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {"@angular/core":"20.1.8","@angular/common":"20.1.8","@angular/compiler":"20.3.25","rxjs":"7.8.1","zone.js":"0.15.0"},
+  "devDependencies": {"@angular/compiler-cli":"20.1.8","typescript":"~5.8.3"}
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        var ai = new SequenceAi(new JsonObject
+            {
+                ["packages"] = new JsonArray(
+                    PackageDecision("@angular/core", "20.1.8", "dependencies", "angular_framework_package", null, "preserve"),
+                    PackageDecision("@angular/common", "20.1.8", "dependencies", "angular_framework_package", null, "preserve"),
+                    PackageDecision("@angular/compiler", "20.3.25", "dependencies", "angular_framework_package", null, "preserve"),
+                    PackageDecision("@angular/compiler-cli", "20.1.8", "devDependencies", "angular_tooling_package", null, "preserve"),
+                    PackageDecision("typescript", "~5.8.3", "devDependencies", "typescript_runtime_or_compiler_package", null, "preserve")),
+                ["notes"] = new JsonArray()
+            },
+            EmptyVersionRecommendations(21),
+            EmptyCriticalAlignment(20, 21));
+        var runner = new RecordingRunner(_ => new CommandResult { ReturnCode = 0 });
+        var progress = new RecordingProgress();
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(20, 21, "Angular 20 to 21"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "20"), To = new RuntimeSpec("angular", "21"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, progress, null);
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Contains("one synchronized patch version", result.StringValue("failureReason", result.StringValue("reason")));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
+        Assert.Contains(progress.Messages, m => m.Contains("Rejected mixed-version Angular-owned recommendation"));
+    }
+
+    [Fact]
+    public async Task Repeated_NoOp_Peer_Remediation_Signature_Stops_Retry_Loop()
+    {
+        var root = await Angular19Workspace();
+        var ai = new SequenceAi(PackagePlan20(preserveTypeScript: true), EmptyVersionRecommendations(20), EmptyCriticalAlignment(19, 20), EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "retry", retry: true));
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["20.0.0","5.8.3"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                return new CommandResult
+                {
+                    ReturnCode = 1,
+                    Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! peer typescript@">=5.8 <6.0" from @angular/compiler-cli@20.0.0
+"""
+                };
+            }
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(19, 20, "Angular 19 to 20"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "19"), To = new RuntimeSpec("angular", "20"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxRetries = 3 }, null, null);
+        var devDeps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["devDependencies"]!.AsObject();
+
+        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Equal("~5.8.3", devDeps["typescript"]!.ToString());
+        Assert.Equal(2, runner.Calls.Count(c => c.Command.Take(2).SequenceEqual(["npm", "install"])));
+        Assert.True(result.BoolValue("manualActionRequired"));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+    }
+
+    [Fact]
     public async Task Install_First_Mode_Uses_Npm_View_Only_For_Angular_Owned_Critical_Recommendations()
     {
         var root = await Angular13Workspace();
@@ -527,10 +717,10 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@^14.2.13", "version", "--json"]));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@^14.2.13", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14.2.13", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@14.2.13", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^9.0.0", "version", "--json"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@14", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@14", "version", "--json"]));
         Assert.Equal("^7.1.0", JsonNode.Parse(await File.ReadAllTextAsync(packagePath))!["dependencies"]!["ngx-bootstrap"]!.ToString());
@@ -560,8 +750,8 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, PackageVersionVerificationMode = "strict-npm-view" }, null, null);
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@^14.2.13", "version", "--json"]));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@^14.2.13", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14.2.13", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@14.2.13", "version", "--json"]));
     }
 
     [Fact]
@@ -584,7 +774,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
             EmptyCriticalAlignment(13, 14), EmptyConfigPlan());
         var runner = new RecordingRunner(command =>
         {
-            if (command[0] == "npm" && command[1] == "view" && command[2] == "@angular/core@^14.2.13")
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@angular/core@14.2.13")
             {
                 return new CommandResult { ReturnCode = 1, TimeoutKind = "timeout", FailureCategory = "timeout", FailureReason = "Command timed out." };
             }
@@ -599,8 +789,8 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         Assert.Equal("done", result.StringValue("status"));
         Assert.Equal("timeout", resolved.StringValue("npmVerificationResult"));
         Assert.Equal("skipped_due_to_timeout", resolved.StringValue("npmValidationResult"));
-        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "view", "@angular/core@^14.2.13", "version", "--json"])));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
+        Assert.Equal(1, runner.Calls.Count(c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14.2.13", "version", "--json"])));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
     }
 
     [Fact]
@@ -626,10 +816,9 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var buildAngularUpdate = result["angularPackageUpgradePlan"]!.AsArray().OfType<JsonObject>().First(p => p.StringValue("name") == "@angular-devkit/build-angular");
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^14.0.0", devDeps["@angular-devkit/build-angular"]!.ToString());
-        Assert.Equal("^14.0.0", buildAngularUpdate.StringValue("originalSuggestedVersion"));
-        Assert.Equal("^14.0.0", buildAngularUpdate.StringValue("finalAcceptedVersion"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
+        Assert.Equal("14.3.0", devDeps["@angular-devkit/build-angular"]!.ToString());
+        Assert.Equal("14.3.0", buildAngularUpdate.StringValue("finalAcceptedVersion"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/core@14", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@14", "version", "--json"]));
         Assert.True(buildAngularUpdate.BoolValue("packageJsonUpdated"));
     }
@@ -701,9 +890,11 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
             if (command[0] == "npm" && command[1] == "view")
             {
                 var spec = command[2];
-                if (spec is "@angular/cdk@^15.2.10" or "@angular/material@^15.2.10") return new CommandResult { ReturnCode = 1, Stderr = "E404 No match found for version" };
-                if (spec is "@angular/cdk@~15.2.9" or "@angular/material@~15.2.9") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.9"]""" };
-                if (spec is "@angular/cli@~15.2.10" or "@angular-devkit/build-angular@~15.2.10") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.11"]""" };
+                if (spec is "@angular/cdk@^15.2.10" or "@angular/material@^15.2.10" or "@angular/cli@^15.2.10" or "@angular-devkit/build-angular@^15.2.10") return new CommandResult { ReturnCode = 1, Stderr = "E404 No match found for version" };
+                if (spec is "@angular/cdk@15") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.11"]""" };
+                if (spec is "@angular/material@15") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.12"]""" };
+                if (spec is "@angular/cli@15") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.13"]""" };
+                if (spec is "@angular-devkit/build-angular@15") return new CommandResult { ReturnCode = 0, Stdout = """["15.2.14"]""" };
                 if (spec == "angular-user-idle@^4.0.0") return new CommandResult { ReturnCode = 0, Stdout = """["4.0.0"]""" };
                 if (spec == "ngx-bootstrap@^10.0.0") return new CommandResult { ReturnCode = 0, Stdout = """["10.3.0"]""" };
                 if (spec.StartsWith("typescript@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 0, Stdout = """["4.9.5"]""" };
@@ -720,19 +911,21 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var resolved = result["packageTargetValidation"]!["resolved"]!.AsArray().OfType<JsonObject>().ToArray();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("~15.2.10", deps["@angular/core"]!.ToString());
-        Assert.Equal("~15.2.9", deps["@angular/cdk"]!.ToString());
-        Assert.Equal("~15.2.9", deps["@angular/material"]!.ToString());
+        Assert.Equal("15.2.10", deps["@angular/core"]!.ToString());
+        Assert.Equal("15.2.11", deps["@angular/cdk"]!.ToString());
+        Assert.Equal("15.2.12", deps["@angular/material"]!.ToString());
         Assert.Equal("^2.2.6", deps["angular-user-idle"]!.ToString());
         Assert.Equal("^7.1.0", deps["ngx-bootstrap"]!.ToString());
-        Assert.Equal("~15.2.11", devDeps["@angular/cli"]!.ToString());
-        Assert.Equal("~15.2.11", devDeps["@angular-devkit/build-angular"]!.ToString());
-        Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/cdk" && r.StringValue("originalSuggestedVersion") == "^15.2.10" && r.StringValue("aiReRecommendedVersion") == "~15.2.9" && r.StringValue("finalAcceptedVersion") == "~15.2.9");
-        Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/material" && r.StringValue("originalSuggestedVersion") == "^15.2.10" && r.StringValue("aiReRecommendedVersion") == "~15.2.9" && r.StringValue("finalAcceptedVersion") == "~15.2.9");
+        Assert.Equal("15.2.13", devDeps["@angular/cli"]!.ToString());
+        Assert.Equal("15.2.14", devDeps["@angular-devkit/build-angular"]!.ToString());
+        Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/cdk" && r.StringValue("finalAcceptedVersion") == "15.2.11");
+        Assert.Contains(resolved, r => r.StringValue("packageName") == "@angular/material" && r.StringValue("finalAcceptedVersion") == "15.2.12");
         Assert.DoesNotContain(resolved, r => r.StringValue("packageName") == "angular-user-idle");
         Assert.DoesNotContain(resolved, r => r.StringValue("packageName") == "ngx-bootstrap");
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@15", "version", "--json"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/material@15", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@15", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/material@15", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cli@15", "version", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular-devkit/build-angular@15", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angular-user-idle@^4.0.0", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "ngx-bootstrap@^10.0.0", "version", "--json"]));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angular-user-idle@15", "version", "--json"]));
@@ -740,8 +933,10 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var report = new MarkdownReportWriter().GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular15" }, [new MigrationHop(14, 15, "Angular 14 to 15")], [result], new ValidationResult { Passed = true });
         Assert.Contains("@angular/cdk", report);
         Assert.Contains("aiRecommended=^15.2.10", report);
-        Assert.Contains("finalSelected=~15.2.9", report);
-        Assert.Contains("aiOverriddenByNpm=True", report);
+        Assert.Contains("finalSelected=15.2.11", report);
+        Assert.Contains("finalSelected=15.2.12", report);
+        Assert.Contains("finalSelected=15.2.13", report);
+        Assert.Contains("finalSelected=15.2.14", report);
         Assert.Contains("angular-user-idle", report);
         Assert.DoesNotContain("finalSelected=^4.0.0", report);
     }
@@ -806,9 +1001,6 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
 
         Assert.Equal("done", result.StringValue("status"));
         Assert.Equal("~15.2.9", packageJson["dependencies"]!["@angular/cdk"]!.ToString());
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@^15.2.10", "version", "--json"]));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/cdk@~15.2.9", "version", "--json"]));
-        Assert.Equal(2, ai.SystemPrompts.Count(IsPackageVersionPrompt));
     }
 
     [Fact]
@@ -876,15 +1068,15 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var resolved = result["packageTargetValidation"]!["resolved"]!.AsArray().OfType<JsonObject>().ToArray();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("~16.2.11", deps["@angular/cdk"]!.ToString());
-        Assert.Equal("~16.2.11", deps["@angular/material"]!.ToString());
-        Assert.Equal("~16.2.12", devDeps["@angular/cli"]!.ToString());
-        Assert.Equal("~16.2.12", devDeps["@angular-devkit/build-angular"]!.ToString());
-        Assert.Equal("~16.2.12", devDeps["@angular/compiler-cli"]!.ToString());
+        Assert.Equal("16.2.12", deps["@angular/cdk"]!.ToString());
+        Assert.Equal("16.2.12", deps["@angular/material"]!.ToString());
+        Assert.Equal("16.2.12", devDeps["@angular/cli"]!.ToString());
+        Assert.Equal("16.2.12", devDeps["@angular-devkit/build-angular"]!.ToString());
+        Assert.Equal("16.2.12", devDeps["@angular/compiler-cli"]!.ToString());
         Assert.Equal("~5.1.6", devDeps["typescript"]!.ToString());
         foreach (var name in new[] { "@angular/material", "@angular/cdk", "@angular/cli", "@angular-devkit/build-angular", "@angular/compiler-cli" })
         {
-            var expected = name is "@angular/material" or "@angular/cdk" ? "~16.2.11" : "~16.2.12";
+            var expected = "16.2.12";
             Assert.Contains(resolved, r => r.StringValue("packageName") == name && r.StringValue("npmValidationResult") == "verified" && r.StringValue("finalAcceptedVersion") == expected);
         }
         Assert.Contains(resolved, r => r.StringValue("packageName") == "typescript" && r.StringValue("npmValidationResult") == "skipped" && r.StringValue("finalAcceptedVersion") == "~5.1.6");
@@ -911,7 +1103,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var after = await File.ReadAllTextAsync(Path.Combine(root, "package.json"));
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Contains("@angular-devkit/build-angular@^14.0.0", result.StringValue("failureReason"));
+        Assert.Contains("@angular-devkit/build-angular@14.3.0", result.StringValue("failureReason"));
         Assert.Equal(before, after);
         Assert.DoesNotContain(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
     }
@@ -971,7 +1163,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var validation = result["packageTargetValidation"]!.AsObject();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^15.0.0", packageJson["dependencies"]!["@angular/flex-layout"]!.ToString());
+        Assert.Equal("15.0.0", packageJson["dependencies"]!["@angular/flex-layout"]!.ToString());
         Assert.DoesNotContain(validation["discarded"]!.AsArray().OfType<JsonObject>(), i => i.StringValue("packageName") == "@angular/flex-layout");
         Assert.Empty(result["packageTargetValidation"]!["invalid"]!.AsArray());
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@angular/flex-layout@^15.0.0", "version", "--json"]));
@@ -990,7 +1182,6 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
             if (command[0] == "npm" && command[1] == "view")
             {
                 if (command[2] == "@angular/core@14") return new CommandResult { ReturnCode = 0, Stdout = """["14.3.0"]""" };
-                if (command[2] == "@angular-devkit/build-angular@^14.3.0") return new CommandResult { ReturnCode = 1, Stderr = "No matching version found" };
                 if (command[2] == "@angular-devkit/build-angular@14") return new CommandResult { ReturnCode = 0, Stdout = """["14.2.13"]""" };
                 if (command[2].StartsWith("typescript@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 0, Stdout = """["4.8.4"]""" };
                 return new CommandResult { ReturnCode = 0, Stdout = """["14.3.0"]""" };
@@ -1027,14 +1218,14 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
     }
 
     [Theory]
-    [InlineData("^14.3.0", "^14.3.0")]
-    [InlineData("~14.3.0", "~14.3.0")]
+    [InlineData("^14.3.0", "14.3.0")]
+    [InlineData("~14.3.0", "14.3.0")]
     [InlineData("14.3.0", "14.3.0")]
-    [InlineData("14.x", "^14.0.0")]
-    [InlineData("14.*", "^14.0.0")]
-    [InlineData("^14", "^14")]
-    [InlineData("~14", "~14")]
-    [InlineData(">=14 <15", ">=14 <15")]
+    [InlineData("14.x", "14.3.0")]
+    [InlineData("14.*", "14.3.0")]
+    [InlineData("^14", "14.3.0")]
+    [InlineData("~14", "14.3.0")]
+    [InlineData(">=14 <15", "14.3.0")]
     public async Task Angular_Npm_Semver_Target_Forms_Are_Accepted(string targetVersion, string expectedVersion)
     {
         var root = TestWorkspace.Create();
@@ -1095,7 +1286,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var packageJson = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!.AsObject();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^14.3.0", packageJson["dependencies"]!["@angular/core"]!.ToString());
+        Assert.Equal("14.3.0", packageJson["dependencies"]!["@angular/core"]!.ToString());
     }
 
     [Fact]
@@ -1182,13 +1373,12 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         Assert.Equal("done", result.StringValue("status"));
         Assert.True(result.BoolValue("officialAngularUpdateRequired"));
         Assert.True(result.BoolValue("officialAngularUpdateExecuted"));
-        Assert.Equal("full-update", result.StringValue("officialAngularUpdateMode"));
+        Assert.Equal("migrate-only", result.StringValue("officialAngularUpdateMode"));
         Assert.False(result.BoolValue("migrateOnlySkipped"));
         Assert.True(installIndex >= 0);
         Assert.True(buildIndex > runner.Calls.FindIndex(c => c.Command.Contains("@angular/cli@19")));
-        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("@angular/core@19"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/cli", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/core", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
     }
 
     [Fact]
@@ -1260,7 +1450,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
     }
 
     [Fact]
-    public async Task Business_Impacting_Migrate_Only_Changes_Are_High_Risk_When_Validation_Fails()
+    public async Task Business_Impacting_Migrate_Only_Changes_Remain_Accepted_When_Validation_Fails()
     {
         var root = await AngularWorkspace();
         Directory.CreateDirectory(Path.Combine(root, "src", "app", "booking"));
@@ -1279,9 +1469,9 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
 
         Assert.Equal("failed", result.StringValue("status"));
         Assert.Contains("src/app/booking/booking.component.ts", result["officialAngularMigrationBusinessImpactingFiles"]!.AsArray().Select(x => x?.ToString()));
-        Assert.False(result.BoolValue("officialAngularMigrationBusinessImpactingAccepted"));
-        Assert.True(result.BoolValue("officialAngularMigrationBusinessImpactingHighRisk"));
-        Assert.Equal("business-impacting-high-risk-validation-failed", result.StringValue("officialAngularMigrationAcceptanceStatus"));
+        Assert.True(result.BoolValue("officialAngularMigrationBusinessImpactingAccepted"));
+        Assert.False(result.BoolValue("officialAngularMigrationBusinessImpactingHighRisk"));
+        Assert.Equal("accepted-command-succeeded-validation-failed", result.StringValue("officialAngularMigrationAcceptanceStatus"));
     }
 
     [Fact]
@@ -1384,7 +1574,7 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
     }
 
     [Fact]
-    public async Task Angular_18_To_19_Official_Update_Uses_Long_Timeouts_Only_For_Local_Ng()
+    public async Task Angular_18_To_19_Official_Update_Uses_Long_Timeouts_Only_For_Npx_Cli()
     {
         var root = await Angular18Workspace();
         var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), EmptyConfigPlan(), InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
@@ -1398,11 +1588,11 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
 
         await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, CommandTimeoutSeconds = 99, CommandIdleTimeoutSeconds = 6 }, null, null);
 
-        var ngUpdates = runner.Calls.Where(c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("@angular/core@19")).ToArray();
+        var ngUpdates = runner.Calls.Where(c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("--migrate-only")).ToArray();
         var install = runner.Calls.First(c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
         var build = runner.Calls.First(c => c.Command.SequenceEqual(["npm", "run", "build"]));
 
-        Assert.Single(ngUpdates);
+        Assert.Equal(2, ngUpdates.Length);
         Assert.All(ngUpdates, ngUpdate =>
         {
             Assert.Equal(600, ngUpdate.TimeoutSeconds);
@@ -1412,10 +1602,8 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         Assert.Equal(6, install.IdleTimeoutSeconds);
         Assert.Equal(99, build.TimeoutSeconds);
         Assert.Equal(6, build.IdleTimeoutSeconds);
-        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("@angular/core@19"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
-        Assert.Contains(runner.Calls, c => c.Command.Any(part => part.Contains("node_modules", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/cli", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/core", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
     }
 
     [Fact]
@@ -1450,7 +1638,7 @@ export class BookingComponent {}
         Assert.Equal("done", result.StringValue("status"));
         Assert.Contains("src/app/booking/booking.component.ts", result["officialAngularMigrationFrameworkFiles"]!.AsArray().Select(x => x?.ToString()));
         Assert.DoesNotContain("src/app/booking/booking.component.ts", result["officialAngularMigrationBusinessImpactingFiles"]!.AsArray().Select(x => x?.ToString()));
-        Assert.Equal("accepted-with-validation", result.StringValue("officialAngularMigrationAcceptanceStatus"));
+        Assert.Equal("accepted-after-validation", result.StringValue("officialAngularMigrationAcceptanceStatus"));
     }
 
     [Fact]
@@ -1496,12 +1684,10 @@ export class BookingComponent {}
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Equal("Angular CLI command timed out while running from local node_modules.", result.StringValue("failureReason"));
+        Assert.Equal("Angular CLI command timed out while running from npx @angular/cli@19.", result.StringValue("failureReason"));
         Assert.False(result.BoolValue("officialAngularUpdateExecuted"));
-        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("@angular/core@19"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
     }
 
     [Fact]
@@ -1521,16 +1707,14 @@ export class BookingComponent {}
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, MaxAiRemediationRetries = 1 }, null, null);
 
         Assert.Equal("failed", result.StringValue("status"));
-        Assert.Equal("Angular CLI command timed out while running from local node_modules.", result.StringValue("failureReason"));
+        Assert.Equal("Angular CLI command timed out while running from npx @angular/cli@19.", result.StringValue("failureReason"));
         Assert.False(result.BoolValue("officialAngularUpdateExecuted"));
-        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("@angular/core@19"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
+        Assert.Contains(runner.Calls, c => c.Command.Contains("@angular/cli@19") && c.Command.Contains("--migrate-only"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
     }
 
     [Fact]
-    public async Task Source_Framework_Migration_Stops_When_Local_Ng_Is_Missing()
+    public async Task Source_Framework_Migration_Uses_Npx_When_Local_Ng_Is_Missing()
     {
         var root = await Angular18Workspace();
         var ai = new SequenceAi(PackagePlan19(), VersionRecommendations19(), EmptyCriticalAlignment(18, 19), SourceFrameworkMigrationPlan("src/main.ts", "TypeScript source migration required for Angular framework API breaking change."), InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
@@ -1543,12 +1727,12 @@ export class BookingComponent {}
 
         var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(18, 19, "Angular 18 to 19"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "18"), To = new RuntimeSpec("angular", "19"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
 
-        Assert.Equal("failed", result.StringValue("status"));
+        Assert.Equal("done", result.StringValue("status"));
         Assert.True(result.BoolValue("officialAngularMigrateOnlyRequired"));
-        Assert.False(result.BoolValue("officialAngularMigrateOnlyExecuted"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--migrate-only"));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
-        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("npx"));
+        Assert.True(result.BoolValue("officialAngularMigrateOnlyExecuted"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/cli", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["NG_DISABLE_VERSION_CHECK=1", "npx", "-p", "@angular/cli@19", "ng", "update", "@angular/core", "--migrate-only", "--from", "18", "--to", "19", "--allow-dirty"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "run", "build"]));
     }
 
     [Fact]
@@ -1640,7 +1824,7 @@ export class BookingComponent {}
         var report = writer.GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular14" }, [new MigrationHop(13, 14, "Angular 13 to 14")], [result], new ValidationResult { Passed = true });
 
         Assert.Contains("## AI Package Version Recommendations", report);
-        Assert.Contains("[accepted]", report);
+        Assert.Contains("[recommended]", report);
         Assert.Contains("@angular-devkit/build-angular", report);
         Assert.Contains("[rejected]", report);
         Assert.Contains("^14.3.0", report);
@@ -3131,6 +3315,20 @@ Optimization error [main.123.js]: Unexpected token: punc ({)
         return root;
     }
 
+    private static async Task<string> Angular19Workspace()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {"@angular/core":"19.2.0","@angular/common":"19.2.0","@angular/cli":"19.2.0","rxjs":"7.8.1","zone.js":"0.15.0"},
+  "devDependencies": {"typescript":"~5.6.3","@angular/compiler-cli":"19.2.0","@angular-devkit/build-angular":"19.2.0"}
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        return root;
+    }
+
     private static void CreateLocalAngularCli(string root, int major, bool withMigrationMetadata = false)
     {
         var bin = Path.Combine(root, "node_modules", ".bin");
@@ -3308,6 +3506,20 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["notes"] = new JsonArray()
     };
 
+    private static JsonObject PackagePlan20(bool preserveTypeScript = false) => new()
+    {
+        ["packages"] = new JsonArray(
+            PackageDecision("@angular/core", "19.2.0", "dependencies", "angular_framework_package", "^20.0.0", "upgrade"),
+            PackageDecision("@angular/common", "19.2.0", "dependencies", "angular_framework_package", "^20.0.0", "upgrade"),
+            PackageDecision("@angular/cli", "19.2.0", "dependencies", "angular_tooling_package", "^20.0.0", "upgrade"),
+            PackageDecision("@angular/compiler-cli", "19.2.0", "devDependencies", "angular_tooling_package", "^20.0.0", "upgrade"),
+            PackageDecision("@angular-devkit/build-angular", "19.2.0", "devDependencies", "angular_tooling_package", "^20.0.0", "upgrade"),
+            PackageDecision("rxjs", "7.8.1", "dependencies", "third_party_runtime_package", null, "preserve"),
+            PackageDecision("zone.js", "0.15.0", "dependencies", "angular_runtime_support_package", "0.15.0", "preserve"),
+            PackageDecision("typescript", "~5.6.3", "devDependencies", "typescript_runtime_or_compiler_package", preserveTypeScript ? null : "~5.8.3", preserveTypeScript ? "preserve" : "upgrade")),
+        ["notes"] = new JsonArray()
+    };
+
     private static JsonObject PackageDecision(string name, string current, string section, string category, string? target, string action) => new()
     {
         ["name"] = name,
@@ -3346,6 +3558,19 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
             VersionRecommendation("@angular-devkit/build-angular", "18.2.12", "^19.0.0", "Angular build package aligned to Angular 19."),
             VersionRecommendation("zone.js", "0.14.10", "~0.15.0", "Zone.js version compatible with Angular 19."),
             VersionRecommendation("typescript", "~5.5.2", "~5.5.4", "TypeScript version compatible with Angular 19.")),
+        ["warnings"] = new JsonArray()
+    };
+
+    private static JsonObject VersionRecommendations20() => new()
+    {
+        ["targetAngularMajor"] = 20,
+        ["recommendations"] = new JsonArray(
+            VersionRecommendation("@angular/core", "19.2.0", "^20.0.0", "Angular framework package aligned to Angular 20."),
+            VersionRecommendation("@angular/common", "19.2.0", "^20.0.0", "Angular framework package aligned to Angular 20."),
+            VersionRecommendation("@angular/cli", "19.2.0", "^20.0.0", "Angular CLI package aligned to Angular 20."),
+            VersionRecommendation("@angular/compiler-cli", "19.2.0", "^20.0.0", "Angular compiler package aligned to Angular 20."),
+            VersionRecommendation("@angular-devkit/build-angular", "19.2.0", "^20.0.0", "Angular build package aligned to Angular 20."),
+            VersionRecommendation("typescript", "~5.6.3", "~5.8.3", "TypeScript version compatible with Angular 20.")),
         ["warnings"] = new JsonArray()
     };
 
@@ -3545,6 +3770,18 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
     }
 
     private sealed record Call(IReadOnlyList<string> Command, int? TimeoutSeconds, int? IdleTimeoutSeconds);
+
+    private sealed class RecordingProgress : IProgressReporter
+    {
+        public bool Verbose => true;
+        public bool Quiet => false;
+        public List<string> Messages { get; } = [];
+        public void Stage(string stage, string message) => Messages.Add(message);
+        public void Error(string stage, string message) => Messages.Add(message);
+        public void Detail(string message) => Messages.Add(message);
+        public void FinalReport(string reportPath) => Messages.Add(reportPath);
+        public void LogFile(string logPath) => Messages.Add(logPath);
+    }
 
     private sealed class FakeRegistry(IMigrationAdapter adapter) : IAdapterRegistry
     {

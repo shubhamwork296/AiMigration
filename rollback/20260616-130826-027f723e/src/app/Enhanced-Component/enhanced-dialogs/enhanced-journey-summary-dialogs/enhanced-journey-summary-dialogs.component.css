@@ -1,0 +1,106 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.summary{padding: 1.5rem 1.5rem 0 1.5rem;}
+.summary h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;line-height: 1.5rem;
+}
+.summary ul {
+    padding-left: 1.25rem;
+    font-size: 1rem;
+    font-weight: 400;
+    list-style-type: disc;
+}
+.summary li{line-height: 1.5rem;    margin-bottom: 0.5rem;}
+
+.summary mat-card-anchor {
+    margin-top: 0.75rem;
+    display: block;
+    padding-left: 1.25rem;
+}
+
+.summary mat-card-anchor a{
+    color:var(--primary-graphene);margin-bottom: 1.5rem;line-height: 1.25rem;
+}
+
+.ticket-detail-mobile .enhanced-common-popup-theme {
+    max-height: calc(100vh - 215px);
+    overflow: auto;
+    padding-bottom: 5rem;
+}
+
+/*----- Ticket Sold Out Popup -----*/
+.enhanced-ticket-soldout-popup {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.enhanced-ticket-soldout-popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.enhanced-ticket-soldout-popup h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.enhanced-ticket-soldout-popup p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.enhanced-ticket-soldout-popup a {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--graphene);
+    text-underline-offset: 0.188rem;
+}
+/*----- End Ticket Sold Out Popup -----*/
+
+@media (width <= 1024px) {
+    .enhanced-ticket-soldout-popup {
+      
+        gap: 1rem;
+    }
+}
+
+@media screen and (max-width:768px){
+    .summary {
+        padding: 1rem;
+    }
+
+    .summary mat-card-anchor a {
+        font-size: 0.875rem;
+        line-height: 1.375rem;
+    }
+
+    .summary li ul li {
+        margin-bottom: 0;
+    }
+
+    .first-summary {
+        padding-bottom: 1.5rem;
+    }
+
+    .second-summary {
+        padding: 0 1rem 1.5rem;
+    }
+
+    .second-summary ul {
+        margin-bottom: 0;
+    }
+
+    .third-summary {
+        padding-top: 0;
+    }
+}

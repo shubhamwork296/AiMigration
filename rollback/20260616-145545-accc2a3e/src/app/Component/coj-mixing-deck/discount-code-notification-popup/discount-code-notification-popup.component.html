@@ -1,0 +1,73 @@
+<app-basic-dialog [dialogTitle]="headerTitle" [dialogFooter]="dialogFooter" [discountCodeIconInCaseOfCOJ]="true" [iconClose]="iconClose">
+    <div class="common-popup-theme-in">
+        <div class="common-popup-theme-border">
+            <div
+                class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle">                
+                <div class="forgot-password-sucess" *ngIf="commonService.checkDiscountCodeActive(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        We’re showing train that match the discount. Turn off the filter if you’d like to see all available train options.
+                    </p>
+                    <p class="f-14 font-dark lh-20 m-f-14 mb-0">
+                        Your discount will automatically apply to all eligible journeys.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkDiscountCodeExpired(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        There may be additional costs if you change your journey. Are you happy to continue without applying the discount code?
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkDiscountCodeNoFares(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        We couldn’t find any fares that match your discount.
+                    </p>
+                    <p class="f-14 font-dark lh-20 m-f-14 mb-0">
+                        There may be additional costs if you change your journey. Are you happy to continue without applying the discount code?
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkOutwordDiscountCodeExpiredReturnActive(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It seems that your outbound discount code has expired. Please change the tickets individually on the 'manage tickets' page to change your 'return’ journey.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkReturndDiscountCodeExpiredOutwordActive(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It seems that your return journey discount code has expired. Please change the tickets individually on the 'manage tickets' page to change your ‘outbound’ journey.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkNoFareOutwordDiscountCodeAndReturnActive(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It looks like no discounted fares are available for your ‘outbound’ journey. Please change the dates you are searching, or individually change the journeys.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkNoFareReturnDiscountCodeAndOutwordActive(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It looks like no discounted fares are available for your ‘return’ journey. Please change the dates you are searching, or individually change the journeys.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkNoFareOutwordDiscountCodeAndReturnExpired(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It looks like no discounted fares are available for your outbound journey and It seems that your return journey discount code has expired.
+                    </p>
+                </div>
+                <div class="forgot-password-sucess" *ngIf="commonService.checkExpiredOutwordDiscountCodeAndReturnNoFare(this.OutwordDiscountCodeStatus,this.ReturnDiscountCodeStatus)">
+                    <p class="f-14 font-dark lh-20 m-f-14">
+                        It looks like no discounted fares are available for your return journey and It seems that your outbound journey discount code has expired.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</app-basic-dialog>
+<ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+        <button mat-dialog-close mat-button class="new-default-outline-btn w-xs-100 mr-24 mb-xs-16 mr-0-mobile"
+        (click)="onClickOfCancelBtn()"
+         *ngIf="IsGoBackButtonVisible">
+            Go back
+        </button>
+        <button mat-dialog-close mat-button class="new-default-btn w-xs-100 mr-24 mb-xs-16 mr-0-mobile mobile-mt-16"
+        (click)="onClickOfContinueBtn()" *ngIf="IsContinueButtonVisible">
+            Continue
+        </button>
+    </div>
+</ng-template>
