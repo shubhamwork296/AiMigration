@@ -1,0 +1,101 @@
+
+  
+.login-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+  
+.login-tooltip-header .login-tooltip-title {
+    color: #131E29;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 22px; 
+    letter-spacing: normal;
+}
+  
+.login-tooltip-header button {
+    border: none;
+    background-color: transparent;
+    padding: 0;
+    line-height: 0;
+    height: auto;
+}
+  
+.login-tooltip-header button img:hover {
+    cursor: pointer;
+}
+  
+.login-tooltip-body {
+    position: relative;
+    top: 8px;
+}
+  
+.login-tooltip-body .login-tooltip-input-area {
+    position: relative;
+}
+  
+.login-tooltip-body .login-tooltip-label {
+    font-weight: 400 !important;
+    font-size: 12px !important;
+    line-height: 16px;
+    color: #131E29 !important;
+    display: block;
+    background: #fff;
+    position: absolute;
+    top: -8px;
+    left: 10px;
+    padding: 0px 8px 0px 8px;
+    z-index: 99;
+    letter-spacing: normal;
+}
+  
+.create-account-login:hover {
+    text-decoration: none;
+}
+
+.login-tooltip-error ul li {
+    line-height: 21px;
+}
+
+.login-tooltip-error ul li p {
+    position: relative;
+    top: -3px;
+}
+
+.signin-error-list {
+    padding-left: 22px;
+}
+
+.error-input-focus {
+    border: 1px solid #E42B00 !important;
+    box-shadow: 0 0 0 0.1rem rgb(228 43 0 / 100%) !important;
+    border-radius: 5px;
+}
+
+.password-input-padding {
+    padding-right: 40px !important;
+}
+
+.login-tooltip-forgot {
+    height: auto;
+}
+
+@media (max-width:768px) {
+    .login-tooltip-body .f-14 {
+        font-size: 14px !important;
+    }
+
+    .close-mat-btn {
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 430px) {
+    .login-tooltip-header .login-tooltip-title {
+        white-space: initial;
+    }
+}

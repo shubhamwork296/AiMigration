@@ -1,0 +1,65 @@
+.preference-mode{
+    border: 1px solid #E9F0F5;
+}
+.preference-mode-header{
+    border-bottom: 1px solid #E9F0F5;
+    padding: 15px 30px;
+    background: #E2F5E9;
+    font-size: 16px;
+}
+.preference-mode-body{
+    padding: 15px 30px;
+    background: #fff;
+}
+.payment-tbl{
+    width: 100%;
+}
+.payment-tbl tr{
+    height: 36px;
+}
+.payment-tbl th{
+    color: #204555;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: none;
+    text-align: left;
+}
+.payment-tbl td{
+    color: #204555;
+    font-size: 16px;
+    border-bottom: none;
+    text-align: left;
+}
+td.mat-cell:first-of-type, td.mat-footer-cell:first-of-type, th.mat-header-cell:first-of-type {
+    padding-left: 0px;
+}
+td.mat-cell:last-of-type, td.mat-footer-cell:last-of-type, th.mat-header-cell:last-of-type {
+    padding-right: 0px;
+}
+.expand-img{
+    padding: 0 10px;
+}
+.preference-mode-header a{
+    text-decoration: underline;
+    color:#131E29;
+}
+.default-input-brdr mat-select{
+    height: 39px;
+  }
+  .flex-lign-center {
+    display: flex;
+    align-items: center;
+}
+.nectar-bx{
+    display: flex;
+}
+.nectar-bx-2{
+    border: 1px dotted #a7a7a7;
+    padding: 10px 20px;
+    margin-top: 20px;
+}
+.nectar-bx-2 .heading{
+    color: #c352a4;
+    font-size: 24px;
+    font-weight: 500;
+}

@@ -1,0 +1,178 @@
+:host {
+    display: flex;
+    justify-content: center;
+    padding: 0 0 23px 0;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  label {
+      display: inline-block;
+      margin-bottom: .5rem;
+  }
+  body :host .default-input input {   
+      box-sizing: border-box;
+  }
+
+  mat-card-title,
+  mat-card-content {
+    display: flex;
+    justify-content: center;
+    flex-flow: column;
+  }
+
+  mat-card {
+    background: #fff;
+    color: rgba(0,0,0,.87);
+    border-top: 4px solid #204555;
+    border-radius: 0px !important;
+}
+mat-card form{
+  width: 100%;
+    min-width: 270px;
+    padding-top: 3%;
+    align-self: center;
+}
+.create-register-btn{
+  background: #FF4713 !important;
+    color: #131E29 !important;
+     margin-top: 10px !important; 
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 19px !important;
+    width: 200px !important;
+    text-align: center !important;
+    border-radius: 4px !important;
+    padding: 9px !important;
+    height: 48px;
+    margin-left: auto;
+}
+
+.spinner {
+   display: none; 
+  }
+
+.spinner--show { 
+  display: block; 
+}
+.validation-err{
+  color:#D02D00;
+  display: block;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.readonly-bg-white{
+  background: #Ffffff;
+}
+
+#val_err {
+  padding: 16px;
+  width: 300px;
+  color: white;
+}
+.example-month-picker .mat-calendar-period-button {
+  pointer-events: none;
+}
+
+.example-month-picker .mat-calendar-arrow {
+  display: none;
+}
+.link-spark{
+  text-decoration: underline;
+}
+.link-spark:hover, .link-spark:active, .link-spark:focus{
+  color: #FF4713;
+}
+.remove-date {
+  cursor: pointer;
+  font-weight: bold;
+  color: #FF4713;
+  margin-top: 5px;
+}
+.delete-icon-btn{
+  right: 40px;
+  position: absolute;
+  top: 7px;
+}
+button.delete-icon-btn img{
+  width: 20px;
+  margin-bottom: -10px; 
+}
+button.delete-icon-btn {
+  line-height: 22px !important;
+  color: #ff4713;
+  font-size: 14px;
+  border:none; 
+}
+
+.password-hint-message {
+  color:grey;
+  display: block;
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+
+.hide-full-Address {
+  display: none;
+}
+
+.show-full-Address {
+  display: block
+}
+
+.show-full-Address .mdc-button {
+  position: absolute;
+    right: 5px;
+    top: -23px;
+    margin-top: 0 !important;
+    min-width: 46px;
+    width: 38px !important;
+    margin-right: 0 !important;
+    padding: 0;
+    border-radius: 0 4px 4px 0;
+}
+
+#formattedAddress {
+  padding-right: 48px !important;
+}
+
+.addressInput {
+  height: 46px !important;
+  width: 46px !important;
+  border-radius: 0 4px 4px 0;
+  margin-right: -9px;
+}
+
+.addressInput:focus {
+  background-color: #eee;
+}
+
+.datepicker-icon {
+  right: 67px;
+}
+
+.offers-headline-container {
+  position: relative;
+  top: 0;
+}
+
+@media (max-width:767px){
+  .delete-icon-btn{
+    top: 4px;
+  }
+  button.delete-icon-btn img{
+    margin-bottom: -2px; 
+  }
+  .datepicker-icon {
+    top: -12px;
+}
+}
+
+@media (max-width:521px){
+  mat-card .w-50{
+    width: 100% !important;
+}
+}

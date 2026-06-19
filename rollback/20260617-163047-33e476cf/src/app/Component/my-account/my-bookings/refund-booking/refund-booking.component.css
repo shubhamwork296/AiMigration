@@ -1,0 +1,104 @@
+.back-to-btn {
+    margin-top: 20px;
+    margin-bottom: 50px;
+    display: inline-block;
+}
+
+.back-to-btn .back-to-btn-txt {
+    font-size: 16px;
+    font-weight: 600;
+    color: #204555;
+}
+
+.back-to-btn span .back-img {
+    transform: rotate(180deg);
+}
+
+.booking-txt {
+    margin-bottom: 22px;
+}
+
+.booking-txt h2 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #204555;
+    vertical-align: middle;
+}
+
+.booking-section-box {
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.j-smry {
+    background: #FFFFFF;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.return-disabled>* {
+    opacity: 0.5;
+}
+
+.return-disabled .op-1 {
+    opacity: 1;
+}
+
+.return-disabled .op-5 {
+    opacity: 0.5;
+}
+
+.p-12 {
+    padding: 12px;
+}
+
+.lh-22 {
+    line-height: 22px;
+}
+
+.mb-24 {
+    margin-bottom: 24px !important;
+}
+
+.refund-color {
+    color: #131E29;
+}
+
+.ahover:hover {
+    color: #C0414D;
+}
+
+.refund-msg {
+    border-radius: 4px;
+    font-size: 14px;
+    background: #E2F5E9;
+}
+
+.upgrade-text-graphane {
+    color: #204555 !important;
+}
+
+@media (max-width:767px) {
+    .j-smry {
+        background: #FFFFFF;
+        box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.25), 0px 0px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+    }
+
+    .f-14 {
+        font-size: 14px !important;
+    }
+
+    .pl-0 {
+        padding-left: 0 !important;
+    }
+
+    .f-xs-20 {
+        font-size: 20px !important;
+    }
+
+    .mmb-16 {
+        margin-bottom: 16px;
+    }
+}

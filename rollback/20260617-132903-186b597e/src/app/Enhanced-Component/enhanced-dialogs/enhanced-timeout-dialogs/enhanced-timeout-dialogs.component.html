@@ -1,0 +1,23 @@
+<app-enhanced-basic-dialog [dialogFooter]="dialogFooter" class="enhanced-alert-dialogs content-center" [dialogTitle]="headerTitle" role="dialog" aria-modal="true" tabindex="-1">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+        <div class="enhanced-common-info-content" role="alert" aria-live="assertive" aria-atomic="true">
+          <span class="sr-only">{{ headerTitle }}</span>
+          <p>
+            {{timeoutMessage}}
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-content>
+  <ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+      <div class="two-btn-footer journey-dialog-footer-center">
+        <button mat-dialog-close type="button" mat-button class="fill-btn fill-light-hover-btn" (click)="onProceed()">
+          OK
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</app-enhanced-basic-dialog>

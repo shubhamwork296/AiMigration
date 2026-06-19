@@ -1,0 +1,92 @@
+<app-header></app-header>
+<div id="rm-main" class="reset-email-page text-center">
+    <div id="rm-container" class="container plr-xs-5 my-profile-container">
+        <div id="rm-row" class="row mlr-xs-5" *ngIf="customerResetEmailResponse">
+            <div id="rm-warning-col" class="col-md-12 p-0 d-flex justify-content-center" *ngIf="!isResetEmailSuccess">
+                <div id="rm-warning-main" class="reset-email-warning">
+                    <img id="rm-warning-icon" src="assets/images/reset-email-warning.svg"
+                        class="mb-20 width-54" alt="Warning" />
+                    <h1 *ngIf="customerResetEmailResponse && !customerResetEmailResponse?.IsEmailChanged && customerResetEmailResponse?.IsInvalidCredentials" id="rm-warning-heading" class="mb-12 f-32 font-600 lh-40 link-tag">{{customerResetEmailResponse?.ResponseMessage}}</h1>
+                    <h1 *ngIf="customerResetEmailResponse && !customerResetEmailResponse?.IsEmailChanged && !customerResetEmailResponse?.IsInvalidCredentials" id="rm-warning-heading" class="mb-12 f-32 font-600 lh-40 link-tag">{{customerResetEmailResponse?.ResponseMessage}}</h1>
+                    <p *ngIf="customerResetEmailResponse && !customerResetEmailResponse?.IsEmailChanged && customerResetEmailResponse?.IsInvalidCredentials" id="rm-warning-content" class="text-center f-16 lh-22 font-dark mb-24">
+                        To change you email address, return to ‘My profile’ and select ‘Change email’ to send out a new request. 
+                    </p>
+                    <p *ngIf="customerResetEmailResponse && !customerResetEmailResponse?.IsEmailChanged && !customerResetEmailResponse?.IsInvalidCredentials" id="rm-warning-content" class="text-center f-16 lh-22 font-dark mb-24">
+                        {{customerResetEmailResponse?.InfoMessage}} 
+                    </p>
+                    <button id="rm-warning-button" mat-button class="default-btn w-100" (click)="goToMyProfile()">Go to My Profile</button>
+                </div>
+            </div>
+            <div id="rm-success-col" class="col-md-12 p-0 d-flex justify-content-center" *ngIf="isResetEmailSuccess">
+                <div id="rm-success-main" class="reset-email-success">
+                    <img id="rm-success-icon" src="assets/images/reset-email-success.svg" class="mb-20 width-54" alt="Success" />
+                    <h1 *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && !customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-heading" class="mb-12 f-32 font-600 lh-40 link-tag">
+                        {{customerResetEmailResponse?.ResponseMessage}}
+                    </h1>
+                    <p *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && !customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-content" class="text-center f-16 lh-22 font-dark mb-24">
+                        {{customerResetEmailResponse?.InfoMessage}}
+                    </p>
+                    <p *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-content" class="text-center f-32 font-600 lh-40 link-tag mb-24">
+                        {{customerResetEmailResponse?.ResponseMessage}}
+                    </p>
+                    <p *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-content" class="text-center f-16 lh-22 font-dark mb-24">
+                        {{customerResetEmailResponse?.InfoMessage}}
+                    </p>
+                    <button *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && !customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-button" mat-button class="default-btn w-100" (click)="goToResetPsw()">
+                        Reset password
+                    </button>
+                    <button *ngIf="customerResetEmailResponse && customerResetEmailResponse?.IsEmailChanged && customerResetEmailResponse?.IsOldPasswordUpdatedWithNewUser" id="rm-success-button" mat-button class="default-btn w-100" (click)="goToSignIn()">
+                        Sign-in
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="rm-verify-password" class="row mlr-xs-5">
+            <div id="rm-verify-password-col" class="col-md-12 p-0 d-flex justify-content-center">
+                <form [formGroup]="passwordForm" *ngIf="isShowPassword">
+                    <div id="rm-verify-password-div" class="reset-email-success reset-email-password">
+                        <h1 id="rm-verify-password-heading" class="mb-12 f-32 font-600 lh-40 link-tag">Almost there, one last step...</h1>
+                        <p id="rm-verify-password-sub-heading" class="text-center f-16 lh-22 text-black mb-12 mt-12">
+                            Kindly provide your current password.
+                        </p>
+                        <div id="rm-verify-password-input-div" class="mb-24">
+                            <div id="rm-verify-password-label" class="font-dark font-700 f-16 lh-22 mb-8 text-start">
+                                Password<span id="rm-verify-password-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                            </div>
+                            <mat-form-field id="rm-verify-password-mat-field"
+                                class="d-block example-full-width default-input default-input-brdr new-input"
+                                floatLabel="never">
+                                <input id="rm-verify-password-input" [ngClass]="{'error-input-focus': passwordForm.controls['password'].invalid && isSubmitted}" [type]="verifyPasswordFieldTextType ? 'text' : 'password'"
+                                    matInput aria-label="password" placeholder="Enter your password" formControlName="password">
+                                <button id="rm-verify-password-icon-btn" class="mt-5px"
+                                    (click)="verifyPasswordFieldTextType = !verifyPasswordFieldTextType" type="button"
+                                    mat-icon-button matSuffix
+                                    attr.aria-label="{{verifyPasswordFieldTextType ? 'Hide password' : 'Show password'}}"
+                                    [attr.aria-pressed]="verifyPasswordFieldTextType">
+                                    <mat-icon id="rm-verify-password-mat-icon">
+                                        <span id="rm-verify-password-icon-span"
+                                            class="material-symbols-outlined icon-font-size">
+                                            {{verifyPasswordFieldTextType ? 'visibility' :
+                                            'visibility_off'}}
+                                        </span>
+                                    </mat-icon>
+                                </button>
+                                <mat-error id="rm-verify-password-mat-error" class="forgot-password-error">
+                                    <span id="rm-verify-password-error-msg" class="dark-spark f-12 lh-16 mb-0"
+                                        *ngIf="passwordForm.get('password').hasError('required') && isSubmitted">
+                                        Please complete this mandatory field.
+                                    </span>
+                                </mat-error>
+                            </mat-form-field>
+                        </div>
+                        <button id="rm-verify-password-btn" (click)="resetEmailConfirmationMsg()" mat-button
+                            class="new-default-btn w-100 w-xs-100">
+                            Verify
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<app-footer></app-footer>

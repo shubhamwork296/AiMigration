@@ -1,0 +1,31 @@
+.dialog-close {
+    position: absolute !important;
+}
+
+@media (min-width:768px) {
+    .mt-md-25{
+        margin-top: 25px;
+    }
+}
+
+@media (max-width:767px) {
+    .mat-dialog-title {
+        padding-right: 70px;
+        line-height: 24px;
+    }
+
+    .datepicker-info span.dialog-close {
+        right: 10px;
+    }
+
+    .datepicker-close-btn {
+        right: 0;
+        top: 6px;    
+    }
+
+    .coj-datepicker-header .datepicker-close-btn {
+        right: 10px;
+        top: 10px;
+        font-size: 12px !important;
+    }
+}

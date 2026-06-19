@@ -1,0 +1,81 @@
+:host {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+label {
+    display: inline-block;
+    margin-bottom: .5rem;
+}
+body :host .default-input input {   
+    box-sizing: border-box;
+}
+
+mat-form-field {
+    width: 100%;
+    min-width: 300px;
+}
+
+mat-card-title,
+mat-card-content {
+    display: flex;
+    justify-content: center;
+}
+
+.login-form input:focus {
+    box-shadow: none !important;
+    border: 1px solid #D5DEE4 !important;
+}
+
+mat-card {
+    background: #fff;
+    color: rgba(0, 0, 0, .87);
+    border-top: 4px solid #204555;
+    border-radius: 0px !important;
+}
+
+mat-card form {
+    width: 50%;
+    min-width: 200px;
+    padding-top: 4%;
+}
+
+.forgot-password-btn:hover {
+    cursor: pointer;
+}
+
+.validation-err {
+    color: #D02D00;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.dialog-close {
+    top: 13px;
+}
+
+.mat-button.px-0 {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+
+@media (max-width:521px) {
+    .forgot-password-btn.text-underline {
+        line-height: 24px;
+    }
+}
+
+@media (max-width:767px) {
+    .remebermecheckbx {
+        display: block;
+    }
+    .remebermecheckbx .mdc-form-field.mat-internal-form-field{width: 100%;}
+    mat-form-field {
+        width: 100%;
+        min-width: auto;
+    }
+}

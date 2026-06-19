@@ -1,0 +1,522 @@
+@import url('../../../assets/css/enhanced-styles.css');
+
+.payment-container-m .card-header {
+    color: var(--primary-graphene);
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    line-height: 1.563rem;
+}
+
+.express-checkout .card-header {
+    color: var(--primary-coalescent);
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+}
+
+.express-checkout ul {
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.express-checkout ul li button {
+    background: var(--shades-black);
+    padding-top: 10.5px;
+    padding-bottom: 10.5px;
+    min-width: 10rem;
+    border-radius: 0.313rem;
+    border: none;
+    justify-content: center;
+    align-items: center;
+    height: 3rem !important;
+}
+
+apple-pay-button {
+    --apple-pay-button-width: 10rem;
+    --apple-pay-button-height: 3rem;
+    --apple-pay-button-border-radius: 0.313rem;
+    --apple-pay-button-padding: 0 0;
+    --apple-pay-button-box-sizing: border-box;
+    height: 3rem !important;
+}
+
+.apple-pay-btn apple-pay-button {
+    --apple-pay-button-height: 3rem;
+}
+
+.payment-container-m .or {
+    margin: 1.5rem 0;
+    font-size: 1rem;
+    color: var(--primary-coalescent);
+    font-weight: 700;
+    line-height: 1.5rem;
+}
+
+.enhanced-saved-card-wrapper .or {
+    margin-bottom: 0.75rem;
+}
+
+.enhanced-saved-card-wrapper .crediticon img {
+    width: 3.125rem;
+    height: 2rem;
+}
+
+.enhanced-saved-card-wrapper .crediticon img.add-card-icon {
+    height: 2.5rem;
+    width: 1.75rem;
+}
+
+.payment-container-m .crediticon-section .credit-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    line-height: 1.563rem;
+    color: var(--primary-coalescent);
+}
+
+.payment-container-m .crediticon-section .add-card-subheader {
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem !important;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+}
+
+.payment-container-m .crediticon-section .card-expired-txt {
+    font-size: 0.875rem;
+    margin-bottom: 1rem !important;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+}
+
+.payment-container-m .credit-modes ul {
+    display: flex;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin-top: 0.75rem;
+}
+
+.payment-container-m .credit-modes ul li img {
+    height: 1.5rem;
+    width: 2.344rem;
+}
+
+.horizontal-line {
+    margin: 24px -24px;
+    opacity: 1;
+    border-color: var(--neutrals-light-periwinkle);
+}
+
+.payment-save {
+    margin-left: 0;
+    margin-top: 1.5rem;
+    line-height: 0;
+}
+
+.single-card {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.additional-information-section .card-header {
+    margin-bottom: 0;
+}
+
+.additional-information-section .form-mand-content {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    margin: 0.5rem 0 1.5rem !important;
+}
+
+.additional-information-section .form-mand-content span {
+    color: var(--destructive-watermellon);
+}
+
+.additional-information-section-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.additional-information-section-form .enhanced-common-label-field {
+    width: 100%;
+}
+
+.saved-billing-section .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.saved-address-edit button {
+    background: none;
+    border: none;
+    text-decoration: underline;
+}
+
+.saved-address-edit {
+    margin-top: 1.5rem;
+}
+
+.crediticon-section {
+    width: 100%;
+}
+
+.eVoucher-card-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.saved-billing-section .voucher-subheader {
+    font-size: 0.875rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.375rem;
+    margin-bottom: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.eVoucher-card .voucher-date,
+.eVoucher-card .voucher-price {
+    font-size: 0.875rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+}
+
+.eVoucher-card .voucher-code {
+    font-size: 0.875rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    margin-top: 0.25rem;
+}
+
+.edit-address-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.edit-address-section .edit-address-left-btns {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.payment-modes {
+    margin-bottom: 1rem;
+}
+
+.eVoucher-card .review-common-checkbox {
+    width: 100%;
+}
+
+.address-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+}
+
+.review-buy-bottom-space {
+    margin-bottom: 120px;
+}
+
+.card-delete-btn {
+    cursor: pointer;
+}
+
+.add-card-icon {
+    width: 2.5rem !important;
+    height: 1.75rem !important;
+}
+
+.paypal-icon {
+    height: 2rem;
+    width: 3.125rem;
+}
+
+.paypal-card-subheader {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+}
+
+.payment-modes .payment-radio-link-btn {
+    margin-top: 0 !important;
+}
+
+.voucher-wrapper {
+    margin-top: 1.5rem;
+}
+
+.voucher-name h4 {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+}
+
+.voucher-name h4 span {
+    font-weight: 400;
+    line-height: 1.5rem;
+    font-size: 1rem;
+}
+
+.address-card-list .address-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.address-card-list .address-card-header .card-header {
+    margin-bottom: 0;
+}
+
+.payment-address-content {
+    margin-top: 0.25rem;padding-right: 1.5rem;
+}
+
+.payment-address-content span {
+    line-height: 1.375rem;
+    font-size: 0.875rem;
+    color: var(--primary-coalescent);
+}
+
+.address-card-list .smartcard-address-edit-delete {
+    margin-top: 1rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.paypal-content{
+    position: relative;
+    z-index: 2;
+}
+
+.payment-mode-save-mobile {
+    display: none;
+}
+
+@media (width <= 1023px) {
+    .additional-information-section-form .enhanced-common-label-field {
+        flex: 0 0 48%;
+    }
+}
+
+@media (width <= 1023px) {
+    .back-btn {
+        padding: 1rem 0 !important;
+    }
+
+    .back-btn-container .common-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 1rem;
+    }
+
+    .payment-container-m .card-header {
+        font-size: 1.125rem;
+        line-height: 1.375rem;
+        margin-bottom: 1rem;
+    }
+
+    .express-checkout .card-header {
+        font-size: 1rem;
+        line-height: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .additional-information-section-form .enhanced-common-label-field {
+        flex: 0 0 100%;
+    }
+
+    .additional-information-section-form {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1rem;
+    }
+    
+    .express-checkout ul {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .payment-container-m .or {
+        margin: 1rem 0;
+    }
+
+    .payment-container-m .enhanced-saved-card-title {
+        margin: 0 0 0.5rem;
+    }
+
+    .express-checkout ul li, 
+    .express-checkout ul li button {
+        width: 100%;
+    }
+    
+    .crediticon-section {
+        width: 100%;
+        padding-right: 2.5rem;
+    }
+
+    .saved-billing-section .card-header {
+        display: flex ;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .saved-billing-section .card-header button {
+        width: 100%;
+    }
+
+    .eVoucher-card-list {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1rem;
+    }
+    
+    .edit-address-section {
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .edit-address-left-btns {
+        gap: 1rem !important;
+    }
+
+    .edit-address-section button, .edit-address-section div {
+        width: 100% !important;
+        flex-wrap: wrap;
+    }
+
+    .common-container.review-buy-bottom-space {
+        max-width: 35rem !important;
+        margin: 0 auto;
+        width: 100%;
+        margin-bottom: 158px !important;
+    }
+
+    .address-card-list .address-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .address-card-list .address-card-header button {
+        width: 100%;
+    }
+
+    .payment-container-m .enhanced-common-card {
+        padding: 1rem 1rem 2.5rem;
+    }
+
+    .payment-container-m .crediticon-section .credit-header {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.5rem;
+    }
+
+    .payment-container-m .crediticon-section .add-card-subheader {
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem !important;
+        line-height: 1.375rem;
+        color: var(--primary-coalescent);
+    }
+
+    .payment-container-m .crediticon-section .card-expired-txt {
+        font-size: 0.875rem;
+        margin-bottom: 1rem !important;
+        line-height: 1.375rem;
+        color: var(--primary-coalescent);
+    }
+
+    .add-card-icon {
+        width: 3.125rem !important;
+        height: 2rem !important;
+        padding: 0.25rem 0.813rem;
+    }
+
+    .horizontal-line {
+        margin: 1rem -1rem;
+    }
+
+    .voucher-wrapper {
+        margin-top: 1rem;
+    }
+
+    .address-card-list .smartcard-address-edit-delete {
+        margin-top: 0.75rem;
+    }
+
+    .payment-mode-save-desktop {
+        display: none;
+    }
+
+    .payment-mode-save-mobile {
+        display: block;
+        margin: 0.5rem 0;
+    }
+
+    .address-default-checkbox {
+        margin-top: 1rem;
+    }
+
+    .additional-information-section .card-header {
+        margin-bottom: 0;
+    }
+
+    .additional-information-section .form-mand-content {
+        margin: 0.5rem 0 1rem !important;
+    }
+}
+
+@media (width <= 767px) {
+    .common-container.review-buy-bottom-space {
+        max-width: 100% !important;
+        margin: 0 !important;
+        margin-bottom: 117px !important;
+    }
+
+    .enhanced-common-card {
+        padding: 1rem;
+        border-radius: 0;
+    }
+
+    .payment-container-m .credit-modes ul {
+        flex-wrap: wrap;
+    }
+}
+
+@media (width <= 319px) {
+    .common-container.review-buy-bottom-space {
+        margin-bottom: 137px !important;
+    }
+}

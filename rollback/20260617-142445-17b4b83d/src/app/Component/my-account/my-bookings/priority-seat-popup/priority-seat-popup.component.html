@@ -1,0 +1,12 @@
+<span class="dialog-close" (click)="onClose()"><img src="assets/images/Close.svg" alt=""></span>
+<mat-dialog-content> 
+    <h3>Priority seat selected</h3>
+    <div class="shadow-none font-weight-500">
+        You currently have a priority seat, if you proceed with this amendment you'll lose this seat.
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end" class="bt-1">
+  <button mat-button class="default-btn" [mat-dialog-close]="true"><a href="https://www.railhelp.co.uk/avantiwestcoast/assisted-travel" target="_blank" rel="noopener">Book new priority seat</a></button>
+  <button mat-button class="default-btn" [mat-dialog-close]="true" (click)="confirm()">Continue</button>
+</mat-dialog-actions>
+

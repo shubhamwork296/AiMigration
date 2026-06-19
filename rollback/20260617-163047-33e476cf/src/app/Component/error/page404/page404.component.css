@@ -1,0 +1,143 @@
+.jumbo-image{
+    background-image: url('../../../../assets/images/CoalescentGraphicBirmingham.jpg');
+}
+.component-jumbotron.jumbo-image {
+    background-size: cover;
+    overflow: hidden;
+}
+.component-jumbotron .jumbotron__title {
+    font-size: 64px;
+    text-align: center;
+    margin: 0 0 10px 0;
+    line-height: 36px;
+    color: #fff !important;
+    letter-spacing: -0.2px;
+    font-weight: 300;
+}
+.component-jumbotron .jumbotron__subtitle {
+    font-size: 1.8em;
+    line-height: 24px;
+    text-transform: none;
+    color: #fff !important;
+    font-weight: 500 !important;
+}
+.component-jumbotron {
+    position: relative;
+    z-index: 2;
+}
+.component-jumbotron:before {
+    content: '';
+    background-color: #131e29;
+    position: absolute;
+    top: 0;
+    left: -40px;
+    bottom: 0;
+    z-index: -1;
+    right: -40px;
+    right: 48%;
+    display: block;
+}
+.component-jumbotron.jumbo-image:before {
+    content: '';
+    display: block;
+    position: absolute;
+    right: -40px;
+    left: -40px;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+.component-breadcrumbs {
+    margin: auto;
+    top: 0;
+    width: 100%;
+    left: 0;
+    right: 0;
+    display: none;
+    position: relative;
+    z-index: 2;
+    background: #fff;
+}
+.column {
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-bottom: 0px;
+    min-height: 1px;
+}
+.component-breadcrumbs ul {
+    list-style: none;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+.component-breadcrumbs ul li {
+    float: left;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1;
+    position: relative;
+}
+.component-breadcrumbs ul li a, .component-breadcrumbs ul li .expandable-panel-link, .component-breadcrumbs ul li span {
+    margin-right: 24px;
+    color: #131E29;
+    font-size: 16px;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 1em 0;
+    display: inline-block;
+}
+.component-breadcrumbs ul li:not(:last-child):after {
+    content: '/';
+    position: absolute;
+    margin-left: 10px;
+    font-weight: 500;
+    top: 18px;
+    right: 8px;
+}
+.component-breadcrumbs ul li:last-child span {
+    font-weight: 500;
+    opacity: 0.6;
+}
+@media (min-width: 48em){
+.component-jumbotron {
+    min-height: 415px;
+}
+.component-jumbotron .content {
+    padding: 100px 30px 90px;
+    text-align: left;
+}
+.component-jumbotron .jumbotron__title {
+    font-size: 64px;
+    text-align: left;
+    line-height: 72px;
+}
+.component-jumbotron .jumbotron__subtitle {
+    font-size: 24px;
+    line-height: 28px;
+    margin-bottom: 25px;
+}
+}
+@media (min-width: 64.0625em){
+.component-jumbotron .content {
+    padding: 140px 30px 140px 12px;
+}
+.component-breadcrumbs {
+    display: block;
+}
+}
+@media (max-width:767px){
+    .component-jumbotron .jumbotron__title {
+        font-size: 32px;
+        line-height: 42px;
+    }
+    .component-jumbotron .content {
+        padding: 30px 0px;
+    }
+    
+    .component-jumbotron .jumbotron__subtitle {
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 400 !important;
+        text-align: center;
+    }
+}

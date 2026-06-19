@@ -1,0 +1,187 @@
+<app-enhanced-basic-dialog [dialogTitle]="headerTitle">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+        <div class="class-details-dialog">
+          <!-- Desktop View (columns) -->
+          <div class="class-details-section" *ngIf="!isMobile">
+            <ng-container *ngIf="selectedFareData?.IsStandardFare">
+              <ng-container *ngTemplateOutlet="section1"></ng-container>
+            </ng-container>
+            <ng-container *ngIf="selectedFareData?.IsStandardPremiumFare">
+              <ng-container *ngTemplateOutlet="section2"></ng-container>
+            </ng-container>
+            <ng-container *ngIf="selectedFareData?.IsFirstClassFare">
+              <ng-container *ngTemplateOutlet="section3"></ng-container>
+            </ng-container>
+          </div>
+          <!-- Desktop View ends (columns) -->
+
+          <!-- Mobile View (tabs) -->
+          <mat-tab-group *ngIf="isMobile" [(selectedIndex)]="selectedTabIndex">
+            <mat-tab label="Standard" *ngIf="selectedFareData?.IsStandardFare">
+              <ng-container *ngTemplateOutlet="section1"></ng-container>
+            </mat-tab>
+            <mat-tab label="Std Premium" *ngIf="selectedFareData?.IsStandardPremiumFare">
+              <ng-container *ngTemplateOutlet="section2"></ng-container>
+            </mat-tab>
+            <mat-tab label="First Class" *ngIf="selectedFareData?.IsFirstClassFare">
+              <ng-container *ngTemplateOutlet="section3"></ng-container>
+            </mat-tab>
+          </mat-tab-group>
+
+          <!-- Reusable Templates -->
+          <ng-template #section1>
+            <div class="class-details-row">
+              <mat-card appearance="outlined" class="standard">
+                <mat-card-header>
+                  <mat-card-title>Standard</mat-card-title>
+                  <mat-card-subtitle>With us, comfort comes as standard</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <ul>
+                    <li>
+                      <img src="assets/images/new-design-img/Aisle_Seat-cards.svg" alt="" aria-hidden="true" />
+                      Comfortable, ergonomic seats
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Wifi.svg" alt="" aria-hidden="true" />
+                      Free WiFi
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/power.svg" alt="" aria-hidden="true" />
+                      Access to power at every seat
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Onboard-shop.svg" alt="" aria-hidden="true" />
+                      Onboard shop with hot and cold options, Click & collect available
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Luggage_Icon.svg" alt="" aria-hidden="true" />
+                      Generous luggage space 
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Quiet.svg" alt="" aria-hidden="true" />
+                      Quiet coach available
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Train.svg" alt="" aria-hidden="true" />
+                      Newly refurbished trains
+                    </li>
+                  </ul>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </ng-template>
+
+          <ng-template #section2>
+            <div class="class-details-row">
+              <mat-card appearance="outlined" class="standard-premium">
+                <mat-card-header>
+                  <mat-card-title> Standard Premium</mat-card-title>
+                  <mat-card-subtitle>Enjoy more space and a guaranteed table</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <ul>
+                    <li>
+                      <img src="assets/images/new-design-img/Standardpremiumicon.svg" alt="" aria-hidden="true" />
+                      Bigger, more comfortable seat
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/table-seats.svg" alt="" aria-hidden="true" />
+                      Guaranteed table
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/spacious-coach.svg" alt="" aria-hidden="true" />
+                      Spacious coach layout
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Wifi.svg" alt="" aria-hidden="true" />
+                      Free WiFi
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/power.svg" alt="" aria-hidden="true" />
+                      Access to power at every seat
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Onboard-shop.svg" alt="" aria-hidden="true" />
+                      Onboard shop with hot and cold options, Click & collect available
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Luggage_Racks.svg" alt="" aria-hidden="true" />
+                      Extra luggage space
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Train.svg" alt="" aria-hidden="true" />
+                      Newly refurbished trains
+                    </li>
+                  </ul>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </ng-template>
+
+          <ng-template #section3>
+            <div class="class-details-row">
+              <mat-card appearance="outlined" class="First_Class">
+                <mat-card-header>
+                  <mat-card-title> First Class</mat-card-title>
+                  <mat-card-subtitle>Treat yourself to our most premium experience</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <ul>
+                    <li>
+                      <img src="assets/images/new-design-img/STaff.svg" alt="" aria-hidden="true" />
+                      Dedicated First class coach and onboard team
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Personalised.svg" alt="" aria-hidden="true" />
+                      Personalised at seat service
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Onboard-shop.svg" alt="" aria-hidden="true" />
+                      Complimentary a la carte menu from handpicked local suppliers
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/First_Class.svg" alt="" aria-hidden="true" />
+                      Bigger, more comfortable seat
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Table-SEat.svg" alt="" aria-hidden="true" />
+                      Guaranteed table
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Wifi.svg" alt="" aria-hidden="true" />
+                      Free WiFi
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/power.svg" alt="" aria-hidden="true" />
+                      Access to power at every seat
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Luggage_Racks.svg" alt="" aria-hidden="true" />
+                      Extra luggage space
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Smartphone.svg" alt="" aria-hidden="true" />
+                      Priority boarding messaging (at selected stations)
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Lounge_Icon.svg" alt="" aria-hidden="true" />
+                      Complimentary lounge access (at selected stations)
+                    </li>
+                    <li>
+                      <img src="assets/images/new-design-img/Train.svg" alt="" aria-hidden="true" />
+                      Newly refurbished trains
+                    </li>
+                  </ul>
+                  <p>*Service may be different on shorter journeys</p>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </ng-content>
+</app-enhanced-basic-dialog>

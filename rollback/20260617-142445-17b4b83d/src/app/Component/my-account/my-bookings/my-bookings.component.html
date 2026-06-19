@@ -1,0 +1,888 @@
+<app-header></app-header>
+<app-account-header [newHeaderFlag]="myBookingsHideHeaderFlag" [headerFlag]="hideHeaderFlag" class="account-bookings"></app-account-header>
+<div id="mb-verify-email" class="bg-f6 mybookings" *ngIf="!isUserVerified && !isDisplayVerifyEmail">
+    <div id="mb-verify-email-container" class="container verify-email-container">
+        <div id="mb-verify-email-row" class="row">
+            <div id="mb-verify-email-col" class="col-12 page-box-p">
+                <div id="mb-verify-email" class="verify-email">
+                    <div id="mb-verify-email-icon" class="verify-email-icon">
+                        <img id="mb-verify-email-img" src="assets/images/verify-email-icon.svg"
+                            alt="Verify email icon" />
+                    </div>
+                    <div id="mb-verify-email-content" class="verify-email-content">
+                        <h3 id="mb-verify-email-title" class="verify-email-title link-tag">Verify your email address
+                        </h3>
+                        <p id="mb-verify-email-sub-txt" class="verify-email-sub-content">
+                            {{notificationErrorMsg?.verifyEmailNotificationMsgFromBooking}}
+                        </p>
+                        <div id="mb-verify-email-btn-area" class="verify-email-btn-area">
+                            <button (click)="isUserVerificationEmail()" id="mb-verify-email-btn" class="verify-email-btn" mat-button
+                                class="new-default-btn">
+                                Verify email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="mb-main" class="bg-f6 pb-85 buynow-bttm payment-voucher-container m-mt-26" [ngClass]="isUserVerified || isDisplayVerifyEmail ? 'pt-96' : ''">
+    <div id="mb-main-container" class="container">
+        <div id="mb-main-row" class="row">
+            <div id="mb-main-col" class="col-md-12 page-box-p">
+                <div id="mb-booking-container" class="booking-tab-container">
+                    <!-- Changes after upgrading -->
+                    <div id="mb-booking-mat-tab" class="bookings-mat-tab journey-main-new-tab">
+                        <!-- End Changes after upgrading -->
+                        <mat-tab-group id="mb-mat-tab-group" fitInkBarToContent (selectedTabChange)="onTabChanged(tabIndex);" [(selectedIndex)]="tabIndex">
+                            <mat-tab id="mb-upcoming-mat-tab" label="Upcoming journeys"> 
+                                <button id="mb-upcoming-filter-btn" *ngIf='showFilterByDateBtn' class="mat-button new-default-outline-btn my-booking-filter-btn" (click)="filterByDateJourney(journeyTypeEnum.upcomingJourney)">
+                                    <img id="mb-upcoming-filter-btn-icon" src="assets/images/filter-icon.svg" alt="Filter Icon" />
+                                    Filter by date
+                                </button>
+                                <button id="mb-upcoming-clear-filter-btn" *ngIf='showClearFilterBtn' class="mat-button new-default-btn my-booking-clear-filter-btn" (click)="clearJourneyFilter()">
+                                    <img id="mb-upcoming-clear-filter-btn-icon" src="assets/images/clear-filter-icon.svg" alt="Clear Filter Icon" />
+                                    Clear filter
+                                </button>
+                                <div id="mb-upcoming-no-trips-container" class="bg-fff br-5 booking-no-trip-space mt-32 booking-btn-box-gap" *ngIf="journeyList == null && noTripsForUpcoming">
+                                    <div id="mb-upcoming-no-trip-inner" class="tab-notrip">
+                                        <div id="mb-upcoming-no-trip-icon" class="notrip-icon">
+                                            <span id="mb-upcoming-no-trip-icon-span">
+                                                <img id="mb-upcoming-no-trip-img" src="assets/images/train-notrip.svg" alt="No trip">
+                                            </span>
+                                        </div>
+                                        <div id="mb-upcoming-no-trip-content" class="notrip-content">
+                                            <h2 id="mb-upcoming-no-trip-msg" class="mb-0 color-graphene">
+                                                You don’t have any trips planned with us… yet!
+                                            </h2>
+                                            <button id="mb-upcoming-book-trip-btn" class="new-default-btn" aria-label="Book a trip" mat-button (click)="buyNow()">
+                                                Book a trip
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-upcoming-loop_{{upcomingJourneyIndex}}" class="booking-all-journey" *ngFor="let upcomingJourney of journeyList; let upcomingJourneyIndex = index;">
+                                    <div id="mb-upcoming-inner_{{upcomingJourneyIndex}}" *ngIf="upcomingJourneyIndex < defaultJourney">
+                                        <div id="mb-upcoming-journey-card_{{upcomingJourneyIndex}}" class="br-5 account-card-p mt-32 booking-btn-box-gap"
+                                            [ngClass]="upcomingJourney?.ReturnTicketInfo == null && !isOpenReturnJourney(upcomingJourney) ? 'no-return-ui' : ''">
+                                            <div id="mb-upcoming-journey-inner_{{upcomingJourneyIndex}}" class="booking-tab-content">
+                                                <div id="mb-upcoming-journey-row_{{upcomingJourneyIndex}}" class="row">
+                                                    <div id="mb-upcoming-purchased-date_{{upcomingJourneyIndex}}" class="col-12 mb-12 d-md-block d-none">
+                                                        <p id="mb-upcoming-purchased-date-title_{{upcomingJourneyIndex}}" class="m-0 f-12 font-dark">
+                                                            Purchased on {{upcomingJourney?.BookingDate | date:'EEE, dd MMM yyyy'}}
+                                                        </p>
+                                                    </div>
+                                                    <div id="mb-upcoming-journey-tags_{{upcomingJourneyIndex}}" class="col-12 mb-12 status-margin" *ngIf="upcomingJourney?.Status || upcomingJourney?.TODReferenceNumber">
+                                                        <div id="mb-upcoming-journey-tags-inner_{{upcomingJourneyIndex}}" class="d-flex gap-12 flex-wrap status-gap">
+                                                            <div id="mb-upcoming-journey-tags-wrap_{{upcomingJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-success-status" *ngIf="upcomingJourney?.Status"
+                                                                [class.upcoming]="upcomingJourney?.Status==='Upcoming Journey'" [class.past]="upcomingJourney?.Status==='Past Journey'"
+                                                                [class.refunded]="upcomingJourney?.Status==='Refunded'"
+                                                                [class.partialrefunded]="upcomingJourney?.Status==='Outward Refunded' || upcomingJourney?.Status==='Return Refunded'|| upcomingJourney?.Status==='Partially Refunded'">
+                                                                <span id="mb-upcoming-journey-tags-icon_{{upcomingJourneyIndex}}" class="common-caption">
+                                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <circle cx="9" cy="9" r="9" fill="#6CAF35" />
+                                                                        <path
+                                                                            d="M7.47807 12.5763L13.6137 6.4407L12.9186 5.72168L7.47807 11.1622L5.34499 9.00518L4.62598 9.7242L7.47807 12.5763Z"
+                                                                            fill="white" stroke="white" stroke-width="0.75" />
+                                                                    </svg>
+                                                                </span>
+                                                                <p id="mb-upcoming-journey-tags-status_{{upcomingJourneyIndex}}" class="m-0 f-14 font-700 lh-20 font-dark">
+                                                                    {{ upcomingJourney?.Status }}
+                                                                </p>
+                                                            </div>
+                                                            <div id="mb-upcoming-collection-ref_{{upcomingJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-collection-status"
+                                                                *ngIf="upcomingJourney?.TODReferenceNumber">
+                                                                <p id="mb-upcoming-collection-ref-title_{{upcomingJourneyIndex}}" class="m-0 f-14 font-700 lh-20 text-white">
+                                                                    Collection ref. {{ upcomingJourney?.TODReferenceNumber }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="mb-upcoming-outward-details_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney && upcomingJourney?.OutwardTicketInfo"
+                                                        class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100" [ngClass]="upcomingJourney?.OutwardTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-upcoming-outward-outbound-date_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-border">
+                                                            <p id="mb-upcoming-outward-outbound-title_{{upcomingJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Outbound
+                                                            </p>
+                                                            <p id="mb-upcoming-outward-date_{{upcomingJourneyIndex}}" class="m-0 f-16 lh-21 font-dark">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.TravelDate | date:'EEE, dd MMM yyyy'}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-startions_{{upcomingJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-upcoming-outward-stations-title_{{upcomingJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.DepartureStationName}} to
+                                                                {{upcomingJourney?.OutwardTicketInfo?.ArrivalStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-time-pax_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <h2 id="mb-upcoming-outward-time-title_{{upcomingJourneyIndex}}" class="m-0 f-18 font-700 lh-22 font-dark">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.DepartureTime
+                                                                | convertFrom24To12Format}}
+                                                                <span id="mb-upcoming-outward-time-arrow_{{upcomingJourneyIndex}}" class="arrow-img-icon">
+                                                                    →
+                                                                </span>
+                                                                {{upcomingJourney?.OutwardTicketInfo?.ArrivalTime
+                                                                | convertFrom24To12Format}}
+                                                            </h2>
+                                                            <p id="mb-upcoming-outward-pax_{{upcomingJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(upcomingJourney?.OutwardTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-ticket-type_{{upcomingJourneyIndex}}" class="booking-trip-popup d-md-block">
+                                                            <button id="mb-upcoming-outward-ticket-type-btn_{{upcomingJourneyIndex}}" (click)="ticketInfo(upcomingJourney?.OutwardTicketInfo?.TicketTypeCode, upcomingJourney?.OutwardTicketInfo?.TicketType, upcomingJourney?.OutwardTicketInfo?.TicketDescription, upcomingJourney?.OutwardTicketInfo?.TicketInformation, upcomingJourney?.OutwardTicketInfo?.TicketRestriction, 'nonseason')" type="button" attr.aria-label="{{upcomingJourney?.OutwardTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="upcomingJourney?.OutwardTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-tmt-btns-area_{{upcomingJourneyIndex}}" class="mt-20" [ngClass]="!upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading ? 'non-track-my-train' : 'non-track-my-train-cancelled'" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.OutwardTicketInfo?.IsRefunded && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">
+                                                            <button id="mb-upcoming-outward-tmt-btns_{{upcomingJourneyIndex}}" type="button" mat-button aria-labelledby="Track my train" class="new-default-outline-btn w-xs-100" (click)="openTrackMyTrain(upcomingJourney?.OutwardTicketInfo, journeyTypeEnum.outwardOnlyText, upcomingJourney ,upcomingJourney?.OutwardTicketInfo, false)">
+                                                                <div id="mb-upcoming-outward-tmt-btns-inner_{{upcomingJourneyIndex}}" class="track-my-train-img-txt">
+                                                                    <div id="mb-upcoming-outward-tmt-cancelled-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled || upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading">
+                                                                        <img id="mb-upcoming-outward-tmt-cancelled-icon_{{upcomingJourneyIndex}}" src="assets/images/exclamation_icon.svg" class="non-track-my-train-cancelled-icon" alt="Track my train cancelled" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-ontime-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length == 1 && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed">
+                                                                        <img id="mb-upcoming-outward-tmt-ontime-icon_{{upcomingJourneyIndex}}" src="assets/images/track-train-on-time.svg" class="non-track-my-train-cancelled-icon" alt="Track my train on time" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-delay-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img tmt-cancelled-icon2" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length == 1 && upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed">
+                                                                        <img id="mb-upcoming-outward-tmt-delay-icon_{{upcomingJourneyIndex}}" src="assets/images/exclamation_warning.svg" class="non-track-my-train-cancelled-icon" alt="Track my train delayed icon" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-train-main-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img tmt-main-icon" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length > 1 && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading">
+                                                                        <img id="mb-upcoming-outward-tmt-train-main-icon_{{upcomingJourneyIndex}}" src="assets/images/track-train-icon.svg" alt="Track my train icon" class="non-track-my-train-cancelled-icon"/>
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-btn-content_{{upcomingJourneyIndex}}" class="track-my-train-txt">
+                                                                        <h3 id="mb-upcoming-outward-tmt-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="!upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading">{{trackMyTrainEnum.trackYourTrainButtonHeadinText}}</h3>
+                                                                        <h3 id="mb-upcoming-outward-tmt-error-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading && upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgText && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">{{upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading}}</h3>
+                                                                        <h3 id="mb-upcoming-outward-tmt-cancelled-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.ErrorMsgHeading">{{trackMyTrainEnum.trainCancelledText}}</h3>
+                                                                        <div id="mb-upcoming-platform-info-tmt-btn_{{upcomingJourneyIndex}}" class="text-start font-dark f-14 lh-20 font-400 platform-padding-m" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.PlateformNo">
+                                                                            <span id="mb-upcoming-platform-info-tmt-btn-txt_{{upcomingJourneyIndex}}" *ngIf=" checkIsTrainLegInfoAvailableOrNot(upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveInfo)">{{bindPlatformNoOnTmtButton(upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.TrainLiveStatus?.PlateformNo)}}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-tmt-arrived_{{upcomingJourneyIndex}}" class="non-track-my-train-cancelled mt-20" *ngIf="upcomingJourney?.OutwardTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.OutwardTicketInfo?.IsRefunded && upcomingJourney?.OutwardTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">
+                                                            <div id="mb-upcoming-outward-tmt-arrived-inner_{{upcomingJourneyIndex}}" class="track-my-train-arrived-btn w-xs-100">
+                                                                <div id="mb-upcoming-outward-tmt-arrived-icon_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img">
+                                                                    <img id="mb-upcoming-outward-tmt-arrived-img_{{upcomingJourneyIndex}}" src="assets/images/circle-check.svg" class="non-track-my-train-cancelled-icon" alt="Track my train arrived" />
+                                                                </div>
+                                                                Arrived
+                                                            </div>
+                                                        </div>
+                                                        <div id="mb-upcoming-outward-tmt-disabled_{{upcomingJourneyIndex}}" class="mt-20 track-my-train-disabled" *ngIf="!upcomingJourney?.OutwardTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.OutwardTicketInfo?.IsRefunded">
+                                                            <div id="mb-upcoming-outward-tmt-disabled-inner_{{upcomingJourneyIndex}}" class="non-track-my-train-cancelled">
+                                                                <button id="mb-upcoming-outward-tmt-disabled-btn_{{upcomingJourneyIndex}}" class="new-default-outline-btn w-xs-100" aria-label="Track your train" mat-button disabled>
+                                                                    {{trackMyTrainEnum.trackYourTrainButtonHeadinText}}
+                                                                </button>
+                                                            </div>
+                                                            <p id="mb-upcoming-outward-tmt-disabled-content_{{upcomingJourneyIndex}}" class="f-12 text-black lh-16 mb-0 mt-04">You can track your train on the day of travel</p>
+                                                        </div>
+                                                    </div>
+                                                    <div id="mb-upcoming-return-details_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney && upcomingJourney?.ReturnTicketInfo"
+                                                        class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100 mt-24-md" [ngClass]="upcomingJourney?.ReturnTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-upcoming-return-title-date_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-border">
+                                                            <p id="mb-upcoming-return-title_{{upcomingJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Return
+                                                            </p>
+                                                            <p id="mb-upcoming-return-date_{{upcomingJourneyIndex}}" class="m-0 f-16 lh-21 font-dark">
+                                                                {{upcomingJourney?.ReturnTicketInfo?.TravelDate | date:'EEE, dd MMM yyyy'}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-return-stations_{{upcomingJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-upcoming-return-stations-title_{{upcomingJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{upcomingJourney?.ReturnTicketInfo?.DepartureStationName}} to
+                                                                {{upcomingJourney?.ReturnTicketInfo?.ArrivalStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-return-time-pax_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <h2 id="mb-upcoming-return-time-title_{{upcomingJourneyIndex}}" class="m-0 f-18 font-700 lh-22 font-dark">
+                                                                {{upcomingJourney?.ReturnTicketInfo?.DepartureTime
+                                                                | convertFrom24To12Format}}
+                                                                <span id="mb-upcoming-return-time-arrow_{{upcomingJourneyIndex}}" class="arrow-img-icon">
+                                                                    →
+                                                                </span>
+                                                                {{upcomingJourney?.ReturnTicketInfo?.ArrivalTime
+                                                                | convertFrom24To12Format}}
+                                                            </h2>
+                                                            <p id="mb-upcoming-return-pax_{{upcomingJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(upcomingJourney?.ReturnTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-return-ticket-type_{{upcomingJourneyIndex}}" class="booking-trip-popup">
+                                                            <button id="mb-upcoming-return-ticket-type-btn_{{upcomingJourneyIndex}}" (click)="ticketInfo(upcomingJourney?.ReturnTicketInfo?.TicketTypeCode, upcomingJourney?.ReturnTicketInfo?.TicketType, upcomingJourney?.ReturnTicketInfo?.TicketDescription, upcomingJourney?.ReturnTicketInfo?.TicketInformation, upcomingJourney?.ReturnTicketInfo?.TicketRestriction, 'nonseason')" type="button" attr.aria-label="{{upcomingJourney?.ReturnTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="upcomingJourney?.ReturnTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{upcomingJourney?.ReturnTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                        <div id="mb-upcoming2-outward-tmt-btns-area_{{upcomingJourneyIndex}}" class="mt-20" [ngClass]="!upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading ? 'non-track-my-train' : 'non-track-my-train-cancelled'" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.ReturnTicketInfo?.IsRefunded && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">
+                                                            <button id="mb-upcoming2-outward-tmt-btns_{{upcomingJourneyIndex}}" type="button" mat-button aria-labelledby="Track my train" class="new-default-outline-btn w-xs-100" (click)="openTrackMyTrain(upcomingJourney?.ReturnTicketInfo, journeyTypeEnum.returnOnlyText, upcomingJourney ,upcomingJourney?.ReturnTicketInfo, true)">
+                                                                <div id="mb-upcoming2-outward-tmt-btns-inner_{{upcomingJourneyIndex}}" class="track-my-train-img-txt">
+                                                                    <div id="mb-upcoming2-outward-tmt-cancelled-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled || upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading">
+                                                                        <img id="mb-upcoming2-outward-tmt-cancelled-icon_{{upcomingJourneyIndex}}" src="assets/images/exclamation_icon.svg" class="non-track-my-train-cancelled-icon" alt="Track my train cancelled" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-ontime-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length == 1 && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed">
+                                                                        <img id="mb-upcoming-outward-tmt-ontime-icon_{{upcomingJourneyIndex}}" src="assets/images/track-train-on-time.svg" class="non-track-my-train-cancelled-icon" alt="Track my train on time" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-delay-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img tmt-cancelled-icon2" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length == 1 && upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsDelayed">
+                                                                        <img id="mb-upcoming-outward-tmt-delay-icon_{{upcomingJourneyIndex}}" src="assets/images/exclamation_warning.svg" class="non-track-my-train-cancelled-icon" alt="Track my train delayed icon" />
+                                                                    </div>
+                                                                    <div id="mb-upcoming-outward-tmt-train-return-main-icon-area_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img tmt-main-icon" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrackMyJourneyInfoList?.length > 1 && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading">
+                                                                        <img id="mb-upcoming-outward-tmt-train-return-main-icon_{{upcomingJourneyIndex}}" src="assets/images/track-train-icon.svg" alt="Track my train icon" class="non-track-my-train-cancelled-icon"/>
+                                                                    </div>
+                                                                    <div id="mb-upcoming2-outward-tmt-btn-content_{{upcomingJourneyIndex}}" class="track-my-train-txt">
+                                                                        <h3 id="mb-upcoming2-outward-tmt-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="!upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading">{{trackMyTrainEnum.trackYourTrainButtonHeadinText}}</h3>
+                                                                        <h3 id="mb-upcoming2-outward-tmt-error-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading && upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgText && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">{{upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading}}</h3>
+                                                                        <h3 id="mb-upcoming2-outward-tmt-cancelled-title_{{upcomingJourneyIndex}}" class="f-16 font-700 font-dark m-0 text-start" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.IsCancelled && !upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.ErrorMsgHeading">{{trackMyTrainEnum.trainCancelledText}}</h3>
+                                                                        <div id="mb-return-platform-info-tmt-btn_{{upcomingJourneyIndex}}" class="text-start font-dark f-14 lh-20 font-400 platform-padding-m" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.PlateformNo">
+                                                                            <span id="mb-return-platform-info-tmt-btn-txt_{{upcomingJourneyIndex}}" *ngIf="checkIsTrainLegInfoAvailableOrNot(upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveInfo)">{{bindPlatformNoOnTmtButton(upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.TrainLiveStatus?.PlateformNo)}}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                        <div id="mb-upcoming2-outward-tmt-arrived_{{upcomingJourneyIndex}}" class="non-track-my-train-cancelled mt-20" *ngIf="upcomingJourney?.ReturnTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.ReturnTicketInfo?.IsRefunded && upcomingJourney?.ReturnTicketInfo?.TrackMyTrain?.IsTrainReachedFinalDestination">
+                                                            <div id="mb-upcoming2-outward-tmt-arrived-inner_{{upcomingJourneyIndex}}" class="track-my-train-arrived-btn w-xs-100">
+                                                                <div id="mb-upcoming2-outward-tmt-arrived-icon_{{upcomingJourneyIndex}}" class="track-my-train-cancelled-img">
+                                                                    <img id="mb-upcoming2-outward-tmt-arrived-img_{{upcomingJourneyIndex}}" src="assets/images/circle-check.svg" class="non-track-my-train-cancelled-icon" alt="Track my train arrived" />
+                                                                </div>
+                                                                Arrived
+                                                            </div>
+                                                        </div>
+                                                        <div id="mb-upcoming2-outward-tmt-disabled_{{upcomingJourneyIndex}}" class="mt-20 track-my-train-disabled" *ngIf="!upcomingJourney?.ReturnTicketInfo?.TrackMyTrain && displayTrackMyTrainBtn() && !upcomingJourney?.ReturnTicketInfo?.IsRefunded">
+                                                            <div id="mb-upcoming2-outward-tmt-disabled-inner_{{upcomingJourneyIndex}}" class="non-track-my-train-cancelled">
+                                                                <button id="mb-upcoming2-outward-tmt-disabled-btn_{{upcomingJourneyIndex}}" class="new-default-outline-btn w-xs-100" aria-label="Track your train" mat-button disabled>
+                                                                    {{trackMyTrainEnum.trackYourTrainButtonHeadinText}}
+                                                                </button>
+                                                            </div>
+                                                            <p id="mb-upcoming2-outward-tmt-disabled-content_{{upcomingJourneyIndex}}" class="f-12 text-black lh-16 mb-0 mt-04">You can track your train on the day of travel</p>
+                                                        </div>
+                                                    </div>
+                                                    <!-- in case of open return in upcoming tab -->
+                                                    <div id="mb-upcoming-open-return_{{upcomingJourneyIndex}}" *ngIf="isOpenReturnJourney(upcomingJourney)"
+                                                        class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100 mt-24-md" [ngClass]="upcomingJourney?.OutwardTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-upcoming-or-month_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-border open-return-flex">
+                                                            <p id="mb-upcoming-or-title_{{upcomingJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Return
+                                                            </p>
+                                                            <p id="mb-upcoming-or-month-msg_{{upcomingJourneyIndex}}" class="m-0 f-16 lh-21 font-dark open-return-txt">
+                                                                {{upcomingJourney?.OpenReturnMassage}}
+
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-or-station_{{upcomingJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-upcoming-or-station-title_{{upcomingJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.ArrivalStationName}} to
+                                                                {{upcomingJourney?.OutwardTicketInfo?.DepartureStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-or-pax_{{upcomingJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <p id="mb-upcoming-or-pax-count_{{upcomingJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(upcomingJourney?.OutwardTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-upcoming-or-ticket-type-area_{{upcomingJourneyIndex}}" class="booking-trip-popup">
+                                                            <button id="mb-upcoming-or-ticket-type-btn_{{upcomingJourneyIndex}}" (click)="ticketInfo(upcomingJourney?.OutwardTicketInfo?.TicketTypeCode, upcomingJourney?.OutwardTicketInfo?.TicketType, upcomingJourney?.OutwardTicketInfo?.TicketDescription, upcomingJourney?.OutwardTicketInfo?.TicketInformation, upcomingJourney?.OutwardTicketInfo?.TicketRestriction, 'nonseason')" type="button" attr.aria-label="{{upcomingJourney?.OutwardTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="upcomingJourney?.OutwardTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{upcomingJourney?.OutwardTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mb-upcoming-msg-btns_{{upcomingJourneyIndex}}" class="d-flex justify-between align-items-center booking-journey-list">
+                                            <div id="mb-upcoming-msg-area_{{upcomingJourneyIndex}}" class="booking-refund-txt mb-24-md" [ngClass]="(upcomingJourney?.IsEticket && upcomingJourney?.Status != 'Refunded') ? 'flex-basis-35per' : ''">
+                                                <p id="mb-upcoming-msg_{{upcomingJourneyIndex}}" class="m-0 f-14 lh-20 text-black"
+                                                    *ngIf="!upcomingJourney?.IsRefundable && upcomingJourney?.Status != 'Refunded'">
+                                                    Not all tickets can be refunded online. To find out more, read our
+                                                    <a id="mb-upcoming-refund-policy_{{upcomingJourneyIndex}}" href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey#refundwebappfaq"
+                                                        class="underline font-dark" aria-label="refund policy">
+                                                        refund policy
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <div id="mb-upcoming-btns_{{upcomingJourneyIndex}}" class="booking-btns">
+                                                <div id="mb-upcoming-btns-inner_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney?.IsEticket && upcomingJourney?.Status != 'Refunded'">
+                                                    <div id="mb-upcoming-dt-container_{{upcomingJourneyIndex}}" class="p-relative">
+                                                        <button id="mb-upcoming-dt-btn_{{upcomingJourneyIndex}}" class="new-default-btn w-xs-100" (click)="downloadTicket(upcomingJourney)" mat-button>
+                                                            Download e-ticket
+                                                            <span id="mb-upcoming-dt-arrow-icon_{{upcomingJourneyIndex}}" class="booking-e-ticket" *ngIf="upcomingJourney?.EntitlementId?.length > 1">
+                                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none"
+                                                                    xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M11.3337 1.93245L6.00033 7.33329L0.666992 1.93245L1.91699 0.666626L6.00033 4.80165L10.0837 0.666626L11.3337 1.93245Z"
+                                                                        fill="#131E29" />
+                                                                </svg>
+                                                            </span>
+                                                        </button>
+                                                        <div id="mb-upcoming-dt-list_{{upcomingJourneyIndex}}" class="e-ticket-btn-group" [ngClass]="{'d-block': showTicketOutsideArea, 'd-none' : hideTicketOutsideArea}" *ngIf="upcomingJourney?.ShowDownloadOptions">
+                                                            <ul id="mb-upcoming-dt-ul_{{upcomingJourneyIndex}}" class="m-0">
+                                                                <li id="mb-upcoming-dt-loop_{{upcomingJourneyIndex}}_{{upcomingDropdownListIndex}}" *ngFor="let eticket of eticketResponse?.Eticket; let upcomingDropdownListIndex = index;">
+                                                                    <button id="mb-upcoming-dt-eticket-btn_{{upcomingJourneyIndex}}_{{upcomingDropdownListIndex}}" type="button" mat-button class="e-ticket-btn font-dark" (click)="downloadPassengerTicket(eticket)">
+                                                                        {{eticket.Text}}
+                                                                        <span id="mb-upcoming-dt-eticket-btn-icon_{{upcomingJourneyIndex}}_{{upcomingDropdownListIndex}}" class="e-ticket-check" *ngIf="eticket?.DownloadedList">
+                                                                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M3.65625 8.9375L11.6562 0.9375L10.7188 0L3.65625 7.0625L0.9375 4.34375L0 5.28125L3.65625 8.9375Z"
+                                                                                    fill="#131E29" />
+                                                                            </svg>
+                                                                        </span>
+                                                                        <span id="mb-upcoming-dt-eticket-btn-icon2_{{upcomingJourneyIndex}}_{{upcomingDropdownListIndex}}" class="e-ticket-check" *ngIf="!eticket?.DownloadedList">
+                                                                            <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M0 12.5H11.64V14.18H0V12.5ZM11.64 5L5.82 10.82L0 5H3.32V0H8.32V5H11.64Z" fill="#131E29" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                            <div id="mb-upcoming-dt-backdrop_{{upcomingJourneyIndex}}" class="donwload-ticket-backdrop" (click)="onClickOutSideToCloseDropdownList()"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="mb-upcoming-manage-booking-area_{{upcomingJourneyIndex}}">
+                                                    <button id="mb-upcoming-manage-booking-btn_{{upcomingJourneyIndex}}" (click)="viewBooking(upcomingJourney)" class="new-default-outline-btn w-xs-100"
+                                                    aria-label="Manage booking" mat-button>
+                                                        Manage booking
+                                                    </button>
+                                                </div>
+                                                <div id="mb-upcoming-buy-again-area_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney?.Status != 'Refunded'">
+                                                    <button id="mb-upcoming-buy-again-btn_{{upcomingJourneyIndex}}" (click)="buyAgain(upcomingJourney)"
+                                                    class="new-default-outline-btn w-xs-100" aria-label="Buy again" mat-button>
+                                                        Buy again
+                                                    </button>
+                                                </div>
+                                                <div id="mb-upcoming-buy-again-area2_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney?.Status == 'Refunded'">
+                                                    <button id="mb-upcoming-buy-again-btn2_{{upcomingJourneyIndex}}" (click)="buyAgain(upcomingJourney)"
+                                                    class="new-default-outline-btn w-xs-100" aria-label="Buy again" mat-button>
+                                                        Buy again
+                                                    </button>
+                                                </div>
+                                                <div id="mb-upcoming-more-option-area_{{upcomingJourneyIndex}}" class="p-relative">
+                                                    <button id="mb-upcoming-more-option-btn_{{upcomingJourneyIndex}}" class="new-default-outline-btn w-xs-100" (click)="clickOnMoreOption(upcomingJourney)" mat-button>
+                                                        More options<span id="mb-upcoming-more-option-arrow-icon_{{upcomingJourneyIndex}}" class="booking-e-ticket">
+                                                            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path
+                                                                    d="M11.3337 1.93245L6.00033 7.33329L0.666992 1.93245L1.91699 0.666626L6.00033 4.80165L10.0837 0.666626L11.3337 1.93245Z"
+                                                                    fill="#131E29" />
+                                                            </svg>
+                                                        </span>
+                                                    </button>
+                                                    <div id="mb-upcoming-more-option-dropdown_{{upcomingJourneyIndex}}" class="e-ticket-btn-group" *ngIf="upcomingJourney?.ShowMoreOptions"
+                                                        [ngClass]="{'d-block': showMoreOptionOutsideArea, 'd-none' : hideMoreOptionOutsideArea}">
+                                                        <ul id="mb-upcoming-more-option-ul_{{upcomingJourneyIndex}}" class="m-0">
+                                                            <li id="mb-upcoming-more-option-calendar_{{upcomingJourneyIndex}}">
+                                                                <button id="mb-upcoming-more-option-calendar-btn_{{upcomingJourneyIndex}}" type="button" (click)="calendarClick(upcomingJourney)" mat-button
+                                                                    class="e-ticket-btn font-dark">
+                                                                    Add to calendar
+                                                                </button>
+                                                            </li>
+                                                            <li id="mb-upcoming-more-option-refund_{{upcomingJourneyIndex}}" *ngIf="upcomingJourney?.IsRefundable || upcomingJourney?.IsInternalRefundable && upcomingJourney?.Status != 'Refunded'">
+                                                                <button id="mb-upcoming-more-option-refund-btn_{{upcomingJourneyIndex}}" type="button" mat-button class="e-ticket-btn font-dark" [ngClass]="!isUserVerified ? 'clickable-disabled-btn' : ''" (click)="onRefund(upcomingJourney, customerBookingsResponse?.IsUserVerified)">
+                                                                    Refund
+                                                                </button>
+                                                            </li>
+                                                            <li id="mb-upcoming-more-option-download-receipt_{{upcomingJourneyIndex}}" *ngIf = "customerBookingsResponse.IsVatReceiptEnabled && upcomingJourney.VatReceiptDetails?.PDFBytes">
+                                                                <button id="mb-upcoming-more-option-download-receipt-btn_{{upcomingJourneyIndex}}" type="button" mat-button class="e-ticket-btn font-dark" 
+                                                                [ngClass]="!isUserVerified ? 'clickable-disabled-btn' : ''"
+                                                                (click)="commonService.downloadVatReceipt(upcomingJourney?.VatReceiptDetails, upcomingJourney?.BookingId, isUserVerified)" aria-label="Download receipt">
+                                                                    Download receipt
+                                                                </button>
+                                                            </li>
+                                                        </ul>
+                                                        <div id="mb-upcoming-more-option-backdrop_{{upcomingJourneyIndex}}" class="donwload-ticket-backdrop" (click)="onClickOutSideToCloseDropdownList()"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-upcoming-show-more-less" class="more-less-journey">
+                                    <div id="mb-upcoming-show-more-area">
+                                        <button id="mb-upcoming-show-more-btn" type="button" mat-button *ngIf="isShowMoreJourneyDisabled && totalItem > 2" (click)="seeMoreJourneys()" class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-more-journey d-flex gap-08 align-items-center">
+                                            Show more journeys 
+                                            <img id="mb-upcoming-show-more-img" src="assets/images/show-more-arrow.svg" alt="">
+                                        </button>
+                                    </div>
+                                    <div id="mb-upcoming-show-less-area">
+                                        <button id="mb-upcoming-show-less-btn" type="button" *ngIf="!isShowMoreJourneyDisabled && totalItem > 2" (click)="seeLessJourneys()" mat-button class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-less-journey d-flex gap-08 align-items-center">
+                                            Show less journeys 
+                                            <img id="mb-upcoming-show-less-img" src="assets/images/show-less-arrow.svg" alt="Show less journeys icon">
+                                        </button>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                            <mat-tab id="mb-past-mat-tab" label="Past journeys"> 
+                                <button id="mb-past-filter-btn" *ngIf='showFilterByDateBtn' class="mat-button new-default-outline-btn my-booking-filter-btn" (click)="filterByDateJourney(journeyTypeEnum.pastJourney)">
+                                    <img id="mb-past-filter-btn-icon" src="assets/images/filter-icon.svg" alt="Filter Icon" />
+                                    Filter by date
+                                </button>
+                                <button id="mb-past-clear-filter-btn" *ngIf='showClearFilterBtn' class="mat-button new-default-btn my-booking-clear-filter-btn" (click)="clearJourneyFilter()">
+                                    <img id="mb-past-clear-filter-btn-icon" src="assets/images/clear-filter-icon.svg" alt="Clear Filter Icon" />
+                                    Clear filter
+                                </button>
+                                <div id="mb-past-no-trips-container" class="bg-fff br-5 booking-no-trip-space mt-32 booking-btn-box-gap" *ngIf="journeyList == null && noTripsForPast">
+                                    <div id="mb-past-no-trip-inner" class="tab-notrip">
+                                        <div id="mb-past-no-trip-icon" class="notrip-icon">
+                                            <span id="mb-past-no-trip-icon-span">
+                                                <img id="mb-past-no-trip-img" src="assets/images/train-notrip.svg" alt="No trip">
+                                            </span>
+                                        </div>
+                                        <div id="mb-past-no-trip-content" class="notrip-content">
+                                            <h2 id="mb-past-no-trip-msg" class="mb-0 color-graphene">
+                                                You don’t have any previous trips
+                                            </h2>
+                                            <button id="mb-past-book-trip-btn" class="new-default-btn" aria-label="Book a trip" mat-button (click)="buyNow()">
+                                                Book a trip
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-past-loop_{{pastJourneyIndex}}" class="booking-all-journey" *ngFor="let pastJourney of journeyList; let pastJourneyIndex = index;">
+                                    <div id="mb-past-inner_{{pastJourneyIndex}}" *ngIf="pastJourneyIndex < defaultJourney">
+                                        <div id="mb-past-journey-card_{{pastJourneyIndex}}" class="br-5 account-card-p mt-32 booking-btn-box-gap"
+                                            [ngClass]="pastJourney?.ReturnTicketInfo == null && !isOpenReturnJourney(pastJourney) ? 'no-return-ui' : ''">
+                                            <div id="mb-past-journey-inner_{{pastJourneyIndex}}" class="booking-tab-content">
+                                                <div id="mb-past-journey-row_{{pastJourneyIndex}}" class="row">
+                                                    <div id="mb-past-purchased-date_{{pastJourneyIndex}}" class="col-12 mb-12 d-md-block d-none">
+                                                        <p id="mb-past-purchased-date-title_{{pastJourneyIndex}}" class="m-0 f-12 font-dark">
+                                                            Purchased on {{pastJourney?.BookingDate | date:'EEE, dd MMM yyyy'}}
+                                                        </p>
+                                                    </div>
+                                                    <div id="mb-past-journey_{{pastJourneyIndex}}" class="col-12 mb-12 status-margin" *ngIf="pastJourney?.Status || pastJourney?.TODReferenceNumber">
+                                                        <div id="mb-past-journey-tags-inner_{{pastJourneyIndex}}" class="d-flex gap-12 flex-wrap status-gap">
+                                                            <div id="mb-past-journey-tags-wrap_{{pastJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-success-status" *ngIf="pastJourney?.Status"
+                                                                [class.upcoming]="pastJourney?.Status==='Upcoming Journey'" [class.past]="pastJourney?.Status==='Past Journey'"
+                                                                [class.refunded]="pastJourney?.Status==='Refunded'"
+                                                                [class.partialrefunded]="pastJourney?.Status==='Outward Refunded' || pastJourney?.Status==='Return Refunded'|| pastJourney?.Status==='Partially Refunded'">
+                                                                <span id="mb-past-journey-tags-icon_{{pastJourneyIndex}}" class="common-caption">
+                                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <circle cx="9" cy="9" r="9" fill="#6CAF35" />
+                                                                        <path
+                                                                            d="M7.47807 12.5763L13.6137 6.4407L12.9186 5.72168L7.47807 11.1622L5.34499 9.00518L4.62598 9.7242L7.47807 12.5763Z"
+                                                                            fill="white" stroke="white" stroke-width="0.75" />
+                                                                    </svg>
+                                                                </span>
+                                                                <p id="mb-past-journey-tags-status_{{pastJourneyIndex}}" class="m-0 f-14 font-700 lh-20 font-dark">
+                                                                    {{ pastJourney?.Status }}
+                                                                </p>
+                                                            </div>
+                                                            <div id="mb-past-collection-ref_{{pastJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-collection-status"
+                                                                *ngIf="pastJourney?.TODReferenceNumber">
+                                                                <p id="mb-past-collection-ref-title_{{pastJourneyIndex}}" class="m-0 f-14 font-700 lh-20 text-white">
+                                                                    Collection ref. {{ pastJourney?.TODReferenceNumber }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="mb-past-outward-details_{{pastJourneyIndex}}" *ngIf="pastJourney && pastJourney?.OutwardTicketInfo"
+                                                        class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100" [ngClass]="pastJourney?.OutwardTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-past-outward-outbound-date_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-border">
+                                                            <p id="mb-past-outward-outbound-title_{{pastJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Outbound
+                                                            </p>
+                                                            <p id="mb-past-outward-date_{{pastJourneyIndex}}" class="m-0 f-16 lh-21 font-dark">
+                                                                {{pastJourney?.OutwardTicketInfo?.TravelDate | date:'EEE, dd MMM yyyy'}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-outward-startions_{{pastJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-past-outward-stations-title_{{pastJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{pastJourney?.OutwardTicketInfo?.DepartureStationName}} to
+                                                                {{pastJourney?.OutwardTicketInfo?.ArrivalStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-outward-time-pax_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <h2 id="mb-past-outward-time-title_{{pastJourneyIndex}}" class="m-0 f-18 font-700 lh-22 font-dark">
+                                                                {{pastJourney?.OutwardTicketInfo?.DepartureTime
+                                                                | convertFrom24To12Format}}
+                                                                <span id="mb-past-outward-time-arrow_{{pastJourneyIndex}}" class="arrow-img-icon">
+                                                                    →
+                                                                </span>
+                                                                {{pastJourney?.OutwardTicketInfo?.ArrivalTime
+                                                                | convertFrom24To12Format}}
+                                                            </h2>
+                                                            <p id="mb-past-outward-pax_{{pastJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(pastJourney?.OutwardTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-outward-ticket-type_{{pastJourneyIndex}}" class="booking-trip-popup d-md-block">
+                                                            <button id="mb-past-outward-ticket-type-btn_{{pastJourneyIndex}}" type="button" (click)="ticketInfo(pastJourney?.OutwardTicketInfo?.TicketTypeCode, pastJourney?.OutwardTicketInfo?.TicketType, pastJourney?.OutwardTicketInfo?.TicketDescription, pastJourney?.OutwardTicketInfo?.TicketInformation, pastJourney?.OutwardTicketInfo?.TicketRestriction, 'nonseason')" attr.aria-label="{{pastJourney?.OutwardTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="pastJourney?.OutwardTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{pastJourney?.OutwardTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div id="mb-past-return-details_{{pastJourneyIndex}}" *ngIf="pastJourney && pastJourney?.ReturnTicketInfo"
+                                                        class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100 mt-24-md" [ngClass]="pastJourney?.ReturnTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-past-return-title-date_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-border">
+                                                            <p id="mb-past-return-title_{{pastJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Return
+                                                            </p>
+                                                            <p id="mb-past-return-date_{{pastJourneyIndex}}" class="m-0 f-16 lh-21 font-dark">
+                                                                {{pastJourney?.ReturnTicketInfo?.TravelDate | date:'EEE, dd MMM yyyy'}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-return-stations_{{pastJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-past-return-stations-title_{{pastJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{pastJourney?.ReturnTicketInfo?.DepartureStationName}} to
+                                                                {{pastJourney?.ReturnTicketInfo?.ArrivalStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-return-time-pax_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <h2 id="mb-past-return-time-title_{{pastJourneyIndex}}" class="m-0 f-18 font-700 lh-22 font-dark">
+                                                                {{pastJourney?.ReturnTicketInfo?.DepartureTime
+                                                                | convertFrom24To12Format}}
+                                                                <span id="mb-past-return-time-arrow_{{pastJourneyIndex}}" class="arrow-img-icon">
+                                                                    →
+                                                                </span>
+                                                                {{pastJourney?.ReturnTicketInfo?.ArrivalTime
+                                                                | convertFrom24To12Format}}
+                                                            </h2>
+                                                            <p id="mb-past-return-pax_{{pastJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(pastJourney?.ReturnTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-return-ticket-type_{{pastJourneyIndex}}" class="booking-trip-popup d-md-block">
+                                                            <button id="mb-past-return-ticket-type-btn_{{pastJourneyIndex}}" type="button" (click)="ticketInfo(pastJourney?.ReturnTicketInfo?.TicketTypeCode, pastJourney?.ReturnTicketInfo?.TicketType, pastJourney?.ReturnTicketInfo?.TicketDescription, pastJourney?.ReturnTicketInfo?.TicketInformation, pastJourney?.ReturnTicketInfo?.TicketRestriction, 'nonseason')" attr.aria-label="{{pastJourney?.ReturnTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="pastJourney?.ReturnTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{pastJourney?.ReturnTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <!-- in case of open return in pastJourney tab -->
+                                                    <div id="mb-past-open-return_{{pastJourneyIndex}}" *ngIf="isOpenReturnJourney(pastJourney)" class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100 mt-24-md"
+                                                        [ngClass]="pastJourney?.OutwardTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-past-or-month_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-border open-return-flex">
+                                                            <p id="mb-past-or-title_{{pastJourneyIndex}}" class="m-0 f-16 font-600 lh-20 font-dark">
+                                                                Return
+                                                            </p>
+                                                            <p id="mb-past-or-month-msg_{{pastJourneyIndex}}" class="m-0 f-16 lh-21 font-dark open-return-txt">
+                                                                {{pastJourney?.OpenReturnMassage}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-or-station_{{pastJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-past-or-station-title_{{pastJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{pastJourney?.OutwardTicketInfo?.ArrivalStationName}} to
+                                                                {{pastJourney?.OutwardTicketInfo?.DepartureStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-or-pax_{{pastJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <p id="mb-past-or-pax-count_{{pastJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(pastJourney?.OutwardTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-past-or-ticket-type-area_{{pastJourneyIndex}}" class="booking-trip-popup">
+                                                            <button id="mb-past-or-ticket-type-btn_{{pastJourneyIndex}}"
+                                                                (click)="ticketInfo(pastJourney?.OutwardTicketInfo?.TicketTypeCode, pastJourney?.OutwardTicketInfo?.TicketType, pastJourney?.OutwardTicketInfo?.TicketDescription, pastJourney?.OutwardTicketInfo?.TicketInformation, pastJourney?.OutwardTicketInfo?.TicketRestriction, 'nonseason')"
+                                                                type="button" attr.aria-label="{{pastJourney?.OutwardTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white"
+                                                                [ngClass]="pastJourney?.OutwardTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{pastJourney?.OutwardTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mb-past-msg-btns_{{pastJourneyIndex}}" class="d-flex justify-between align-items-center booking-journey-list">
+                                            <div id="mb-past-msg-area_{{pastJourneyIndex}}" class="booking-refund-txt mb-24-md">
+                                                <p id="mb-past-msg_{{pastJourneyIndex}}" class="m-0 f-14 lh-20 text-black"
+                                                    *ngIf="!pastJourney?.IsRefundable && pastJourney?.Status != 'Refunded'">
+                                                    Not all tickets can be refunded online. To find out more, read our
+                                                    <a id="mb-past-refund-policy_{{pastJourneyIndex}}" href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey#refundwebappfaq"
+                                                        class="underline font-dark" aria-label="refund policy">
+                                                        refund policy
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <div id="mb-past-btns_{{pastJourneyIndex}}" class="booking-btns upgrade-past-booking-btns">
+                                                <div id="mb-past-btns-inner_{{pastJourneyIndex}}" *ngIf="pastJourney?.IsEticket && pastJourney?.Status != 'Refunded'" >
+                                                    <div id="mb-past-dt-container_{{pastJourneyIndex}}" class="p-relative">
+                                                        <button id="mb-past-dt-btn_{{pastJourneyIndex}}" class="new-default-btn w-xs-100" (click)="downloadTicket(pastJourney)" mat-button>
+                                                            Download e-ticket
+                                                            <span id="mb-past-dt-arrow-icon_{{pastJourneyIndex}}" class="booking-e-ticket" *ngIf="pastJourney?.EntitlementId?.length > 1">
+                                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none"
+                                                                    xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M11.3337 1.93245L6.00033 7.33329L0.666992 1.93245L1.91699 0.666626L6.00033 4.80165L10.0837 0.666626L11.3337 1.93245Z"
+                                                                        fill="#131E29" />
+                                                                </svg>
+                                                            </span>
+                                                        </button>
+                                                        <div id="mb-past-dt-list_{{pastJourneyIndex}}" class="e-ticket-btn-group" [ngClass]="{'d-block': showTicketOutsideArea, 'd-none' : hideTicketOutsideArea}" *ngIf="pastJourney?.ShowDownloadOptions">
+                                                            <ul id="mb-past-dt-ul_{{pastJourneyIndex}}" class="m-0">
+                                                                <li id="mb-past-dt-loop_{{pastJourneyIndex}}_{{pastDropdownListIndex}}" *ngFor="let eticket of eticketResponse?.Eticket; let pastDropdownListIndex = index;">
+                                                                    <button id="mb-past-dt-eticket-btn_{{pastJourneyIndex}}_{{pastDropdownListIndex}}" type="button" mat-button class="e-ticket-btn font-dark" (click)="downloadPassengerTicket(eticket)">
+                                                                        {{eticket.Text}}
+                                                                        <span id="mb-past-dt-eticket-btn-icon_{{pastJourneyIndex}}_{{pastDropdownListIndex}}" class="e-ticket-check" *ngIf="eticket?.DownloadedList">
+                                                                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M3.65625 8.9375L11.6562 0.9375L10.7188 0L3.65625 7.0625L0.9375 4.34375L0 5.28125L3.65625 8.9375Z"
+                                                                                    fill="#131E29" />
+                                                                            </svg>
+                                                                        </span>
+                                                                        <span id="mb-past-dt-eticket-btn-icon2_{{pastJourneyIndex}}_{{pastDropdownListIndex}}" class="e-ticket-check" *ngIf="!eticket?.DownloadedList">
+                                                                            <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M0 12.5H11.64V14.18H0V12.5ZM11.64 5L5.82 10.82L0 5H3.32V0H8.32V5H11.64Z" fill="#131E29" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                            <div id="mb-past-dt-backdrop_{{pastJourneyIndex}}" class="donwload-ticket-backdrop" (click)="onClickOutSideToCloseDropdownList()"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="mb-past-manage-booking-area_{{pastJourneyIndex}}">
+                                                    <button id="mb-past-manage-booking-btn_{{pastJourneyIndex}}" (click)="viewBooking(pastJourney)" class="new-default-outline-btn w-xs-100" aria-label="Manage booking"
+                                                    mat-button>
+                                                        Manage booking
+                                                    </button>
+                                                </div>
+                                                <div id="mb-past-buy-again-area_{{pastJourneyIndex}}" *ngIf="pastJourney?.Status != 'Refunded'">
+                                                    <button id="mb-past-buy-again-btn_{{pastJourneyIndex}}" (click)="buyAgain(pastJourney)"
+                                                    class="new-default-outline-btn w-xs-100" aria-label="Buy again" mat-button>
+                                                        Buy again
+                                                    </button>
+                                                </div>
+                                                <div id="mb-past-buy-again-area2_{{pastJourneyIndex}}" *ngIf="pastJourney?.Status == 'Refunded'">
+                                                    <button id="mb-past-buy-again-btn2_{{pastJourneyIndex}}" (click)="buyAgain(pastJourney)"
+                                                    class="new-default-outline-btn w-xs-100" aria-label="Buy again" mat-button>
+                                                        Buy again
+                                                    </button>
+                                                </div>
+                                                <div id="mb-past-download-receipt-area_{{pastJourneyIndex}}" *ngIf="checkToShownDownloadReceiptButtonForPastJourney(customerBookingsResponse, pastJourney)">
+                                                    <button id="mb-past-download-receipt-btn_{{pastJourneyIndex}}" type="button" [ngClass]="!isUserVerified ? 'clickable-disabled-btn' : ''"
+                                                    (click)="commonService.downloadVatReceipt(pastJourney?.VatReceiptDetails, pastJourney?.BookingId, isUserVerified)"
+                                                     mat-button class="new-default-outline-btn w-xs-100">
+                                                        Download receipt
+                                                    </button>
+                                                </div>
+                                                <div id="mb-past-more-option-area_{{pastJourneyIndex}}" *ngIf="pastJourney?.IsRefundable || pastJourney?.IsInternalRefundable && pastJourney?.Status != 'Refunded'">
+                                                    <div id="mb-past-more-option-inner_{{pastJourneyIndex}}" class="p-relative">
+                                                        <button id="mb-past-more-option-btn_{{pastJourneyIndex}}" class="new-default-outline-btn w-xs-100" (click)="clickOnMoreOption(pastJourney)" mat-button>
+                                                            More options<span id="mb-past--more-option-arrow-icon_{{pastJourneyIndex}}" class="booking-e-ticket">
+                                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M11.3337 1.93245L6.00033 7.33329L0.666992 1.93245L1.91699 0.666626L6.00033 4.80165L10.0837 0.666626L11.3337 1.93245Z"
+                                                                        fill="#131E29" />
+                                                                </svg>
+                                                            </span>
+                                                        </button>
+                                                        <div id="mb-past-more-option-dropdown_{{pastJourneyIndex}}" class="e-ticket-btn-group" *ngIf="pastJourney?.ShowMoreOptions"
+                                                            [ngClass]="{'d-block': showMoreOptionOutsideArea, 'd-none' : hideMoreOptionOutsideArea}">
+                                                            <ul id="mb-past-more-option-ul_{{pastJourneyIndex}}" class="m-0">
+                                                                <li id="mb-past-more-option-calendar_{{pastJourneyIndex}}">
+                                                                    <button id="mb-past-more-option-calendar-btn_{{pastJourneyIndex}}" type="button" mat-button class="e-ticket-btn font-dark" [ngClass]="!isUserVerified ? 'clickable-disabled-btn' : ''" (click)="onRefund(pastJourney, customerBookingsResponse?.IsUserVerified)">
+                                                                        Refund
+                                                                    </button>
+                                                                </li>
+                                                                <li id="mb-past-more-option-download-receipt_{{pastJourneyIndex}}" *ngIf = "customerBookingsResponse.IsVatReceiptEnabled && pastJourney.VatReceiptDetails?.PDFBytes">
+                                                                    <button id="mb-past-more-option-download-receipt-btn_{{pastJourneyIndex}}" type="button" [ngClass]="!isUserVerified ? 'clickable-disabled-btn' : ''"
+                                                                    (click)="commonService.downloadVatReceipt(pastJourney?.VatReceiptDetails, pastJourney?.BookingId, isUserVerified)" mat-button class="e-ticket-btn font-dark">
+                                                                        Download receipt
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                            <div id="mb-past-more-option-backdrop_{{pastJourneyIndex}}" class="donwload-ticket-backdrop" (click)="onClickOutSideToCloseDropdownList()"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-past-show-more-less" class="more-less-journey">
+                                    <div id="mb-past-show-more-area">
+                                        <button id="mb-past-show-more-btn" type="button" *ngIf="isShowMoreJourneyDisabled && totalItem > 2" (click)="seeMoreJourneys()" mat-button class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-more-journey d-flex gap-08 align-items-center">
+                                            Show more journeys 
+                                            <img id="mb-past-show-more-img" src="assets/images/show-more-arrow.svg" alt="">
+                                        </button>
+                                    </div>
+                                    <div id="mb-past-show-less-area" class="hide">
+                                        <button id="mb-past-show-less-btn" type="button" *ngIf="!isShowMoreJourneyDisabled && totalItem > 2" (click)="seeLessJourneys()" mat-button class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-less-journey d-flex gap-08 align-items-center">
+                                            Show less journeys 
+                                            <img id="mb-past-show-less-img" src="assets/images/show-less-arrow.svg" alt="">
+                                        </button>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                            <mat-tab id="mb-seasons-mat-tab" label="My seasons"> 
+                                <button id="mb-season-filter-btn" *ngIf='showFilterByDateBtn' class="mat-button new-default-outline-btn my-booking-filter-btn" (click)="filterByDateJourney(bookingTypeEnum.Season)">
+                                    <img id="mb-season-filter-btn-icon" src="assets/images/filter-icon.svg" alt="Filter Icon" />
+                                    Filter by date
+                                </button>
+                                <button id="mb-season-clear-filter-btn" *ngIf='showClearFilterBtn' class="mat-button new-default-btn my-booking-clear-filter-btn" (click)="clearJourneyFilter()">
+                                    <img id="mb-season-clear-filter-btn-icon" src="assets/images/clear-filter-icon.svg" alt="Clear Filter Icon" />
+                                    Clear filter
+                                </button>
+                                <div id="mb-seasons-no-trips-container" class="bg-fff br-5 booking-no-trip-space mt-32 booking-btn-box-gap" *ngIf="journeyList == null && noTripsForSeason">
+                                    <div id="mb-seasons-no-trip-inner" class="tab-notrip">
+                                        <div id="mb-seasons-no-trip-icon" class="notrip-icon">
+                                            <span id="mb-seasons-no-trip-icon-span">
+                                                <img id="mb-seasons-no-trip-img" src="assets/images/train-notrip.svg" alt="No trip">
+                                            </span>
+                                        </div>
+                                        <div id="mb-seasons-no-trip-content" class="notrip-content" *ngIf="journeyList == null">
+                                            <h2 id="mb-seasons-no-trip-msg" class="mb-0 color-graphene">
+                                                You don’t have any trips planned with us… yet!
+                                            </h2>
+                                            <button id="mb-seasons-book-trip-btn" class="new-default-btn" aria-label="Book a trip" mat-button (click)="buyNowForSeason()">
+                                                Book a trip
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-season-loop_{{seasonJourneyIndex}}" class="booking-all-journey" *ngFor="let seasonJourney of journeyList; let seasonJourneyIndex = index;">
+                                    <div id="mb-season-inner_{{seasonJourneyIndex}}" *ngIf="seasonJourneyIndex < defaultJourney">
+                                        <div id="mb-season-journey-card_{{seasonJourneyIndex}}" class="br-5 account-card-p mt-32 booking-btn-box-gap no-return-ui">
+                                            <div id="mb-season-journey-inner_{{seasonJourneyIndex}}" class="booking-tab-content">
+                                                <div id="mb-season-journey-row_{{seasonJourneyIndex}}" class="row">
+                                                    <div id="mb-season-purchased-date_{{seasonJourneyIndex}}" class="col-12 mb-12 d-md-block d-none">
+                                                        <p id="mb-season-purchased-date-title_{{seasonJourneyIndex}}" class="m-0 f-12 font-dark">
+                                                            Purchased on {{seasonJourney?.BookingDate | date:'EEE, dd MMM yyyy'}}
+                                                        </p>
+                                                    </div>
+                                                    <div id="mb-season-journey-tags_{{seasonJourneyIndex}}" class="col-12 mb-8 status-margin" *ngIf="seasonJourney?.Status">
+                                                        <div id="mb-season-journey-tags-inner_{{seasonJourneyIndex}}" class="d-flex gap-12 flex-wrap status-gap">
+                                                            <div id="mb-season-journey-tags-wrap_{{seasonJourneyIndex}}" class="d-flex gap-10 justify-content-center"
+                                                                [class.booking-expired-status]="seasonJourney.Status==='Expired'"
+                                                                [class.booking-success-status]="seasonJourney.Status==='Refunded'">
+                                                                <span id="mb-season-journey-tags-icon_{{seasonJourneyIndex}}" class="common-caption refund-icon" *ngIf="seasonJourney?.Status==='Refunded'">
+                                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <circle cx="9" cy="9" r="9" fill="#6CAF35" />
+                                                                        <path
+                                                                            d="M7.47807 12.5763L13.6137 6.4407L12.9186 5.72168L7.47807 11.1622L5.34499 9.00518L4.62598 9.7242L7.47807 12.5763Z"
+                                                                            fill="white" stroke="white" stroke-width="0.75" />
+                                                                    </svg>
+                                                                </span>
+                                                                <div id="mb-season-status-main_{{seasonJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-success-status" *ngIf="seasonJourney?.Status==='Active'">
+                                                                    <span id="mb-season-status-inner_{{seasonJourneyIndex}}" class="booking-active-status-dot" *ngIf="seasonJourney?.Status==='Active'"></span>
+                                                                    <p id="mb-season-status-title_{{seasonJourneyIndex}}" class="m-0 f-14 font-700 lh-20 font-dark">
+                                                                        {{ seasonJourney?.Status }}
+                                                                    </p>
+                                                                </div>
+                                                                <p id="mb-season-status-title2_{{seasonJourneyIndex}}" class="m-0 f-14 font-700 lh-20 font-dark" *ngIf="seasonJourney?.Status !== 'Active'">
+                                                                    {{ seasonJourney?.Status }}
+                                                                </p>
+                                                            </div>
+                                                            <div id="mb-season-collection-ref_{{seasonJourneyIndex}}" class="d-flex gap-10 justify-content-center booking-collection-status"
+                                                                *ngIf="seasonJourney?.TODReferenceNumber">
+                                                                <p id="mb-season-collection-ref-title_{{seasonJourneyIndex}}" class="m-0 f-14 font-700 lh-20 text-white">
+                                                                    Collection ref. {{ seasonJourney?.TODReferenceNumber }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="mb-season-outward-date-div_{{seasonJourneyIndex}}" *ngIf="seasonJourney && seasonJourney?.OutwardTicketInfo" class="col-lg-6 col-md-6 col-sm-12 col-12 booking-trip-pr-100" [ngClass]="seasonJourney?.OutwardTicketInfo?.IsRefunded ? 'op-5 cursor-disabled' : ''">
+                                                        <div id="mb-season-outward-date-inner_{{seasonJourneyIndex}}" class="d-flex justify-between booking-trip-border mb-15">
+                                                            <p id="mb-season-outward-date-title_{{seasonJourneyIndex}}" class="m-0 f-16 font-700 lh-20 font-dark">
+                                                                {{ seasonJourney?.OutwardTicketInfo?.TravelDate | date:'EEE, dd MMM yyyy' }}
+                                                                -
+                                                                {{ seasonJourney?.OutwardTicketInfo?.TravelEndDate | date:'EEE, dd MMM yyyy' }}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-season-outward-startions_{{seasonJourneyIndex}}" class="booking-trip-station mb-8">
+                                                            <p id="mb-season-outward-stations-title_{{seasonJourneyIndex}}" class="m-0 f-18 font-600 lh-23 font-dark">
+                                                                {{seasonJourney?.OutwardTicketInfo?.DepartureStationName}} to
+                                                                {{seasonJourney?.OutwardTicketInfo?.ArrivalStationName}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-season-outward-pax_{{seasonJourneyIndex}}" class="d-flex justify-between booking-trip-time-pax mb-8">
+                                                            <p id="mb-season-outward-pax-title_{{seasonJourneyIndex}}" class="m-0 f-14 lh-20 font-dark">
+                                                                {{getPassangerCount(seasonJourney?.OutwardTicketInfo)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="mb-season-outward-ticket-type_{{seasonJourneyIndex}}" class="booking-trip-popup d-md-block">
+                                                            <button id="mb-season-outward-ticket-type-btn_{{seasonJourneyIndex}}" type="button" (click)="ticketInfo(seasonJourney?.OutwardTicketInfo?.TicketTypeCode, seasonJourney?.OutwardTicketInfo?.TicketType, seasonJourney?.OutwardTicketInfo?.TicketDescription, seasonJourney?.OutwardTicketInfo?.TicketInformation, seasonJourney?.OutwardTicketInfo?.TicketRestriction, 'season')" attr.aria-label="{{seasonJourney?.OutwardTicketInfo?.TicketType}}"
+                                                                class="m-0 f-14 lh-20 font-dark underline p-0 border-0 bg-white" [ngClass]="seasonJourney?.OutwardTicketInfo?.IsRefunded ? 'cursor-disabled anchor-disabled' : ''">
+                                                                {{seasonJourney?.OutwardTicketInfo?.TicketType}}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mb-season-msg-btns_{{seasonJourneyIndex}}" class="d-flex justify-between align-items-center booking-journey-list">
+                                            <div id="mb-season-msg-area_{{seasonJourneyIndex}}" class="booking-refund-txt">
+                                
+                                            </div>
+                                            <div id="mb-season-btns_{{seasonJourneyIndex}}" class="booking-btns">
+                                                <div id="mb-season-btns-inner_{{seasonJourneyIndex}}" *ngIf="seasonJourney?.IsEticket">
+                                                    <div id="mb-season-dt-container_{{seasonJourneyIndex}}" class="p-relative">
+                                                        <button id="mb-season-dt-btn_{{seasonJourneyIndex}}" class="new-default-btn w-xs-100" (click)="downloadTicket(seasonJourney)" mat-button>
+                                                            Download e-ticket
+                                                            <span id="mb-season-dt-arrow-icon_{{seasonJourneyIndex}}" class="booking-e-ticket" *ngIf="seasonJourney?.EntitlementId?.length > 1">
+                                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none"
+                                                                    xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M11.3337 1.93245L6.00033 7.33329L0.666992 1.93245L1.91699 0.666626L6.00033 4.80165L10.0837 0.666626L11.3337 1.93245Z"
+                                                                        fill="#131E29" />
+                                                                </svg>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div id="mb-season-manage-booking-area_{{seasonJourneyIndex}}">
+                                                    <button id="mb-season-manage-booking-btn_{{seasonJourneyIndex}}" (click)="viewBooking(seasonJourney)" class="new-default-outline-btn w-xs-100" aria-label="Manage booking"
+                                                    mat-button>
+                                                        Manage booking
+                                                    </button>
+                                                </div>
+                                                <div id="mb-season-renew-area_{{seasonJourneyIndex}}" *ngIf="seasonJourney?.IsRenewAvailable">
+                                                    <button id="mb-season-renew-btn_{{seasonJourneyIndex}}" (click)="renewTicket(seasonJourney)"
+                                                    class="new-default-outline-btn w-xs-100" aria-label="Renew" mat-button>
+                                                        Renew
+                                                    </button>
+                                                </div>
+                                                <div id="mb-season-buy-again-area_{{seasonJourneyIndex}}">
+                                                    <button id="mb-season-buy-again-btn_{{seasonJourneyIndex}}" (click)="buyAgain(seasonJourney)" class="new-default-outline-btn w-xs-100" aria-label="Buy again"
+                                                    mat-button>
+                                                        Buy again
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mb-season-show-more-less" class="more-less-journey">
+                                    <div id="mb-season-show-more-area">
+                                        <button id="mb-season-show-more-btn" type="button" mat-button *ngIf="isShowMoreJourneyDisabled && totalItem > 2" (click)="seeMoreJourneys()" class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-more-journey d-flex gap-08 align-items-center">
+                                            Show more journeys 
+                                            <img id="mb-season-show-more-img" src="assets/images/show-more-arrow.svg" alt="">
+                                        </button>
+                                    </div>
+                                    <div id="mb-season-show-less-area">
+                                        <button id="mb-season-show-less-btn" type="button" mat-button *ngIf="!isShowMoreJourneyDisabled && totalItem > 2" (click)="seeLessJourneys()" class="m-0 p-0 f-16 font-700 lh-20 dark-spark booking-less-journey d-flex gap-08 align-items-center">
+                                            Show less journeys 
+                                            <img id="mb-season-show-less-img" src="assets/images/show-less-arrow.svg" alt="">
+                                        </button>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                        </mat-tab-group>
+                        <div *ngIf="noBookingsForSelectedDate" id="mb-filter-no-booking-found"
+                            class="bg-fff br-5 booking-no-trip-space mt-04 booking-btn-box-gap no-filter-journey">
+                            <div id="mb-filter-no-booking-found-inner" class="tab-notrip">
+                                <div id="mb-filter-no-booking-found-icon-area" class="notrip-icon">
+                                    <span id="mb-filter-no-booking-found-icon-span">
+                                        <img id="mb-filter-no-booking-found-img" src="assets/images/no-journey-found-filter.svg"
+                                            alt="No journey found">
+                                    </span>
+                                </div>
+                                <div id="mb-filter-no-booking-found-content" class="notrip-content">
+                                    <h2 id="mb-filter-no-booking-found-title" class="mb-0 link-tag pb-0">
+                                        No bookings found for selected dates
+                                    </h2>
+                                    <p id="mb-filter-no-booking-found-sub-content" class="mb-0 no-journey-found mt-8">
+                                        Please verify the dates entered and try again.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<app-footer></app-footer>
+<app-vat-receipt-pdf></app-vat-receipt-pdf>

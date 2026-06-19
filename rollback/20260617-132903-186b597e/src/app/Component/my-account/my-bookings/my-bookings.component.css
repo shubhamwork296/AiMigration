@@ -1,0 +1,610 @@
+.background {
+  height: 10%; 
+  position: relative;
+}
+
+.bannerImage {
+  height: 40%;
+  width: 100%;
+  max-height: 400px;
+}
+
+.bannerText {
+  position: absolute;
+  z-index: 1;
+  margin: 0 auto;
+  left: 0;
+  right: 0;
+  top: 30%;
+  text-align: left;
+  width: 80%;
+  font-weight: bold;
+  color: white;
+  font-size: 30px;
+}
+
+.booking {
+  position: absolute;
+  z-index: 1;
+  margin: 0 auto;
+  left: 0;
+  right: 0;
+  top: 88%;
+  text-align: left;
+  width: 60%;
+  font-weight: bold;
+  color: white;
+  font-size: 30px;
+  background-color: #204555;
+}
+
+.mat-list-base .mat-list-item {
+  display: inline !important;
+}
+
+.mat-list-base .mat-list-item .mat-list-item-content {
+  display: inline-flex !important;
+}
+
+.bookingTabs .empty {
+  background-color: #f5f5f5;
+  height: 25px;
+}
+
+.tripDetail {
+  padding: 10px 30px;
+  font-size: 14px;
+  border: 1px solid #e2f5e9;
+}
+
+.tripData {
+  background: #e2f5e9;
+  width: 100%;
+  min-height: 100px;
+}
+
+.tripData .actionRow {
+  background-color: #fff;
+}
+
+.tripData .actionRow td {
+  padding-top: 10px;
+}
+
+.tripDate {
+  font-size: 50px;
+  line-height: 50px;
+}
+
+.smallSize {
+  font-size: 16px;
+  font-weight: 300;
+} 
+
+.tripButtons {
+  border-radius: 6px;
+  background-color: #fff;
+  border: 1px solid red;
+  margin-right: 10px;
+  font-size: 12px;
+}
+
+.buyButton {
+  background-color: red;
+}
+
+.tripType {
+  color: #fff;
+  padding: 2px 10px;
+  border-bottom-right-radius: 6px;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.past {
+  background-color: #204555;
+  font-weight: 300;
+}
+
+.upcoming {
+  background-color:#803634;
+  font-weight: 300;
+}
+
+.active {
+  background-color:#6CAF35;
+  font-weight: 300;
+  color: #131e29;
+}
+
+.expired {
+  background-color:#D6D1CA;
+  font-weight: 300;
+  color: #131e29;
+}
+
+.refunded {
+  background-color:#2199e8;
+  font-weight: 300;
+  color: #000;
+}
+
+.partialrefunded {
+  background-color:#1f6391;
+  font-weight: 300;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float:right;
+  margin-bottom: 15px !important;
+}
+
+.mat-expansion-panel-header, .mat-expansion-panel-header.mat-expanded:hover, .mat-expansion-panel-header.mat-expanded:focus {
+  height: 42px;
+  background-color: rgb(226, 245, 233);
+}
+
+.prefOptions {
+  background-color: rgb(226, 245, 233);
+  margin: 20px 20px 0px 20px;
+  height: 42px;
+}
+
+.accountTabs {
+  display: inline;
+}
+
+.accountTabs .mat-button-toggle {
+  font-size: 16px;
+  padding: 0px 20px;
+}
+
+.mat-button-toggle-group-appearance-standard {
+  border: none !important;
+  background: none !important;
+  border-radius: 0;
+  padding: 10px;
+}
+
+.accountFilterDropDown {
+  position: absolute;
+  right: 0;
+  float: right;
+  width: 25%;
+  padding: 7px;
+  z-index: 9999;
+}
+
+.bookingSubTabs {
+  width: 100%;
+  margin-top: 20px;
+  background: #ffffff;
+  position: relative;
+}
+
+.mat-button-toggle-checked.custom {
+  background: transparent;
+  color: #FF4713 !important;
+}
+
+.accountFilterDropDown mat-select {
+  background: #D6D1CA;
+  padding: 8px 12px;
+}
+
+.journey-stations.trip-col {
+  flex-basis: 35%;
+}
+
+.complete-date.trip-col {
+  flex-basis: 30%;
+}
+
+.booking-id.trip-col {
+  flex-basis: 35%;
+}
+
+.buy-btn.trip-col {
+  flex-basis: 20%;
+}
+
+.all-without-btn {
+  flex-basis: 80%;
+}
+
+.tab-notrip {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.notrip-icon {
+  background: #E7EBF3;
+  border-radius: 100%;
+  padding: 32px;
+  margin-bottom: 16px;
+}
+
+.notrip-content h2 {
+  font-size: 22px;
+  line-height: 27px;
+  font-weight: 600;
+  padding-bottom: 32px;
+}
+
+.booking-success-status {
+  background-color: #D3E7C2;
+  padding: 8px;
+  border-radius: 5px;
+  height: 40px;
+  display: flex !important;
+  align-items: center;
+}
+
+.booking-collection-status {
+  background-color: #004F59;
+  padding: 8px;
+  border-radius: 5px;
+  height: 40px;
+  display: flex !important;
+  align-items: center;
+}
+
+.booking-expired-status {
+  background-color: #E7EBF3;
+  padding: 8px;
+  border-radius: 5px;
+  height: 40px;
+  display: flex !important;
+  align-items: center;
+}
+
+.booking-trip-border {
+  border-bottom: 1px solid #d6d1ca;
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.booking-trip-pr-100 {
+  padding-right: 100px;
+}
+
+.booking-trip-popup button:focus-visible,
+.booking-trip-popup button:focus {
+  background-color: #e2f5e9 !important;
+}
+
+.booking-btn-box-gap {
+  margin-bottom: 16px;
+  position: relative;
+  background-color: #fff;
+}
+
+.booking-btns {
+  display: flex;
+  gap: 24px;
+  position: relative;
+}
+
+.booking-btns button {
+  position: relative;
+  z-index: 2;
+  height: 40px !important;
+}
+
+.more-less-journey {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.no-return-ui {
+  background-image: url(../../../../assets/images/no-trip-case.svg);
+  background-size: auto;
+  background-position: right top;
+  background-repeat: no-repeat;
+  background-color: #fff;
+}
+
+.booking-e-ticket {
+  margin: 0 0 0 8px;
+  position: relative;
+  top: -2px;
+  line-height: 9px;
+}
+
+.e-ticket-btn-group ul {
+  list-style: none;
+  padding: 0;
+  background-color: #fff;
+  border-radius: 0px 0px 5px 5px;
+  box-shadow: 0px 2px 12px 2px rgba(19, 30, 41, 0.08);
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 55px;
+  z-index: 99;
+}
+
+/* Changes after upgrading */
+.e-ticket-btn-group ul li button {
+  width: 100%;
+  padding: 13px 12px !important;
+  font-size: 16px;
+  line-height: 22px !important;
+  border-radius: 0;
+  font-weight: 400;
+  justify-content: flex-start;
+  height: auto;
+}
+/* End Changes after upgrading */
+
+.e-ticket-btn-group ul li button:hover {
+  background: #E2F5E9;
+}
+
+.booking-no-trip-space {
+  padding: 32px 0;
+}
+
+.booking-active-status-dot {
+  background-color: #6CAF35;
+  height: 12px;
+  width: 12px;
+  border-radius: 100%;
+}
+
+.status-gap {
+  gap: 8px !important;
+}
+
+.booking-all-journey .booking-journey-list {
+  padding-bottom: 24px;
+}
+
+.booking-all-journey:last-child .booking-journey-list
+.booking-all-journey:nth-child(2) .booking-journey-list,
+.booking-all-journey:nth-child(10) .booking-journey-list,
+.booking-all-journey:nth-child(20) .booking-journey-list,
+.booking-all-journey:nth-child(30) .booking-journey-list,
+.booking-all-journey:nth-child(40) .booking-journey-list,
+.booking-all-journey:nth-child(50) .booking-journey-list {
+  padding-bottom: 0;
+}
+
+.donwload-ticket-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  content: ' ';
+  background-color: transparent;
+  z-index: 1;
+}
+
+#mb-main-container, .verify-email-container {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Changes after upgrading */
+.my-booking-filter-btn {
+  height: 40px !important;
+  width: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: absolute;
+  top: -38px;
+  right: 0;
+  cursor: pointer;
+}
+/* End Changes after upgrading */
+
+.my-booking-clear-filter-btn {
+    height: 40px;
+    width: 138px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: absolute;
+    top: -38px;
+    border: none;
+    right: 0;
+    cursor: pointer;
+}
+
+.no-filter-journey .notrip-icon {
+    padding: 20px;
+}
+
+.no-journey-found {
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+}
+
+.tmt-cancelled-icon2 img {
+  height: 16.84px !important;
+  margin-top: -4px;
+  width: 20px;
+}
+
+.non-track-my-train-cancelled-icon {
+  height: 20px !important;
+}
+
+.track-my-train-txt h3 {
+  letter-spacing: 0.02em;
+}
+
+.tmt-main-icon img {
+  height: 20px;
+  width: 14.617px;
+}
+
+@media (max-width: 1199px) {
+  .open-return-flex {
+    gap: 30px;
+  }
+
+  .open-return-flex .open-return-txt {
+    text-align: right;
+  }
+
+  .booking-journey-list  {
+    flex-wrap: wrap !important;
+  }
+
+  .booking-refund-txt {
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-width:991px) {
+  .booking-trip-pr-100 {
+    padding-right: 15px;
+  }
+
+  .no-return-ui {
+    background-image: none;
+  }
+}
+
+@media (max-width:767px) {
+  .track-my-train-txt h3, .platform-padding-m {
+    padding-right: 12px;
+  }
+
+  .accountFilterDropDown {
+    width: 100%;
+    position: static;
+    float: none;
+  }
+
+  .accountTabs .mat-button-toggle {
+    font-size: 12px;
+    padding: 0px 10px;
+  }
+
+  .accountFilterDropDown .mat-select {
+    line-height: 16px;
+  } 
+
+  .tripDetail {
+    padding: 10px;
+  }
+
+  .smallSize {
+    font-size: 12px;
+  }
+
+  .tripDate {
+    font-size: 40px;
+    line-height: 0px;
+  }
+
+  .font-size-30 {
+    font-size: 22px !important;
+  }
+
+  a.adisabled {
+    cursor: not-allowed;
+    opacity: .65;
+  }
+
+  a.adisabled:hover { 
+    text-decoration: none; 
+  }
+
+  a.adisabled:focus { 
+    text-decoration: none; 
+  }
+
+  a.adisabled:active { 
+    text-decoration: none; 
+  }
+
+  .bookings-mat-tab .mt-32 {
+    margin-top: 24px !important;
+  }
+  
+  .bookings-mat-tab .mb-32 {
+    margin-bottom: 24px !important;
+  }
+
+  .notrip-content h2 {
+    font-size: 20px;
+    line-height: 25px;
+    font-weight: 700;
+  }
+
+  .notrip-icon {
+    padding: 18px;
+  }
+
+  .notrip-icon img {
+    height: 64px;
+    width: 64px;
+  }
+
+  .mb-24-md {
+    margin-bottom: 24px;
+  }
+
+  .mt-24-md {
+    margin-top: 24px;
+  }
+
+  .booking-trip-station .font-600 {
+    font-weight: 700 !important;
+    line-height: 22px !important;
+  }
+
+  .booking-btn-box-gap {
+    margin-bottom: 24px;
+  }
+
+  .booking-btns {
+    flex-direction: column;
+    width: 100%;
+    gap: 16px;
+  }
+
+  .more-less-journey {
+    margin-top: 12px;
+  }
+
+  .booking-no-trip-space {
+    padding: 24px;
+    box-shadow: 0px 4px 16px 4px rgba(19, 30, 41, 0.08);
+  }
+
+  .booking-refund-txt .f-14 {
+    font-size: 16px !important;
+    line-height: 22px !important;
+  }
+
+  .status-margin {
+    margin-bottom: 8px !important;
+  }
+
+  .my-booking-filter-btn {
+    position: inherit;
+    margin: 24px 0 20px;
+  }
+
+.my-booking-clear-filter-btn {
+    position: inherit;
+    margin: 24px 0 20px;
+  }
+}

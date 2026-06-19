@@ -1,0 +1,275 @@
+.preference-mode {
+    border: 1px solid #E9F0F5;
+}
+
+.preference-mode-header {
+    border-bottom: 1px solid #E9F0F5;
+    padding: 15px 30px;
+    background: #E2F5E9;
+    font-size: 16px;
+}
+
+.preference-mode-body {
+    padding: 15px 30px;
+    background: #fff;
+}
+
+.payment-tbl { 
+    width: 100%;
+}
+
+.payment-tbl tr {
+    height: 36px;
+}
+
+.payment-tbl th {
+    color: #204555;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: none;
+    text-align: left;
+}
+
+.payment-tbl td {
+    color: #204555;
+    font-size: 16px;
+    border-bottom: none;
+    text-align: left;
+}
+
+td.mat-cell:first-of-type, td.mat-footer-cell:first-of-type, th.mat-header-cell:first-of-type {
+    padding-left: 0px;
+}
+
+td.mat-cell:last-of-type, td.mat-footer-cell:last-of-type, th.mat-header-cell:last-of-type {
+    padding-right: 0px;
+}
+
+a.default-btn:hover,a.default-btn:active,a.default-btn:focus {
+    text-decoration: none;
+    color: #131E29;
+}
+
+.nectar-bx {
+    display: flex;
+}
+
+.nectar-bx-2 {
+    border: 1px dotted #a7a7a7;
+    padding: 10px 20px;
+    margin-top: 20px;
+}
+
+.nectar-bx-2 .heading {
+    color: #c352a4;
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.nectar-txt {
+    padding-top: 8px;
+}
+
+.smartcard-tbl tr td, .smartcard-tbl tr th {
+    padding: 6px 12px;
+}
+
+.smartcard-tbl {
+    border-radius:4px;
+    overflow: hidden;
+}
+
+.avl-smartcard-number {
+    background: #e2f5e9;
+    padding: 7px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.smartcard-history {
+    width: 100%;
+}
+
+.smartcard-history tr {
+    border-top: 5px solid #fff;
+}
+
+.smartcard-history tr td {
+    background: #e2f5e9;
+    padding: 10px;
+}
+
+.smartcard-history tr td:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.smartcard-history tr td:last-child {
+    border-radius: 0 4px 4px 0;
+    text-align: right;
+}
+
+.link-smartcard-tbl {
+    width: 100%;
+    border-spacing: 0 16px;
+    border-collapse: separate;
+}
+
+.link-smartcard-tbl tr {
+    border-top: 5px solid #fff;
+}
+
+.link-smartcard-tbl tr:first-child {
+    border-top: none;
+}
+
+.link-smartcard-tbl tr td, .link-smartcard-tbl tr th {
+    background: #fff;
+    padding: 8px 20px;
+    border-top: 2px solid #ccc;
+    border-bottom: 2px solid #ccc;
+    white-space: nowrap;
+}
+
+.link-smartcard-tbl tr td:first-child, .link-smartcard-tbl tr th:first-child {
+    border-left: 2px solid #ccc;
+    border-radius: 5px 0 0 5px;
+}
+
+.link-smartcard-tbl tr td:last-child, .link-smartcard-tbl tr th:last-child {
+    border-right: 2px solid #ccc;
+    border-radius: 0 5px 5px 0;
+}
+
+.link-smartcard-tbl tr:hover td, .link-smartcard-tbl tr:hover th {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+}
+
+.link-smartcard-tbl tr:hover td:first-child, .link-smartcard-tbl tr:hover th:first-child {
+    border-left: 2px solid #000;
+}
+
+.link-smartcard-tbl tr:hover td:last-child, .link-smartcard-tbl tr:hover th:last-child {
+    border-right: 2px solid #000;
+}
+
+.actions a {
+    padding: 0 10px 0 0;
+    border-right: 1px solid #ff4713;
+    margin-right: 10px;
+}
+
+.actions a:last-child {
+    border-right: none;
+}
+
+.validation-err {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.card-images {
+    width: 41px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+}
+
+.delete-icon-btn {
+    right: 0;
+    position: absolute;
+    top: 7px;
+}
+
+.edit-icon-btn {
+    right: 30px;
+}
+
+.card-details-bx .delete-icon-btn {
+    right: 20px;
+}
+
+.billing-address {
+    word-break: break-word;
+}
+
+.mat-mdc-form-field + .mat-mdc-form-field {
+    margin-left: 8px;
+}
+
+.account-link-smartcard {
+    margin-top: 32px;
+}
+
+.smartcard-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.smartcard-tooltip-btns {
+    display: none;
+}
+
+.smartcard-data-txt p {
+    margin-bottom: 8px !important;
+}
+
+.smartcard-data-txt p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.smartcard-tooltip-dots {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: auto !important;
+}
+
+.address-btn-padding {
+    padding: 8.96px 18px !important;
+    position: relative;
+    top: -1px;
+}
+
+#pv-main-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+@media (max-width:991px){
+    .link-smartcard-tbl-bx{
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .smartcard-tooltip {
+        position: relative;
+    }
+
+    .smartcard-tooltip-btns {
+        background: #FFFFFF;
+        box-shadow: 8px 4px 20px rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
+        position: absolute;
+        right: 0;
+        z-index: 999;
+        padding: 0;
+        display: block;
+    }
+
+    .smartcard-tooltip-btns button {
+        padding: 15px !important;
+        margin-right: 0 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-flex .mat-button {
+        font-size: 14px !important;
+        padding: 0 !important;
+    }
+
+    .address-btn-padding {
+        padding: 11.15px 18px !important;
+    }
+}

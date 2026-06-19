@@ -1,0 +1,629 @@
+<app-header></app-header>
+<app-account-header [headerFlag]="hideHeaderFlag" class="d-none d-md-block"></app-account-header>
+<div id="rb-main" class="bg-f5 pt-4 buynow-bttm view-booking pb-5 new-theme refund-booking">
+    <div id="rb-container" class="container plr-xs-5">
+        <div id="rb-row" class="row mlr-xs--5">
+            <div id="rb-col" class="col-sm-12">
+                <a id="rb-myTrip" class="back-to-btn text-decoration-none px-xs-10" href="javascript:void(0)"
+                    (click)="redirectToMyBooking()">    
+                    <span id="rb-myTripIcon"><img id="rb-myTripImg" src="assets/images/Expand arrow.svg" alt="" class="back-img ps-2"></span>
+                    <span id="rb-myTripTxt" class="back-to-btn-txt align-middle">My Trip</span>
+                </a>
+            </div>
+            <div id="rb-col2" class="col-md-12">
+                <div id="rb-bookingRef" class="pl-20 px-xs-10 booking-txt">
+                    <h2 id="rb-bookingRefTxt" class="">Booking ref. {{BookingReferenceNumber}}
+                    </h2>
+                </div>
+            </div>
+
+        </div>
+        <div id="rb-row2" class="bg-fff p-20 br-5">
+            <h3 id="rb-journeyHeader" class="f-24 mb-3 fm-16 font-m-400 text-graphene font-600 m-text-color">Refund <span id="rb-seprator" class="d-none-768">-</span> {{refundDetailsResponse?.NoOfAdult}}
+                Adult{{refundDetailsResponse?.NoOfAdult > 1 ? 's' : ''}}
+                {{refundDetailsResponse?.NoOfChild > 0 ? ', ' + refundDetailsResponse?.NoOfChild : ''}}
+                {{refundDetailsResponse?.NoOfChild == 0
+                ? '' : (refundDetailsResponse?.NoOfChild > 1 ? 'Children' : 'Child')}}</h3>
+            <div id="rb-row3" class="row">
+                <div id="rb-col3" class="col-md-8">
+                    <div id="rb-desktopJourney" class="bg-f6 d-none d-md-block br-rb-bl-5">
+                        <div id="rb-outboundReturn" class="pt-0">
+                            <div id="rb-or-main" class="bg-f6">
+                                <div id="rb-or-inner" class="j-smry plr-15">
+                                    <div id="rb-or-row" class="row">
+                                        <div id="rb-outbound-col" class="col-md-6 px-lg-4 br-1"
+                                            [ngClass]="IsOutwardJourneyRefundable ? '' : 'return-disabled'">
+                                            <div id="rb-outbound-header" class="pt-3 pb-2 bb-1">
+                                                <div id="rb-outbound-row" class="row">
+                                                    <div id="rb-outbound-col2" class="col-6">
+                                                        <h2 id="rb-outbound-title" class="f-16 mb-0">Outbound</h2>
+                                                    </div>
+                                                    <div id="rb-outbound-col3" class="col-6 text-end">
+                                                        <p id="rb-outbound-dateTime" class="f-16 mb-0">{{refundDetailsResponse?.OutwardDetails?.DepartureDateTime.replace(' ', 'T') | date:'EEE, dd MMM yyyy'}}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="rb-outbound-body" class="j-dtls ptb-10 bb-1">
+                                                <h3 id="rb-outbound-location" class="f-18 mb-10 text-graphene">
+                                                    {{refundDetailsResponse?.OutwardDetails?.DepartureLocationName}} to
+                                                    {{refundDetailsResponse?.OutwardDetails?.ArrivalLocationName}}</h3>
+                                                <h2 id="rb-outbound-time" class="f-26 font-500 lh-40 mb-2">
+                                                    {{refundDetailsResponse?.OutwardDetails?.DepartureTime
+                                                    | convertFrom24To12Format}} <span id="rb-outbound-seprator" aria-label="to">→</span>
+                                                    {{refundDetailsResponse?.OutwardDetails?.ArrivalTime
+                                                    | convertFrom24To12Format}}</h2>
+                                                <p id="rb-outbound-duration" class="simple-btn text-graphene font-400 f-16 mb-2 upgrade-text-graphane" mat-button>
+                                                    {{refundDetailsResponse?.OutwardDetails?.Duration}} •
+                                                    {{refundDetailsResponse?.OutwardDetails?.Changes == '0' ? 'Direct' :
+                                                    refundDetailsResponse?.OutwardDetails?.Changes + '
+                                                    Change'}}</p>
+                                            </div>
+                                            <div id="rb-outbound-footer" class="ptb-10 mb-10"
+                                                [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-1'">
+                                                <div id="rb-outbound-row2" class="row">
+                                                    <div id="rb-outbound-col4" class="col-4"
+                                                        [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-5'">
+                                                        <div id="rb-outbound-logo" class="logo">
+                                                            <div id="rb-outbound-logoDiv"
+                                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator ==1 || refundDetailsResponse?.OutwardDetails?.Operator ==2">
+                                                                <img id="rb-outbound-logoImg" class="avanti-logo"
+                                                                    src="assets/images/avanti-logo-dark.svg"
+                                                                    alt="Avanti West Coast">
+                                                                <span id="rb-outbound-operatorChange" class="train-operator"
+                                                                    *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==2">&nbsp;+
+                                                                    {{refundDetailsResponse?.OutwardDetails?.OperatorChange}}</span>
+                                                            </div>
+                                                            <span id="rb-outbound-saleCompany" class="train-operator"
+                                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==3">{{refundDetailsResponse?.OutwardDetails?.SaleCompany}}</span>
+                                                            <span id="rb-outbound-multiOperator" class="train-operator"
+                                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==4">Multiple
+                                                                operators</span>
+                                                        </div>
+                                                    </div>
+                                                    <div id="rb-outbound-footerRight"
+                                                        class="col-8 text-end d-flex justify-content-end">
+                                                        <h2 id="rb-outbound-footerRightTxt" class="f-16 mb-0 font-500 pt-2">
+                                                            {{refundDetailsResponse?.OutwardDetails?.TicketType}}
+                                                            <br>
+                                                            {{IsOutwardJourneyRefundable ? "" : (IsAllOutRefunded ?
+                                                            "Refunded" : "Non refundable
+                                                            ticket")}}
+                                                        </h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="rb-return-col" class="col-md-6 px-lg-4"
+                                            [ngClass]="IsReturnJourneyRefundable ? '' : 'return-disabled'"
+                                            *ngIf="refundDetailsResponse && refundDetailsResponse?.ReturnDetails">
+                                            <div id="rb-return-header" class="pt-3 pb-2 bb-1">
+                                                <div id="rb-return-row" class="row">
+                                                    <div id="rb-return-col2" class="col-6">
+                                                        <h2 id="rb-return-title" class="f-16 mb-0">Return</h2>
+                                                    </div>
+                                                    <div id="rb-return-col3" class="col-6 text-end">
+                                                        <p id="rb-return-dateTime" class="f-16 mb-0">{{refundDetailsResponse?.ReturnDetails?.DepartureDateTime.replace(' ', 'T') | date:'EEE, dd MMM yyyy'}}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="rb-return-body" class="j-dtls ptb-10 bb-1">
+                                                <h3 id="rb-return-location" class="f-18 mb-10 text-graphene">
+                                                    {{refundDetailsResponse?.ReturnDetails?.DepartureLocationName}} to
+                                                    {{refundDetailsResponse?.ReturnDetails?.ArrivalLocationName}}</h3>
+                                                <h2 id="rb-return-time" class="f-26 font-500 lh-40 mb-2">
+                                                    {{refundDetailsResponse?.ReturnDetails?.DepartureTime
+                                                    | convertFrom24To12Format}} <span id="rb-return-seprator" aria-label="to">→</span>
+                                                    {{refundDetailsResponse?.ReturnDetails?.ArrivalTime
+                                                    | convertFrom24To12Format}}</h2>
+                                                <p id="rb-return-duration" class="simple-btn text-graphene font-400 f-16 mb-2 upgrade-text-graphane" mat-button>
+                                                    {{refundDetailsResponse?.ReturnDetails?.Duration}} •
+                                                    {{refundDetailsResponse?.ReturnDetails?.Changes == '0' ? 'Direct' :
+                                                    refundDetailsResponse?.ReturnDetails?.Changes + ' Change'}}</p>
+                                            </div>
+                                            <div id="rb-return-footer" class="ptb-10 mb-10"
+                                                [ngClass]="IsReturnJourneyRefundable ? '' : 'op-1'">
+                                                <div id="rb-return-row2" class="row">
+                                                    <div id="rb-return-col4" class="col-4"
+                                                        [ngClass]="IsReturnJourneyRefundable ? '' : 'op-5'">
+                                                        <div id="rb-return-logo" class="logo">
+                                                            <div id="rb-return-logoDiv"
+                                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator ==1 || refundDetailsResponse?.ReturnDetails?.Operator ==2">
+                                                                <img id="rb-return-logoImg" class="avanti-logo"
+                                                                    src="assets/images/avanti-logo-dark.svg"
+                                                                    alt="Avanti West Coast">
+                                                                <span id="rb-return-operator" class="train-operator"
+                                                                    *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==2">&nbsp;+
+                                                                    {{refundDetailsResponse?.ReturnDetails?.OperatorChange}}</span>
+                                                            </div>
+                                                            <span id="rb-return-saleCompany" class="train-operator"
+                                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==3">{{refundDetailsResponse?.ReturnDetails?.SaleCompany}}</span>
+                                                            <span id="rb-return-multiOperator" class="train-operator"
+                                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==4">Multiple
+                                                                operators</span>
+                                                        </div>
+                                                    </div>
+                                                    <div id="rb-return-col5"
+                                                        class="col-8 text-end d-flex justify-content-end">
+                                                        <h2 id="rb-return-nonRefund" class="f-16 mb-0 font-500 pt-2 op-1">
+                                                            {{refundDetailsResponse?.ReturnDetails?.TicketType}} <br>
+                                                            {{IsReturnJourneyRefundable ? "" : (IsAllRetRefunded ?
+                                                            "Refunded" : "Non refundable
+                                                            ticket")}}
+                                                        </h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div id="rb-journeyFooter" class="p-15">
+                            <div id="rb-row4" class="row">
+                                <div id="rb-col4" class="px-lg-4" [ngClass]="refundDetailsResponse?.IsReturnJourney ? 'col-md-12' : 'col-md-6'"
+                                    [ngClass]="IsOutwardJourneyRefundable ? '' : 'return-disabled'"
+                                    *ngIf="OutwardRefundDetails && OutwardRefundDetails.length > 0">
+                                    <h3 id="rb-journeyDetailsList" class="f-22 text-graphene mb-3 mt-2" [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-1'">{{IsOutwardJourneyRefundable ? "Select
+                                        passengers to refund" : (IsAllOutRefunded ? "Refunded" : "Not available for
+                                        refund")}}
+                                        <ng-template #refundtooltip>
+                                            <p id="rb-ticketRefund">Not all tickets can be refunded online. To find out more, read our <a id="rb-refundPolicy"
+                                                    href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey"
+                                                    target="_blank" rel="noopener" class="text-spark">refund policy</a> </p>
+                                        </ng-template>
+                                        <button id="rb-refundBtn" *ngIf="!IsOutwardJourneyRefundable && !IsAllOutRefunded" mat-button
+                                            class="simple-btn" tabindex="0" tooltipClass="coalescent  tablet"
+                                            placement="top" container="body" [ngbTooltip]="refundtooltip"
+                                            #tooltip2="ngbTooltip" [autoClose]="'outside'" triggers="click"
+                                            aria-label="Not available for refund info">
+                                            <span id="rb-refundBtnIcon" class="mt--10 d-inline-block">
+                                                <svg width="13" height="14" viewBox="0 0 13 14" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M6.3747 4.84155C5.93342 4.84155 5.5873 4.48533 5.5873 4.05468C5.5873 3.63467 5.93342 3.27845 6.3747 3.27845C6.81545 3.27845 7.1722 3.63467 7.1722 4.05468C7.1722 4.48533 6.81545 4.84155 6.3747 4.84155ZM5.78454 10.7218H6.96484V5.59651H5.78454V10.7218ZM6.38 0.620117C2.85505 0.620117 0 3.47517 0 7.00012C0 10.5251 2.85505 13.3801 6.38 13.3801C9.90495 13.3801 12.76 10.5251 12.76 7.00012C12.76 3.47517 9.90495 0.620117 6.38 0.620117Z"
+                                                        fill="#204555" />
+                                                </svg>
+                                            </span>
+                                        </button>
+                                    </h3>
+                                    <mat-checkbox id="rb-matCheckbox" class="route-details-checkbx d-block mb-2 upgrade-refund-pax-checkbox"
+                                        [(ngModel)]="IsOutwardAllPassengers" [disabled]="!IsOutwardJourneyRefundable"
+                                        (change)="onAllPassengerChange($event.checked, true)">
+                                        <div id="rb-allPaxDiv" class="sp-btn-dsn">
+                                            <span id="rb-allPaxTitle" class="f-14 ps-2 align-self-center d-block white-space-normal">All
+                                                passengers
+                                                {{createAdultChildSummaryText(OutAdultsForRefund,
+                                                OutChildForRefund)}}</span>
+                                        </div>
+                                    </mat-checkbox>
+                                    <div id="rb-railcardRefund_{{outwardRefundIndexWeb}}" *ngFor="let OutwardRefund of OutwardRefundDetails; let outwardRefundIndexWeb = index;">
+                                        <mat-checkbox id="rb-railcardMatCheckbox_{{outwardRefundIndexWeb}}" class="route-details-checkbx d-block mb-2 upgrade-refund-pax-checkbox"
+                                            [disabled]="!OutwardRefund.IsRefundable || OutwardRefund.IsRefunded"
+                                            (change)="onPassengerChange($event.checked,OutwardRefund)"
+                                            value="OutwardRefund.Selected" [(ngModel)]="OutwardRefund.Selected">
+                                            <div id="rb-railcardDiv_{{outwardRefundIndexWeb}}" class="sp-btn-dsn">
+                                                <span id="rb-railcardTitle_{{outwardRefundIndexWeb}}" class="f-14 ps-2 align-self-center d-block white-space-normal">
+                                                    {{getTravelExtraType(OutwardRefund)}}{{getRefundTypeText(OutwardRefund)}} •
+                                                    {{!OutwardRefund.IsTravelExtraExists ? (OutwardRefund.ReservedSeat ? refundDetailsResponse?.OutwardDetails?.TicketType + ' - ' : refundDetailsResponse?.OutwardDetails?.TicketType) : ''}}
+                                                    {{OutwardRefund.ReservedSeat}}
+                                                    {{OutwardRefund.IsRailcardApplied ? (OutwardRefund.IsRefunded ?
+                                                    '(railcard applied and refunded)' : '(railcard applied)')
+                                                    : (OutwardRefund.IsRefunded ? '(refunded)' : '')}}</span>
+                                            </div>
+                                        </mat-checkbox>
+                                    </div>
+                                </div>
+
+                                <div id="rb-col5" class="col-md-6 px-lg-4"
+                                    [ngClass]="IsReturnJourneyRefundable ? '' : 'return-disabled'"
+                                    *ngIf="ReturnRefundDetails && ReturnRefundDetails.length > 0">
+                                    <h3 id="rb-paxNotRefund" class="f-22 text-graphene mb-3 mt-2" [ngClass]="IsReturnJourneyRefundable ? '' : 'op-1'">{{IsReturnJourneyRefundable ? "Select
+                                        passengers to refund" : (IsAllRetRefunded ? "Refunded" : "Not available for
+                                        refund")}}
+                                        <ng-template #refundtooltip>
+                                            <p id="rb-paxNotRefundTxt">Not all tickets can be refunded online. To find out more, read our <a id="rb-paxNotRefundPolicy"
+                                                    href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey"
+                                                    target="_blank" rel="noopener" class="text-spark">refund policy</a> </p>
+                                        </ng-template>
+                                        <button id="rb-paxNotRefundBtn" *ngIf="!IsReturnJourneyRefundable && !IsAllRetRefunded" mat-button
+                                            class="simple-btn" tabindex="0" tooltipClass="coalescent  tablet"
+                                            placement="top" container="body" [ngbTooltip]="refundtooltip"
+                                            #tooltip2="ngbTooltip" [autoClose]="'outside'" triggers="click"
+                                            aria-label="Not available for refund info">
+                                            <span id="rb-paxNotRefundIcon" class="mt--10 d-inline-block">
+                                                <svg width="13" height="14" viewBox="0 0 13 14" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M6.3747 4.84155C5.93342 4.84155 5.5873 4.48533 5.5873 4.05468C5.5873 3.63467 5.93342 3.27845 6.3747 3.27845C6.81545 3.27845 7.1722 3.63467 7.1722 4.05468C7.1722 4.48533 6.81545 4.84155 6.3747 4.84155ZM5.78454 10.7218H6.96484V5.59651H5.78454V10.7218ZM6.38 0.620117C2.85505 0.620117 0 3.47517 0 7.00012C0 10.5251 2.85505 13.3801 6.38 13.3801C9.90495 13.3801 12.76 10.5251 12.76 7.00012C12.76 3.47517 9.90495 0.620117 6.38 0.620117Z"
+                                                        fill="#204555" />
+                                                </svg>
+                                            </span>
+                                        </button>
+                                    </h3>
+                                    <mat-checkbox id="rb-matCheckbox2" class="route-details-checkbx d-block mb-2 upgrade-refund-pax-checkbox"
+                                        [(ngModel)]="IsReturnAllPassengers" [disabled]="!IsReturnJourneyRefundable"
+                                        (change)="onAllPassengerChange($event.checked, false)">
+                                        <div id="rb-allPaxDiv2" class="sp-btn-dsn">
+                                            <span id="rb-allPaxTitle2" class="f-14 ps-2 align-self-center d-block white-space-normal">All
+                                                passengers
+                                                {{createAdultChildSummaryText(RetAdultsForRefund,
+                                                RetChildForRefund)}}</span>
+                                        </div>
+                                    </mat-checkbox>
+                                    <div id="rb-railcardRefund2_{{returnRefundIndexWeb}}" *ngFor="let ReturnRefund of ReturnRefundDetails; let returnRefundIndexWeb = index;">
+                                        <mat-checkbox id="rb-railcardRefund2MatCheckbox_{{returnRefundIndexWeb}}" class="route-details-checkbx d-block mb-2 upgrade-refund-pax-checkbox"
+                                            [disabled]="!ReturnRefund.IsRefundable || ReturnRefund.IsRefunded"
+                                            (change)="onPassengerChange($event.checked,ReturnRefund)"
+                                            value="ReturnRefund.Selected" [(ngModel)]="ReturnRefund.Selected">
+                                            <div id="rb-railcardRefund2Div_{{returnRefundIndexWeb}}" class="sp-btn-dsn">
+                                                <span id="rb-railcardRefund2Title_{{returnRefundIndexWeb}}" class="f-14 ps-2 align-self-center d-block white-space-normal">
+                                                    {{getRefundTypeText(ReturnRefund)}} •
+                                                    {{!ReturnRefund.IsTravelExtraExists ? (ReturnRefund.ReservedSeat ? refundDetailsResponse?.ReturnDetails?.TicketType + ' - ' : refundDetailsResponse?.ReturnDetails?.TicketType) : ''}}
+                                                    {{ReturnRefund.ReservedSeat}}
+                                                    {{ReturnRefund.IsRailcardApplied ? (ReturnRefund.IsRefunded ?
+                                                    '(railcard applied and refunded)' : '(railcard applied)')
+                                                    : (ReturnRefund.IsRefunded ? '(refunded)' : '')}}</span>
+                                            </div>
+                                        </mat-checkbox>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rbm-mobileJourney" class="d-md-none">
+                        <div id="rbm-outbound-div" class="j-smry plr-15" [ngClass]="IsOutwardJourneyRefundable ? '' : 'return-disabled'">
+                            <div id="rbm-outbound-header" class="ptb-10 bb-1">
+                                <div id="rbm-outbound-headerRow" class="row">
+                                    <div id="rbm-outbound-headerCol" class="col-5">
+                                        <h2 id="rbm-outboundTitle" class="f-16 mb-0 f-xs-14">Outbound</h2>
+                                    </div>
+                                    <div id="rbm-outbound-headerCol2" class="col-7 text-end">
+                                        <p id="rbm-outbound-headerDateTime" class="f-14 mb-0">{{refundDetailsResponse?.OutwardDetails?.DepartureDateTime.replace(' ', 'T') | date:'EEE, dd MMM yyyy'}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="rbm-outbound-body" class="j-dtls ptb-10 bb-1">
+                                <h3 id="rbm-outboundLocation" class="f-18 mb-10 text-graphene f-xs-14">
+                                    {{refundDetailsResponse?.OutwardDetails?.DepartureLocationName}} to
+                                    {{refundDetailsResponse?.OutwardDetails?.ArrivalLocationName}}</h3>
+                                <h2 id="rbm-outboundTime" class="f-32 font-500 lh-40 mb-2 f-xs-22">
+                                    {{refundDetailsResponse?.OutwardDetails?.DepartureTime
+                                    | convertFrom24To12Format}} <span id="rbm-outboundSeprator" aria-label="to">→</span>
+                                    {{refundDetailsResponse?.OutwardDetails?.ArrivalTime
+                                    | convertFrom24To12Format}}</h2>
+                                <p id="rbm-outboundDuration" class="simple-btn text-graphene font-400 f-16 mb-2 ps-0 f-xs-14 upgrade-text-graphane upgrade-m-f-14" mat-button>
+                                    {{refundDetailsResponse?.OutwardDetails?.Duration}} •
+                                    {{refundDetailsResponse?.OutwardDetails?.Changes == '0' ? 'Direct' :
+                                    refundDetailsResponse?.OutwardDetails?.Changes + ' Change'}}</p>
+                            </div>
+                            <div id="rbm-outbound-footer" class="ptb-10" [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-1'">
+                                <div id="rbm-outbound-footerRow" class="row">
+                                    <div id="rbm-outbound-footerCol" class="col-4" [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-5'">
+                                        <div id="rbm-outbound-footerLogo" class="logo">
+                                            <div id="rbm-outbound-footerLogoDiv"
+                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator ==1 || refundDetailsResponse?.OutwardDetails?.Operator ==2">
+                                                <img id="rbm-outbound-footerLogoImg" class="avanti-logo"
+                                                    src="assets/images/avanti-logo-dark.svg"
+                                                    alt="Avanti West Coast">
+                                                <span id="rbm-outbound-footerOperatorChange" class="train-operator"
+                                                    *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==2">&nbsp;+
+                                                    {{refundDetailsResponse?.OutwardDetails?.OperatorChange}}</span>
+                                            </div>
+                                            <span id="rbm-outboundSaleCompnay" class="train-operator"
+                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==3">{{refundDetailsResponse?.OutwardDetails?.SaleCompany}}</span>
+                                            <span id="rbm-outboundMultiOperator" class="train-operator"
+                                                *ngIf="refundDetailsResponse?.OutwardDetails?.Operator==4">Multiple
+                                                operators</span>
+                                        </div>
+                                    </div>
+                                    <div id="rbm-outboundRight" class="col-8 text-end d-flex justify-content-end">
+                                        <h2 id="rbm-outboundTickeyType" class="f-14 mb-0 font-500 pt-2">
+                                            {{refundDetailsResponse?.OutwardDetails?.TicketType}}
+                                            <br>
+                                            {{IsOutwardJourneyRefundable ? "" : (IsAllOutRefunded ? "Refunded" : "Non
+                                            refundable
+                                            ticket")}}
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="rbm-outboundRefundMain" class="px-1 mt-1">
+                            <div id="rbm-outboundRefundDiv" class="bg-f6 p-20 br-rb-bl-5"
+                                [ngClass]="IsOutwardJourneyRefundable ? '' : 'return-disabled'"
+                                *ngIf="OutwardRefundDetails && OutwardRefundDetails.length > 0">
+                                <h3 id="rbm-outboundNotRefund" class="f-16 text-graphene mb-2" [ngClass]="IsOutwardJourneyRefundable ? '' : 'op-1'">{{IsOutwardJourneyRefundable ? "Select passengers to
+                                    refund" : (IsAllOutRefunded ? "Refunded" : "Not available for refund")}}
+                                    <ng-template #refundtooltip>
+                                        <p id="rbm-outboundRefundTxt">Not all tickets can be refunded online. To find out more, read our <a id="rbm-outboundRefundPolicy"
+                                                href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey"
+                                                target="_blank" rel="noopener" class="text-spark">refund policy</a> </p>
+                                    </ng-template>
+                                    <button id="rbm-outboundRefundBtn" *ngIf="!IsOutwardJourneyRefundable && !IsAllOutRefunded" mat-button
+                                        class="simple-btn" tabindex="0"
+                                        tooltipClass="coalescent photocard-tooltip refund-tooltip tablet"
+                                        placement="top" container="body" [ngbTooltip]="refundtooltip"
+                                        #tooltip2="ngbTooltip" [autoClose]="'outside'" triggers="click"
+                                        aria-label="Not available for refund info">
+                                        <span id="rbm-outboundRefundIcon" class="mt--5 d-inline-block">
+                                            <svg width="13" height="14" viewBox="0 0 13 14" fill="none"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M6.3747 4.84155C5.93342 4.84155 5.5873 4.48533 5.5873 4.05468C5.5873 3.63467 5.93342 3.27845 6.3747 3.27845C6.81545 3.27845 7.1722 3.63467 7.1722 4.05468C7.1722 4.48533 6.81545 4.84155 6.3747 4.84155ZM5.78454 10.7218H6.96484V5.59651H5.78454V10.7218ZM6.38 0.620117C2.85505 0.620117 0 3.47517 0 7.00012C0 10.5251 2.85505 13.3801 6.38 13.3801C9.90495 13.3801 12.76 10.5251 12.76 7.00012C12.76 3.47517 9.90495 0.620117 6.38 0.620117Z"
+                                                    fill="#204555" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </h3>
+                                <mat-checkbox id="rbm-outboundMatCheckbox" class="route-details-checkbx me-2 f-12 d-block mb-2 upgrade-refund-checkbox"
+                                    [(ngModel)]="IsOutwardAllPassengers" [disabled]="!IsOutwardJourneyRefundable"
+                                    (change)="onAllPassengerChange($event.checked, true)">
+                                    <div id="rbm-outboundAllPaxDiv" class="sp-btn-dsn">
+                                        <span id="rbm-outboundAllPaxTitle" class="f-12 ps-2 align-self-center d-block white-space-normal">All
+                                            passengers
+                                            {{createAdultChildSummaryText(OutAdultsForRefund,
+                                            OutChildForRefund)}}</span>
+                                    </div>
+                                </mat-checkbox>
+                                <div id="rbm-outboundRefund_{{outwardRefundIndexMobile}}" *ngFor="let OutwardRefund of OutwardRefundDetails; let outwardRefundIndexMobile = index;">
+                                    <mat-checkbox id="rbm-outboundMatCheckbox_{{outwardRefundIndexMobile}}" class="route-details-checkbx me-2 f-12 d-block mb-2 upgrade-refund-checkbox"
+                                        [disabled]="!OutwardRefund.IsRefundable || OutwardRefund.IsRefunded"
+                                        (change)="onPassengerChange($event.checked,OutwardRefund)"
+                                        value="OutwardRefund.Selected" [(ngModel)]="OutwardRefund.Selected">
+                                        <div id="rbm-outboundRefundDiv_{{outwardRefundIndexMobile}}" class="sp-btn-dsn">
+                                            <span id="rbm-outboundRefundTitle_{{outwardRefundIndexMobile}}" class="f-12 ps-2 align-self-center d-block white-space-normal">
+                                                {{getTravelExtraType(OutwardRefund)}}{{getRefundTypeText(OutwardRefund)}} •
+                                                {{!OutwardRefund.IsTravelExtraExists ? (OutwardRefund.ReservedSeat ? refundDetailsResponse?.OutwardDetails?.TicketType + ' - ' : refundDetailsResponse?.OutwardDetails?.TicketType) : ''}}
+                                                {{OutwardRefund.ReservedSeat}}
+                                                {{OutwardRefund.IsRailcardApplied ? (OutwardRefund.IsRefunded ?
+                                                '(railcard applied and refunded)' : '(railcard applied)')
+                                                : (OutwardRefund.IsRefunded ? '(refunded)' : '')}}</span>
+                                        </div>
+                                    </mat-checkbox>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="rbm-returnMain" class="j-smry plr-15 mt-4" [ngClass]="IsReturnJourneyRefundable ? '' : 'return-disabled'"
+                            *ngIf="refundDetailsResponse && refundDetailsResponse?.ReturnDetails">
+                            <div id="rbm-returnHeader" class="ptb-10 bb-1">
+                                <div id="rbm-returnHeaderRow" class="row">
+                                    <div id="rbm-returnHeaderCol" class="col-5">
+                                        <h2 id="rbm-returnHeaderTitle" class="f-16 mb-0 f-xs-14">Return</h2>
+                                    </div>
+                                    <div id="rbm-returnHeaderCol2" class="col-7 text-end">
+                                        <p id="rbm-returnHeaderDateTime" class="f-14 mb-0">{{refundDetailsResponse?.ReturnDetails?.DepartureDateTime.replace(' ', 'T') | date:'EEE, dd MMM yyyy'}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="rbm-returnBody" class="j-dtls ptb-10 bb-1">
+                                <h3 id="rbm-returnBodyLocation" class="f-18 mb-10 text-graphene f-xs-14">
+                                    {{refundDetailsResponse?.ReturnDetails?.DepartureLocationName}} to
+                                    {{refundDetailsResponse?.ReturnDetails?.ArrivalLocationName}}</h3>
+                                <h2 id="rbm-returnBodyTime" class="f-32 font-500 lh-40 mb-2 f-xs-22">
+                                    {{refundDetailsResponse?.ReturnDetails?.DepartureTime
+                                    | convertFrom24To12Format}} <span id="rbm-returnBodySaprator" aria-label="to">→</span>
+                                    {{refundDetailsResponse?.ReturnDetails?.ArrivalTime
+                                    | convertFrom24To12Format}}</h2>
+                                <p id="rbm-returnBodyDuration" class="simple-btn text-graphene font-400 f-16 mb-2 ps-0 f-xs-14 upgrade-text-graphane upgrade-m-f-14" mat-button>
+                                    {{refundDetailsResponse?.ReturnDetails?.Duration}} •
+                                    {{refundDetailsResponse?.ReturnDetails?.Changes == '0' ? 'Direct' :
+                                    refundDetailsResponse?.ReturnDetails?.Changes + ' Change'}}</p>
+                            </div>
+                            <div id="rbm-returnFooter" class="ptb-10" [ngClass]="IsReturnJourneyRefundable ? '' : 'op-1'">
+                                <div id="rbm-returnFooterRow" class="row">
+                                    <div id="rbm-returnFooterCol" class="col-4" [ngClass]="IsReturnJourneyRefundable ? '' : 'op-5'">
+                                        <div id="rbm-returnFooterLogo" class="logo">
+                                            <div id="rbm-returnFooterLogoDiv"
+                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator ==1 || refundDetailsResponse?.ReturnDetails?.Operator ==2">
+                                                <img id="rbm-returnFooterLogoImg" class="avanti-logo"
+                                                    src="assets/images/avanti-logo-dark.svg"
+                                                    alt="Avanti West Coast">
+                                                <span id="rbm-returnFooterOperatorChange" class="train-operator"
+                                                    *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==2">&nbsp;+
+                                                    {{refundDetailsResponse?.ReturnDetails?.OperatorChange}}</span>
+                                            </div>
+                                            <span id="rbm-returnFooterSaleCompany" class="train-operator"
+                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==3">{{refundDetailsResponse?.ReturnDetails?.SaleCompany}}</span>
+                                            <span id="rbm-returnFooterMultiOperator" class="train-operator"
+                                                *ngIf="refundDetailsResponse?.ReturnDetails?.Operator==4">Multiple
+                                                operators</span>
+                                        </div>
+                                    </div>
+                                    <div id="rbm-returnFooterRight" class="col-8 text-end d-flex justify-content-end">
+                                        <h2 id="rbm-returnFooterRefundTitle" class="f-14 mb-0 font-500 pt-2">
+                                            {{refundDetailsResponse?.ReturnDetails?.TicketType}}
+                                            <br>
+                                            {{IsReturnJourneyRefundable ? "" : (IsAllRetRefunded ? "Refunded" : "Non
+                                            refundable
+                                            ticket")}}
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="rbm-returnRefundMain" class="px-1 mt-1">
+                            <div id="rbm-returnRefundDiv" class="bg-f6 p-20 br-rb-bl-5"
+                                [ngClass]="IsReturnJourneyRefundable ? '' : 'return-disabled'"
+                                *ngIf="ReturnRefundDetails && ReturnRefundDetails.length > 0">
+                                <h3 id="rbm-returnRefundNot" class="f-16 text-graphene mb-2" [ngClass]="IsReturnJourneyRefundable ? '' : 'op-1'">{{IsReturnJourneyRefundable ? "Select passengers to
+                                    refund" : (IsAllRetRefunded ? "Refunded" : "Not available for refund")}}
+                                    <ng-template #refundtooltip>
+                                        <p id="rbm-returnRefundP">Not all tickets can be refunded online. To find out more, read our <a id="rbm-returnRefundPolicy"
+                                                href="https://www.avantiwestcoast.co.uk/help-and-support/refund-journey"
+                                                target="_blank" rel="noopener" class="text-spark">refund policy</a> </p>
+                                    </ng-template>
+                                    <button id="rbm-returnRefundBtn" *ngIf="!IsReturnJourneyRefundable && !IsAllRetRefunded" mat-button
+                                        class="simple-btn" tabindex="0"
+                                        tooltipClass="coalescent photocard-tooltip refund-tooltip tablet"
+                                        placement="top" container="body" [ngbTooltip]="refundtooltip"
+                                        #tooltip2="ngbTooltip" [autoClose]="'outside'" triggers="click"
+                                        aria-label="Not available for refund info">
+                                        <span id="rbm-returnRefundIcon" class="mt--5 d-inline-block">
+                                            <svg width="13" height="14" viewBox="0 0 13 14" fill="none"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M6.3747 4.84155C5.93342 4.84155 5.5873 4.48533 5.5873 4.05468C5.5873 3.63467 5.93342 3.27845 6.3747 3.27845C6.81545 3.27845 7.1722 3.63467 7.1722 4.05468C7.1722 4.48533 6.81545 4.84155 6.3747 4.84155ZM5.78454 10.7218H6.96484V5.59651H5.78454V10.7218ZM6.38 0.620117C2.85505 0.620117 0 3.47517 0 7.00012C0 10.5251 2.85505 13.3801 6.38 13.3801C9.90495 13.3801 12.76 10.5251 12.76 7.00012C12.76 3.47517 9.90495 0.620117 6.38 0.620117Z"
+                                                    fill="#204555" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </h3>
+                                <mat-checkbox id="rbm-returnRefundMatCheckbox" class="route-details-checkbx me-2 f-12 d-block mb-2 upgrade-refund-checkbox"
+                                    [(ngModel)]="IsReturnAllPassengers" [disabled]="!IsReturnJourneyRefundable"
+                                    (change)="onAllPassengerChange($event.checked, false)">
+                                    <div id="rbm-returnRefundPaxDiv" class="sp-btn-dsn">
+                                        <span id="rbm-returnRefundPaxTitle" class="f-12 ps-2 align-self-center d-block white-space-normal">All
+                                            passengers
+                                            {{createAdultChildSummaryText(RetAdultsForRefund,
+                                            RetChildForRefund)}}</span>
+                                    </div>
+                                </mat-checkbox>
+                                <div id="rbm-returnRefundLoop_{{returnRefundIndexMobile}}" *ngFor="let ReturnRefund of ReturnRefundDetails; let returnRefundIndexMobile = index;">
+                                    <mat-checkbox id="rbm-returnRefundMatCheckbox_{{returnRefundIndexMobile}}" class="route-details-checkbx me-2 f-12 d-block mb-2 upgrade-refund-checkbox"
+                                        [disabled]="!ReturnRefund.IsRefundable || ReturnRefund.IsRefunded"
+                                        (change)="onPassengerChange($event.checked,ReturnRefund)"
+                                        value="ReturnRefund.Selected" [(ngModel)]="ReturnRefund.Selected">
+                                        <div id="rbm-returnRefundDiv_{{returnRefundIndexMobile}}" class="sp-btn-dsn">
+                                            <span id="rbm-returnRefundTitle_{{returnRefundIndexMobile}}" class="f-12 ps-2 align-self-center d-block white-space-normal">
+                                                {{getRefundTypeText(ReturnRefund)}} •
+                                                {{!ReturnRefund.IsTravelExtraExists ? (ReturnRefund.ReservedSeat ? refundDetailsResponse?.ReturnDetails?.TicketType + ' - ' : refundDetailsResponse?.ReturnDetails?.TicketType) : ''}}
+                                                {{ReturnRefund.ReservedSeat}}
+                                                {{ReturnRefund.IsRailcardApplied ? (ReturnRefund.IsRefunded ?
+                                                '(railcard applied and refunded)' : '(railcard applied)')
+                                                : (ReturnRefund.IsRefunded ? '(refunded)' : '')}}</span>
+                                        </div>
+                                    </mat-checkbox>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div id="rb-refundSummaryMain" class="col-md-4 mt-3 mt-md-0">
+                    <div id="rb-refundSummaryDiv" class="px-1 px-md-0">
+                        <h3 id="rb-refundSummaryTitle" class="text-graphene f-24 mb-2 f-xs-20">Refund summary</h3>
+                        <table id="rb-refundSummaryTable" class="w-100 lh-30 f-16 f-xs-12" aria-label="">
+                            <tr id="rb-rs-tr" class="d-none">
+                                <th id="rb-rs-th" colspan="2">(none)</th>
+                            </tr>
+                            <tr id="rb-rs-tr2">
+                                <td id="rb-rs-ticketPrice" class="text-start">Total train ticket price</td>
+                                <td id="rb-rs-ticketTotalPrice" class="text-end">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(refundDetailsResponse?.RefundSummary?.TotalPrice)}}</td>
+                            </tr>
+                            <tr id="rb-rs-tr3">
+                                <td id="rb-rs-refundAmountTitle" class="text-start">Refund amount</td>
+                                <td id="rb-rs-refundAmountTd" class="text-end">
+                                    {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(RefundAmount)}}
+                                </td>
+                            </tr>
+                            <tr id="rb-rs-tr4">
+                                <td id="rb-rs-adminFeeTitle" class="text-start">Admin fee</td>
+                                <td id="rb-rs-adminFeeTd" class="text-end">
+                                    - {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(AdminFee)}}</td>
+                            </tr>
+                            <tr id="rb-rs-tr6" *ngIf="NonRefundableAmount && NonRefundableAmount != 0">
+                                <td id="rb-rs-nonRefundableAmountTitle" class="text-start pb-2">Non-refundable amount
+                                    <span>
+                                        <ng-template #nonrefundtooltip>
+                                            <p class="mb-0" id="rb-ticketnonRefund">The previous ticket was non-refundable.</p>
+                                        </ng-template>
+                                        <button id="rb-nonrefundBtn" mat-button
+                                            class="simple-btn non-refund-tooltip-btn" tabindex="0" tooltipClass="coalescent tablet non-refund-tooltip"
+                                            placement="top" container="body" [ngbTooltip]="nonrefundtooltip"
+                                            #tooltip2="ngbTooltip" [autoClose]="'outside'" triggers="click"
+                                            aria-label="Non-refundable amount">
+                                            <span id="rb-refundBtnIcon" class="mt--8 d-inline-block">
+                                                <svg width="13" height="14" viewBox="0 0 13 14" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M6.3747 4.84155C5.93342 4.84155 5.5873 4.48533 5.5873 4.05468C5.5873 3.63467 5.93342 3.27845 6.3747 3.27845C6.81545 3.27845 7.1722 3.63467 7.1722 4.05468C7.1722 4.48533 6.81545 4.84155 6.3747 4.84155ZM5.78454 10.7218H6.96484V5.59651H5.78454V10.7218ZM6.38 0.620117C2.85505 0.620117 0 3.47517 0 7.00012C0 10.5251 2.85505 13.3801 6.38 13.3801C9.90495 13.3801 12.76 10.5251 12.76 7.00012C12.76 3.47517 9.90495 0.620117 6.38 0.620117Z"
+                                                        fill="#204555" />
+                                                </svg>
+                                            </span>
+                                        </button>
+                                    </span>
+                                </td>
+                                <td id="rb-rs-nonRefundableAmountTd" class="text-end pb-2">
+                                    - {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(NonRefundableAmount)}}
+                                </td>
+                            </tr>
+                            <tr id="rb-rs-tr5" class="bb-1 bt-1">
+                                <td id="rb-rs-totalRefundAmountTitle" class="text-start py-2 font-500">Total refund amount</td>
+                                <td id="rb-rs-totalRefundAmountTd" class="text-end py-2 font-500">
+                                    {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(TotalRefundAmount)}}
+                                </td>
+                            </tr>
+                        </table>
+                        <p id="rb-refundPax" class="f-16 mt-4 mb-3 f-xs-14" *ngIf="OutSelectedAdultsForRefund != 0 || OutSelectedChildForRefund != 0 || RetSelectedAdultsForRefund != 0 ||
+                        RetSelectedChildForRefund != 0">Refund
+                            <span id="rb-refundAdultPax"
+                                *ngIf="OutSelectedAdultsForRefund != 0 || OutSelectedChildForRefund != 0">{{OutSelectedAdultsForRefund}}
+                                adult{{OutSelectedAdultsForRefund > 1 ? 's' : ''}}{{OutSelectedChildForRefund > 0 ? ', '
+                                +
+                                OutSelectedChildForRefund : ''}}
+                                {{OutSelectedChildForRefund == 0
+                                ? '' : (OutSelectedChildForRefund > 1 ? 'children' :
+                                'child')}} - {{refundDetailsResponse?.IsReturnJourney ? 'outbound and return' :
+                                'outbound'}}
+                                {{refundDetailsResponse?.IsReturnJourney ? '' : (RetSelectedAdultsForRefund == 0 &&
+                                RetSelectedChildForRefund == 0 ? 'only' : 'and ')}}</span>
+                            <span id="rb-refundChildPax" *ngIf="!refundDetailsResponse?.IsReturnJourney && (RetSelectedAdultsForRefund != 0 ||
+                            RetSelectedChildForRefund != 0)">{{RetSelectedAdultsForRefund}}
+                                adult{{RetSelectedAdultsForRefund > 1 ? 's' : ''}}{{RetSelectedChildForRefund > 0 ? ', '
+                                +
+                                RetSelectedChildForRefund : ''}}
+                                {{RetSelectedChildForRefund == 0
+                                ? '' : (RetSelectedChildForRefund > 1 ? 'children' :
+                                'child')}} - return {{(OutSelectedAdultsForRefund == 0 && OutSelectedChildForRefund == 0
+                                ?
+                                'only' : '')}}</span>
+                        </p>
+                        <p id="rb-refundOutboundReturn" class="f-16 mb-3 f-xs-14" [ngClass]="(OutSelectedAdultsForRefund == 0 && OutSelectedChildForRefund == 0 && RetSelectedAdultsForRefund == 0 &&
+                        RetSelectedChildForRefund == 0) ? 'mt-4' : 'mt-2'" *ngIf="OutSelectedTravelExtraForRefund != 0 || RetSelectedTravelExtraForRefund != 0">Refund
+                            <span id="rb-refundOutboundReturnTitle"
+                                *ngIf="OutSelectedTravelExtraForRefund != 0">{{OutSelectedTravelExtraForRefund}}
+                                travel extra{{OutSelectedTravelExtraForRefund > 1 ? 's' : ''}} - {{refundDetailsResponse?.IsReturnJourney ? 'outbound and return' :
+                                'outbound'}}
+                                {{refundDetailsResponse?.IsReturnJourney ? '' : (RetSelectedTravelExtraForRefund == 0 ? 'only' : 'and ')}}</span>
+                            <span id="rb-refundTravelExtra" *ngIf="!refundDetailsResponse?.IsReturnJourney && RetSelectedTravelExtraForRefund != 0">{{RetSelectedTravelExtraForRefund}}
+                                travel extra{{RetSelectedTravelExtraForRefund > 1 ? 's' : ''}} - return {{(OutSelectedTravelExtraForRefund == 0 ? 'only' : '')}}</span>
+                        </p>
+                        <button id="rb-confirmRefundBtn" class="default-btn w-100 mb-3" mat-button (click)="processOrderRefund()"
+                            [disabled]="TotalRefundAmount <= 0 || IsDisabledConfirmRefund">Confirm
+                            refund</button>
+                        <p id="rb-confirmRefundTitle" class="f-16 f-xs-12 mt-2 mt-md-0 mb-3 mb-md-0" *ngIf="!IsDisabledConfirmRefund">It’s an offence to claim a refund on a used
+                            ticket. We
+                            undertake regular checks
+                            to identify fradulent claims. Please only click “Confirm refund” button if you <span id="rb-refundHaveNot"
+                                class="font-500">HAVE NOT</span>
+                            travelled.
+                        </p>
+                        <div id="rb-refundMsg" class="refund-msg p-12 mmb-16" *ngIf="IsDisabledConfirmRefund">
+                            <p id="rb-noRefundMsg" class="f-14 refund-color lh-22 m-0 mb-24">
+                                Sorry, we cannot refund this ticket because it has a <span id="rb-refundBikeReservation" class="font-700">Bike reservation included.</span> Please visit our help page to claim a refund.
+                            </p>
+                            <div id="rb-helpSupportDiv" class="text-end">
+                                <a id="rb-helpSupportTitle" href="https://www.railhelp.co.uk/avantiwestcoast/refunds" target="_blank" rel="noopener" class="f-14 text-error font-700 lh-22 ahover">
+                                    Go to Help & Support
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="rb-col6" class="col-12">
+                    <div id="rb-refundPayment" class="px-1 px-md-2 py-md-2">
+                        <p id="rb-refundPaymentTitle" class="f-16 mt-1 mt-md-3 mb-2 f-xs-12">Your refund will be applied to the same payment method
+                            you provided
+                            when purchasing your ticket(s).
+                            <br> Please allow up to 5 days for it to be credited in your account.
+                        </p>
+                        <button id="rb-cancelRefundBtn" class="default-btn-outline mt-2 w-xs-100" mat-button (click)="cancelRefund()">Cancel
+                            refund</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

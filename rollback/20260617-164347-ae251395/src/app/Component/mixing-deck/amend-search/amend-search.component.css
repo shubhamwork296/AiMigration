@@ -1,0 +1,323 @@
+.amend-search-bx {
+    padding: 30px 15px;
+    position: relative;
+}
+
+.no-data {
+    pointer-events: none;
+}
+
+.close-btn {
+    position: absolute;
+    right: 0;
+    top: 35px;
+    background: transparent !important;
+    padding: 0 8px !important;
+}
+
+.amend-search-bx .mat-tab-label-content {
+    font-size: 16px !important;
+    font-weight: 400;
+}
+
+.amend-tab-bxs .col-md-6:first-child {
+    padding-right: 30px;
+}
+
+.amend-tab-bxs .col-md-6:last-child {
+    padding-left: 30px;
+}
+
+.routingicon {
+    position: absolute;
+    right: -33px;
+    top: 0px;
+    padding: 0;
+    z-index: 9;
+}
+
+.search-via-select-bx {
+    width: 30%;
+}
+
+.search-via-select {
+    width: 100%;
+    border: none;
+    border-radius: 4px 0 0 4px;
+    border-right: 1px solid #D6D1CA;
+    background: #fff;
+    color: #131E29;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.search-via-input {
+    border-radius: 0 4px 4px 0;
+    color: #131E29;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    width: 100%;
+    line-height: 20px;
+    background: #fff !important;
+    opacity: 1 !important;
+}
+
+.mat-select {
+    font-size: 16px;
+    max-height: 39px;
+}
+
+.mat-expansion-panel-header {
+    font-size: 16px;
+}
+
+input {
+    font-size: 16px;
+    font-weight: 400;
+    color: #131E29;
+    line-height: 20px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 4px;
+    border: none;
+    max-height: 39px;
+}
+
+.returndate-amend-search {
+    flex-direction: row-reverse;
+}
+
+.amend-search-bx input {
+    box-sizing: border-box;
+}
+
+.search-via-select-bx {
+    min-width: 124px !important;
+}
+
+@media (min-width:768px) {
+    .amend-tab-bxs.returndate-amend-search .col-md-6:first-child {
+        padding-right: 15px;
+        padding-left: 30px;
+    }
+    .amend-tab-bxs.returndate-amend-search .col-md-6:last-child {
+        padding-right: 30px;
+        padding-left: 15px;
+    }
+}
+
+@media (max-width:767px) {
+    .routingicon {
+        position: absolute;
+        right: 26px;
+        top: 19px;
+        transform: rotate(90deg);
+        padding: 0;
+        z-index: 9;
+    }
+    .routingicon img {
+        width: 34px;
+    }
+    .close-btn {
+        right: 6px;
+        top: 4px;
+    }
+    .amend-tab-bxs .col-md-6:first-child {
+        padding-right: 15px;
+    }
+    .amend-tab-bxs .col-md-6:last-child {
+        padding-left: 15px;
+    }
+    .amend-search-bx {
+        padding: 40px 15px 15px;
+        position: relative;
+    }
+    mat-form-field {
+        height: 32px;
+    }
+    #arrivalSeason {
+        padding-left: 12px !important;
+    }
+
+    .search-via-select-bx {
+        min-width: 124px !important;
+    }
+}
+
+.adult-child-popup .value-button {
+    display: inline-block;
+    border: 1px solid #ddd;
+    margin: 0px;
+    width: 40px;
+    height: 20px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 11px 0;
+    background: #eee;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.adult-child-popup .value-button:hover {
+    cursor: pointer;
+}
+
+.adult-child-popup #decrease,
+.adult-child-popup #decrease2 {
+    height: 36px;
+    padding: 5px 0;
+    border: none;
+    border-right: 1px solid #204555;
+    width: 45px;
+    background: #fff;
+    margin-top: -3px;
+}
+
+.adult-child-popup #increase,
+.adult-child-popup #increase2 {
+    height: 36px;
+    padding: 5px 0;
+    border: none;
+    border-left: 1px solid #204555;
+    width: 45px;
+    background: #fff;
+    margin-top: -3px;
+}
+
+.adult-child-popup #input-wrap {
+    margin: 0px;
+    padding: 0px;
+}
+
+.adult-child-popup input#number,
+.adult-child-popup input#number2 {
+    text-align: center;
+    border: none;
+    margin: 0px;
+    width: 45px;
+    height: 36px;
+    background: #EEEEEE;
+    font-weight: 700;
+    display: inline-block;
+    padding: 5px 0;
+}
+
+.adult-child-popup input[type=number]::-webkit-inner-spin-button,
+.adult-child-popup input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.adult-child-popup {
+    background: #E9EDEE;
+    padding: 20px;
+    width: 275px;
+    border-radius: 6px;
+    position: absolute;
+    top: 46px;
+    right: 0;
+    display: none;
+}
+
+.adult-child-popup p {
+    display: inline-block;
+    margin: 6px 0 0;
+}
+
+.adultbx {
+    float: right;
+    border: 1px solid #204555;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.adult-child-popup-row {
+    height: 36px;
+}
+
+.adult-child-popup::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #e9edee;
+    transform: rotate(45deg);
+    top: -5px;
+    right: 40px;
+}
+
+.hide {
+    display: none;
+}
+
+.show {
+    display: block;
+}
+
+mat-expansion-panel-header {
+    max-height: 39px;
+}
+
+.mat-form-field {
+    max-height: 39px;
+}
+
+.railcard-bx .mat-form-field {
+    max-height: none !important;
+}
+
+.railcard-bx .one-two-1 {
+    width: 50%;
+    border-radius: 4px 0 0 4px;
+    background: #fff;
+    border: 1px solid #D6D1CA;
+    box-sizing: content-box;
+}
+
+.mat-form-field.mat-form-field-invalid .mat-form-field-label {
+    color: inherit;
+}
+
+.railcard-bx .one-two-2 {
+    width: 50%;
+    border-radius: 0 4px 4px 0;
+    background: #fff;
+    border: 1px solid #D6D1CA;
+    border-left: none;
+    box-sizing: content-box;
+}
+
+.amend-tab-bxs mat-expansion-panel-header {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.one-adult-child {
+    width: 100%;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.py-40 {
+    padding: 40px 0;
+}
+
+.dropdown-icn-padding input {
+    padding-right: 24px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.close-btn:focus-visible {
+    background: #ffffff24 !important;
+}
+
+.default-btn:focus-visible {
+    box-shadow: 0 0 0 0.2rem rgb(255 255 255 / 40%) !important;
+}

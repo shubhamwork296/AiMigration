@@ -1,0 +1,350 @@
+<app-header></app-header>
+<div id="ss-form-main" class="small-qtt">
+    <div id="ss-form-container" class="container plr-xs-5 season-container upgrade-season-container">
+        <div id="ss-form-row" class="row align-items-center route-position">
+            <div id="ss-form-journey-from" class="col-md-3 pe-lg-0 px-3 upgrade-season-input-container">
+                <mat-form-field id="ss-form-journey-from-mat" class="example-full-width default-input with-parking-btn" floatLabel="never">
+                    <input id="ss-form-journey-from-input" matInput placeholder="Journey from" class="mb-2 mb-md-0" (click)="openAmend()" (keypress)="openAmend()"
+                        [(ngModel)]="searchRequest.DepartureLocationName">
+                </mat-form-field>
+            </div>
+            <div id="ss-form-route-icon-div" class="col-md-1 text-center route-icon px-0 route-icon-position">
+                <button id="ss-form-route-icon-btn" aria-label="Swap Route" class="px-0" mat-button (click)="onChangeStationsSearch()"><img id="ss-form-route-icon-img"
+                        src="assets/images/routing_icon.png" alt=""></button>
+            </div>
+            <div id="ss-form-journey-to" class="col-md-3 ps-lg-0 px-3 upgrade-season-input-container">
+                <mat-form-field id="ss-form-journey-to-mat" class="example-full-width default-input with-parking-btn" floatLabel="never">
+                    <input id="ss-form-journey-to-input" matInput placeholder="Journey to" class="mb-2 mb-md-0" (click)="openAmend()" (keypress)="openAmend()"
+                        [(ngModel)]="searchRequest.ArrivalLocationName">
+                </mat-form-field>
+            </div>
+            <div id="ss-form-journeyType-div" class="col-md-3">
+                <h1 id="ss-form-journeyType-title" class="font-white mb-md-0 c-h5">{{journeyType}} for {{passengerDetailLabel}}</h1>
+            </div>
+            <div id="ss-form-cta-area" class="col-md-2">
+                <ng-template #tipContent>
+                    <div id="ss-form-changeMind" class="d-flex">
+                        <div id="ss-form-changeMind-icon" class="align-self-center"><img id="ss-form-changeMind-img" src="assets/images/help.svg" alt=""></div>
+                        <p id="ss-form-changeMind-title" class="flex-fill text-start mb-0 text-coniston font-weight-500 change-mind">Change your
+                            mind?<br>Click here to change your search criteria</p>
+                        <div id="ss-form-changeMind-tooltip" class="mt-1"><img id="ss-form-changeMind-tooltip-img" class="tooltip-close"
+                                (click)="tooltip2.toggle();checkAllTooltipStatus();"
+                                src="assets/images/Close-white.svg" alt=""></div>
+                    </div>
+                </ng-template>
+                <button id="ss-form-edit-btn" aria-label="Edit" mat-button class="default-btn-2 w-100 p-relative-z-0" triggers="none" tooltipClass="coalescent tablet"
+                    placement="top" container="body" [autoClose]="false" [ngbTooltip]="tipContent"
+                    #tooltip2="ngbTooltip" (click)="openAmend()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="ss-body" class="bg-f5 pt-15 pb-85 buynow-bttm-mixingdeck">
+    <div id="ss-body-container" class="container plr-xs-5 season-container upgrade-season-container">
+        <div id="ss-body-header-row" class="row">
+            <div id="ss-body-header-col" class="col-lg-10 col-md-9">
+                <table id="ss-body-header-table" class="progressbar d-md-table d-sm-none d-none p-relative z-index-0" aria-label="">
+                    <!-- Heena Gupta start -->
+                    <tr id="ss-body-empty-tr">
+                        <th id="ss-body-empty-th" style="display: none;" colspan="5">Empty</th>
+                    </tr>
+                    <!-- Heena Gupta end -->
+                    <tr id="ss-counter-tr" class="counter">
+                        <td id="ss-chooseTicket-td" class="active">
+                            <div id="ss-chooseTicket-title" aria-label="step 1 Choose a ticket">1</div>
+                        </td>
+                        <td id="ss-travelExtras-td">
+                            <div id="ss-travelExtras-title" aria-label="step 2 Add travel extras">2</div>
+                            <span id="ss-travelExtras-span"></span>
+                        </td>
+                        <td id="ss-delivery-td" *ngIf="!commonServices.doesDeliveryPageSkipped()">
+                            <div id="ss-delivery-title" aria-label="step 3 Delivery">3</div>
+                            <span id="ss-delivery-span"></span>
+                        </td>
+                        <td id="ss-review-td">
+                            <div id="ss-review-title" aria-label="step 4 Review">{{setReviewBuyPageStepNoForSeason()}}</div>
+                            <span id="ss-review-span"></span>
+                        </td>
+                        <td id="ss-payment-td">
+                            <div id="ss-payment-title" aria-label="step 5 Payment">{{setPaymentDetailPageStepNoForSeason()}}</div>
+                            <span id="ss-payment-span"></span>
+                        </td>
+                    </tr>
+                    <tr id="ss-header-desc" class="descriptions upgrade-season-steps-txt">
+                        <td id="ss-header-chooseTicket" class="active">Choose a ticket</td>
+                        <td id="ss-header-travelExtras">Add travel extras</td>
+                        <td id="ss-header-delivery" *ngIf="!commonServices.doesDeliveryPageSkipped()">Delivery</td>
+                        <td id="ss-header-review">{{commonServices.doesDeliveryPageSkipped() ? 'Delivery & Review' : 'Review'}}</td>
+                        <td id="ss-header-payment">Payment</td>
+                    </tr>
+                </table>
+            </div>
+            <div id="ss-header-help-div" class="col-lg-2 col-md-3">
+                <button id="ss-header-help-btn" mat-button class="default-btn-outline w-100 mt-10 show-hide-help-btn p-relative-z-0" (click)="showHelp();">{{IsHelpPopupVisible==false?'Show':'Hide'}}
+                    Help?</button>
+            </div>
+        </div>
+        <div id="ss-journey-main" class="row">
+            <div id="ss-journey-col" class="col-md-12">
+                <div id="ss-journey-theader" class="Journey-theader mt-20">
+                    <div id="ss-journey-web-row" class="row laptop-view d-none d-md-flex">
+                        <div id="ss-journey-web-station-area" class="col-lg-7 col-md-12 mb-2 mb-md-0 align-self-sm-center">
+                            <div id="ss-journey-web-station" class="d-flex justify-content-between justify-content-md-start">
+                                <div id="ss-journey-web-station-div" class="jrny-to-from">
+                                    <p id="ss-journey-web-station-title" class="mt-md-0">{{ departure }} <img id="ss-journey-web-station-icon"
+                                            src="assets/images/arrow-right-light.png" alt="" class="arrow-img">
+                                        {{ arrival }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="ss-journey-web-time" class="col-lg-5 col-md-12">
+                            <div id="ss-journey-web-time-inner" class="mix-day-btns">
+                                <button id="ss-journey-web-previous-btn" mat-button class="pre-btn ps-0 ps-md-3 upgrade-date-btn p-relative-z-0"
+                                    [disabled]="ongoingDateString == currentDateString"
+                                    (click)="onClickGetPreviousDaySearch()"><img id="ss-journey-web-previous-btn-img"
+                                        src="assets/images/Expand-left.png" alt=""> Previous
+                                    Day</button>
+                                <div id="ss-journey-web-date" mat-button class="mid-btn mat-button mat-button-base text-center upgrade-mid-btn">
+                                    {{searchRequest.DepartureTimesStartShow | date:'EEEE'}} <br>
+                                    <span id="ss-journey-web-date2"
+                                        class="font-500">{{searchRequest.DepartureTimesStartShow | date:'d LLL'}}</span>
+                                </div>
+                                <button id="ss-journey-web-next-btn" mat-button class="nxt-btn pe-0 pe-md-3 upgrade-date-btn p-relative-z-0"
+                                    [disabled]="ongoingDateString >= maxDate" (click)="onClickGetNextDaySearch()"> Next
+                                    Day <img id="ss-journey-web-next-btn-img" src="assets/images/Expand-right.png" alt=""></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ss-journey-mobile-row" class="row mobile-view d-md-none">
+                        <div id="ss-journey-mobile-col" class="col-md-5 upgrade-col-px-0">
+                            <div id="ss-journey-mobile-inner" class="mix-day-btns">
+                                <p id="ss-journey-mobile-departure" class="align-items-center d-flex w-50 m-0"><span id="ss-journey-mobile-departure-title" class="max-w-50">{{ departure }}</span>
+                                    <img id="ss-journey-mobile-arrow-icon" src="assets/images/arrow-right-light.png" alt="" class="arrow-img">
+                                    <span id="ss-journey-mobile-arrival-title" class="max-w-50">{{ arrival }}</span></p>
+                                <div id="ss-journey-mobile-day-time" class="w-50 d-flex justify-content-end">
+                                    <button id="ss-journey-mobile-previous-btn" aria-label="Expand" mat-button style="color:#f7f5f5" class="pre-btn ps-0 ps-md-3"
+                                        [disabled]="ongoingDateString == currentDateString"
+                                        (click)="onClickGetPreviousDaySearch()"><img id="ss-journey-mobile-previous-btn-icon"
+                                            src="assets/images/Expand-left.png" alt=""></button>
+                                    <button id="ss-journey-mobile-time" aria-label="Departure" mat-button class="mid-btn bg-transparent text-fff">
+                                        {{searchRequest.DepartureTimesStartShow | date:'EEEE'}} <br>
+                                        <span id="ss-journey-mobile-time-title"
+                                            class="font-500">{{searchRequest.DepartureTimesStart | date:'d LLL'}}</span>
+                                    </button>
+                                    <button id="ss-journey-mobile-next-btn" aria-label="Expand Right" mat-button class="nxt-btn pe-0 pe-md-3"
+                                        (click)="onClickGetNextDaySearch()"><img id="ss-journey-mobile-next-btn-img"
+                                            src="assets/images/Expand-right.png" alt=""></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="ss-tt-main" class="row mtb-10" [class.hide]="searchRequest.IsReturnRequest">
+            <div class="col-md-12" id="radiogroupr">
+                <div id="ss-tt-season-type" class="season-types">
+                    <div id="ss-tt-season-type-inner" class="types-parent">
+                        <div id="ss-tt-season-weekly" class="type-name">Weekly</div>
+                        <div id="ss-tt-season-flexi" class="type-name">Flexi Season</div>
+                        <div id="ss-tt-season-monthly" class="type-name">Monthly</div>
+                        <div id="ss-tt-season-annual" class="type-name">Annual</div>
+                        <div id="ss-tt-season-custom" class="type-name">Custom</div>
+                    </div>
+                    <div id="ss-tt-season-action" class="action">
+                    </div>
+                </div>
+                <ng-template #tipContent17>
+                    <div id="ss-tt-season-msg" class="d-flex">
+                        <div id="ss-tt-season-msg-icon" class="align-self-center"><img id="ss-tt-season-msg-img" src="assets/images/help.svg" alt=""></div>
+                        <p id="ss-tt-season-msg-title" class="flex-fill p-2 text-start mb-0 text-coniston font-weight-500">Choose a ticket to suit yours needs.<br> 
+                            Some tickets are more flexible than others</p>
+                            <div id="ss-tt-season-msg-tooltip-div" class="mt-1">
+                                <img id="ss-tt-season-msg-tooltip-img" class="tooltip-close" (click)="tooltip17.toggle();checkAllTooltipStatus();" 
+                                src="assets/images/Close-white.svg" alt="">
+                            </div>
+                        </div> 
+                    </ng-template>
+                <mat-radio-group id="ss-tt-mat-radio-group" aria-labelledby="radiogroupr">
+                    <fieldset id="ss-tt-fieldset">
+                        <legend id="ss-tt-legend" style="display: none;">Mat Radio Group</legend>
+                    <div id="ss-tt-season-list" class="season-list" *ngIf="searchSubscriptionResponse != null">
+                        <div id="ss-tt-season-loop_{{seasonTypeListIndex}}" class="season-row"
+                            *ngFor="let eligibleOffers of searchSubscriptionResponse.SeasonEligibleOffers; let seasonTypeListIndex = index">
+                            <div id="ss-tt-season-list_{{seasonTypeListIndex}}" class="seasons">
+                                <div id="ss-tt-seasonWeekly-main_{{seasonTypeListIndex}}" [class]="(eligibleOffers?.WeeklyOffers?.OfferId == selectedOfferId && eligibleOffers?.WeeklyOffers?.Price == selectedPrice && eligibleOffers?.WeeklyOffers?.ServiceId == selectedServiceId) ? 'season season-weekly selected' : 'season season-weekly'"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.WeeklyOffers != null" (click)="selectedSeason(eligibleOffers?.WeeklyOffers, seasonTypeListIndex)" triggers="none" tooltipClass="coalescent season-help2" placement="bottom" [autoClose]="false" [ngbTooltip]="tipContent17"
+                                    #tooltip17="ngbTooltip" container="body" >
+                                    <button id="ss-tt-seasonWeekly-btn_{{seasonTypeListIndex}}" aria-label="Info for weekly season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonWeekly-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="" *ngIf="(eligibleOffers?.WeeklyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex) == false">
+                                        <img id="ss-tt-seasonWeekly-infoIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon.svg" alt="" *ngIf="(eligibleOffers?.WeeklyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex)">
+                                    </button>
+                                    <p id="ss-tt-seasonWeekly-duration_{{seasonTypeListIndex}}"><span id="ss-tt-seasonWeekly-durationType_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.WeeklyOffers.DurationType }}: </span><span id="ss-tt-seasonWeekly-ticketClass_{{seasonTypeListIndex}}">{{ eligibleOffers.WeeklyOffers.TicketClass }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonWeekly-sourceStation_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.WeeklyOffers.SourceStation }} to {{ eligibleOffers.WeeklyOffers.DestinationStation }}</p>
+                                    <p id="ss-tt-seasonWeekly-desc_{{seasonTypeListIndex}}">{{ eligibleOffers.WeeklyOffers.Description }}</p>
+                                    <mat-radio-button id="ss-tt-seasonWeekly-mat-radio-btn_{{seasonTypeListIndex}}" class="season-select-radio"
+                                    [value]="eligibleOffers.WeeklyOffers"
+                                    [checked]="(eligibleOffers.WeeklyOffers.OfferId == selectedOfferId && eligibleOffers?.WeeklyOffers?.Price == selectedPrice && eligibleOffers?.WeeklyOffers?.ServiceId == selectedServiceId)"
+                                    (click)="selectedSeason(eligibleOffers.WeeklyOffers, seasonTypeListIndex)"><span id="ss-tt-seasonWeekly-offer_{{seasonTypeListIndex}}" style="display: none;">Weekly Offer</span>
+                                    </mat-radio-button>
+                                    <p id="ss-tt-seasonWeekly-valid_{{seasonTypeListIndex}}"><span id="ss-tt-seasonWeekly-validTill_{{seasonTypeListIndex}}" class="font-500">Valid
+                                            till: </span> <span id="ss-tt-seasonWeekly-expiry_{{seasonTypeListIndex}}"> {{ eligibleOffers.WeeklyOffers.Expiry }}</span>
+                                    </p>
+                                    <span id="ss-tt-seasonWeekly-price_{{seasonTypeListIndex}}" class="cost-value"><span id="ss-tt-seasonWeekly-currency_{{seasonTypeListIndex}}">{{ sharedSibling.currencySymbol(eligibleOffers.WeeklyOffers.Currency) }}</span>{{ sharedSibling.formatPrice(eligibleOffers.WeeklyOffers.Price) }}</span>
+                                </div>
+                                <div id="ss-tt-seasonWeekly2-main_{{seasonTypeListIndex}}" class="season season-not-available"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.WeeklyOffers == null" triggers="none" tooltipClass="coalescent season-help2" placement="bottom" [autoClose]="false" [ngbTooltip]="tipContent17" #tooltip17="ngbTooltip" container="body">
+                                    <button id="ss-tt-seasonWeekly2-btn_{{seasonTypeListIndex}}" aria-label="Info for weekly season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonWeekly2-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="">
+                                    </button>
+                                    <p id="ss-tt-seasonWeekly2-title_{{seasonTypeListIndex}}"><span id="ss-tt-seasonWeekly2-span_{{seasonTypeListIndex}}" class="font-500">Weekly: </span>
+                                    </p>
+                                    <p id="ss-tt-seasonWeekly2-notAvailable_{{seasonTypeListIndex}}" *ngIf="searchSubscriptionResponse.Request.IsWeekly">Not Available</p>
+                                    <button id="ss-tt-seasonWeekly2-searchBtn_{{seasonTypeListIndex}}" *ngIf="!searchSubscriptionResponse.Request.IsWeekly" (click)="openAmend()" class="spark-link cursor-pointer-hover simple-btn upgrade-season-add-to-search-btn" mat-button>Add to search</button>
+                                </div>
+                                <div id="ss-tt-seasonFlexi-main_{{seasonTypeListIndex}}" [class]="(eligibleOffers?.FlexiOffers?.OfferId == selectedOfferId && eligibleOffers?.FlexiOffers?.Price == selectedPrice && eligibleOffers?.FlexiOffers?.ServiceId == selectedServiceId) ? 'season season-weekly selected' : 'season season-weekly'"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.FlexiOffers != null" (click)="selectedSeason(eligibleOffers?.FlexiOffers, seasonTypeListIndex)" triggers="none" tooltipClass="coalescent season-help2" placement="bottom" [autoClose]="false" [ngbTooltip]="tipContent17"
+                                    #tooltip17="ngbTooltip" container="body" >
+                                    <button id="ss-tt-seasonFlexi-btn_{{seasonTypeListIndex}}" aria-label="Info for flexy season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonFlexi-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="" *ngIf="(eligibleOffers?.FlexiOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex) == false">
+                                        <img id="ss-tt-seasonFlexi-infoIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon.svg" alt="" *ngIf="(eligibleOffers?.FlexiOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex)">
+                                    </button>
+                                    <p id="ss-tt-seasonFlexi-duration_{{seasonTypeListIndex}}"><span id="ss-tt-seasonFlexi-durationType_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.FlexiOffers.DurationType }}: </span><span id="ss-tt-seasonFlexi-ticketClass_{{seasonTypeListIndex}}">{{ eligibleOffers.FlexiOffers.TicketClass }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonFlexi-sourceStation_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.FlexiOffers.SourceStation }} to {{ eligibleOffers.FlexiOffers.DestinationStation }}</p>
+                                    <p id="ss-tt-seasonFlexi-desc_{{seasonTypeListIndex}}">{{ eligibleOffers.FlexiOffers.Description }}</p>                                    
+                                    <mat-radio-button id="ss-tt-seasonFlexi-matRadioBtn_{{seasonTypeListIndex}}" class="season-select-radio" [value]="eligibleOffers.FlexiOffers" [checked]="(eligibleOffers.FlexiOffers.OfferId == selectedOfferId && eligibleOffers?.FlexiOffers?.Price == selectedPrice && eligibleOffers?.FlexiOffers?.ServiceId == selectedServiceId)" (click)="selectedSeason(eligibleOffers.FlexiOffers, seasonTypeListIndex)">
+                                        <span id="ss-tt-seasonFlexi-offer_{{seasonTypeListIndex}}" style="display: none;">Flexi Offer</span>
+                                    </mat-radio-button>
+                                    <p id="ss-tt-seasonFlexi-valid_{{seasonTypeListIndex}}"><span id="ss-tt-seasonFlexi-validTill_{{seasonTypeListIndex}}" class="font-500">Valid
+                                            till: </span> <span id="ss-tt-seasonFlexi-expiry_{{seasonTypeListIndex}}"> {{ eligibleOffers.FlexiOffers.Expiry }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonFlexi-ticketCount_{{seasonTypeListIndex}}"><span id="ss-tt-seasonFlexi-ticketCountTitle_{{seasonTypeListIndex}}" class="font-500">Tickets
+                                        Count: </span> <span id="ss-tt-seasonFlexi-ticketCountValue_{{seasonTypeListIndex}}"> {{ eligibleOffers.FlexiOffers.TicketCount }}</span>
+                                </p>
+                                    <span id="ss-tt-seasonFlexi-price_{{seasonTypeListIndex}}" class="cost-value"><span id="ss-tt-seasonFlexi-currency_{{seasonTypeListIndex}}">{{ sharedSibling.currencySymbol(eligibleOffers.FlexiOffers.Currency) }}</span>{{ sharedSibling.formatPrice(eligibleOffers.FlexiOffers.Price) }}</span>
+                                </div>
+                                <div id="ss-tt-seasonFlexi2-main_{{seasonTypeListIndex}}" class="season season-not-available"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.FlexiOffers == null" triggers="none" tooltipClass="coalescent season-help2" placement="bottom" [autoClose]="false" [ngbTooltip]="tipContent17" #tooltip17="ngbTooltip" container="body">
+                                    <button id="ss-tt-seasonFlexi2-btn_{{seasonTypeListIndex}}" aria-label="Info for flexy season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonFlexi2-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="">
+                                    </button>
+                                    <p id="ss-tt-seasonFlexi2-season_{{seasonTypeListIndex}}"><span id="ss-tt-seasonFlexi2-title_{{seasonTypeListIndex}}" class="font-500">Flexi Season: </span>
+                                    </p>
+                                    <p id="ss-tt-seasonFlexi2-notAvailable_{{seasonTypeListIndex}}" *ngIf="searchSubscriptionResponse.Request.IsFlexi">Not Available</p>
+                                    <button id="ss-tt-seasonFlexi2-searchBtn_{{seasonTypeListIndex}}" *ngIf="!searchSubscriptionResponse.Request.IsFlexi" (click)="openAmend()"  class="spark-link cursor-pointer-hover simple-btn upgrade-season-add-to-search-btn" mat-button>Add to search</button>
+                                </div>
+                                <div id="ss-tt-seasonMonthly-main_{{seasonTypeListIndex}}" [class]="(eligibleOffers?.MonthlyOffers?.OfferId == selectedOfferId && eligibleOffers?.MonthlyOffers?.Price == selectedPrice && eligibleOffers?.MonthlyOffers?.ServiceId == selectedServiceId) ? 'season season-monthly selected' : 'season season-monthly'"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.MonthlyOffers != null" (click)="selectedSeason(eligibleOffers?.MonthlyOffers, seasonTypeListIndex)">
+                                    <button id="ss-tt-seasonMonthly-btn_{{seasonTypeListIndex}}" aria-label="Info for monthly season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonMonthly-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="" *ngIf="(eligibleOffers?.MonthlyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex) == false">
+                                        <img id="ss-tt-seasonMonthly-infoIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon.svg" alt="" *ngIf="(eligibleOffers?.MonthlyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex)">
+                                    </button>
+                                    <p id="ss-tt-seasonMonthly-duration_{{seasonTypeListIndex}}"><span id="ss-tt-seasonMonthly-durationType_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.MonthlyOffers.DurationType }}: </span><span id="ss-tt-seasonMonthly-ticketClass_{{seasonTypeListIndex}}">{{ eligibleOffers.MonthlyOffers.TicketClass }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonMonthly-sourceStation_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.MonthlyOffers.SourceStation }} to {{ eligibleOffers.MonthlyOffers.DestinationStation }}</p>
+                                    <p id="ss-tt-seasonMonthly-desc_{{seasonTypeListIndex}}">{{ eligibleOffers.MonthlyOffers.Description }}</p>
+                                    <mat-radio-button id="ss-tt-seasonMonthly-matRadioBtn_{{seasonTypeListIndex}}" class="season-select-radio" [value]="eligibleOffers.MonthlyOffers" [checked]="(eligibleOffers.MonthlyOffers.OfferId == selectedOfferId && eligibleOffers?.MonthlyOffers?.Price == selectedPrice && eligibleOffers?.MonthlyOffers?.ServiceId == selectedServiceId)" (click)="selectedSeason(eligibleOffers.MonthlyOffers, seasonTypeListIndex)">
+                                        <span id="ss-tt-seasonMonthly-offer_{{seasonTypeListIndex}}" style="display: none;">Monthly Offer</span>
+                                    </mat-radio-button>
+                                    <p id="ss-tt-seasonMonthly-valid_{{seasonTypeListIndex}}"><span id="ss-tt-seasonMonthly-validTill_{{seasonTypeListIndex}}" class="font-500">Valid
+                                            till: </span> <span id="ss-tt-seasonMonthly-expiry_{{seasonTypeListIndex}}"> {{ eligibleOffers.MonthlyOffers.Expiry }}</span>
+                                    </p>
+                                    <span id="ss-tt-seasonMonthly-price_{{seasonTypeListIndex}}" class="cost-value"><span id="ss-tt-seasonMonthly-currency_{{seasonTypeListIndex}}">{{ sharedSibling.currencySymbol(eligibleOffers.MonthlyOffers.Currency) }}</span>{{sharedSibling.formatPrice(eligibleOffers.MonthlyOffers.Price)}}</span>
+                                </div>
+                                <div id="ss-tt-seasonMonthly2-main_{{seasonTypeListIndex}}" class="season season-not-available"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.MonthlyOffers == null">
+                                    <button id="ss-tt-seasonMonthly2-btn_{{seasonTypeListIndex}}" aria-label="Info for Monthly season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonMonthly2-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="">
+                                    </button>
+                                    <p id="ss-tt-seasonMonthly2-monthly_{{seasonTypeListIndex}}"><span id="ss-tt-seasonMonthly2-title_{{seasonTypeListIndex}}" class="font-500">Monthly: </span>
+                                    </p>
+                                    <p id="ss-tt-seasonMonthly2-notAvailable_{{seasonTypeListIndex}}" *ngIf="searchSubscriptionResponse.Request.IsMonthly">Not Available</p>
+                                    <button id="ss-tt-seasonMonthly2-searchBtn_{{seasonTypeListIndex}}" *ngIf="!searchSubscriptionResponse.Request.IsMonthly" (click)="openAmend()" class="spark-link cursor-pointer-hover simple-btn upgrade-season-add-to-search-btn" mat-button>Add to search</button>
+                                </div>
+                                <div id="ss-tt-seasonYearly-_{{seasonTypeListIndex}}" [class]="(eligibleOffers?.YearlyOffers?.OfferId == selectedOfferId && eligibleOffers?.YearlyOffers?.Price == selectedPrice && eligibleOffers?.YearlyOffers?.ServiceId == selectedServiceId) ? 'season season-annual selected' : 'season season-annual'"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.YearlyOffers != null" (click)="selectedSeason(eligibleOffers?.YearlyOffers, seasonTypeListIndex)">
+                                    <button id="ss-tt-seasonYearly-btn_{{seasonTypeListIndex}}" aria-label="Info for yearly season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonYearly-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="" *ngIf="(eligibleOffers?.YearlyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex) == false">
+                                        <img id="ss-tt-seasonYearly-infoIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon.svg" alt="" *ngIf="(eligibleOffers?.YearlyOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex)">
+                                    </button>
+                                    <p id="ss-tt-seasonYearly-duration_{{seasonTypeListIndex}}"><span id="ss-tt-seasonYearly-durationType_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.YearlyOffers.DurationType }}: </span><span id="ss-tt-seasonYearly-ticketClass_{{seasonTypeListIndex}}">{{ eligibleOffers.YearlyOffers.TicketClass }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonYearly-sourceStation_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.YearlyOffers.SourceStation }} to {{ eligibleOffers.YearlyOffers.DestinationStation }}</p>
+                                    <p id="ss-tt-seasonYearly-desc_{{seasonTypeListIndex}}">{{ eligibleOffers.YearlyOffers.Description }}</p>
+                                    <mat-radio-button id="ss-tt-seasonYearly-matRadioBtn_{{seasonTypeListIndex}}" class="season-select-radio" [value]="eligibleOffers.YearlyOffers" [checked]="(eligibleOffers.YearlyOffers.OfferId == selectedOfferId && eligibleOffers?.YearlyOffers?.Price == selectedPrice && eligibleOffers?.YearlyOffers?.ServiceId == selectedServiceId)" (click)="selectedSeason(eligibleOffers.YearlyOffers, seasonTypeListIndex)">
+                                        <span id="ss-tt-seasonYearly-Offer_{{seasonTypeListIndex}}" style="display: none;">Yearly Offer</span>
+                                    </mat-radio-button>
+                                    <p id="ss-tt-seasonYearly-valid_{{seasonTypeListIndex}}"><span id="ss-tt-seasonYearly-validTill_{{seasonTypeListIndex}}" class="font-500">Valid
+                                            till: </span> <span id="ss-tt-seasonYearly-expiry_{{seasonTypeListIndex}}"> {{ eligibleOffers.YearlyOffers.Expiry }}</span>
+                                    </p>
+                                    <span id="ss-tt-seasonYearly-price_{{seasonTypeListIndex}}" class="cost-value"><span id="ss-tt-seasonYearly-currency_{{seasonTypeListIndex}}">{{ sharedSibling.currencySymbol(eligibleOffers.YearlyOffers.Currency) }}</span>{{ sharedSibling.formatPrice(eligibleOffers.YearlyOffers.Price) }}</span>
+                                </div>
+                                <div id="ss-tt-seasonYearly2-main_{{seasonTypeListIndex}}" class="season season-not-available"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.YearlyOffers == null">
+                                    <button id="ss-tt-seasonYearly2-btn_{{seasonTypeListIndex}}" aria-label="Info for yearly season"  class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonYearly2-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="">
+                                    </button>
+                                    <p id="ss-tt-seasonYearly2-yearly_{{seasonTypeListIndex}}"><span id="ss-tt-seasonYearly2-title_{{seasonTypeListIndex}}" class="font-500">Yearly: </span>
+                                    </p>
+                                    <p id="ss-tt-seasonYearly2-notAvailable_{{seasonTypeListIndex}}" *ngIf="searchSubscriptionResponse.Request.IsAnnual">Not Available</p>
+                                    <button id="ss-tt-seasonYearly2-searchBtn_{{seasonTypeListIndex}}" *ngIf="!searchSubscriptionResponse.Request.IsAnnual" (click)="openAmend()"  class="spark-link cursor-pointer-hover simple-btn upgrade-season-add-to-search-btn" mat-button>Add to search</button>
+
+                                </div>
+                                <div id="ss-tt-seasonCustom-_{{seasonTypeListIndex}}" [class]="(eligibleOffers?.CustomOffers?.OfferId == selectedOfferId && eligibleOffers?.CustomOffers?.Price == selectedPrice && eligibleOffers?.CustomOffers?.ServiceId == selectedServiceId) ? 'season season-custom selected' : 'season season-custom'"
+                                    *ngIf="eligibleOffers != null && eligibleOffers.CustomOffers != null" (click)="selectedSeason(eligibleOffers?.CustomOffers, seasonTypeListIndex)">
+                                    <button id="ss-tt-seasonCustom-btn_{{seasonTypeListIndex}}" aria-label="Info for custom season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                        <img id="ss-tt-seasonCustom-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="" *ngIf="(eligibleOffers?.CustomOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex) == false">
+                                        <img id="ss-tt-seasonCustom-infoIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon.svg" alt="" *ngIf="(eligibleOffers?.CustomOffers?.DurationType === offerName && selectedIndex == seasonTypeListIndex)">
+                                    </button>
+                                    <p id="ss-tt-seasonCustom-duration_{{seasonTypeListIndex}}"><span id="ss-tt-seasonCustom-durationType_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.CustomOffers.DurationType }}: </span><span id="ss-tt-seasonCustom-ticketClass_{{seasonTypeListIndex}}">{{ eligibleOffers.CustomOffers.TicketClass }}</span>
+                                    </p>
+                                    <p id="ss-tt-seasonCustom-sourceStation_{{seasonTypeListIndex}}" class="font-500">{{ eligibleOffers.CustomOffers.SourceStation }} to {{ eligibleOffers.CustomOffers.DestinationStation }}</p>
+                                    <p id="ss-tt-seasonCustom-desc_{{seasonTypeListIndex}}">{{ eligibleOffers.CustomOffers.Description }}</p>
+                                    <mat-radio-button id="ss-tt-seasonCustom-matRadioBtn_{{seasonTypeListIndex}}" class="season-select-radio" [value]="eligibleOffers.CustomOffers" [checked]="(eligibleOffers.CustomOffers.OfferId == selectedOfferId && eligibleOffers?.CustomOffers?.Price == selectedPrice && eligibleOffers?.CustomOffers?.ServiceId == selectedServiceId)" (click)="selectedSeason(eligibleOffers.CustomOffers, seasonTypeListIndex)">
+                                        <span id="ss-tt-seasonCustom-offer_{{seasonTypeListIndex}}" style="display: none;">Custom Offer</span>
+                                    </mat-radio-button>
+                                    <p id="ss-tt-seasonCustom-valid_{{seasonTypeListIndex}}"><span id="ss-tt-seasonCustom-validTill_{{seasonTypeListIndex}}" class="font-500">Valid
+                                            till: </span> <span id="ss-tt-seasonCustom-expiry_{{seasonTypeListIndex}}"> {{ eligibleOffers.CustomOffers.Expiry }}</span>
+                                    </p>
+                                    <span id="ss-tt-seasonCustom-price_{{seasonTypeListIndex}}" class="cost-value"><span id="ss-tt-seasonCustom-currency_{{seasonTypeListIndex}}">{{ sharedSibling.currencySymbol(eligibleOffers.CustomOffers.Currency) }}</span>{{ sharedSibling.formatPrice(eligibleOffers.CustomOffers.Price) }}</span>
+                                </div>
+                                <div id="ss-tt-seasonCustom2-main_{{seasonTypeListIndex}}" class="season season-not-available"
+                                *ngIf="eligibleOffers != null && eligibleOffers.CustomOffers == null">
+                                <button id="ss-tt-seasonCustom2-btn_{{seasonTypeListIndex}}" aria-label="Info for custom season" class="ticket-info-icon" mat-icon-button (click)="ticketInfo('season')">
+                                    <img id="ss-tt-seasonCustom2-infoDarkIcon_{{seasonTypeListIndex}}" src="assets/images/info_icon_dark.svg" alt="">
+                                </button>
+                                <p id="ss-tt-seasonCustom2-custom_{{seasonTypeListIndex}}"><span id="ss-tt-seasonCustom2-title_{{seasonTypeListIndex}}" class="font-500">Custom: </span>
+                                </p>
+                                <p id="ss-tt-seasonCustom2-notAvailable_{{seasonTypeListIndex}}" *ngIf="searchSubscriptionResponse.Request.IsCustom">Not Available</p>
+                                <button id="ss-tt-seasonCustom2-searchBtn_{{seasonTypeListIndex}}" *ngIf="!searchSubscriptionResponse.Request.IsCustom" (click)="openAmend()" class="spark-link cursor-pointer-hover simple-btn upgrade-season-add-to-search-btn p-relative-z-0" mat-button>Add to search</button>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                </mat-radio-group>
+            </div>
+        </div>
+        <div id="ss-responseData" class="mtb-10" *ngIf="responseData?.ResponseCode == '204'">
+            <span id="ss-responseData-title">{{responseData.ResponseMessage}}</span>
+        </div>
+    </div>
+</div>
+<div id="ss-footer-main" class="bg-graphene farebuy-bx upgrade-season-footer">
+    <div id="ss-footer-container" class="container season-container">
+        <div id="ss-footer-inner" class="text-end farebuy-tbl upgrade-season-footer">
+            <div class="upgrade-season-footer-left">
+                <button id="ss-footer-info-btn" class="simple-btn" mat-button (click)="farebreakdown()" aria-label="Info">
+                    <img id="ss-footer-info-icon" src="assets/images/info_icon.svg" alt="" class="info-icn" >
+                </button>
+                <span id="ss-footer-total" class="totalcost">Total:</span>
+                <span id="ss-footer-price" class="cost-value"><span id="ss-footer-currency">{{sharedSibling.currencySymbol(totalPriceCurrency)}}</span>{{ sharedSibling.formatPrice(totalPrice)}}</span>
+            </div>
+            <button id="ss-footer-buyNow-btn" mat-button class="default-btn" (click)="openJourneyExtra()" [disabled]="isBuyNowDisable">Buy
+                Now</button>
+        </div>
+        <div id="ss-footer-clearfix" class="clearfix"></div>
+    </div>
+</div>

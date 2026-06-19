@@ -1,0 +1,1325 @@
+<header id="ettcc-main-header">
+    <app-enhanced-navigation-header [isAvantiFilterSelected]="searchRequest?.OperaterFilter"
+        [isDirectFilterSelected]="searchRequest?.ChangesFilter" [travelSolutionDirection]="searchRequest?.TravelSolutionDirection"
+        [isReturn]="showReturn" [searchRequest]="searchRequest" [isLoaderActive] = "isLoaderActive"></app-enhanced-navigation-header>
+</header>
+<main class="padiing-footer" [ngClass]="{'cheapest-ticket-footer': showBottomDiv, 'using-railcard-footer': isRailCardAppliedDivVisible, 'cheapest-using-railcard': isRailCardAppliedDivVisible && showBottomDiv}">
+    <iframe [src]="iframeSrc" width="100%" height="0px" frameborder="0"  style="display:none" *ngIf="iframeSrc"></iframe>
+    <!----- View Journey Form ----->
+    <section id="ettcc-view-journey-form-section" class="main-header-container" role="group">
+        <div id="ettcc-view-journey-form-container" [ngClass]="showEdit ? 'remove-shadow' : ''" class="view-journey-form-container horizontal-center new-design-journey">
+            <div id="ettcc-view-journey-form-common-container" class="common-container m-common-container">
+                <div id="ettcc-view-journey-form-inner-container" class="d-flex view-journey-form-flex">
+                    <enhanced-edit-qtt-selected-details [searchRequest]="searchRequest"
+                        [searchResponse]="searchResponse" [searchReturnResponse]="searchReturnResponse"
+                        [sharedService]="sharedService" [selectedTravelSolDataForOutward]="selectedTravelSolDataForOutward" [selectedTravelSolDataForReturn]="selectedTravelSolDataForReturn" [isReturn]="showReturn">
+                    </enhanced-edit-qtt-selected-details>
+                    <div id="ettcc-edit-btn-area" *ngIf="!isMobile && !isTablet" class="view-edit-form-btn-area ">
+                        <button id="ettcc-edit-btn-btn" mat-button class="common-edit-form-btn" [disabled]="isLoaderActive" (click)="openEdit()" aria-label="Edit">
+                            <span id="ettcc-edit-btn-icon-are">
+                                <img id="ettcc-edit-btn-icon" src="assets/images/new-design-img/edit-button-icon.svg" alt="" aria-hidden="true" />
+                            </span>
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!----- End View Journey Form ----->
+
+    <!-- Edit QTT Form -->
+    <app-enhanced-edit-qtt *ngIf="showEdit" (submitEdit)="submitEdit($event)"></app-enhanced-edit-qtt>
+    <!-- End Edit QTT Form -->
+
+    <app-enhanced-loader 
+        [isLoaderActive] = "isLoaderActive"
+        [loaderHeading]="enhancedLoaderTextEnum?.ticketAndTypeLoaderHeading"
+        [loaderDescription]="enhancedLoaderTextEnum?.ticketAndTypeLoaderDescription">
+    </app-enhanced-loader>
+
+    <!----- Page back button ----->
+    <section id="ettacc-back-btn-section" *ngIf="!isLoaderActive">
+        <div id="ettacc-back-btn-container" class="back-btn-container horizontal-center">
+            <div id="ettacc-back-btn-common-container" class="common-container">
+                <div id="ettacc-back-btn-area" role="group" class="back-btn">
+                    <button id="ettacc-back-btn" (click)="backToOutward()" type="button" mat-button aria-label="Back to the select time page">
+                        <img id="ettacc-back-btn-icon" src="assets/images/new-design-img/back-arrow.svg" alt="" aria-hidden="true" />
+                        <span id="ettacc-back-btn-text">Back</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!----- End Page back button ----->
+
+    <!----- Searched Journey ----->
+    <section id="ettacc-search-journey-section" *ngIf="!isLoaderActive">
+        <div id="ettacc-search-journey-container" class="search-journey-container horizontal-center">
+            <div id="ettacc-search-journey-common-container" class="common-container">
+                <div id="ettacc-search-journey-flex" class="search-journey-row">
+                    <!----- Outward Journey ----->
+                    <div id="ettacc-out-col" class="search-journey-col" *ngIf="showOutward">
+                        <!---- Outward Journey header ---->
+                        <div id="ettacc-out-header" class="search-journey-header search-journey-class-header" *ngIf="selectedTravelSolDataForOutward" aria-labelledby="ettacc-outward-title-aria">
+                            <span class="sr-only" id="ettacc-outward-title-aria">{{getAriaLabelForJourneyTitle(searchRequest, selectedTravelSolDataForOutward, true)}}</span>
+                            <h3 id="ettacc-out-header-title" aria-hidden="true">Select {{searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' ? 'outward' :
+                                'open-return'}} ticket: {{searchRequest?.DepartureTimesStartShow | date:'EEE, dd MMM
+                                yyyy'}}</h3>
+                            <div id="ettacc-out-header-stations" class="search-journey-header-station" aria-hidden="true">
+                                <p id="ettacc-out-header-from-station">
+                                    <span id="ettacc-out-header-from-station-txt">{{selectedTravelSolDataForOutward?.DepartureTime?.split(" ")[0]}}</span>
+                                    {{commonServices?.getCityNameOnly(searchRequest?.DepartureLocationName)}}
+                                </p>
+                                <img id="ettacc-out-header-station-direction" src="assets/images/new-design-img/to-arrow.svg" alt="" aria-hidden="true" />
+                                <p id="ettacc-out-header-to-station">
+                                    <span id="ettacc-out-header-to-station1">{{selectedTravelSolDataForOutward?.ArrivalTime?.split(" ")[0]}}</span>
+                                    {{commonServices?.getCityNameOnly(searchRequest?.ArrivalLocationName)}}
+                                </p>
+                            </div>
+                        </div>
+                        <!---- End Outward Journey header ---->
+
+                        <!---- Outward Tabs ---->
+                        <div id="ettacc-out-tab-area" class="ticket-tabs" *ngIf="selectedTravelSolDataForOutward">
+                            <mat-tab-group id="ettacc-out-tab-group" preserveContent class="tab-awc" (selectedTabChange)="onTabChange($event, 'outward', false)"
+                                [(selectedIndex)]="selectedTabIndex" [ngClass]="{ 'single-active-mat-tab': isOnlyOneFareSelected(selectedTravelSolDataForOutward) }" (focusin)="onTabFocus($event, 'outward')">
+                                <!---- Outward standard class ---->
+                                <mat-tab id="ettacc-out-std-tab" *ngIf="selectedTravelSolDataForOutward?.IsStandardFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-out-std-tab-header" class="tabname-main" aria-describedby="stdTicketClassMatTab">
+                                            <div id="ettacc-out-std-tab-title" class="ticket-label-tab" aria-hidden="true">Standard</div>
+                                            <div id="ettacc-out-std-tab-from" class="ticket-price" *ngIf="!isOutStandardClassSoldOut" aria-hidden="true">From
+                                                {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForOutStdClass)}}</div>
+                                            <div id="ettacc-out-std-tab-sold-out" class="ticket-price" *ngIf="isOutStandardClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="stdTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.standardClass, isOutStandardClassSoldOut, minPriceForOutStdClass, 'outward')}}
+                                        </span>
+                                        <div id="ettacc-out-std-tab-learn-more" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends"  *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForOutward) && isExistAvantiOperator(selectedTravelSolDataForReturn)"></div>
+                                        <button id="ettacc-out-std-tab-learn-more2" type="button" [tabIndex]="activeClass === classTypeEnum?.standardClass ? 0 : -1" mat-button aria-label="Learn more about the comfort in each class" class="tab-legends mobile-hide-tab-legends tab-legends-btn" (click)="openTicketClassInfoPopup($event,false, classTypeEnum?.standardClass)"  *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForOutward)">
+                                            <div id="ettacc-out-std-tab-legends" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-out-std-tab-legends-msg" class="tab-legends-txt">With us, comfort<br>comes as standard</div>
+                                                <mat-icon id="ettacc-out-std-tab-icon">
+                                                    <img id="ettacc-out-std-tab-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-out-std-learn-more3" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForOutward)">
+                                        <button type="button" mat-button id="ettacc-out-std-learn-more3-link" (click)="openTicketClassInfoPopup($event, false, classTypeEnum?.standardClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, true)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-out-std-learn-more3-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div id="ettacc-out-std-title" class="ticket-class-section" *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' && !isOutStandardClassSoldOut">
+                                        <p id="ettacc-out-std-title-text" class="ticket-class-section-title" *ngIf="selectedTravelSolDataForOutward && selectedTravelSolDataForReturn">
+                                            <span id="ettacc-out-std-single-tickets">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-out-std-card" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-std-radio-group" aria-label="Select outward journey"
+                                                class="search-journey-card-row" [(ngModel)]="selectedStdRadio"
+                                                *ngIf="listOfStandardTicketTypeForOut && listOfStandardTicketTypeForOut.length > 0">
+                                                <!---- standard ticket type & fare ---->
+                                                <div id="ettacc-out-std-radio-{{outStandard}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfStandardTicketTypeForOut; let outStandard = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-std-radio-btn_{{outStandard}}" [value]="fare?.Price" labelPosition="before"
+                                                        (change)="onOutwardFareSelection(fare, false)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-std-single-card_{{outStandard}}" class="single-card">
+                                                            <div id="ettacc-out-std-ticket-label_{{outStandard}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-out-std-ticket-label-left_{{outStandard}}" class="ticket-label-left">
+                                                                    <span id="ettacc-out-std-offer-label_{{outStandard}}" class="ticket-label-name offer-ticket"
+                                                                        *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-std-group-save-label_{{outStandard}}" class="ticket-label-name offer-ticket"
+                                                                        *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-std-rail-sale-label_{{outStandard}}" class="ticket-label-name offer-ticket"
+                                                                        *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-std-railcard_{{outStandard}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-std-cheapest_{{outStandard}}" class="ticket-label-name cheapest-ticket"
+                                                                        *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-std-price_{{outStandard}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price</span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-std-radio-label_{{outStandard}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-std-radio-label-inner_{{outStandard}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-std-radio-label-ticket_{{outStandard}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-out-std-radio-label-ticket-name_{{outStandard}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-std-radio-label-price_{{outStandard}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-std-radio-label-one-way_{{outStandard}}" class="journey-type" *ngIf="isMobile || isTablet" aria-hidden="true">
+                                                                        <img src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-out-std-ticket-conditions_{{outStandard}}" class="journey-class-list">
+                                                                        <ul id="ettacc-out-std-ticket-conditions-list_{{outStandard}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-out-std-ticket-conditions-list-txt_{{outStandard}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-std-ticket-conditions-list2_{{outStandard}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-out-std-ticket-conditions-list2-txt_{{outStandard}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-out-std-railcard-btn_{{outStandard}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)" aria-hidden="true">
+                                                                        <span id="ettacc-out-std-railcard-txt_{{outStandard}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-out-std-railcard-img_{{outStandard}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button> 
+                                                    <div id="ettacc-out-std-ticket-details-area_{{outStandard}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-out-std-ticket-details-btn_{{outStandard}}" type="button" mat-button (click)="openTicketDetailInfo(fare, false)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, true)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End Advance Single ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Oepn Return Class Cards ---->
+                                    <div class="ticket-class-section" id='stdFlexibleReturn' *ngIf="listOfStandardTicketTypeForPureReturn && listOfStandardTicketTypeForPureReturn?.length > 0 && !isOutStandardClassSoldOut">
+                                        <p id="ettacc-out-std-open-return-title" class="ticket-class-section-title">
+                                            <span id="ettacc-out-or-title-txt">Return tickets</span> 1 return ticket for both directions
+                                        </p>
+                                        <div id="ettacc-out-std-or-card-area" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-std-or-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="isFlexibleReturnSelectedFare">
+                                                <!----- Off-peak Return ----->
+                                                <div id="ettacc-out-std-or-radio-inner_{{flexiStandard}}" class="radio-card journey-class-card journey-class-card-radio new-radio-card" *ngFor="let fare of listOfStandardTicketTypeForPureReturn; let flexiStandard = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-std-or-radio-btn_{{flexiStandard}}" [value]="fare?.Price" labelPosition="before" (change)="onOutwardFareSelection(fare, true)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-or-radio-single-card_{{flexiStandard}}" class="single-card">
+                                                            <div id="ettacc-out-std-or-ticket-label_{{flexiStandard}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-out-std-or-ticket-label-left_{{flexiStandard}}" class="ticket-label-left">
+                                                                    <span id="ettacc-out-std-or-offer-label_{{flexiStandard}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-std-or-group-save-label_{{flexiStandard}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-std-or-rail-sale-label_{{flexiStandard}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-std-or-railcard-applied-label_{{flexiStandard}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-std-or-cheapest-label_{{flexiStandard}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-std-or-fare-ticket-label_{{flexiStandard}}" class="ticket-label-name limited-ticket" *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price</span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-std-or-radio-card-label_{{flexiStandard}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-std-or-radio-card-inner_{{flexiStandard}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-std-or-card-header_{{flexiStandard}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-out-std-or-header-title_{{flexiStandard}}" class="journey-class-title">
+                                                                            {{fare?.TicketTypeName}}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-std-or-header-price_{{flexiStandard}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-std-or-title-mobile_{{flexiStandard}}" class="journey-type" *ngIf="isMobile || isTablet" aria-hidden="true">
+                                                                        <img id="ettacc-std-or-mobile-interchange-icon_{{flexiStandard}}" src="assets/images/new-design-img/interchange-icon.svg" alt="" aria-hidden="true" />Outward & return
+                                                                    </div>
+                                                                    <div id="ettacc-out-std-or-ticket-condition-list_{{flexiStandard}}" class="journey-class-list">
+                                                                         
+                                                                        <!-- (Accessibility) End Do not touch this Stepper Navigation only for screen reader -->
+                                                                        <ul id="ettacc-out-std-or-ticket-condition-list1_{{flexiStandard}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-out-std-or-ticket-condition-li_{{flexiStandard}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-std-or-ticket-condition-list2_{{flexiStandard}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-out-std-or-ticket-condition-li2_{{flexiStandard}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-out-std-or-railcard-area_{{flexiStandard}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)" aria-hidden="true">
+                                                                        <span id="ettacc-out-std-or-railcard-not-applied_{{flexiStandard}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-out-std-or-railcard-not-applied-img_{{flexiStandard}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'Outward & return')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-out-std-or-ticket-details-area_{{flexiStandard}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-out-std-or-ticket-details-btn_{{flexiStandard}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End Off-peak Return ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+                                    <!---- End Oepn Return Class Cards ---->
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-out-std-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isOutStandardClassSoldOut}" *ngIf="selectedTravelSolDataForOutward && isOutStandardClassSoldOut">
+                                        <div id="ettacc-out-std-sold-inner" class="notrains-found-card-inner">
+                                            <div id="ettacc-out-std-sold-icon" class="notrains-found-icon">
+                                                <img id="ettacc-out-std-sold-img" src="assets/images/new-design-img/sold-out-ticket.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-out-std-sold-content" class="notrains-found-content" *ngIf="suggestedClassLinksForOutSoldOut?.length">
+                                                <p id="ettacc-out-std-sold-title" class="notrains-found-title">Standard tickets are sold out online</p>
+                                                <p id="ettacc-out-std-sold-subtitle" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container id="ettacc-out-std-sold-link-area" *ngFor="let link of suggestedClassLinksForOutSoldOut; let i = index">
+                                                        <a id="ettacc-out-std-sold-link-label_{{i}}" (click)="onTabChange(link, 'outward', false)">{{ link.label }}</a><span id="ettacc-out-std-sold-or-txt_{{i}}" *ngIf="i < suggestedClassLinksForOutSoldOut?.length - 1"> or
+                                                        </span>
+                                                    </ng-container> for more space and a guaranteed table.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-out-std-sold-links" class="radio-card-journey-details">
+                                            <a id="ettacc-out-std-sold-whys-that-link" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-out-std-sold-view-train-link" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-out-std-sold-view-train-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+                                </mat-tab>
+                                <!---- End Outward standard class ---->
+
+                                <!---- Outward standard premium class ---->
+                                <mat-tab id="ettacc-out-stdpremium-tab-" *ngIf="selectedTravelSolDataForOutward?.IsStandardPremiumFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-out-stdpremium-tab-header" class="tabname-main" aria-describedby="stdPremiumTicketClassMatTab">
+                                            <div id="ettacc-out-stdpremium-label" class="ticket-label-tab desktop-label" aria-hidden="true">Standard Premium</div>
+                                            <div id="ettacc-out-stdpremium-label2" class="ticket-label-tab mobile-label" aria-hidden="true">Std Premium</div>
+                                            <div id="ettacc-out-stdpremium-from" class="ticket-price" *ngIf="!isOutStdPremiumClassSoldOut" aria-hidden="true">From
+                                                {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForOutStdPremiumClass)}}
+                                            </div>
+                                            <div id="ettacc-out-stdpremium-sold" class="ticket-price" *ngIf="isOutStdPremiumClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="stdPremiumTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.stdPremiumClass, isOutStdPremiumClassSoldOut, minPriceForOutStdPremiumClass, 'outward')}}
+                                        </span>
+                                         <div id="ettacc-out-stdpremium-legend" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends" *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForOutward) && isExistAvantiOperator(selectedTravelSolDataForReturn)"></div>
+                                        <button id="ettacc-out-stdpremium-legend2" type="button" [tabIndex]="activeClass === classTypeEnum?.stdPremiumClass ? 0 : -1" mat-button aria-label="Learn more about the comfort in each class" class="tab-legends mobile-hide-tab-legends tab-legends-btn" *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForOutward)"  (click)="openTicketClassInfoPopup($event,false, classTypeEnum?.stdPremiumClass)">
+                                            <div id="ettacc-out-stdpremium-legend2-header" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-out-stdpremium-legend2-subcontent" class="tab-legends-txt">Enjoy more space and<br>a guaranteed table</div>
+                                                <mat-icon id="ettacc-out-stdpremium-legend2-icon">
+                                                    <img id="ettacc-out-stdpremium-legend2-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-out-stdpremium-learn" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForOutward)">
+                                        <button type="button" mat-button id="ettacc-out-stdpremium-learn-link" (click)="openTicketClassInfoPopup($event,false, classTypeEnum?.stdPremiumClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, true)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-out-stdpremium-learn-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div id="ettacc-out-stdpremium-cards" class="ticket-class-section"
+                                        *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' && !isOutStdPremiumClassSoldOut">
+                                        <p id="ettacc-out-stdpremium-single-ticket" class="ticket-class-section-title" *ngIf="selectedTravelSolDataForOutward && selectedTravelSolDataForReturn">
+                                            <span id="ettacc-out-stdpremium-single-ticket-txt">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-out-stdpremium-card-area" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-stdpremium-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="selectedStdRadio" *ngIf="listOfStdPremiumClassTicketTypeForOut && listOfStdPremiumClassTicketTypeForOut.length > 0">
+                                                <!---- standard premium ticket type & fare ---->
+                                                <div id="ettacc-out-stdpremium-card-loop_{{outStdPremium}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfStdPremiumClassTicketTypeForOut; let outStdPremium = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-stdpremium-radio-btn_{{outStdPremium}}" [value]="fare?.Price" labelPosition="before" (change)="onOutwardFareSelection(fare, false)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-stdpremium-radio-inner_{{outStdPremium}}" class="single-card">
+                                                            <div id="ettacc-out-stdpremium-ticket-label_{{outStdPremium}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-out-stdpremium-ticket-label-inner_{{outStdPremium}}" class="ticket-label-left">
+                                                                    <span id="ettacc-out-stdpremium-offer-label_{{outStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-stdpremium-group-save-label_{{outStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-stdpremium-rail-sale-label_{{outStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-stdpremium-railcard-label_{{outStdPremium}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-stdpremium-cheapest-label_{{outStdPremium}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-stdpremium-ticket-price_{{outStdPremium}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-stdpremium-radio-card-label_{{outStdPremium}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-stdpremium-details_{{outStdPremium}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-stdpremium-header_{{outStdPremium}}" class="journey-class-title-price">
+                                                                        <h3 id="ettacc-out-stdpremium-title_{{outStdPremium}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-stdpremium-price_{{outStdPremium}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-stdpremium-one-way_{{outStdPremium}}" class="journey-type" *ngIf="isMobile || isTablet">
+                                                                        <img id="ettacc-out-stdpremium-one-way-img_{{outStdPremium}}" src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-out-stdpremium-conditon-area_{{outStdPremium}}" class="journey-class-list">
+                                                                        <ul id="ettacc-out-stdpremium-conditon-list_{{outStdPremium}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0">
+                                                                            <li id="ettacc-out-stdpremium-conditon-li_{{outStdPremium}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-stdpremium-conditon-list2_{{outStdPremium}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list">
+                                                                            <li id="ettacc-out-stdpremium-conditon-li2_{{outStdPremium}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-out-stdpremium-railcard-area_{{outStdPremium}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                                        <span id="ettacc-out-stdpremium-railcard-title_{{outStdPremium}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-out-stdpremium-railcard-img_{{outStdPremium}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-out-stdpremium-ticket-details-area_{{outStdPremium}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-out-stdpremium-ticket-details-btn_{{outStdPremium}}" type="button" mat-button (click)="openTicketDetailInfo(fare, false)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, true)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End standard premium ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Oepn Return Class Cards ---->
+                                    <div class="ticket-class-section" id="stdPremFlexibleReturn" *ngIf="listOfStdPremiumClassTicketTypeForPureReturn && listOfStdPremiumClassTicketTypeForPureReturn.length > 0 && !isOutStdPremiumClassSoldOut">
+                                        <p id="ettacc-out-stdpremium-or-title" class="ticket-class-section-title">
+                                            <span id="ettacc-out-stdpremium-or-title-txt">Return tickets</span> 1 return ticket for both directions
+                                        </p>
+                                        <div id="ettacc-out-stdpremium-or-cards" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-stdpremium-or-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="isFlexibleReturnSelectedFare">
+                                                <!----- Off-peak Return ----->
+                                                <div id="ettacc-out-stdpremium-or-loop_{{flexiStdPremium}}" class="radio-card journey-class-card journey-class-card-radio new-radio-card" *ngFor="let fare of listOfStdPremiumClassTicketTypeForPureReturn; let flexiStdPremium = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-stdpremium-or-radio-btn_{{flexiStdPremium}}" [value]="fare?.Price" labelPosition="before" (change)="onOutwardFareSelection(fare, true)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-stdpremium-or-single-card_{{flexiStdPremium}}" class="single-card">
+                                                            <div id="ettacc-out-stdpremium-or-ticket-label_{{flexiStdPremium}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-out-stdpremium-or-ticket-label-inner_{{flexiStdPremium}}" class="ticket-label-left">
+                                                                    <span id="ettacc-out-stdpremium-or-offer-label_{{flexiStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-stdpremium-or-group-save-label_{{flexiStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-stdpremium-or-rail-sale-label_{{flexiStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-stdpremium-or-railcard-applied-label_{{flexiStdPremium}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-stdpremium-or-cheapest-label_{{flexiStdPremium}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-stdpremium-or-price-label_{{flexiStdPremium}}" class="ticket-label-name limited-ticket" *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-stdpremium-or-radio-card-label_{{flexiStdPremium}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-stdpremium-or-radio-card-inner_{{flexiStdPremium}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-stdpremium-or-header_{{flexiStdPremium}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-out-stdpremium-or-name_{{flexiStdPremium}}" class="journey-class-title">
+                                                                            {{fare?.TicketTypeName}}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-stdpremium-or-price_{{flexiStdPremium}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-stdpremium-or-class-list_{{flexiStdPremium}}" class="journey-class-list">
+                                                                        <ul id="ettacc-out-stdpremium-or-list_{{flexiStdPremium}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-out-stdpremium-or-li_{{flexiStdPremium}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-stdpremium-or-list2_{{flexiStdPremium}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-out-stdpremium-or-li2_{{flexiStdPremium}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-out-stdpremium-or-railcard-btn_{{flexiStdPremium}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)" aria-hidden="true">
+                                                                        <span id="ettacc-out-stdpremium-or-railcard-txt_{{flexiStdPremium}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-out-stdpremium-or-railcard-img_{{flexiStdPremium}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, '')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-out-stdpremium-or-ticket-details_{{flexiStdPremium}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-out-stdpremium-or-ticket-details-btn_{{flexiStdPremium}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End Off-peak Return ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+                                    <!---- End Oepn Return Class Cards ---->
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-out-stdpremium-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isOutStdPremiumClassSoldOut}" *ngIf="selectedTravelSolDataForOutward && isOutStdPremiumClassSoldOut">
+                                        <div id="ettacc-out-stdpremium-sold-content-area" class="notrains-found-card-inner">
+                                            <div id="ettacc-out-stdpremium-sold-not-found" class="notrains-found-icon">
+                                                <img id="ettacc-out-stdpremium-sold-img" src="assets/images/new-design-img/Standardpremiumicon.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-out-stdpremium-sold-content" class="notrains-found-content" *ngIf="suggestedClassLinksForOutSoldOut?.length">
+                                                <p id="ettacc-out-stdpremium-sold-title" class="notrains-found-title">Standard Premium tickets are sold out online</p>
+                                                <p id="ettacc-out-stdpremium-sold-subcontent" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container *ngFor="let link of suggestedClassLinksForOutSoldOut; let i = index">
+                                                        <a id="ettacc-out-stdpremium-sold-link_{{i}}" (click)="onTabChange(link, 'outward', false)">{{ link.label }}</a><span id="ettacc-out-stdpremium-sold-or-txt_{{i}}"
+                                                            *ngIf="i < suggestedClassLinksForOutSoldOut?.length - 1"> or
+                                                        </span>
+                                                    </ng-container> to enjoy our most premium experience.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-out-stdpremium-sold-links" class="radio-card-journey-details">
+                                            <a id="ettacc-out-stdpremium-sold-why-that-link" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-out-stdpremium-sold-view-train-link" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-out-stdpremium-sold-view-train-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+                                </mat-tab>
+                                <!---- End Outward standard premium class ---->
+
+                                <!---- Outward first class ---->
+                                <mat-tab id="ettacc-out-first-tab" *ngIf="selectedTravelSolDataForOutward?.IsFirstClassFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-out-first-labels" class="tabname-main" aria-describedby="firstClassTicketClassMatTab">
+                                            <div id="ettacc-out-first-class-label" class="ticket-label-tab" aria-hidden="true">First Class</div>
+                                            <div id="ettacc-out-first-from-label" class="ticket-price" *ngIf="!isOutFirstClassSoldOut" aria-hidden="true">From {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForOutFirstClass)}}</div>
+                                            <div id="ettacc-out-first-sold-label" class="ticket-price" *ngIf="isOutFirstClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="firstClassTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.firstClass, isOutFirstClassSoldOut, minPriceForOutFirstClass, 'outward')}}
+                                        </span>
+                                        <div id="ettacc-out-first-legend" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends" *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForOutward) && isExistAvantiOperator(selectedTravelSolDataForReturn)"></div>
+                                        <button id="ettacc-out-first-legend2" type="button" [tabIndex]="activeClass === classTypeEnum?.firstClass ? 0 : -1" mat-button aria-label="Learn more about the comfort in each class" class="tab-legends mobile-hide-tab-legends tab-legends-btn" *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForOutward)" (click)="openTicketClassInfoPopup($event,false, classTypeEnum?.firstClass)">
+                                            <div id="ettacc-out-first-legend2-inner" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-out-first-legend2-subcontent" class="tab-legends-txt">Our most premium<br>experience</div>
+                                                <mat-icon id="ettacc-out-first-legend2-icon">
+                                                    <img id="ettacc-out-first-legend2-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-out-first-learn-more-area" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForOutward)">
+                                        <button type="button" mat-button id="ettacc-out-first-learn-more-link" (click)="openTicketClassInfoPopup($event,false, classTypeEnum?.firstClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, true)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-out-first-learn-more-img" src="assets/images/new-design-img/info-icon.svg" alt="" />
+                                        </button>
+                                    </div>
+                                    <div id="ettacc-out-first-section" class="ticket-class-section"
+                                        *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN' && !isOutFirstClassSoldOut">
+                                        <p id="ettacc-out-first-single-tickets-title" class="ticket-class-section-title" *ngIf="selectedTravelSolDataForOutward && selectedTravelSolDataForReturn">
+                                            <span id="ettacc-out-first-single-tickets-txt">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-out-first-cards-area" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-first-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="selectedStdRadio" *ngIf="listOfFirstClassTicketTypeForOut && listOfFirstClassTicketTypeForOut.length > 0">
+                                                <!---- first class ticket type & fare ---->
+                                                <div id="ettacc-out-first-radio-card-loop_{{outFirstClass}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfFirstClassTicketTypeForOut; let outFirstClass = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-first-radio-btn_{{outFirstClass}}" [value]="fare?.Price" labelPosition="before" (change)="onOutwardFareSelection(fare, false)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-first-single-card_{{outFirstClass}}" class="single-card">
+                                                            <div id="ettacc-out-first-ticket-label_{{outFirstClass}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-out-first-ticket-labels_{{outFirstClass}}" class="ticket-label-left">
+                                                                    <span id="ettacc-out-first-offer-label_{{outFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-first-group-save-label_{{outFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-first-rail-sale-label_{{outFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-first-railcard-label_{{outFirstClass}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-first-cheapest-label_{{outFirstClass}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-first-price-label_{{outFirstClass}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-first-radio-card-label_{{outFirstClass}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-first-radio-card-inner_{{outFirstClass}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-first-header_{{outFirstClass}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-out-first-name_{{outFirstClass}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-first-price_{{outFirstClass}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-first-oneway_{{outFirstClass}}" class="journey-type" *ngIf="isMobile || isTablet" aria-hidden="true">
+                                                                        <img id="ettacc-out-first-oneway-img_{{outFirstClass}}" src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-out-first-cticket-list_{{outFirstClass}}" class="journey-class-list">
+                                                                        <ul id="ettacc-out-first-ticket-list_{{outFirstClass}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-out-first-ticket-li_{{outFirstClass}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-first-ticket-list2_{{outFirstClass}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-out-first-ticket-li2_{{outFirstClass}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-out-first-railcard-btn_{{outFirstClass}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)" aria-hidden="true">
+                                                                        <span id="ettacc-out-first-railcard-btn-txt_{{outFirstClass}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-out-first-railcard-btn-img_{{outFirstClass}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-out-first-ticket-details_{{outFirstClass}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-out-first-ticket-details-btn_{{outFirstClass}}" type="button" mat-button (click)="openTicketDetailInfo(fare, false)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, true)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End Advance Single ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Oepn Return Class Cards ---->
+                                    <div class="ticket-class-section" id="firstClassFlexibleReturn" *ngIf="listOfFirstClassTicketTypeForPureReturn && listOfFirstClassTicketTypeForPureReturn.length > 0 && !isOutFirstClassSoldOut">
+                                        <p id="ettacc-out-ret-first-or-title" class="ticket-class-section-title">
+                                            <span id="ettacc-out-ret-first-or-ticket">Return tickets</span> 1 return ticket for both directions
+                                        </p>
+                                        <div id="ettacc-out-ret-first-cards-row" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-out-ret-first-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="isFlexibleReturnSelectedFare">
+                                                <!----- Off-peak Return ----->
+                                                <div id="ettacc-out-ret-first-card-loop_{{flexiFirstClass}}" class="radio-card journey-class-card journey-class-card-radio new-radio-card" *ngFor="let fare of listOfFirstClassTicketTypeForPureReturn; let flexiFirstClass = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-out-ret-first-radio-btn_{{flexiFirstClass}}" [value]="fare?.Price" labelPosition="before" (change)="onOutwardFareSelection(fare, true)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-out-ret-first-single-card_{{flexiFirstClass}}" class="single-card">
+                                                            <div id="ettacc-out-ret-first-ticket-label_{{flexiFirstClass}}" class="ticket-label">
+                                                                <div id="ettacc-out-ret-first-ticket-label-inner_{{flexiFirstClass}}" class="ticket-label-left" aria-hidden="true">
+                                                                    <span id="ettacc-out-ret-first-offer-label_{{flexiFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-out-ret-first-group-save-label_{{flexiFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-out-ret-first-rail-sale-label_{{flexiFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-out-ret-first-railcard-applied-label_{{flexiFirstClass}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-out-ret-first-cheapest-label_{{flexiFirstClass}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-out-ret-first-price-label_{{flexiFirstClass}}" class="ticket-label-name limited-ticket" *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price</span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-out-ret-first-radio-card-label_{{flexiFirstClass}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-out-ret-first-radio-card-inner_{{flexiFirstClass}}" class="journey-class-details">
+                                                                    <div id="ettacc-out-ret-first-header_{{flexiFirstClass}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-out-ret-first-header-title_{{flexiFirstClass}}" class="journey-class-title">
+                                                                            {{fare?.TicketTypeName}}
+                                                                        </h3>
+                                                                        <p id="ettacc-out-ret-first-header-price_{{flexiFirstClass}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-out-ret-first-ticket_{{flexiFirstClass}}" class="journey-class-list">
+                                                                        <ul id="ettacc-out-ret-first-list_{{flexiFirstClass}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-out-ret-first-li_{{flexiFirstClass}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-out-ret-first-list2_{{flexiFirstClass}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-out-ret-first-li2_{{flexiFirstClass}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </div>
+                                                                <button id="ettacc-out-ret-first-railcard-notapplied-btn_{{flexiFirstClass}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)" aria-hidden="true">
+                                                                    <span id="ettacc-out-ret-first-railcard-notapplied-text_{{flexiFirstClass}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                    <img id="ettacc-out-ret-first-railcard-notapplied-img_{{flexiFirstClass}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, '')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, true)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-out-ret-first-ticket-details-area_{{flexiFirstClass}}" class="radio-card-journey-details">
+                                                        <button id="ettacc-out-ret-first-ticket-details-btn_{{flexiFirstClass}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                                <!----- End Off-peak Return ----->
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+                                    <!---- End Oepn Return Class Cards ---->
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-out-first-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isOutFirstClassSoldOut}" *ngIf="selectedTravelSolDataForOutward && isOutFirstClassSoldOut">
+                                        <div id="ettacc-out-first-sold-inner" class="notrains-found-card-inner">
+                                            <div id="ettacc-out-first-sold-icon" class="notrains-found-icon">
+                                                <img id="ettacc-out-first-sold-img" src="assets/images/new-design-img/firct-class-icon.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-out-first-sold-content" class="notrains-found-content" *ngIf="suggestedClassLinksForOutSoldOut?.length">
+                                                <p id="ettacc-out-first-sold-title" class="notrains-found-title">First class tickets are sold out online</p>
+                                                <p id="ettacc-out-first-sold-sub-content" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container *ngFor="let link of suggestedClassLinksForOutSoldOut; let i = index">
+                                                        <a id="ettacc-out-first-sold-link_{{i}}" (click)="onTabChange(link, 'outward', false)">{{ link.label }}</a><span id="ettacc-out-first-sold-or-txt_{{i}}"
+                                                            *ngIf="i < suggestedClassLinksForOutSoldOut?.length - 1"> or
+                                                        </span>
+                                                    </ng-container>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-out-first-sold-links" class="radio-card-journey-details">
+                                            <a id="ettacc-out-first-sold-why-that" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-out-first-sold-view-train" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-out-first-sold-view-trains-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+
+                                </mat-tab>
+                                <!---- End Outward first class ---->
+                                <mat-tab></mat-tab>
+                            </mat-tab-group>
+                        </div>
+                        <!---- End Outward Tabs ---->
+                    </div>
+                    <!----- End Outward Journey ----->
+
+                    <!----- Return Journey ----->
+                    <div id="returnDiv" class="search-journey-col search-journey-mobile-col" *ngIf="showReturn && selectedTravelSolDataForReturn">
+                        <!---- Return Journey header ---->
+                        <div id="ettacc-ret-header" class="search-journey-header search-journey-class-header" *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN'" aria-labelledby="ettacc-ret-header-title-aria">
+                            <span class="sr-only" id="ettacc-ret-header-title-aria">{{getAriaLabelForJourneyTitle(searchRequest, selectedTravelSolDataForReturn, false)}}</span>
+                            <h3 id="ettacc-ret-header-title" aria-hidden="true">Select return ticket: {{searchRequest?.ReturnTimesStartShow | date:'EEE, dd MMM yyyy'}}
+                            </h3>
+                            <div id="ettacc-ret-header-station" class="search-journey-header-station" aria-hidden="true">
+                                <p id="ettacc-ret-header-from-station">
+                                    <span id="ettacc-ret-header-from-station-title">{{selectedTravelSolDataForReturn?.DepartureTime?.split(" ")[0]}}</span>
+                                    {{commonServices?.getCityNameOnly(searchRequest?.ArrivalLocationName)}}
+                                </p>
+                                <img id="ettacc-ret-header-from-station-img" src="assets/images/new-design-img/to-arrow.svg" alt="" aria-hidden="true" />
+                                <p id="ettacc-ret-header-to-station">
+                                    <span id="ettacc-ret-header-to-station-txt">{{selectedTravelSolDataForReturn?.ArrivalTime?.split(" ")[0]}}</span>
+                                    {{commonServices?.getCityNameOnly(searchRequest?.DepartureLocationName)}}
+                                </p>
+                            </div>
+                        </div>
+                        <!---- End Return Journey header ---->
+
+                        <!---- Return tabs ---->
+                        <div id="ettacc-ret-tabs-area" class="ticket-tabs" *ngIf="searchRequest?.TravelSolutionDirection !== 'OPEN_RETURN'">
+                            <mat-tab-group id="ettacc-ret-tabs-group" preserveContent class="tab-awc" [ngClass]="{ 'single-active-mat-tab': isOnlyOneFareSelected(selectedTravelSolDataForReturn) }" (selectedTabChange)="onTabChange($event,'return', true)" [(selectedIndex)]="returnSelectedTabIndex" (focusin)="onTabFocus($event, 'return')">
+                                <!---- Return standard class ---->
+                                <mat-tab id="ettacc-ret-std-tab" *ngIf="selectedTravelSolDataForReturn?.IsStandardFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-ret-std-label-area" class="tabname-main" aria-describedby="retStdTicketClassMatTab">
+                                            <div id="ettacc-ret-std-ticket-label" class="ticket-label-tab" aria-hidden="true">Standard</div>
+                                            <div id="ettacc-ret-std-from-label" class="ticket-price" *ngIf="!isRetStandardClassSoldOut" aria-hidden="true">From {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForRetStdClass)}}</div>
+                                            <div id="ettacc-ret-std-sold-label" class="ticket-price" *ngIf="isRetStandardClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="retStdTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.standardClass, isRetStandardClassSoldOut, minPriceForRetStdClass, 'return')}}
+                                        </span>
+                                        <div id="ettacc-ret-std-legend" *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForReturn) && isExistAvantiOperator(selectedTravelSolDataForOutward)" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends"></div>
+                                        <button id="ettacc-ret-std-legend2" type="button" [tabIndex]="returnActiveClass === classTypeEnum?.standardClass ? 0 : -1" mat-button aria-label="Learn more about the comfort in each class" *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForReturn)" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.standardClass)" class="tab-legends mobile-hide-tab-legends tab-legends-btn">
+                                            <div id="ettacc-ret-std-legend2-inner" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-ret-std-legend2-txt" class="tab-legends-txt">With us, comfort<br>comes as standard</div>
+                                                <mat-icon id="ettacc-ret-std-legend2-icon">
+                                                    <img id="ettacc-ret-std-legend2-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-ret-std-learn-more" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForReturn)">
+                                        <button type="button" mat-button id="ettacc-ret-std-learn-more-link" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.standardClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, false)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-ret-std-learn-more-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <!---- Return Journey Cards ---->
+                                    <div id="ettacc-ret-std-cards-area" class="ticket-class-section" *ngIf="!isRetStandardClassSoldOut">
+                                        <p id="ettacc-ret-std-blank-txt" *ngIf="!isMobile && !isTablet" class="ticket-class-section-title label-hide-ondestop"></p>
+                                        <p id="ettacc-ret-std-single-tickets" class="ticket-class-section-title" *ngIf="(isMobile || isTablet) && selectedTravelSolDataForOutward && selectedTravelSolDataForReturn && !isRetStandardClassSoldOut" aria-label="Single tickets lorem ipsum">
+                                            <span id="ettacc-ret-std-single-tickets-txt">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-ret-std-card-row" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-ret-std-mat-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="selectedReturnRadio" *ngIf="listOfStandardTicketTypeForRet && listOfStandardTicketTypeForRet.length > 0">
+                                                <!---- standard ticket type & fare ---->
+                                                <div id="ettacc-ret-std-radio-loop_{{retStd}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfStandardTicketTypeForRet; let retStd = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-ret-std-radio-btn_{{retStd}}" [value]="fare?.Price" labelPosition="before" (change)="onReturnFareSelection(fare)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-ret-std-single-card_{{retStd}}" class="single-card">
+                                                            <div id="ettacc-ret-std-ticket-label_{{retStd}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-ret-std-ticket-label-inner_{{retStd}}" class="ticket-label-left">
+                                                                    <span id="ettacc-ret-std-offer-label_{{retStd}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-ret-std-group-save-label_{{retStd}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-ret-std-rail-sale-label_{{retStd}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-ret-std-railcard-applied-label_{{retStd}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-ret-std-cheapest-label_{{retStd}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-ret-std-price-label_{{retStd}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-ret-std-radio-card-label_{{retStd}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-ret-std-class-details_{{retStd}}" class="journey-class-details">
+                                                                    <div id="ettacc-ret-std-header_{{retStd}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-ret-std-header-title_{{retStd}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-ret-std-header-price_{{retStd}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-ret-std-one-way_{{retStd}}" class="journey-type" *ngIf="isMobile || isTablet" aria-hidden="true">
+                                                                        <img id="ettacc-ret-std-one-way-img_{{retStd}}" src="assets/images/new-design-img/return-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-ret-std-class-list_{{retStd}}" class="journey-class-list">
+                                                                        <ul id="ettacc-ret-std-list_{{retStd}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-ret-std-li_{{retStd}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-ret-std-list2_{{retStd}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-ret-std-li2_{{retStd}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-ret-std-railcard-not-applied-btn_{{retStd}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, true)" aria-hidden="true">
+                                                                        <span id="ettacc-ret-std-railcard-not-applied-txt_{{retStd}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-ret-std-railcard-not-applied-img_{{retStd}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, false)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-ret-std-ticket-details-area_{{retStd}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-ret-std-ticket-details-btn_{{retStd}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-ret-std-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isRetStandardClassSoldOut}" *ngIf="selectedTravelSolDataForReturn && isRetStandardClassSoldOut">
+                                        <div id="ettacc-ret-std-inner" class="notrains-found-card-inner">
+                                            <div id="ettacc-ret-std-train-not-found-icon" class="notrains-found-icon">
+                                                <img id="ettacc-ret-std-train-not-found-img" src="assets/images/new-design-img/sold-out-ticket.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-ret-std-not-train-not-found-content" class="notrains-found-content" *ngIf="suggestedClassLinksForRetSoldOut?.length">
+                                                <p id="ettacc-ret-std-not-train-not-found-title" class="notrains-found-title">Standard tickets are sold out online</p>
+                                                <p id="ettacc-ret-std-not-train-not-found-subcontent" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container *ngFor="let link of suggestedClassLinksForRetSoldOut; let i = index">
+                                                        <a id="ettacc-ret-std-not-train-not-found-link_{{i}}" (click)="onTabChange(link, 'return', true)">{{ link.label }}</a><span id="ettacc-ret-std-not-train-not-found-or-txt_{{i}}"
+                                                            *ngIf="i < suggestedClassLinksForRetSoldOut?.length - 1"> or
+                                                        </span>
+                                                    </ng-container> for more space and a guaranteed table.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-ret-std-links" class="radio-card-journey-details">
+                                            <a id="ettacc-ret-std-why-that-link" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-ret-std-view-trains-link" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-ret-std-view-trains-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+
+                                </mat-tab>
+                                <!---- End Return standard class ---->
+
+                                <!---- Return standard premium class ---->
+                                <mat-tab id="ettacc-ret-stdpremium-tab" *ngIf="selectedTravelSolDataForReturn?.IsStandardPremiumFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-ret-stdpremium-header" class="tabname-main" aria-describedby="retStdPremiumTicketClassMatTab">
+                                            <div id="ettacc-ret-stdpremium-title" class="ticket-label-tab desktop-label" aria-hidden="true">Standard Premium</div>
+                                            <div id="ettacc-ret-stdpremium-mobile-title" class="ticket-label-tab mobile-label" aria-hidden="true">Std Premium</div>
+                                            <div id="ettacc-ret-stdpremium-from-title" class="ticket-price" *ngIf="!isRetStdPremiumClassSoldOut" aria-hidden="true">From {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForRetStdPremiumClass)}}</div>
+                                            <div id="ettacc-ret-stdpremium-sold-title" class="ticket-price" *ngIf="isRetStdPremiumClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="retStdPremiumTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.stdPremiumClass, isRetStdPremiumClassSoldOut, minPriceForRetStdPremiumClass, 'return')}}
+                                        </span>
+                                        <div id="ettacc-ret-stdpremium-legends" *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForReturn)  && isExistAvantiOperator(selectedTravelSolDataForOutward)" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends" class="tab-legends"></div>
+                                        <button id="ettacc-ret-stdpremium-legends2" type="button" mat-button [tabIndex]="returnActiveClass === classTypeEnum?.stdPremiumClass ? 0 : -1" aria-label="Learn more about the comfort in each class" *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForReturn)" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.stdPremiumClass)" class="tab-legends mobile-hide-tab-legends tab-legends-btn">
+                                            <div id="ettacc-ret-stdpremium-legends2-content" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-ret-stdpremium-legends2-subcontent" class="tab-legends-txt">Enjoy more space and<br>a guaranteed table</div>
+                                                <mat-icon id="ettacc-ret-stdpremium-legends2-icon">
+                                                    <img id="ettacc-ret-stdpremium-legends2-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-ret-stdpremium-learn-more" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForReturn)">
+                                        <button type="button" mat-button id="ettacc-ret-stdpremium-learn-more-link" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.stdPremiumClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, false)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-ret-stdpremium-learn-more-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div id="ettacc-ret-stdpremium-ticket-section" class="ticket-class-section" *ngIf="!isRetStdPremiumClassSoldOut">
+                                        <p id="ettacc-ret-stdpremium-hide-label" class="ticket-class-section-title label-hide-ondestop"></p>
+                                        <p id="ettacc-ret-stdpremium-single-ticket" class="ticket-class-section-title" *ngIf="(isMobile || isTablet) && selectedTravelSolDataForOutward && selectedTravelSolDataForReturn && !isRetStdPremiumClassSoldOut" aria-label="Single tickets lorem ipsum">
+                                            <span id="ettacc-ret-stdpremium-single-ticket-txt">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-ret-stdpremium-journey-cards" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-ret-stdpremium-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="selectedReturnRadio" *ngIf="listOfStdPremiumClassTicketTypeForRet && listOfStdPremiumClassTicketTypeForRet.length > 0">
+                                                <!---- standard premium ticket type & fare ---->
+                                                <div id="ettacc-ret-stdpremium-radio-card-area_{{retStdPremium}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfStdPremiumClassTicketTypeForRet; let retStdPremium = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-ret-stdpremium-radio-btn_{{retStdPremium}}" [value]="fare?.Price" labelPosition="before" (change)="onReturnFareSelection(fare)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-ret-stdpremium-single-card_{{retStdPremium}}" class="single-card">
+                                                            <div id="ettacc-ret-stdpremium-ticket-label_{{retStdPremium}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-ret-stdpremium-ticket-label-inner_{{retStdPremium}}" class="ticket-label-left">
+                                                                    <span id="ettacc-ret-stdpremium-offer-label_{{retStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-ret-stdpremium-group-save-label_{{retStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-ret-stdpremium-rail-sale-label_{{retStdPremium}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-ret-stdpremium-railcard-applied-label_{{retStdPremium}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-ret-stdpremium-cheapest-label_{{retStdPremium}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-ret-stdpremium-price-label_{{retStdPremium}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-ret-stdpremium-radio-card-label_{{retStdPremium}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-ret-stdpremium-class-details_{{retStdPremium}}" class="journey-class-details">
+                                                                    <div id="ettacc-ret-stdpremium-header_{{retStdPremium}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-ret-stdpremium-header-title_{{retStdPremium}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-ret-stdpremium-header-price_{{retStdPremium}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-ret-stdpremium-one-way_{{retStdPremium}}" class="journey-type" *ngIf="isMobile || isTablet" aria-hidden="true">
+                                                                        <img id="ettacc-ret-stdpremium-one-way-img_{{retStdPremium}}" src="assets/images/new-design-img/return-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-ret-stdpremium-class-list_{{retStdPremium}}" class="journey-class-list">
+                                                                        <ul id="ettacc-ret-stdpremium-list_{{retStdPremium}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" aria-hidden="true">
+                                                                            <li id="ettacc-ret-stdpremium-li_{{retStdPremium}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-ret-stdpremium-list2_{{retStdPremium}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-ret-stdpremium-li2_{{retStdPremium}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-ret-stdpremium-railcard-not-applied-btn_{{retStdPremium}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, true)" aria-hidden="true">
+                                                                        <span id="ettacc-ret-stdpremium-railcard-not-applied-txt_{{retStdPremium}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-ret-stdpremium-railcard-not-applied-img_{{retStdPremium}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, false)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-ret-stdpremium-ticket-details_{{retStdPremium}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-ret-stdpremium-ticket-details-btn_{{retStdPremium}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-ret-stdpremium-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isRetStdPremiumClassSoldOut}" *ngIf="selectedTravelSolDataForReturn && isRetStdPremiumClassSoldOut">
+                                        <div id="ettacc-ret-stdpremium-sold-inner" class="notrains-found-card-inner">
+                                            <div id="ettacc-ret-stdpremium-sold-icon" class="notrains-found-icon">
+                                                <img id="ettacc-ret-stdpremium-sold-img" src="assets/images/new-design-img/Standardpremiumicon.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-ret-stdpremium-sold-content" class="notrains-found-content" *ngIf="suggestedClassLinksForRetSoldOut?.length">
+                                                <p id="ettacc-ret-stdpremium-sold-title" class="notrains-found-title">Standard Premium tickets are sold out online</p>
+                                                <p id="ettacc-ret-stdpremium-sold-subcontent" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container *ngFor="let link of suggestedClassLinksForRetSoldOut; let i = index">
+                                                        <a id="ettacc-ret-stdpremium-sold-link_{{i}}" (click)="onTabChange(link, 'return', true)">{{ link.label }}</a><span id="ettacc-ret-stdpremium-sold-or-txt_{{i}}"
+                                                            *ngIf="i < suggestedClassLinksForRetSoldOut?.length - 1"> or
+                                                        </span>
+                                                    </ng-container> to enjoy our most premium experience.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-ret-stdpremium-sold-links" class="radio-card-journey-details">
+                                            <a id="ettacc-ret-stdpremium-sold-why-thats-link" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-ret-stdpremium-sold-view-train-link" id="ettacc-ret-stdpremium-sold-" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-ret-stdpremium-sold-view-train-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+                                </mat-tab>
+                                <!---- End Return standard premium class ---->
+
+                                <!---- Return first class ---->
+                                <mat-tab id="ettacc-ret-first-tab" *ngIf="selectedTravelSolDataForReturn?.IsFirstClassFare">
+                                    <ng-template mat-tab-label>
+                                        <div id="ettacc-ret-first-header" class="tabname-main" aria-describedby="retFirstClassTicketClassMatTab">
+                                            <div id="ettacc-ret-first-header-label" class="ticket-label-tab" aria-hidden="true">First Class</div>
+                                            <div id="ettacc-ret-first-from-label" class="ticket-price" *ngIf="!isRetFirstClassSoldOut" aria-hidden="true">From {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(minPriceForRetFirstClass)}}</div>
+                                            <div id="ettacc-ret-first-sold-label" class="ticket-price" *ngIf="isRetFirstClassSoldOut" aria-hidden="true">Sold out online</div>
+                                        </div>
+                                        <span id="retFirstClassTicketClassMatTab" class="sr-only">
+                                          {{getArialLabelForSelectedClass(classTypeEnum.firstClass, isRetFirstClassSoldOut, minPriceForRetFirstClass, 'return')}}
+                                        </span>
+                                        <div id="ettacc-ret-first-legend" *ngIf="!isMobile && !isTablet && !isExistAvantiOperator(selectedTravelSolDataForReturn) && isExistAvantiOperator(selectedTravelSolDataForOutward)" class="tab-legends tab-legends-hide-show mobile-hide-tab-legends"></div>
+                                        <button id="ettacc-ret-first-legend2" type="button" mat-button [tabIndex]="returnActiveClass === classTypeEnum?.firstClass ? 0 : -1" aria-label="Learn more about the comfort in each class" *ngIf="!isMobile && !isTablet && isExistAvantiOperator(selectedTravelSolDataForReturn)" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.firstClass)" class="tab-legends mobile-hide-tab-legends tab-legends-btn">
+                                            <div id="ettacc-ret-first-legend2-inner" class="inner-tab-legends" aria-hidden="true">
+                                                <div id="ettacc-ret-first-legend2-title" class="tab-legends-txt">Our most premium<br>experience</div>
+                                                <mat-icon id="ettacc-ret-first-legend2-icon">
+                                                    <img id="ettacc-ret-first-legend2-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                                </mat-icon>
+                                            </div>
+                                        </button>
+                                    </ng-template>
+                                    <div id="ettacc-ret-firstclass-learn-more" class="comfot-in-class" *ngIf="(isMobile || isTablet) && isExistAvantiOperator(selectedTravelSolDataForReturn)">
+                                        <button type="button" mat-button id="ettacc-ret-firstclass-learn-more-link" (click)="openTicketClassInfoPopup($event,true, classTypeEnum?.stdPremiumClass)" [attr.aria-label]="getLearnMoreAriaLabel(searchRequest, false)">
+                                            Learn more about the comfort in each class
+                                            <img id="ettacc-ret-firstclass-learn-more-img" src="assets/images/new-design-img/info-icon.svg" alt="" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div id="ettacc-ret-first-class-section" class="ticket-class-section" *ngIf="!isRetFirstClassSoldOut">
+                                        <p id="ettacc-ret-first-blank-label" class="ticket-class-section-title label-hide-ondestop"></p>
+                                        <p id="ettacc-ret-first-single-ticket" id="ettacc-ret-first-" class="ticket-class-section-title" *ngIf="(isMobile || isTablet) && selectedTravelSolDataForOutward && selectedTravelSolDataForReturn && !isRetFirstClassSoldOut" aria-label="Single tickets lorem ipsum">
+                                            <span id="ettacc-ret-first-single-ticket-txt">Single tickets</span> 2 single tickets for outward & return
+                                        </p>
+                                        <div id="ettacc-ret-first-cards-row" class="search-journey-cards-row">
+                                            <mat-radio-group id="ettacc-ret-first-radio-group" aria-label="Select outward journey" class="search-journey-card-row" [(ngModel)]="selectedReturnRadio" *ngIf="listOfFirstClassTicketTypeForRet && listOfFirstClassTicketTypeForRet.length > 0">
+                                                <!---- first class ticket type & fare ---->
+                                                <div id="ettacc-ret-first-loop_{{retStdFirstClass}}" class="radio-card journey-class-card new-radio-card" *ngFor="let fare of listOfFirstClassTicketTypeForRet; let retStdFirstClass = index" [ngClass]="{ 'label-less-radio-card': isLabelLessCard(fare), 'multi-label-class': shouldAddClass(fare) }">
+                                                    <mat-radio-button id="ettacc-ret-first-radio-group_{{retStdFirstClass}}" [value]="fare?.Price" labelPosition="before" (change)="onReturnFareSelection(fare)" *ngIf="!fare?.IsSeatNotAvailable">
+                                                        <div id="ettacc-ret-first-radio-inner_{{retStdFirstClass}}" class="single-card">
+                                                            <div id="ettacc-ret-first-ticket-label_{{retStdFirstClass}}" class="ticket-label" aria-hidden="true">
+                                                                <div id="ettacc-ret-first-ticket-label-inner_{{retStdFirstClass}}" class="ticket-label-left">
+                                                                    <span id="ettacc-ret-first-offer-label_{{retStdFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.InOffer">Offer</span>
+                                                                    <span id="ettacc-ret-first-group-save-label_{{retStdFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsGroupSave">GroupSave</span>
+                                                                    <span id="ettacc-ret-first-rail-sale-label_{{retStdFirstClass}}" class="ticket-label-name offer-ticket" *ngIf="fare?.IsRailSale">Rail Sale</span>
+                                                                    <span id="ettacc-ret-first-railcard-label_{{retStdFirstClass}}" class="ticket-label-name railcard-applied" *ngIf="isExistRailCardApplied(fare) === 1">Railcard applied</span>
+                                                                    <span id="ettacc-ret-first-cheapest-label_{{retStdFirstClass}}" class="ticket-label-name cheapest-ticket" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale">Cheapest</span>
+                                                                    <span id="ettacc-ret-first-price-label_{{retStdFirstClass}}" class="ticket-label-name limited-ticket"
+                                                                        *ngIf="fare?.IsLimited">{{fare?.AvailableTicket}}
+                                                                        {{fare?.AvailableTicket > 1 ? 'tickets' :
+                                                                        'ticket'}} left at this price
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div id="ettacc-ret-first-radio-card-label_{{retStdFirstClass}}" class="radio-card-custom-label">
+                                                                <div id="ettacc-ret-first-radio-card-inner_{{retStdFirstClass}}" class="journey-class-details">
+                                                                    <div id="ettacc-ret-first-header_{{retStdFirstClass}}" class="journey-class-title-price" aria-hidden="true">
+                                                                        <h3 id="ettacc-ret-first-header-title_{{retStdFirstClass}}" class="journey-class-title">
+                                                                            {{ fare?.TicketTypeName }}
+                                                                        </h3>
+                                                                        <p id="ettacc-ret-first-header-price_{{retStdFirstClass}}" class="journey-class-price">
+                                                                            {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fare?.Price)}}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div id="ettacc-ret-first-one-way_{{retStdFirstClass}}" class="journey-type" *ngIf="isMobile || isTablet" new-radio-card>
+                                                                        <img id="ettacc-ret-first-one-way-img_{{retStdFirstClass}}" src="assets/images/new-design-img/return-arrow.svg" alt="" aria-hidden="true" />One way
+                                                                    </div>
+                                                                    <div id="ettacc-ret-first-class-list_{{retStdFirstClass}}" class="journey-class-list">
+                                                                        <ul id="ettacc-ret-first-list_{{retStdFirstClass}}" class="ticket-class-terms-list" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0" new-radio-card>
+                                                                            <li id="ettacc-ret-first-li_{{retStdFirstClass}}_{{i}}" *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                                        </ul>
+                                                                        <ul id="ettacc-ret-first-list2_{{retStdFirstClass}}" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription" class="ticket-class-terms-list" aria-hidden="true">
+                                                                            <li id="ettacc-ret-first-li2_{{retStdFirstClass}}" [innerHTML]="fare?.TicketDescription"></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    <button id="ettacc-ret-first-railcard-notapplied-btn_{{retStdFirstClass}}" type="button" mat-button class="railcard-not-applied-btn" *ngIf="isExistRailCardApplied(fare) === 2" (click)="openNotAppliedRailCard()" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, true)" aria-hidden="true">
+                                                                        <span id="ettacc-ret-first-railard-notapplied-txt_{{retStdFirstClass}}" class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                                        <img id="ettacc-ret-first-railcard-notapplied-img_{{retStdFirstClass}}" src="assets/images/new-design-img/Info-railcard.svg" alt="" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Do not touch this because this is for accessibility -->
+                                                        <span class="sr-only" *ngIf="fare?.InOffer && !fare?.isSelected">Offer</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsGroupSave && !fare?.isSelected">GroupSave</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsRailSale && !fare?.isSelected">Rail Sale</span>
+                                                        <span class="sr-only" *ngIf="isExistRailCardApplied(fare) === 1 && !fare?.isSelected">Railcard applied</span>
+                                                        <span class="sr-only" *ngIf="fare?.isCheapestFareOverall && !fare?.InOffer && !fare?.IsGroupSave && !fare?.IsRailSale && !fare?.isSelected">Cheapest</span>
+                                                        <span class="sr-only" *ngIf="fare?.IsLimited && !fare?.isSelected">
+                                                            {{fare?.AvailableTicket}} {{fare?.AvailableTicket > 1 ? 'tickets' : 'ticket'}} left at this price
+                                                        </span>
+                                                        <span class="sr-only" *ngIf="!fare?.isSelected">{{getAriaLabel(fare, 'One way')}}</span>
+                                                        <span class="sr-only">{{getAriaLabelAfterSelected(fare, false)}}</span>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription && fare?.FareDescription?.length > 0 && !fare?.isSelected">
+                                                            <li *ngFor="let item of fare.FareDescription; let i = index">{{item}}</li>
+                                                        </ul>
+                                                        <ul class="sr-only" *ngIf="fare?.FareDescription?.length == 0 && fare?.TicketDescription && !fare?.isSelected">
+                                                            <li [innerHTML]="fare?.TicketDescription"></li>
+                                                        </ul>
+                                                        <button type="button" mat-button class="railcard-not-applied-btn sr-only" *ngIf="isExistRailCardApplied(fare) === 2 && !fare?.isSelected" [attr.aria-label]="getRailcardNotAppliedAriaLabel(searchRequest, false)">
+                                                            <span class="railcard-not-applied-btn-txt">Railcard not applied to this ticket</span>
+                                                        </button>
+                                                        <!-- End Do not touch this because this is for accessibility -->
+                                                    </mat-radio-button>
+                                                    <div id="ettacc-ret-first-ticket-details-area1_{{retStdFirstClass}}" class="radio-card-journey-details new-radio-card-journey-details">
+                                                        <button id="ettacc-ret-first-ticket-details-btn_{{retStdFirstClass}}" type="button" mat-button (click)="openTicketDetailInfo(fare, true)" [attr.aria-label]="commonServices?.getAriaLabelOnTicketDetails(searchRequest, fare?.TicketTypeName, false)">Ticket details</button>
+                                                    </div>
+                                                </div>
+                                            </mat-radio-group>
+                                        </div>
+                                    </div>
+
+                                    <!---- Sold Out card ---->
+                                    <div id="ettacc-ret-first-sold-area" class="notrains-found-card open-return-card" [ngClass]="{'sold-out-card': isRetFirstClassSoldOut}" *ngIf="selectedTravelSolDataForReturn && isRetFirstClassSoldOut">
+                                        <div id="ettacc-ret-first-sold-inner" class="notrains-found-card-inner">
+                                            <div id="ettacc-ret-first-sold-nofound" class="notrains-found-icon">
+                                                <img id="ettacc-ret-first-sold-nofound-img" src="assets/images/new-design-img/firct-class-icon.svg" alt="" aria-hidden="true" />
+                                            </div>
+                                            <div id="ettacc-ret-first-sold-content" class="notrains-found-content" *ngIf="suggestedClassLinksForRetSoldOut?.length">
+                                                <p id="ettacc-ret-first-sold-title" class="notrains-found-title">First class tickets are sold out online</p>
+                                                <p id="ettacc-ret-first-sold-subcontent" class="notrains-found-sub-content">
+                                                    View other train times to select a different train or switch to
+                                                    <ng-container *ngFor="let link of suggestedClassLinksForRetSoldOut; let i = index">
+                                                        <a id="ettacc-ret-first-sold-link_{{i}}" (click)="onTabChange(link, 'return', true)">{{ link.label }}</a><span id="ettacc-ret-first-sold-or-txt_{{i}}" *ngIf="i < suggestedClassLinksForRetSoldOut?.length - 1"> or</span>
+                                                    </ng-container>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="ettacc-ret-first-sold-links" class="radio-card-journey-details">
+                                            <a id="ettacc-ret-first-sold-why-that-link" (click)="enhancedWhysThatSoldOutTicketPopup()" class="notrains-found-whythat-link">Why's that?</a>
+                                            <a id="ettacc-ret-first-sold-view-train-link" (click)="redirectingOnSearchResultsPage()" class="notrains-found-view-other">View other train times 
+                                                <img id="ettacc-ret-first-sold-view-train-img" src="assets/images/new-design-img/icon-chevron.svg" alt="" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!---- End Sold Out card ---->
+
+                                </mat-tab>
+                                <!---- End Return first class ---->
+                                <mat-tab></mat-tab>
+                            </mat-tab-group>
+                        </div>
+                        <!---- End Return tabs ---->
+                    </div>
+                    <!----- End Return Journey ----->
+                </div>
+            </div>
+        </div>
+    </section>
+    <!----- End Searched Journey ----->
+
+    <div id="ettacc-railcard-cheapest-area" class="railcard-cheapest-card" *ngIf="!isLoaderActive">
+        <!-- Railcard applied -->
+        <div id="ettacc-railcard-area" class="railcard-applied-message" *ngIf="isRailCardAppliedDivVisible">
+            <mat-card id="ettacc-railcard-card">
+                <mat-card-content id="ettacc-railcard-content">
+                    <div id="ettacc-railcard-single-card" class="single-card">
+                        <div id="ettacc-railcard-blank">
+                            <div id="ettacc-railcard-ticket-label" class="ticket-label">
+                                <div id="ettacc-railcard-title" class="using-railcard-title">
+                                    <span id="ettacc-railcard-title-txt">Using a railcard?</span>
+                                </div>
+                                <button id="ettacc-railcard-close-btn" (click)="closeRailcardAppliedSection()" mat-button class="cheaper-option-close-btn" aria-label="close using a railcard modal">
+                                    <img id="ettacc-railcard-close-img" src="assets/images/new-design-img/close-icons.svg" alt="" aria-hidden="true" />
+                                </button>
+                            </div>
+                            <div id="ettacc-railcard-msg" class="cheapest-ticket-content mb-0">
+                                <p id="ettacc-railcard-msg-txt">
+                                    Only eligible railcards were applied to this ticket. Check price breakdown to learn more.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+        <!-- End Railcard applied -->
+
+        <!-- Cheapest ticket message -->
+        <div id="ettacc-cheapest-area" class="cheapest-ticket-message for-desktop-content" *ngIf="showBottomDiv">
+            <mat-card id="ettacc-cheapest-card">
+                <mat-card-content id="ettacc-cheapest-content">
+                    <div id="ettacc-cheapest-single-card" class="single-card">
+                        <div id="ettacc-cheapest-blank">
+                            <div id="ettacc-cheapest-ticket-label" class="ticket-label">
+                                <div id="ettacc-cheapest-title" class="ticket-label-left">
+                                    <span id="ettacc-cheapest-title-txt" class="ticket-label-name cheapest-ticket f-600 vertical-center">Cheaper option</span>
+                                </div>
+                                <button id="ettacc-cheapest-close-btn" (click)="closeSection()" mat-button class="cheaper-option-close-btn" aria-label="close cheaper option modal">
+                                    <img id="ettacc-cheapest-close-img" src="assets/images/new-design-img/close-icons.svg" alt="" aria-hidden="true" />
+                                </button>
+                            </div>
+                            <div id="ettacc-cheapest-msg" class="cheapest-ticket-content">
+                                <p id="ettacc-cheapest-msg-txt">
+                                    {{ getArticle(cheaperFareType) }} {{formatFareType(cheaperFareType)}} {{cheaperFareTicketClass}} class ticket for your journey costs {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(cheaperFarePrice)}}, ticket
+                                    conditions
+                                    may vary.
+                                </p>
+                            </div>
+                        </div>
+                        <div id="ettacc-cheapest-btn-area" class="cheapest-ticket-button text-end">
+                            <button id="ettacc-cheapest-select-option-btn" (click)="onSelectCheapestFlexiOption()" type="button" mat-button mat-dialog-close class="outline-btn select-button">
+                                <span id="ettacc-cheapest-select-option-txt" class="cheaper-option-txt">Select this option</span>
+                                <img id="ettacc-cheapest-select-option-btn-arrow" src="assets/images/new-design-img/cheaper-option-mobile-arrow.svg" alt="" aria-hidden="true" class="cheaper-mobile-arrow" />
+                            </button>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+        <!-- End Cheapest ticket message -->
+
+        <!--Cheapest ticket message mobile start-->
+        <div id="ettacc-cheapest-area-mobile" class="cheapest-ticket-message for-mobile-content" *ngIf="showBottomDiv" (click)="onSelectCheapestFlexiOption()">
+            <mat-card id="ettacc-cheapest-card-mobile">
+                <mat-card-content id="ettacc-cheapest-content-mobile">
+                    <div id="ettacc-cheapest-single-card-mobile" class="single-card">
+                        <div id="ettacc-cheapest-blank-mobile">
+                            <div id="ettacc-cheapest-ticket-label-mobile" class="ticket-label">
+                                <div id="ettacc-cheapest-title-mobile" class="ticket-label-left">
+                                    <span id="ettacc-cheapest-title-txt-mobile" class="ticket-label-name cheapest-ticket f-600 vertical-center">Cheaper option</span>
+                                </div>
+                                <button id="ettacc-cheapest-close-btn-mobile" (click)="closeSection()" mat-button class="cheaper-option-close-btn" aria-label="close cheaper option modal">
+                                    <img id="ettacc-cheapest-close-img-mobile" src="assets/images/new-design-img/close-icons.svg" alt="" aria-hidden="true" />
+                                </button>
+                            </div>
+                            <div id="ettacc-cheapest-msg-mobile" class="cheapest-ticket-content">
+                                <p id="ettacc-cheapest-msg-txt-mobile">
+                                    {{ getArticle(cheaperFareType) }} {{formatFareType(cheaperFareType)}} {{cheaperFareTicketClass}} class ticket for your journey costs {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(cheaperFarePrice)}}, ticket
+                                    conditions
+                                    may vary.
+                                </p>
+                            </div>
+                        </div>
+                        <div id="ettacc-cheapest-btn-area-mobile" class="cheapest-ticket-button text-end">
+                            <button id="ettacc-cheapest-select-option-btn-mobile" type="button" mat-button mat-dialog-close class="outline-btn select-button">
+                                <span id="ettacc-cheapest-select-option-txt-mobile" class="cheaper-option-txt">Select this option</span>
+                                <img id="ettacc-cheapest-select-option-btn-arrow-mobile" src="assets/images/new-design-img/cheaper-option-mobile-arrow.svg" alt="" aria-hidden="true" class="cheaper-mobile-arrow" />
+                            </button>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+        <!--Cheapest ticket message mobile end-->
+    </div>
+
+</main>
+<footer id="ettacc-main-footer">
+    <app-enhanced-footer [isDisabled]="isButtonDisabled()" [travelSolution]="data"
+        [isReturn]="searchRequest?.IsReturnRequest" [mixingDeckSearchRequest]="searchRequest"
+        (showReturnDivInMobile)="showReturnDivInMobile()" [isUserClickedReturnBtn]="isUserClickedReturnBtn"
+        (userClickedReturnChange)="handleUserClick($event)" [searchResponse]="searchResponse"
+        [searchReturnResponse]="searchReturnResponse" [isPriceBreakDownDisabled]="isPriceBreakDownButtonDisabled()" [nreJourneyExtrasResponse]="nreJourneyExtrasResponse" [cameFromFlexibleReturn]="cameFromFlexibleReturn"></app-enhanced-footer>
+</footer>

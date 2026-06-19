@@ -1,0 +1,786 @@
+<app-header></app-header>
+<app-account-header [newHeaderFlag]="myProfileHideHeaderFlag" [headerFlag]="hideHeaderFlag" class="account-profile"></app-account-header>
+<div id="mp-main" class="bg-f5 pb-85 buynow-bttm my-profile pt-96 m-mt-26">
+    <div id="mp-container" class="container plr-xs-5 my-profile-container">
+        <div id="mp-row" class="row mlr-xs-5">
+            <div id="mp-col" class="col-md-12 p-0">
+                <div id="mp-personal-address-row" class="row">
+                    <div id="mp-personal-col" class="col-lg-6 col-md-12 col-sm-12 col-12 mb-15-container">
+                        <div id="mp-personal-inner" class="p-relative bg-fff br-5 account-card-p">
+                            <div id="mp-personal-div" class="upgrade-post-edit-form">
+                                <form id="mp-personal-form" [formGroup]="personalDetail">
+                                    <div id="mp-personal-header">
+                                        <div id="mp-personal-header-div" class="mb-16 align-items-center d-flex justify-between">
+                                            <div id="mp-personal-title-header">
+                                                <div id="mp-personal-title" class="section-title">
+                                                    Personal details
+                                                </div>
+                                            </div>
+                                            <div id="mp-personal-edit-div">
+                                                <button id="mp-personal-edit-btn" class="new-default-outline-btn" aria-label="Edit personal details button" [hidden]="showPersonalDetails" (click)=editPersonalDetails() mat-button>
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="mp-personal-details">
+                                        <div id="mp-personal-collapse-details" class="" [hidden]="showPersonalDetails">
+                                            <div id="mp-personal-name-div" class="mb-16">
+                                                <p id="mp-personal-name-title" class="f-12 lh-16 font-dark mb-0">Name</p>
+                                                <p id="mp-personal-name-value" class="mt-04 f-16 font-700 lh-22 mb-0 font-dark word-wrap-break-word">
+                                                    {{customerDetailResponse.Title}}
+                                                    {{customerDetailResponse.FirstName}}
+                                                    {{customerDetailResponse.LastName}}
+                                                </p>
+                                            </div>
+                                            <div id="mp-personal-email-div" class="mb-16">
+                                                <p id="mp-personal-email-title" class="f-12 lh-16 font-dark mb-0">Email</p>
+                                                <p id="mp-personal-email-value" class="mt-04 f-16 font-700 lh-22 mb-0 font-dark word-break-all">{{customerDetailResponse.Email}}</p>
+                                            </div>
+                                            <div id="mp-personal-mobile-number-div" class="mb-16">
+                                                <p id="mp-personal-mobile-number-title" class="f-12 lh-16 font-dark mb-0">Mobile number</p>
+                                                <p id="mp-personal-mobile-number-value" class="mt-04 f-16 font-700 lh-22 mb-0 font-dark">
+                                                    {{customerDetailResponse.MobileNumber}}
+                                                </p>
+                                            </div>
+                                            <div id="mp-personal-dob-div" class="mb-16">
+                                                <p id="mp-personal-dob-title" class="f-12 lh-16 font-dark mb-0">Date of Birth</p>
+                                                <p id="mp-personal-dob-value" class="mt-04 f-16 font-700 lh-22 mb-0 font-dark">
+                                                    {{showMonth}} {{showYear}}
+                                                </p>
+                                            </div>
+                                            <div id="mp-personal-photocard-div" class="mb-0">
+                                                <p id="mp-personal-photocard-title" class="f-12 lh-16 font-dark mb-0">Photocard</p>
+                                                <p id="mp-personal-photocard-value" class="mt-04 f-16 font-700 lh-22 mb-0 font-dark">
+                                                    {{customerDetailResponse.PhotoCardId}}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="mp-personal-form-main" [hidden]="!showPersonalDetails">
+                                            <div id="mp-personal-form-row" class="row">
+                                                <div class="col-12" id="title">
+                                                    <div id="mp-personal-form-title-inner" class="mb-16 upgrade-mat-select">
+                                                        <label id="mp-personal-form-title-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Title
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-title-mat-form" class="d-block example-full-width default-input default-input-brdr new-select" floatLabel="never">
+                                                            <mat-select id="mp-personal-form-title-mat-select" formControlName="title" class="border-gray f-16" (selectionChange)="changeTitle()" aria-labelledby="title" aria-busy="true">
+                                                                <mat-option id="mp-personal-form-title-choose" value="">Choose Title</mat-option>
+                                                                <mat-option id="mp-personal-form-title-list_{{titleListIndex}}" *ngFor="let title of commonService.titleListArray; let titleListIndex = index;" [value]="title">{{title}}</mat-option>
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12" id="otherTypeField" *ngIf="personalDetail.get('title').value =='Other'">
+                                                    <div id="mp-personal-form-other-title-div" class="mb-16">
+                                                        <label id="mp-personal-form-other-title-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Other Title
+                                                            <span id="mp-personal-form-other-title-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-other-title-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-other-title-input" matInput placeholder="Enter other title" aria-labelledby="otherTypeField" type="text" 
+                                                            formControlName="otherTypeField" maxlength="10">
+                                                            <mat-error id="mp-personal-form-other-title-mat-error">
+                                                                <span id="mp-personal-form-other-title-mand-error" *ngIf="personalDetail.get('otherTypeField').invalid && personalDetail.get('otherTypeField').touched && personalDetail.get('otherTypeField').errors.required" class="dark-spark f-12 lh-16 mb-0">
+                                                                    Please complete this mandatory field.
+                                                                </span>
+                                                                <span id="mp-personal-form-other-title-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('otherTypeField').touched && personalDetail.get('otherTypeField').hasError('pattern')">
+                                                                    Please enter a valid First Name.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-12" id="firstname">
+                                                    <div id="mp-personal-form-first-name-inner" class="mb-16">
+                                                        <label id="mp-personal-form-first-name-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Name
+                                                            <span id="mp-personal-form-first-name-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                        </label>     
+                                                        <mat-form-field id="mp-personal-form-first-name-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-first-name-input" matInput placeholder="Enter name" aria-labelledby="firstname"
+                                                                formControlName="firstname" maxlength="50">
+                                                            <mat-error id="mp-personal-form-first-name-mat-error">
+                                                                <span id="mp-personal-form-first-name-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('firstname').invalid && personalDetail.get('firstname').errors.required">
+                                                                    Please complete this mandatory field.
+                                                                </span>
+                                                                <span id="mp-personal-form-first-name-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('firstname').hasError('pattern')">
+                                                                    Please enter a valid Name.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-12" id="surname">
+                                                    <div id="mp-personal-form-surname-inner" class="mb-16">
+                                                        <label id="mp-personal-form-surname-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Surname
+                                                            <span id="mp-personal-form-surname-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-surname-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-surname-input" matInput placeholder="Surname" formControlName="surname"
+                                                            minlength="2" maxlength="50" aria-labelledby="surname">
+                                                            <mat-error id="mp-personal-form-surname-mat-error">
+                                                                <span id="mp-personal-form-surname-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('surname').invalid && personalDetail.get('surname').errors.required">
+                                                                    Please complete this mandatory field.
+                                                                </span>
+                                                                <span id="mp-personal-form-surname-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('surname').hasError('pattern')">
+                                                                    Please enter a valid Surname.
+                                                                </span>
+                                                                <span class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('surname').touched && personalDetail.get('surname').hasError('minlength')">
+                                                                    Surname must contain at least 2 characters.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-12" id="email">
+                                                    <div id="mp-personal-form-email-inner" class="mb-16">
+                                                        <label id="mp-personal-form-email-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Email
+                                                            <span id="mp-personal-form-email-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-email-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-email-input" matInput placeholder="Email" formControlName="email"
+                                                                [prevent-keys]="[32]" readonly class="disabled"
+                                                                aria-labelledby="email">
+                                                            <mat-error id="mp-personal-form-email-mat-error">
+                                                                <span id="mp-personal-form-email-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('email').invalid && personalDetail.get('email').errors.required">
+                                                                    Please complete this mandatory field.
+                                                                </span>
+                                                                <span id="mp-personal-form-email-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('email').hasError('emailRegexError')">
+                                                                    Email is not valid.
+                                                                </span>
+                                                                <span id="mp-personal-form-email-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('email').hasError('maxlength')">
+                                                                    Invalid email address length. Please enter a valid email address.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                        <button id="mp-personal-form-email-change-email-btn" class="font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 del-add-btn"
+                                                            *ngIf="customerDetailResponse && customerDetailResponse?.IsChangeEmailEnabled" mat-button (click)="changeEmail()" aria-label="Change email">
+                                                            Change email
+                                                            <span id="mp-personal-form-email-change-email-icon" class="ml-04 change-password-arrow">
+                                                                <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z"
+                                                                        fill="#E42B00" />
+                                                                </svg>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-12" id="mobilenumber">
+                                                    <div id="mp-personal-form-mobile-number-inner" class="mb-16">
+                                                        <label id="mp-personal-form-mobile-number-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                            Mobile number
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-mobile-number-mat-form"
+                                                            class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-mobile-number-input" matInput placeholder="Mobile number" formControlName="mobile" maxlength="14" appOnlyMobilenumber (keydown)=CheckLetterPresence($event) aria-labelledby="mobilenumber">
+                                                            <mat-error id="mp-personal-form-mobile-number-mat-error">
+                                                                <div id="mp-personal-form-mobile-number-condition" *ngIf="personalDetail.get('mobile').hasError('checkZeroPosition')">
+                                                                    <span id="mp-personal-form-mobile-number-condition-title" class="dark-spark f-12 lh-16 mb-0">Mobile number should be between
+                                                                        11
+                                                                        and 14 digits,Mobile number should be start with 0 or
+                                                                        +,Mobile number should not be start with 00..</span>
+                                                                </div>
+                                                                <div id="mp-personal-form-mobile-number-error" *ngIf="personalDetail.get('mobile').hasError('letterError')">
+                                                                    <span id="mp-personal-form-mobile-number-error-title" class="dark-spark f-12 lh-16 mb-0">
+                                                                        Mobile number should not contain any letter
+                                                                    </span>
+                                                                </div>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                                <div id="mp-personal-form-dob-col" class="col-12">
+                                                    <div id="mp-personal-form-dob-div" class="mb-16">
+                                                        <div id="mp-personal-form-dob-form-group" class="form-group">
+                                                            <label id="mp-personal-form-dob-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                                Date of Birth
+                                                            </label>
+                                                            <div id="mp-personal-form-dob-row" class="row">
+                                                                <div class="col-6" id="dob">
+                                                                    <mat-form-field id="mp-personal-form-dob-month-mat-form"
+                                                                        class="d-block example-full-width default-input default-input-brdr new-input"
+                                                                        floatLabel="never">
+                                                                        <input id="mp-personal-form-dob-month-input" matInput type="text" placeholder="MM"
+                                                                            formControlName="dobMonth" maxlength="2"
+                                                                            (blur)="convertMonth()" aria-labelledby="dob">
+                                                                    </mat-form-field>
+                                                                </div>
+                                                                <div class="col-6" id="yyyy">
+                                                                    <mat-form-field id="mp-personal-form-dob-year-mat-form"
+                                                                        class="d-block example-full-width default-input default-input-brdr new-input"
+                                                                        floatLabel="never">
+                                                                        <input id="mp-personal-form-dob-year-input" matInput type="text" placeholder="YYYY"
+                                                                            formControlName="dobYear" maxlength="4"
+                                                                            aria-labelledby="yyyy">
+                                                                    </mat-form-field>
+                                                                </div>
+                                                            </div>
+                                                            <mat-error id="mp-personal-form-dob-mat-error">
+                                                                <div id="mp-personal-form-dob-error-div" *ngIf="(personalDetail.get('dobMonth').dirty && personalDetail.get('dobMonth').invalid) || (personalDetail.get('dobYear').dirty && personalDetail.get('dobYear').invalid)">
+                                                                    <span id="mp-personal-form-dob-valid-error" class="dark-spark f-12 lh-16 mb-0">
+                                                                        Please enter a valid date of birth (mm/yyyy)
+                                                                    </span>
+                                                                </div>
+                                                            </mat-error>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12" id="photocard">
+                                                    <div id="mp-personal-form-photocard-inner">
+                                                        <label id="mp-personal-form-photocard-label" class="font-dark font-700 f-16 lh-22 mb-8" for="lab">
+                                                            Photocard
+                                                            <span id="mp-personal-form-photocard-mand" class="dark-spark font-700 f-16 lh-22"></span>
+                                                        </label>
+                                                        <mat-form-field id="mp-personal-form-photocard-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                            <input id="mp-personal-form-photocard-input" matInput placeholder="Photo Card"
+                                                                formControlName="photocardid" maxlength="7"
+                                                                aria-labelledby="photocard">
+                                                            <mat-error id="mp-personal-form-photocard-mat-error">
+                                                                <span id="mp-personal-form-photocard-valid-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('photocardid').hasError('pattern')">
+                                                                    Please enter a valid Photo Card.
+                                                                </span>
+                                                                <span id="mp-personal-form-photocard-valid-error2" class="dark-spark f-12 lh-16 mb-0" *ngIf="personalDetail.get('photocardid').hasError('maxLength')">
+                                                                    Please enter a valid length Photo Card.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-form-field>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="mp-personal-form-btn-row" class="row">
+                                        <div id="mp-personal-form-btn-col" class="col-12">
+                                            <button id="mp-personal-form-btn-save" class="new-default-btn mr-16 mt-48" aria-label="Save personal details button" [hidden]="!showPersonalDetails" (click)=editPersonalDetails() [disabled]="!personalDetail.valid" mat-button>
+                                                Save
+                                            </button>
+                                            <button id="mp-personal-form-btn-cancel" class="new-default-outline-btn mt-48" aria-label="Cancel personal details button" [hidden]="!showPersonalDetails" (click)=cancelPersonalDetails() mat-button>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="mp-address-col" class="col-lg-6 col-md-12 col-sm-12 col-12 mt-991-24 mb-15-container">
+                        <div id="mp-address-div" class="p-relative bg-fff br-5 account-card-p">
+                            <div id="mp-address-inner">
+                                <div id="mp-address-header">
+                                    <div id="mp-address-header-inner" class="align-items-center d-flex justify-between">
+                                        <div id="mp-address-title-div">
+                                            <div id="mp-address-title" class="section-title">
+                                                Addresses
+                                            </div>
+                                        </div>
+                                        <div id="mp-address-add-btn-div" *ngIf="showAddAdress">
+                                            <button id="mp-address-add-btn" mat-button class="new-default-outline-btn" (click)="addressmodal()">
+                                                Add address
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="addEditAddressDiv" class="mt-32 upgrade-post-edit-form" *ngIf="isAddressShow">
+                                    <div id="mp-address-edit-header" class="row">
+                                        <div id="mp-address-edit-header-inner" class="col-12">
+                                            <h2 id="mp-address-add-title" class="mt-0 ms-0 me-0 f-18 lh-22 font-dark font-700 mb-16" *ngIf="isAddAddress">Add address</h2>
+                                            <h2 id="mp-address-edit-title" class="mt-0 ms-0 me-0 f-18 lh-22 font-dark font-700 mb-16" *ngIf="!isAddAddress">Edit address {{editIndex + 1}}</h2>
+                                        </div>
+                                    </div>
+                                    <form id="mp-address-form" [formGroup]="addressForm" (ngSubmit)="onAddressCreated()">
+                                        <div id="mp-address-form-row" class="row">
+                                            <div class="col-12" id="postcode">
+                                                <div id="mp-address-form-postcode-inner" class="mb-16">
+                                                    <label id="mp-address-form-postcode-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        Postcode
+                                                        <span id="mp-address-form-postcode-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-postcode-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="postcode" id="postCode" type="text"
+                                                        formControlName="postCode" maxlength="10" [prevent-keys]="[32]" minlength="4">
+                                                        <mat-error id="mp-address-form-postcode-mat-error">
+                                                            <span id="mp-address-form-postcode-mand-error" class="dark-spark f-12 lh-16 mb-0"
+                                                                *ngIf="addressForm.get('postCode').hasError('required')">
+                                                                Please complete this mandatory field.
+                                                            </span>
+                                                            <span *ngIf="addressForm.get('postCode').touched && addressForm.get('postCode').hasError('minlength')">
+                                                                Incorrect postcode format, please check and re-enter.
+                                                            </span>
+                                                        </mat-error>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div class="col-12" id="address1Label">
+                                                <div id="mp-address-form-first-line-inner" class="mb-16">
+                                                    <label id="mp-address-form-first-line-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        First Line
+                                                        <span id="mp-address-form-first-line-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-first-line-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="address1Label" id="address1" type="text" formControlName="address1" maxlength="50">
+                                                        <mat-error id="mp-address-form-first-line-mat-error">
+                                                            <span id="mp-address-form-first-line-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('address1').hasError('required')">
+                                                                Please complete this mandatory field.
+                                                            </span>
+                                                            <span id="mp-address-form-first-line-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('address1').hasError('pattern')">
+                                                                First Line is invalid.
+                                                            </span>
+                                                        </mat-error>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div class="col-12" id="address2Label">
+                                                <div id="mp-address-form-second-line-inner" class="mb-16">
+                                                    <label id="mp-address-form-second-line-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        Second Line
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-second-line-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="address2Label" id="address2" type="text" 
+                                                        formControlName="address2">
+                                                        <mat-error id="mp-address-form-first-line-mat-error">
+                                                            <span id="mp-address-form-first-line-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('address2').hasError('pattern')">
+                                                                Second Line is invalid.
+                                                            </span>
+                                                        </mat-error>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div class="col-12" id="address3Label">
+                                                <div id="mp-address-form-third-line-inner" class="mb-16">
+                                                    <label id="mp-address-form-third-line-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        Third Line
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-third-line-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="address3Label" id="address3" type="text" 
+                                                        formControlName="address3">
+                                                        <mat-error id="mp-address-form-first-line-mat-error">
+                                                            <span id="mp-address-form-first-line-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('address3').hasError('pattern')">
+                                                                Third Line is invalid.
+                                                            </span>
+                                                        </mat-error>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div class="col-12" id="countryLabel">
+                                                <div id="mp-address-form-country-inner" class="mb-16">
+                                                    <label id="mp-address-form-country-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        Country
+                                                        <span id="mp-address-form-country-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-country-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="countryLabel" id="country" type="text" 
+                                                        formControlName="country">
+                                                        <mat-error id="mp-address-form-first-line-mat-error">
+                                                            <span id="mp-address-form-first-line-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('country').hasError('pattern')">
+                                                                Country is invalid.
+                                                            </span>
+                                                            <span class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('country').hasError('required')">
+                                                                Please complete this mandatory field.
+                                                            </span>
+                                                        </mat-error>
+                                                        
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div class="col-12" id="cityLabel">
+                                                <div id="mp-address-form-city-inner">
+                                                    <label id="mp-address-form-city-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                        City/Town
+                                                        <span id="mp-address-form-city-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                    </label>     
+                                                    <mat-form-field id="mp-address-form-city-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                        <input matInput aria-labelledby="cityLabel" id="city" type="text" 
+                                                        formControlName="city">
+                                                        <mat-error id="mp-address-form-city-mat-error">
+                                                            <span id="mp-address-form-city-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('city').hasError('required')">
+                                                                Please complete this mandatory field.
+                                                            </span>
+                                                            <mat-error id="mp-address-form-first-line-mat-error">
+                                                                <span id="mp-address-form-city-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="addressForm.get('city').hasError('pattern')">
+                                                                    City is invalid.
+                                                                </span>
+                                                            </mat-error>
+                                                        </mat-error>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <div id="mp-address-btn-div" class="col-md-12 mb-32 mt-32">
+                                                <button id="mp-address-add-update-btn" class="new-default-btn mr-16" mat-button type="submit">
+                                                    <span id="mp-address-add-btn" *ngIf="isAddAddress">Add address</span>
+                                                    <span id="mp-address-update-btn" *ngIf="!isAddAddress">Update address</span>
+                                                </button>
+                                                <button id="mp-address-cancel-btn" class="new-default-outline-btn" mat-button (click)="onClose()"
+                                                    type="button">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="addressListDiv">
+                                    <div id="mp-address-list-row" class="row">
+                                        <div id="mp-address-list-col_{{addressIndex}}" class="col-12" *ngFor="let address of billingAddresses; let addressIndex = index;">
+                                            <div id="mp-address-list-div_{{addressIndex}}" class="mt-16" *ngIf = "addressCount >= addressIndex" [ngClass]="addressCount > 0 && billingAddresses.length > 1 ? 'add-border-bottom':''">
+                                                <p id="mp-address-list-type_{{addressIndex}}" class="font-400 mb-02 f-16 lh-22 font-dark mobile-f-14">{{address.AddressType}}</p>
+                                                <p id="mp-address-list-txt_{{addressIndex}}" class="font-700 f-16 lh-22 font-dark m-0">
+                                                    {{address.Address.Address1}}<br *ngIf="address.Address.Address1 != '' && address.Address.Address1 != undefined">
+                                                    {{address.Address.Address2}} {{address.Address.Address3}}
+                                                    {{address.Address.PostCode}} <br *ngIf="address.Address.PostCode != '' && address.Address.PostCode != undefined">
+                                                    {{address.Address.City}} <br *ngIf="address.Address.City != '' && address.Address.City != undefined">
+                                                    {{address.Address.Country}}
+                                                    {{address.Address.CountryCode}}
+                                                </p>
+                                                <div id="mp-address-list-btns_{{addressIndex}}" class="d-flex">
+                                                    <button id="mp-address-list-edit-btn_{{addressIndex}}" mat-button class="mt-16 mb-16 font-700 f-16 lh-20 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto mr-26" (click)="editAddress(addressIndex)" attr.aria-label="'edit' {{address.AddressType}}">
+                                                        Edit
+                                                        <span id="mp-address-list-edit-btn-icon_{{addressIndex}}" class="ml-04 change-password-arrow">
+                                                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                            </svg>  
+                                                        </span>  
+                                                    </button>
+                                                    <button id="mp-address-list-delete-btn_{{addressIndex}}" mat-button class="mt-16 mb-16 font-700 f-16 lh-20 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto" *ngIf = "billingAddresses.length > 1" (click)="onDeleteAddresss(addressIndex)" attr.aria-label="'delete' {{address.AddressType}}">
+                                                        Delete
+                                                        <span id="mp-address-list-delete-btn-icon_{{addressIndex}}" class="ml-04 change-password-arrow">
+                                                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                            </svg>  
+                                                        </span>  
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mp-address-see-all-btn-div" class="col-12 mt-48">
+                                            <button id="mp-address-see-all-btn" mat-button class="mt-16 mb-16 font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 del-add-btn min-width-auto" *ngIf = "addressCount == 0 && billingAddresses.length > 1" (click)="seeAllAddresses()" aria-label="see all address">
+                                                See all address ({{billingAddresses.length}})
+                                                <span id="mp-address-see-all-btn-icon" class="ml-04 change-password-arrow">
+                                                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                    </svg>  
+                                                </span>  
+                                            </button>
+                                            <button id="mp-address-close-btn" *ngIf = "addressCount > 0 && billingAddresses.length > 1" class="new-default-outline-btn" mat-button (click)="hideAddressList()" type="button">
+                                                Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="mp-password-account-row" class="row">
+                    <div id="mp-password-col" class="col-lg-6 col-md-12 col-sm-12 col-12 mt-24 mb-15-container-991">
+                        <div id="mp-password-div" class="p-relative bg-fff br-5 account-card-p">
+                            <div id="mp-password-inner" class="upgrade-post-edit-form">
+                                <form [formGroup]="passwordForm" id="changePassword">
+                                    <div id="mp-password-change" [hidden]="resetPswSection">
+                                        <div id="mp-password-change-header">
+                                            <div id="mp-password-change-inner-header" class="align-items-center d-flex justify-between">
+                                                <div id="mp-password-change-title-div">
+                                                    <div id="mp-password-change-title" class="section-title">
+                                                        Password
+                                                    </div>
+                                                </div>
+                                                <div id="mp-password-change-title-2">
+                                                    <button id="mp-password-change-btn" class="font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 del-add-btn" [hidden]="showPasswordSection" (click)="this.showPasswordSection = !this.showPasswordSection" mat-button>
+                                                        Change password 
+                                                        <span id="mp-password-change-icon" class="ml-04 change-password-arrow">
+                                                            <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                            </svg>  
+                                                        </span>  
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mp-password-change-body">
+                                            <div id="mp-password-change-body-div" [hidden]="!showPasswordSection" class="password-my-profile">
+                                                <div id="mp-password-change-body-row" class="row">
+                                                    <div class="col-12 mt-16" id="oldpassword">
+                                                        <div id="mp-password-old-area" class="mb-16 new-version-input new-version-input-my-profile">
+                                                            <label id="mp-password-old-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                                Old password
+                                                                <span id="mp-password-old-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                            </label>     
+                                                            <mat-form-field id="mp-password-old-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                                <input capsLockDetect (capsLockOn)="isOldPswCapsLock = $event" id="mp-password-old-input" [type]="oldPasswordFieldTextType ? 'text' : 'password'"
+                                                                matInput formControlName="oldPassword"
+                                                                [prevent-keys]="[32,34,35,38,39,40,41,42,43,96,9,128,123,124,125]"
+                                                                maxlength="25" aria-labelledby="oldpassword">
+                                                                <button id="mp-password-old-visible-btn" class="mt-5px" type="button" mat-icon-button matSuffix
+                                                                    (click)="oldPasswordFieldTextType = !oldPasswordFieldTextType"
+                                                                    [attr.aria-label]="'Hide password'"
+                                                                    [attr.aria-pressed]="oldPasswordFieldTextType">
+                                                                    <mat-icon id="mp-password-old-visible-mat-icon">
+                                                                        <span id="mp-password-old-visible-btn-span" class="material-symbols-outlined">
+                                                                            {{oldPasswordFieldTextType ? 'visibility' :
+                                                                            'visibility_off'}}
+                                                                        </span>
+                                                                    </mat-icon>
+                                                                </button>
+                                                                <mat-error id="mp-password-old-mat-error">
+                                                                    <span id="mp-password-old-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('oldPassword').touched && passwordForm.get('oldPassword').invalid && passwordForm.get('oldPassword').errors.required">
+                                                                        Please complete this mandatory field.
+                                                                    </span>
+                                                                </mat-error>
+                                                            </mat-form-field>
+                                                            <p class="capslock-txt mb-8" *ngIf="isOldPswCapsLock === 1">
+                                                                Caps lock is on
+                                                            </p>
+                                                            <div id="mp-password-old-caption" class="common-caption">
+                                                                <button id="mp-password-old-forgotten-btn" type="button" class="font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 profile-forgot-password" (click)="this.resetPswSection = !this.resetPswSection" mat-button>
+                                                                    Forgotten password?
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12" id="newpassword">
+                                                        <div id="mp-password-new-div" class="mb-16 new-version-input new-version-input-my-profile">
+                                                            <label id="mp-password-new-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                                New password
+                                                                <span id="mp-password-new-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                            </label>     
+                                                            <mat-form-field id="mp-password-new-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                                <input capsLockDetect (capsLockOn)="isNewPswCapsLock = $event" id="mp-password-new-input" [type]="newPasswordFieldTextType ? 'text' : 'password'"
+                                                                    matInput placeholder="Use 10 or more characters" formControlName="newPasword"
+                                                                    [prevent-keys]="[32,34,35,38,39,40,41,42,43,96,9,128,123,124,125,126]"
+                                                                    maxlength="25" aria-labelledby="newpassword">
+                                                                <button id="mp-password-new-visible-btn" class="mt-5px" type="button" mat-icon-button matSuffix
+                                                                    (click)="newPasswordFieldTextType = !newPasswordFieldTextType"
+                                                                    [attr.aria-label]="'Hide password'"
+                                                                    [attr.aria-pressed]="newPasswordFieldTextType">
+                                                                    <mat-icon id="mp-password-new-visible-mat-icon">
+                                                                        <span id="mp-password-new-visible-span" class="material-symbols-outlined">
+                                                                            {{newPasswordFieldTextType ? 'visibility' :
+                                                                            'visibility_off'}}
+                                                                        </span>
+                                                                    </mat-icon>
+                                                                </button>
+                                                                <mat-error id="mp-password-new-mat-error" *ngIf="passwordForm.get('newPasword').touched">
+                                                                    <span id="mp-password-new-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('newPasword').invalid && passwordForm.get('newPasword').errors.required">
+                                                                        Please complete this mandatory field.
+                                                                    </span>
+                                                                    <span id="mp-password-new-mand-char" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('newPasword').touched && (passwordForm.get('newPasword').hasError('pattern') || passwordForm.get('newPasword').hasError('moreThanOneSpecialCharacter'))">
+                                                                        The password must be at least 10 characters. It should
+                                                                        contain at least one uppercase
+                                                                        letter, one lowercase letter, at least one number and at
+                                                                        least one special character (!,-_.&#64;;:$%^[\]?=>/<). 
+                                                                    </span>
+                                                                    <span id="mp-password-new-different" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('newPasword').hasError('notMatch')">
+                                                                        New password should be different from old password.
+                                                                    </span>
+                                                                </mat-error>
+                                                            </mat-form-field>
+                                                            <p class="capslock-txt mb-8" *ngIf="isNewPswCapsLock === 1">
+                                                                Caps lock is on
+                                                            </p>
+                                                            <div id="mp-password-new-caption" class="common-caption">
+                                                                <span id="mp-password-new-caption-title" class="common-caption-txt">
+                                                                    At least 1 number, 1 uppercase letter, 1 lowercase letter and 1 special character (!,-_.&#64;;:$%^[\]?=>/<)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12" id="confirmnewpassword">
+                                                        <div id="mp-password-confirm-div" class="new-version-input new-version-input-my-profile">
+                                                            <label id="mp-password-confirm-label" class="font-dark font-700 f-16 lh-22 mb-8">
+                                                                Confirm password
+                                                                <span id="mp-password-confirm-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                            </label>     
+                                                            <mat-form-field id="mp-password-confirm-mat-form" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                                <input capsLockDetect (capsLockOn)="isConfrmPswCapsLock = $event" id="mp-password-confirm-input" [type]="confirmPasswordFieldTextType ? 'text' : 'password'"
+                                                                    matInput placeholder="Use 10 or more characters"
+                                                                    formControlName="confirmPassword"
+                                                                    [prevent-keys]="[32,34,35,38,39,40,41,42,43,96,9,128,123,124,125,126]"
+                                                                    maxlength="25" aria-labelledby="confirmnewpassword">
+                                                                <button id="mp-password-confirm-visible-btn" type="button" class="mt-5px" mat-icon-button matSuffix
+                                                                    (click)="confirmPasswordFieldTextType = !confirmPasswordFieldTextType"
+                                                                    [attr.aria-label]="'Hide password'"
+                                                                    [attr.aria-pressed]="confirmPasswordFieldTextType">
+                                                                    <mat-icon id="mp-password-confirm-visible-mat-icon">
+                                                                        <span id="mp-password-confirm-visible-span" class="material-icons-outlined">
+                                                                            {{confirmPasswordFieldTextType ? 'visibility' :
+                                                                            'visibility_off'}}
+                                                                        </span>
+                                                                    </mat-icon>
+                                                                </button>
+                                                                <mat-error id="mp-password-confirm-mat-error" *ngIf="passwordForm.get('confirmPassword').touched">
+                                                                    <span id="mp-password-confirm-mand-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('confirmPassword').invalid && passwordForm.get('confirmPassword').errors.required">
+                                                                        Please complete this mandatory field.
+                                                                    </span>
+                                                                    <span id="mp-password-confirm-match-error" class="dark-spark f-12 lh-16 mb-0" *ngIf="passwordForm.get('confirmPassword').hasError('mustMatch')">
+                                                                        Password must match.
+                                                                    </span>
+                                                                </mat-error>
+                                                            </mat-form-field>
+                                                            <p class="capslock-txt mb-8" *ngIf="isConfrmPswCapsLock === 1">
+                                                                Caps lock is on
+                                                            </p>
+                                                            <div id="mp-password-confirm-common-caption" class="common-caption">
+                                                                <span id="mp-password-confirm-char" class="common-caption-txt">
+                                                                    At least 1 number, 1 uppercase letter, 1 lowercase letter and 1 special character (!,-_.&#64;;:$%^[\]?=>/<)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mp-password-btns-area">
+                                            <div id="mp-password-btns-row" class="row">
+                                                <div id="mp-password-btns-col" class="col-12">
+                                                    <button id="mp-password-btns-save" [disabled]="!passwordForm.valid" class="new-default-btn mr-16 mt-48" [hidden]="!showPasswordSection" (click)=changePassword() mat-button>
+                                                        Save
+                                                    </button>
+                                                    <button id="mp-password-btns-cancel" class="new-default-outline-btn mt-48" [hidden]="!showPasswordSection" (click)="this.showPasswordSection = !this.showPasswordSection;cancelPasswordUpdate()" mat-button>
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form [formGroup]="resetPasswordForm" id="forgottenPassword" class="upgrade-post-edit-form">
+                                    <div id="mp-reset-password-div" [hidden]="!resetPswSection">
+                                        <div id="mp-reset-password-header">
+                                            <div id="mp-reset-password-header-inner" class="align-items-center d-flex justify-between">
+                                                <div id="mp-reset-password-header-div">
+                                                    <div id="mp-reset-password-title" class="section-title">
+                                                        Reset password
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mp-reset-password-body">
+                                            <div id="mp-reset-password-body-inner" [hidden]="!showPasswordSection">
+                                                <div id="mp-reset-password-body-row" class="row">
+                                                    <div class="col-12 mt-16" id="passwordemail">
+                                                        <div id="mp-reset-password-email" class="mb-16">
+                                                            <div id="mp-reset-password-email-label" class="font-dark font-700 f-16 lh-22 mb-8 form-label-div">
+                                                                Email<span id="mp-reset-password-email-mand" class="dark-spark font-700 f-16 lh-22">*</span>
+                                                            </div>
+                                                            <mat-form-field id="mp-reset-password-email-mat-form"
+                                                                class="d-block example-full-width default-input default-input-brdr new-input"
+                                                                floatLabel="never">
+                                                                <input id="mp-reset-password-email-input" matInput placeholder="Enter your email address" formControlName="email" [prevent-keys]="[32]"
+                                                                    aria-labelledby="email">
+                                                                <mat-error id="mp-reset-password-email-mat-error">
+                                                                    <div id="mp-reset-password-email-mand-error-div" *ngIf="resetPasswordForm.get('email').hasError('required') && isSubmitted">
+                                                                        <span id="mp-reset-password-email-mand-error" class="validation-err" class="dark-spark f-12 lh-16 mb-0">
+                                                                            Please complete this mandatory field.
+                                                                        </span>
+                                                                    </div>
+                                                                    <div id="mp-reset-password-email-valid-error-div" *ngIf="resetPasswordForm.get('email').hasError('emailRegexError') && isSubmitted">
+                                                                        <span id="mp-reset-password-email-valid-error" class="validation-err" class="dark-spark f-12 lh-16 mb-0">
+                                                                            Email is not valid.
+                                                                        </span>
+                                                                    </div>
+                                                                    <div id="mp-reset-password-email-valid-error-div" *ngIf="resetPasswordForm.get('email').hasError('maxlength') && isSubmitted">
+                                                                        <span id="mp-personal-form-email-valid-error" class="validation-err" class="dark-spark f-12 lh-16 mb-0">
+                                                                            Invalid email address length. Please enter a valid email address.
+                                                                        </span>
+                                                                    </div>
+                                                                </mat-error>
+                                                            </mat-form-field>
+                                                            <div id="mp-reset-password-email-caption" class="common-caption">
+                                                                <span id="mp-reset-password-email-caption-txt" class="common-caption-txt">
+                                                                    {{forgotPasswordMsgEnum.captionTxtForResetPassword}}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="mp-reset-password-btns-div">
+                                            <div id="mp-reset-password-btns-row" class="row">
+                                                <div id="mp-reset-password-btns-col" class="col-12">
+                                                    <button id="mp-reset-password-btns-send" (click)="onClickSentEmailBtn()" class="new-default-btn mr-16 mt-48" mat-button>
+                                                        Send email
+                                                    </button>
+                                                    <button id="mp-reset-password-btns-go-back" class="new-default-outline-btn mt-48"
+                                                        (click)="this.resetPswSection = !this.resetPswSection;resetPasswordUpdate()" mat-button>
+                                                        Go back
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="mp-account-col" class="col-lg-6 col-md-12 col-sm-12 col-12 mt-24">
+                        <div id="mp-account-div" class="p-relative bg-fff br-5 account-card-p">
+                            <div id="aClosure">  
+                                <div id="mp-account-header-div">
+                                    <div id="mp-account-header-inner" class="align-items-center d-flex justify-between">
+                                        <div id="mp-account-title-div">
+                                            <div id="mp-account-title" class="section-title">
+                                                Account closure
+                                            </div>
+                                        </div>
+                                        <div id="mp-account-right-header" [hidden]="showAccountClosure">
+                                            <button id="mp-account-delete-btn" class="font-700 f-16 lh-20 dark-spark p-0 m-0 lh-0 del-add-btn" (click)="clickHere()" mat-button>
+                                                Delete account
+                                                <span id="mp-account-delete-icon" class="ml-04 change-password-arrow">
+                                                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                    </svg>  
+                                                </span>  
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="mp-account-body">
+                                    <div id="mp-account-body-row" class="row">
+                                        <div id="mp-account-body-col" class="col-12">
+                                            <div id="mp-account-msg" class="mt-28" [hidden]="!showAccountClosure" *ngIf="!isDisableDelete">
+                                                <p id="mp-account-close" class="font-700 f-16 lh-22 font-dark mb-16">
+                                                    Closing your account will perform the following actions:
+                                                </p>
+                                                <ul id="mp-account-list" class="accountclosour-actions">
+                                                    <li id="mp-account-list-1">Render your account inaccessible online</li>
+                                                    <li id="mp-account-list-2">Opt you out of any loyalty schemes, communications and newsletters</li>
+                                                    <li id="mp-account-list-3">
+                                                        All smartcards, loyalty cards, payment cards and addresses will be removed
+                                                    </li>
+                                                    <li id="mp-account-list-4">Expire any existing valid eVouchers</li>
+                                                </ul>
+                                                <p class="f-16 lh-22 font-400 mb-0 d-flex align-itemes-baseline gap-16 word-break-word account-check-p" id="para">
+                                                    <span id="mp-account-input-span" class="new-input-checkbox top-6 position-relative">
+                                                        <input id="mp-account-input" type="checkbox" [(ngModel)]="checked" aria-labelledby="para">
+                                                    </span>
+                                                    Please tick here to confirm that you understand the above and wish to proceed
+                                                    with closing your account. Closing your account does not affect other services
+                                                    you may have signed up for (for example journey alerts and WiFi). If you wish to
+                                                    remove your details from other services, you can submit your request to our
+                                                    customer service team customer.resolutions&#64;avantiwestcoast.co.uk
+                                                </p>
+                                                <div id="mp-account-btns-div" class="mt-48">
+                                                    <button id="mp-account-close-btn" [disabled]="!checked" class="new-default-btn cust-default-btn" (click)=accountclosour() mat-button>
+                                                        Close account
+                                                    </button>
+                                                    <button id="mp-account-cancel-btn" class="new-default-outline-btn ml-16" [hidden]="!showAccountClosure" (click)="this.showAccountClosure = !this.showAccountClosure" mat-button>
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                          
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<app-footer></app-footer>

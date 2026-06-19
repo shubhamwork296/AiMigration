@@ -1,0 +1,160 @@
+<app-basic-dialog [dialogTitle]="headerTitle" [dialogFooter]="dialogFooter">
+    <div class="common-popup-theme-in">
+        <div class="common-popup-theme-border">
+            <div class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle" *ngIf="(data.journeyType != 'season') && (data.journeyType != 'flexi')">
+                <div class="pb-30" *ngIf="data?.ticketRestriction && data?.TicketRestriction.toLowerCase && data.TicketRestriction.toLowerCase().indexOf('not applicable.') == -1">
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{data?.ticketRestriction}}
+                    </p>
+                </div>
+                <div class="pb-30">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        {{data.ticketType}}
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{data?.ticketDescription}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="data?.ticketInformation">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Ticket Description
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{data?.ticketInformation}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.discounts">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Discounts
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">{{ticketInformation.discounts}}</p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.child">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Child
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" [innerHTML]="ticketInformation.child"></p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.railCard">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Railcard
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.railCard}}
+                    </p>
+                </div>
+                <div class="pb-30">
+                    <h3 *ngIf="!isAdvanceTicket && !isFamilyTicket && ticketInformation?.refundableTicket" class="m-0 f-14 lh-20 font-700 font-dark">
+                        Refunds
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" *ngIf="!isAdvanceTicket && !isFamilyTicket">{{ticketInformation.refundableTicket}}</p>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" *ngIf="isAdvanceTicket">{{ticketInformation.nonRefundableTicket}}</p>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" *ngIf="isFamilyTicket">{{ticketInformation.nonRefundableTicketForFamily}}</p>
+                </div>
+                <div class="pb-30" *ngIf='ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"'>
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Changes to travel plans
+                    </h3>
+                    <div class="m-0 f-14 lh-20 font-dark text-justify last-p-0" [innerHTML]="ticketInformation.changeTravelPlan"></div>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.breakOfJourney">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Break of journey
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" [innerHTML]="ticketInformation.breakOfJourney"></p>
+                </div>
+                <div *ngIf="ticketInformation?.bookingDeadline">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Booking deadline
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" [innerHTML]="ticketInformation.bookingDeadline"></p>
+                </div>
+            </div>
+            <div class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle" *ngIf="(data.journeyType == 'season') || (data.journeyType == 'flexi')">
+                <div class="pb-30" *ngIf="ticketInformation?.forSeasonTicketTypeDescription">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Description
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.forSeasonTicketTypeDescription}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.trainOperator">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Train Operator
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.trainOperator}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.seasonBookingDeadline">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Booking Deadlines
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.seasonBookingDeadline}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.seasonTicketTypeRefunds">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Refunds
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.seasonTicketTypeRefunds}}
+                    </p>
+                </div>
+                <div class="pb-30">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark" *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"'>
+                        Changes To Travel Plans
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify" *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"'>
+                        {{ticketInformation.changeTravelPlan}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.conditions">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Conditions
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.conditions}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.seasonBreakOfJourney">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Break of journey:
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.seasonBreakOfJourney}}
+                    </p>
+                </div>
+                <div class="pb-30" *ngIf="ticketInformation?.isAvailability">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Availability
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.isAvailability}}
+                    </p>
+                </div>
+                <div *ngIf="ticketInformation?.isValidity">
+                    <h3 class="m-0 f-14 lh-20 font-700 font-dark">
+                        Validity
+                    </h3>
+                    <p class="m-0 f-14 lh-20 font-dark text-justify">
+                        {{ticketInformation.isValidity}}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</app-basic-dialog>
+<ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+        <div class="atag-new-default-outline">
+            <a target="_blank" href="https://www.avantiwestcoast.co.uk/tickets-and-savings/ticket-types"
+                aria-label="Find out more button" class="new-default-outline-btn" rel="noopener">
+                Find out more
+            </a>
+            <button class="new-default-btn w-xs-100" mat-dialog-close mat-button>Got it</button>
+        </div>
+    </div>
+</ng-template>

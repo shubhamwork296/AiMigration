@@ -3285,6 +3285,63 @@ Optimization error [main.123.js]: Unexpected token: punc ({)
         ["failureClassification"] = failure
     };
 
+    [Fact]
+    public async Task Angular_Migration_Installs_Compatible_Node_Before_Npm_Commands()
+    {
+        var root = await AngularWorkspace();
+        await File.WriteAllTextAsync(Path.Combine(root, ".nvmrc"), "20.19.0");
+        var currentNodeVersion = "v18.19.0";
+        var nodeInstallRan = false;
+
+        var runner = new RecordingRunner(command =>
+        {
+            if (command.SequenceEqual(["node", "--version"]))
+            {
+                return new CommandResult { ReturnCode = 0, Stdout = currentNodeVersion };
+            }
+
+            if (command.SequenceEqual(["nvm", "--version"]))
+            {
+                return new CommandResult { ReturnCode = 0, Stdout = "1.0.0" };
+            }
+
+            if (command.Count >= 3 && command[0] == "cmd" && command[1] == "/c" && command[2].Contains("nvm install 20.19.0", StringComparison.OrdinalIgnoreCase))
+            {
+                nodeInstallRan = true;
+                currentNodeVersion = "v20.19.0";
+                return new CommandResult { ReturnCode = 0, Stdout = "installed" };
+            }
+
+            if (command.Count >= 2 && command[0] == "npm" && command[1] == "view")
+            {
+                return new CommandResult { ReturnCode = 0, Stdout = """["15.2.10"]""" };
+            }
+
+            if (command.SequenceEqual(["npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"]))
+            {
+                return new CommandResult { ReturnCode = 0, Stdout = "npm install completed" };
+            }
+
+            if (command.SequenceEqual(["npm", "run", "build"]))
+            {
+                return new CommandResult { ReturnCode = 0, Stdout = "build ok" };
+            }
+
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner).ExecuteMigrationHopAsync(root, new MigrationHop(14, 15, "Angular 14 to 15"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "14"), To = new RuntimeSpec("angular", "15"), MaxAiRemediationRetries = 0 }, null, null);
+        var nodeVersionIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["node", "--version"]));
+        var nodeInstallIndex = runner.Calls.FindIndex(c => c.Command.Count >= 3 && c.Command[0] == "cmd" && c.Command[1] == "/c" && c.Command[2].Contains("nvm install 20.19.0", StringComparison.OrdinalIgnoreCase));
+        var npmInstallIndex = runner.Calls.FindIndex(c => c.Command.SequenceEqual(["npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"]));
+
+        Assert.True(nodeInstallRan);
+        Assert.True(nodeVersionIndex >= 0);
+        Assert.True(nodeInstallIndex > nodeVersionIndex);
+        Assert.True(npmInstallIndex > nodeInstallIndex);
+        Assert.Equal("done", result.StringValue("status"));
+    }
+
     private static async Task<string> AngularWorkspace(string extraDependencies = "", bool hasBuildScript = true)
     {
         var root = TestWorkspace.Create();

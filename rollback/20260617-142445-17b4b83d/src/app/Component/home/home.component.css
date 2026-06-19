@@ -1,0 +1,94 @@
+
+.search {
+  background-color: #204555;
+  width: 400px;
+  float: right;
+  margin-right: 100px;
+  border-radius: 4px;
+}
+
+.search-tab{
+  color: aliceblue !important;
+  padding: 15px;
+}
+
+.single-return {
+  margin-top: 8px !important;
+}
+
+.form{
+  margin-top: 8px !important;
+}
+
+.departure-autocomplete-width {
+  width: 100%;
+}
+
+.arrival-autocomplete-width {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.station-autocomplete-width {
+  width: 100%;
+}
+
+.ng-tns-c6-3 .ng-star-inserted{
+  color: aliceblue !important;
+}
+.mainqtt-head{
+  color: #E2F5E9;
+  padding: 12px 0 0;
+  text-align: center;
+  font-size: 24px;
+  margin: 0;
+}
+.search input{
+  font-size: 14px;
+  font-weight: 400;
+  color: #131E29;
+  line-height: 19px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  border:none;
+}
+.mat-select{
+  font-size: 14px;
+  font-weight: 400;
+  color: #131E29;
+  line-height: 19px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  border:none;
+}
+.mt-10{
+  margin-top: 10px;
+}
+.search .search-via-select{
+  width: 25%;
+  border-radius: 4px 0 0 4px;
+  border-right: 1px solid #D6D1CA;
+}
+.search .search-via-input{
+  width: 75%;
+  border-radius: 0 4px 4px 0;
+}
+.main-qtt-submit{
+  background: #FF4713;
+  color: #131E29;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  width: 100%;
+  text-align: center;
+  border-radius: 4px;
+  padding: 9px ;
+}
+.footer-newsletter {
+  font-size: 24px;
+  margin: 0 0 4px 0;
+  font-weight: 400;
+}

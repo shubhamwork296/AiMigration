@@ -1,0 +1,369 @@
+<header>
+    <app-enhanced-navigation-header [isLoaderActive] = "isLoaderActive ? isLoaderActive : isUpadateInJourney"></app-enhanced-navigation-header>
+</header>
+
+<main id="epc-main">
+
+    <app-enhanced-loader 
+        [isLoaderActive] = "isLoaderActive"
+        [isUpdateInJourney] = "isUpadateInJourney"
+        [loaderHeading]="isUpadateInJourney ? enhancedLoaderTextEnum?.updateJourneyLoaderDescription : isLoaderActive ? enhancedLoaderTextEnum?.gettingPaymentMethodHeading : enhancedLoaderTextEnum?.reviewBuyLoaderHeading"
+        [loaderDescription]="isLoaderActive ? enhancedLoaderTextEnum?.paymentLoaderDescription : enhancedLoaderTextEnum?.paymentLoaderDescription">
+    </app-enhanced-loader>
+
+    <!----- Page back button ----->
+    <section id="epc-back-btn-section" *ngIf="!isLoaderActive && !isUpadateInJourney">
+        <div id="epc-back-btn-container" class="back-btn-container horizontal-center">
+            <div id="epc-back-btn-common-container" class="common-container">
+                <div id="epc-back-btn-area" class="back-btn">
+                    <button (click)="goBackToEnhanceReviewBuy()" id="epc-back-btn" type="button" mat-button aria-label="Back to the review your jounrey page">
+                        <img id="epc-back-btn-icon" src="assets/images/new-design-img/back-arrow.svg" alt="" aria-hidden="true" />
+                        <span id="epc-back-btn-txt">Back</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!----- End Page back button ----->
+
+    <h1 id="epc-payment-page-title" class="sr-only" *ngIf="!isLoaderActive && !isUpadateInJourney">Payment</h1>
+
+    <section id="epc-section" *ngIf="!isLoaderActive && !isUpadateInJourney">
+        <div id="epc-contetn-center" class="enhanced-payment horizontal-center">
+            <div id="epc-container" class="common-container payment-container-m review-buy-bottom-space">
+                <div id="epc-main-card" class="enhanced-common-card">
+                    <h2 id="epc-payment-option-title" class="card-header remove-focus">Payment options</h2>
+
+                    <!----- Express checkout ----->
+                    <div id="epc-express-checkout-area" class="express-checkout">
+                        <h3 id="epc-express-checkout-title" class="card-header remove-focus">Express checkout</h3>
+                        <ul id="epc-express-checkout-ul">
+                            <li id="epc-express-checkout-google-pay-li" *ngIf="paymentDetailsResponse?.GpayEnabled">
+                                <button id="epc-express-checkout-google-pay-btn" type="button" mat-button aria-label="Google pay" (click)="onGpayClick()">
+                                    <img id="epc-express-checkout-google-pay-btn-icon" src="assets/images/new-design-img/gpay.svg" alt="Google Pay" />
+                                </button>
+                            </li>
+                            <li id="epc-express-checkout-apple-pay-li" class="apple-pay-btn" *ngIf="paymentDetailsResponse?.ApayEnabled">
+                                <apple-pay-button id="epc-express-checkout-apple-pay-btn" buttonstyle="black" type="plain" locale="en" (click)="onApplePayClick()"></apple-pay-button>
+                            </li>
+                        </ul>
+                    </div>
+                    <!----- End Express checkout ----->
+
+                    <!----- Your saved cards ----->
+                    <div id="epc-saved-card-area" class="saved-card-wrapper enhanced-saved-card-wrapper" *ngIf="paymentDetailsResponse?.PaymentCards?.length > 0">
+                        <h3 id="epc-saved-card-title" class="or enhanced-saved-card-title">Your saved cards</h3>
+                        <mat-radio-group id="epc-saved-card-mat-radio-group" class="saved-card smartcard-radio-group" [(ngModel)]="selectedCardNumber" name="cardslectionradio" aria-label="Your saved cards" role="radiogroup">
+                            <div id="epc-saved-card-mat-radio-group-loop_{{savedCardsIndex}}" *ngFor="let card of paymentDetailsResponse?.PaymentCards; let savedCardsIndex = index;">
+                                <mat-radio-button [tabIndex]="getRadioTabIndex(savedCardsIndex)" [aria-label]="getCardAriaLabel(card)" class="smartcard-radio-mat-btn" [disabled]="isCardExpired(card?.CardExpiry)" #rdo1 id="epc-saved-card-mat-radio-btn_{{savedCardsIndex}}" labelPosition="before" [value]="card?.CardNumber" [checked]="selectedCardNumber == card.CardNumber" (keyup)="handleKeyup($event, rdo1)" (change)="showPaymentWarning(true, card)" *ngIf="paymentDetailsResponse?.PaymentCards">
+                                    <div id="epc-saved-card-mat-radio-btn-inner-card_{{savedCardsIndex}}" class="single-card">
+                                        <div id="epc-saved-card-icon-area_{{savedCardsIndex}}" class="crediticon" aria-hidden="true">
+                                            <img id="epc-saved-card-apple-pay_{{savedCardsIndex}}" *ngIf="card.CardType === 'APPLEPAYCARD'" src="assets/images/ApplePayIcon.svg"
+                                                class="saved-card-icon card-images" alt="Apple Pay Payment">
+                                            <img id="epc-saved-card-mastercard_{{savedCardsIndex}}" *ngIf="card.CardType === 'MASTERCARD'" src="assets/images/Mastercard2.svg"
+                                                class="saved-card-icn card-images" alt="Master card Payment">
+                                            <img id="epc-saved-card-visa_{{savedCardsIndex}}" *ngIf="card.CardType ==='VISA'" src="assets/images/new-design-img/visa-card-payment.svg" class="saved-card-icn"
+                                                alt="Visa Payment">
+                                            <img id="epc-saved-card-amex_{{savedCardsIndex}}" *ngIf="card.CardType === 'AMEX'" src="assets/images/Amex2.svg" class="saved-card-icn" alt="Amex Payment">
+                                            <img id="epc-saved-card-maestro_{{savedCardsIndex}}" *ngIf="card.CardType === 'MAESTRO'" src="assets/images/Maestro2.svg" class="saved-card-icn" alt="Maestro Payment">
+                                        </div>
+                                        <div id="epc-saved-card-content_{{savedCardsIndex}}" class="crediticon-section">
+                                            <h4 id="epc-saved-card-inner-title_{{savedCardsIndex}}" class="credit-header">{{ card?.CardType[0] + card?.CardType?.slice(1).toLowerCase()}} ending {{card?.CardNumber?.slice(card?.CardNumber?.length- 4)}}</h4>
+                                            <p id="epc-saved-card-expire_{{savedCardsIndex}}" class="card-expired-txt">{{ isCardExpired(card?.CardExpiry) ? 'Expired ' : 'Expires ' }} {{card?.CardExpiryWithMonthName}}.</p>
+                                            <div id="epc-saved-card-delete-btn-area_{{savedCardsIndex}}" class="smartcard-address-edit-delete payment-radio-link-btn">
+                                                <button [attr.tabindex]="getDeleteTabIndex(savedCardsIndex)" (click)="deleteCard(card)" id="epc-saved-card-delete-btn_{{savedCardsIndex}}" mat-button type="button" class="card-delete-btn" [attr.aria-label]="getDeleteCardAriaLabel(card)">Delete</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-radio-button>
+                            </div>
+                        </mat-radio-group>
+                    </div>
+                    <div id="epc-card-msg" class="toast-success toast-msg-top-space" role="alert" aria-live="polite" aria-atomic="true" *ngIf="showSavedCardToast && savedCardToastMessage && isSuccess">
+                        <p id="epc-card-msg-txt">{{ savedCardToastMessage }}</p>
+                    </div>
+
+                    <div id="epc-card-msg2" class="toast-error toast-msg-top-space" role="alert" aria-live="polite" aria-atomic="true" *ngIf="showSavedCardToast && savedCardToastMessage && !isSuccess">
+                      <img id="epc-card-msg2-icon" src="assets/images/new-design-img/wrabness-info.svg" alt="" aria-hidden="true" />
+                      <p id="epc-card-msg2-txt">{{ savedCardToastMessage }}</p>
+                    </div>
+                    <!----- End Your saved cards ----->
+
+                    <!----- Or title ----->
+                    <h3 id="epc-or-title" class="or">OR</h3>
+                    <!----- End Or title ----->
+
+                    <!----- Payment mode ----->
+                    <div id="epc-payment-mode-area" class="payment-modes">
+                        <mat-radio-group id="epc-payment-mode-mat-radio-group" class="smartcard-radio-group" (change)="onPaymentModeChange($event)" aria-label="Or" role="radiogroup">
+                            <mat-radio-button [aria-label]="getPaymentModeAriaLabel(enhancedPaymentMethodEnum.newPaymentCard, selectedCardOption == enhancedPaymentMethodEnum.newPaymentCard)" class="smartcard-radio-mat-btn" id="epc-card-payment-mat-radio-btn" value="newPaymentCard" [checked]="(selectedCardOption == 'newPaymentCard') ? true : false" name="cardslectionradio">
+                                <div id="epc-card-payment-mat-radio-inner-card" class="single-card">
+                                    <div id="epc-card-payment-icon-area" class="crediticon" aria-hidden="true">
+                                        <img id="epc-card-payment-icon" src="assets/images/new-design-img/card-payment.svg" alt="" aria-hidden="true" class="add-card-icon" />
+                                    </div>
+                                    <div id="epc-card-payment-content" class="crediticon-section">
+                                        <h4 id="epc-card-payment-title" class="credit-header">Credit or debit card</h4>
+                                        <p id="epc-card-payment-subcontent" class="credit-subheader add-card-subheader">Provide card details on the next page</p>
+                                        <div id="epc-card-payment-icon-list" class="credit-modes" aria-hidden="true">
+                                            <ul id="epc-card-payment-icon-list-ul">
+                                                <li id="epc-card-payment-visa-li">
+                                                    <img id="epc-card-payment-visa-icon" src="assets/images/new-design-img/visa-card-payment.svg" alt="Visa card payment" />
+                                                </li>
+                                                <li id="epc-card-payment-mastercard-li">
+                                                    <img id="epc-card-payment-mastercard-icon" src="assets/images/new-design-img/master-card-payment.svg" alt="Master card payment" />
+                                                </li>
+                                                <li id="epc-card-payment-maestro-li">
+                                                    <img id="epc-card-payment-maestro-icon" src="assets/images/new-design-img/maestro-card-payment.svg" alt="Maestro card payment" />
+                                                </li>
+                                                <li id="epc-card-payment-american-express-li">
+                                                    <img id="epc-card-payment-american-express-icon" src="assets/images/new-design-img/american-express-card-payment.svg" alt="American express card payment" />
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-radio-button>
+                            <div id="epc-payment-save-mobile" class="payment-save payment-mode-save-mobile" *ngIf="selectedCardOption === 'newPaymentCard'">
+                                <mat-checkbox [aria-label]="getSaveCheckboxAriaLabel()" id="epc-payment-save-checkbox-mobile" class="review-common-checkbox" [formControl]="isAddNewCard">
+                                    Save this card for faster checkout next time
+                                </mat-checkbox>
+                            </div>
+                            <mat-radio-button tabindex="0" aria-label="Paypal payment" class="smartcard-radio-mat-btn" id="epc-paypal-payment-mat-radio-btn" value="payPal" [checked]="(selectedCardOption == 'payPal') ? true : false">
+                                <div id="epc-paypal-payment-mat-radio-inner-card" class="single-card">
+                                    <div id="epc-paypal-payment-icon-area" class="crediticon">
+                                        <img id="epc-paypal-payment-icon" src="assets/images/new-design-img/paypal-payment.svg" alt="Paypal payment" class="paypal-icon" />
+                                    </div>
+                                    <div id="epc-paypal-payment-content" class="crediticon-section">
+                                        <h4 id="epc-paypal-payment-title" class="credit-header">PayPal</h4>
+                                        <!-- paypal messaging code -->
+                                        <div id="pd-web-totalPrice-paypal" *ngIf="payPalTotalPrice >= 30 && payPalTotalPrice <= 2000" class="paypal-content">
+                                            <div id="pp-pay-later-message" class="paypal-card-content"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-radio-button>
+                        </mat-radio-group>
+                        <div id="epc-payment-save" class="payment-save payment-mode-save-desktop" *ngIf="selectedCardOption === 'newPaymentCard'">
+                            <mat-checkbox [aria-label]="getSaveCheckboxAriaLabel()" id="epc-payment-save-checkbox" class="review-common-checkbox" [formControl]="isAddNewCard">
+                                Save this card for faster checkout next time
+                            </mat-checkbox>
+                        </div>
+                    </div>
+                    <!----- End Payment mode ----->
+
+                    <!----- Evouchers ----->
+                    <div id="epc-evoucher-area" class="additional-information-wrapper" *ngIf="voucherLength">
+                        <hr id="epc-evoucher-line" class="horizontal-line">
+                        <div id="epc-evoucher-inner" class="saved-billing-section voucher-section">
+                            <h2 id="epc-evoucher-title" class="card-header mb-0 remove-focus">eVouchers</h2>
+                            <p id="epc-evoucher-sub-title" class="voucher-subheader remove-focus">Multiple vouchers can be used together</p>
+                            <div id="epc-evoucher-wrapper" class="voucher-wrapper">
+                                <div id="epc-evoucher-card" class="eVoucher-card eVoucher-card-list">
+                                    <mat-checkbox *ngFor="let voucher of voucherDetails; let evoucherIndex = index;" id="epc-evoucher-checkbox_{{evoucherIndex}}" class="review-common-checkbox" (change)="selectVoucher(evoucherIndex)" [aria-label]="getVoucherAriaLabel(voucher, evoucherIndex)">
+                                        <div id="epc-evoucher-checkbox-inner_{{evoucherIndex}}" class="voucher-name" aria-hidden="true">
+                                            <h4 id="epc-evoucher-card-title_{{evoucherIndex}}">
+                                                eVoucher {{evoucherIndex + 1}}
+                                                <span id="epc-evoucher-card-price_{{evoucherIndex}}" class="voucher-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(voucher?.Price)}}</span>
+                                            </h4>
+                                        </div>
+                                        <p id="epc-evoucher-number_{{evoucherIndex}}" class="voucher-code" aria-hidden="true">{{voucher.VoucherId}}{{voucher?.FraudCode}}</p>
+                                        <p id="epc-evoucher-valid_{{evoucherIndex}}" class="voucher-date" aria-hidden="true">Valid until {{ voucher?.ExpiryDate }}</p>
+                                    </mat-checkbox>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!----- End Evouchers ----->
+                    
+                    <!----- Address form ----->
+                    <div id="epc-address-form" class="additional-information-wrapper remove-focus" *ngIf="isAddressShow; else savedList">
+                        <hr id="epc-address-form-line" class="horizontal-line">
+                        <div id="epc-address-form-title-area" class="additional-information-section">
+                            <h2 id="epc-address-form-title" class="card-header">
+                                <!-- Case 1: Edit existing -->
+                                <ng-container *ngIf="editIndex !== null">
+                                    Editing Address {{ editIndex + 1 }}
+                                </ng-container>
+                                <!-- Case 2: Add new (when user clicks Add New Address and already has addresses) -->
+                                <ng-container *ngIf="isAddAddress && billingAddresses?.length > 0 && editIndex === null">
+                                    Add a new address
+                                </ng-container>
+                                <!-- Case 3: No address available (default open) -->
+                                <ng-container *ngIf="billingAddresses?.length === 0 && isAddAddress">
+                                    Add a billing address
+                                </ng-container>
+                            </h2>
+                            <p class="form-mand-content">
+                                Fields marked with <span>*</span> are required
+                            </p>
+                        </div>
+                        <form id="pd-web-af-form" [formGroup]="addressForm" (ngSubmit)="onAddressCreated()">
+                        <div id="epc-address-form-inner" class="additional-information-section-form">
+                            <div id="epc-address-form-postcode-area" class="enhanced-common-label-field enhanced-common-label-mdc-field">
+                                <label id="epc-address-form-postcode-label" for="Postcode" aria-hidden="true">
+                                    Postcode<span id="epc-address-form-postcode-mand" aria-hidden="true">*</span>
+                                </label>
+                                <mat-form-field id="epc-address-form-postcode-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('postCode', 'Enter Postcode')" aria-required="true" aria-describedby="epc-address-form-postcode-error" [attr.aria-invalid]="addressForm.get('postCode').invalid" matInput id="postCode" formControlName="postCode" maxlength="10" type="text" placeholder="Enter Postcode" [prevent-keys]="[32]" minlength="4" required>
+                                    <mat-error id="epc-address-form-postcode-error" role="alert">
+                                        <span id="epc-postcode-error-mand-msg" *ngIf="addressForm.get('postCode').hasError('required')">
+                                            Please enter a postcode
+                                        </span>
+                                        <span id="epc-postcode-error-valid-msg" *ngIf="addressForm.get('postCode').touched && addressForm.get('postCode').hasError('minlength')">
+                                            Incorrect postcode format, please check and re-enter.
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                            <div id="epc-address-form-firstline-area" class="enhanced-common-label-field">
+                                <label id="epc-address-form-firstline-label" for="address1" aria-hidden="true">First line<span id="epc-address-form-firstline-mand" aria-hidden="true">*</span></label>
+                                <mat-form-field id="epc-address-form-firstline-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('address1', 'Enter First line')" [attr.aria-invalid]="addressForm.get('address1').invalid" aria-required="true" aria-describedby="epc-address-form-firstline-error" matInput id="address1" type="text" formControlName="address1" placeholder="Enter First line" required>
+                                    <mat-error id="epc-address-form-firstline-error" role="alert">
+                                        <span id="epc-firstline-error-mand-msg" *ngIf="addressForm.get('address1').hasError('required')">
+                                            Please enter the first line of the address
+                                        </span>
+                                        <span id="epc-firstline-error-valid-msg" *ngIf="addressForm.get('address1').hasError('pattern')">
+                                            First Line is invalid.
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                            <div id="epc-address-form-secondline-area" class="enhanced-common-label-field">
+                                <label id="epc-address-form-secondline-label" for="address2" aria-hidden="true">Second line</label>
+                                <mat-form-field id="epc-address-form-secondline-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('address2', 'Enter Second line')" [attr.aria-invalid]="addressForm.get('address2').invalid" aria-required="false" aria-describedby="epc-address-form-secondline-error" matInput id="address2" type="text" formControlName="address2" placeholder="Enter Second line">
+                                    <mat-error id="epc-address-form-secondline-error" role="alert">
+                                        <span id="epc-secondline-error-valid-msg" *ngIf="addressForm.get('address2').hasError('pattern')">
+                                            Second Line is invalid.
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                            <div id="epc-address-form-thirdline-line" class="enhanced-common-label-field">
+                                <label id="epc-address-form-thirdline-label" for="address3" aria-hidden="true">Third line</label>
+                                <mat-form-field id="epc-address-form-thirdline-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('address3', 'Enter Third line')" [attr.aria-invalid]="addressForm.get('address3').invalid" aria-required="false" aria-describedby="epc-address-form-thirdline-error" matInput id="address3" type="text" formControlName="address3" placeholder="Enter Third line">
+                                    <mat-error id="epc-address-form-thirdline-error" role="alert">
+                                        <span id="epc-thirdline-error-valid-msg" *ngIf="addressForm.get('address3').hasError('pattern')">
+                                            Third Line is invalid.
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                            <div id="epc-address-form-citytown-area" class="enhanced-common-label-field">
+                                <label id="epc-address-form-citytown-label" for="city" aria-hidden="true">City/Town<span id="epc-address-form-citytown-mand" aria-hidden="true">*</span></label>
+                                <mat-form-field id="epc-address-form-citytown-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('city', 'Enter City or Town')" [attr.aria-invalid]="addressForm.get('city').invalid" aria-required="true" aria-describedby="epc-address-form-citytown-error" matInput id="city" type="text" placeholder="Enter City/Town" formControlName="city" required>
+                                    <mat-error id="epc-address-form-citytown-error" role="alert">
+                                        <span id="epc-city-error-mand-msg" *ngIf="addressForm.get('city').hasError('required')">
+                                            Please enter the city/town
+                                        </span>
+                                        <span id="epc-ciry-error-valid-msg" *ngIf="addressForm.get('city').hasError('pattern')">
+                                            City is invalid.
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                            <div id="epc-address-form-country-aria" class="enhanced-common-label-field">
+                                <label id="epc-address-form-country-label" for="country" aria-hidden="true">Country<span id="epc-address-form-country-mand" aria-hidden="true">*</span></label>
+                                <mat-form-field id="epc-address-form-country-form-field" class="enhanced-common-label-field-placeholder" floatLabel="never">
+                                    <input [attr.aria-label]="getAddressAriaLabel('country', 'Enter Country')" [attr.aria-invalid]="addressForm.get('country').invalid" aria-required="true" aria-describedby="epc-address-form-country-error" matInput id="country" placeholder="Enter country" type="text" formControlName="country" class="enhanced-common-label-field-placeholder">
+                                    <mat-error id="epc-address-form-country-error" role="alert">
+                                        <span id="epc-country-error-mand-msg" *ngIf="addressForm.get('country').hasError('pattern')">
+                                            Country is invalid.
+                                        </span>
+                                        <span id="epc-country-error-valid-msg" *ngIf="addressForm.get('country').hasError('required')">
+                                            Please enter the country
+                                        </span>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <div id="epc-address-form-save-area" class="payment-save address-default-checkbox">
+                            <mat-checkbox id="epc-address-form-save-checkbox" class="review-common-checkbox" (change)="DefaultSelected($event)" [checked]="billingAddresses?.length === 0 && isAddAddress ? true : defaultVal" aria-label="Make this address the default billing address">
+                                Make this address the default billing address
+                            </mat-checkbox>
+                        </div>
+                        <div id="epc-address-form-btns-area" class="edit-address-section">
+                            <div id="epc-address-form-left-btns" class="edit-address-left-btns">
+                                <button id="epc-address-form-update-btn" type="submit" mat-button class="fill-btn fill-light-hover-btn" [attr.aria-label]="editIndex !== null ? 'Update address' + (editIndex + 1) : 'Save new address'">
+                                  <span id="epc-save-new-address-btn" *ngIf="isAddAddress && billingAddresses.length > 0 || billingAddresses.length === 0">Save new address</span>
+                                  <span id="epc-update-address-btn" *ngIf="editIndex !== null">Update address</span>
+                                </button>
+                                <button *ngIf="isAddAddress && billingAddresses.length > 0 || editIndex !== null" id="epc-address-form-cancel-btn" type="button" mat-button class="simple-btn review-h-40 simple-hover-btn" [attr.aria-label]="editIndex !== null ? 'Cancel editing address' + (editIndex + 1) : 'Cancel'" (click)="cancelEdit()">Cancel</button>
+                            </div>
+                            <div id="epc-address-form-right-btn" class="edit-address-right-btn">
+                                <button (click)="onDeleteAddresss(editIndex)" *ngIf="editIndex !== null" id="epc-address-form-delete-btn" type="button" mat-button class="outline-secondary-btn review-h-40 review-w-100 outline-secondary-btn-hover" [attr.aria-label]="'Delete address' + (editIndex + 1)">Delete address</button>
+                            </div>
+                        </div>
+                        </form>
+                    </div>
+                    <!----- End Address form ----->
+                    
+                    <!-- Saved Address List -->
+                    <ng-template #savedList>
+                        
+                    <!----- My billing address -----> 
+                    <div id="epc-saved-address-area" class="additional-information-wrapper">
+                        <hr id="epc-saved-address-line" class="horizontal-line">
+                        <div id="epc-saved-address-inner" class="saved-billing-section address-card-list">
+                            <div id="epc-saved-address-card-header" class="address-card-header">
+                                <h2 id="epc-saved-address-title" class="card-header remove-focus">My billing address</h2>
+                                <button id="epc-saved-address-new-btn" type="button" mat-button class="outline-secondary-btn review-h-40 review-w-100 outline-secondary-btn-hover" aria-label="Add new address" (click)="addNewAddress()">
+                                    Add new address
+                                </button>
+                            </div>
+                            <div id="epc-saved-address-radio-card-area" class="saved-address review-added-address">
+                                <mat-radio-group (change)="onSelectAddress($event.value)" [(ngModel)]="selectedAddressIndex" id="epc-saved-address-radio-group" class="smartcard-radio-group" role="radiogroup" aria-label="My billing address">
+                                    <div id="epc-saved-address-radio-group-loop_{{i}}" *ngFor="let address of billingAddresses; let i = index">
+                                    <mat-radio-button id="epc-saved-address-radio-btn_{{i}}" labelPosition="before" [value]="i" class="smartcard-radio-mat-btn" [checked]="address?.IsDefault" [attr.tabindex]="selectedAddressIndex === i ? 0 : -1" [attr.aria-label]="getSavedAddressAriaLabel(address, i)">
+                                    <h3 id="epc-saved-address-radio-card-title_{{i}}" class="f-700 address-card-title">{{ address.AddressType }}</h3>
+                                        <p id="epc-saved-address-radio-card-content_{{i}}" class="payment-address-content">
+                                            <span id="epc-saved-address-house_{{i}}">{{ address.Address.Address1 }}</span>
+                                            <span id="epc-saved-address-street_{{i}}">{{ address.Address.Address2 }} {{ address.Address.Address3 }} {{ address.Address.PostCode }}</span>
+                                            <span id="epc-saved-address-city_{{i}}">{{ address.Address.City }}</span>
+                                            <span id="epc-saved-address-country_{{i}}">{{ address.Address.Country }} {{ address.Address.CountryCode }}</span>
+                                        </p>
+                                        <div id="epc-saved-address-edit-btn-area_{{i}}" class="smartcard-address-edit-delete">
+                                            <button id="epc-saved-address-edit-btn_{{i}}" type="button" mat-button aria-label="Edit" (click)="editAddress(i)" [attr.tabindex]="selectedAddressIndex === i ? 0 : -1">Edit</button>
+                                        </div>
+                                    </mat-radio-button>
+                                    <!-- Updated address -->
+                                    <div id="epc-update-address-msg_{{i}}" class="toast-success toast-msg-top-space" *ngIf="updatedAddressIndex === i && toastMessage" role="alert" aria-live="polite" aria-atomic="true">
+                                        <p id="epc-update-address-msg-txt_{{i}}">{{ toastMessage }}</p>
+                                    </div>
+                                    </div>
+                                    <!-- End Updated address -->
+                                </mat-radio-group>
+                            </div>
+                            <!-- Added address -->
+                            <div id="epc-added-address-msg" class="toast-success toast-msg-top-space" role="alert" aria-live="polite" aria-atomic="true" *ngIf="showCommonToast && toastMessage">
+                                <p id="epc-added-address-msg-txt">{{ toastMessage }}</p>
+                            </div>
+                            <!-- End Added address -->
+                            
+                            <!-- Valid delivery address -->
+                            <div id="epc-valid-address-msg" class="toast-error toast-msg-top-space" role="alert" aria-live="polite" aria-atomic="true" *ngIf="addressErrorMsg">
+                                <img id="epc-valid-address-msg-img" src="assets/images/new-design-img/wrabness-info.svg" alt="" aria-hidden="true" />
+                                <p id="epc-valid-address-msg-txt">
+                                    {{ addressErrorMsg }}
+                                </p>
+                            </div>
+                            <!-- End Valid delivery address -->
+                        </div>
+                    </div>
+                    <!----- End My billing address ----->
+                    </ng-template>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <app-enhanced-footer [selectedVouchers]="selectedVouchers?.length > 0" 
+        [isLoaderActive] = "isLoaderActive ? isLoaderActive : isUpadateInJourney"
+        [totalVoucherPrice]="selectedVoucherPrice" [isPayNowDisabled]="isPayNowDisabled()" [mixingDeckSearchRequest]="searchRequest" [totalJourneyPrice]="totalPrice" (payNowClicked)="onPayNow()" [journeyCount]="sharedService?.enhancedReviewBuyResponse?.Journey?.length || 0">
+    </app-enhanced-footer>
+</footer>

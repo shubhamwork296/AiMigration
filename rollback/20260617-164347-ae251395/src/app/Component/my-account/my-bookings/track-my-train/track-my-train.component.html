@@ -1,0 +1,641 @@
+<app-basic-dialog [dialogTitle]="trackingHeaderTitle" [dialogFooter]="dialogFooter" [isShowFooter]="isFooterAvailable" [trainLiveStatusIcon]="trainLiveStatusIcon" [trackMyTrainInfoIcon]="trackMyTrainInfoIcon">
+    <div id="tmt-main" class="common-popup-theme-in">
+        <div id="tmt-border" class="common-popup-theme-border">
+            <div id="tmt-middle" class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle" [ngClass]="this.data?.trackMyTrain?.ErrorMsgHeading ? 'bg-white pb-24' : ''">
+                <div id="tmt-popup-main" class="track-train-popup">
+                    <div id="tmt-status" class="track-train-right w-100" *ngIf = "data.trackMyTrain?.TrackMyJourneyInfoList?.length == 1 && !trainLiveInfo?.IsCancelled">
+                        <div id="tmt-status-inner" class="track-train-card w-100" *ngIf="!trainLiveInfo?.IsCancelled && !data?.trackMyTrain?.ErrorMsgHeading && !data?.trackMyTrain?.ErrorMsgText">
+                            <div id="tmt-status-img-txt" class="track-my-train-status-plain" *ngIf="!data.trainLiveInfo.IsDelayed && !data.trainLiveInfo.IsCancelled && !data.trainLiveInfo.IsPartialCancelled">
+                                <img id="tmt-status-img" src="assets/images/track-train-on-time.svg" alt="On time icon" />
+                                <p id="tmt-status-txt">{{trackMyTrainEnum.trainOnTimeText}}</p>
+                            </div>
+                            <div id="tmt-status-img-txt-2" class="track-my-train-status-plain" *ngIf="data.trainLiveInfo.IsDelayed">
+                                <img id="tmt-status-img-2" src="assets/images/exclamation_warning.svg" class="tmt-popup-delay-icon" alt="Delayed Icon" />
+                                <p id="tmt-status-txt-2">{{trackMyTrainEnum.trainDelayedText}}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tmt-left-section" class="track-train-card ps-0 pe-0"
+                        *ngIf="!trainLiveInfo?.IsCancelled && !data?.trackMyTrain?.ErrorMsgHeading && !data?.trackMyTrain?.ErrorMsgText">
+                        <div id="tmt-left-body" class="track-my-train-stations-body">
+                            <div id="tmt-left-inner" class="track-my-train-stations">
+                                <ul id="tmt-left-area_{{trainLegIndex}}" *ngFor="let trainLeg of data?.trainLiveInfo?.TrainLegList; let trainLegIndex = index">
+                                    <div id="tmt-avanti-logo-area_{{trainLegIndex}}" class="track-train-card-header track-my-train-padding-space" *ngIf = "trainLeg.TrainOperatorName && trainLeg.TrainOperatorName.includes(trackMyTrainEnum.avantiTrainOperatorText) && !trainLeg.IsTubeService && !trainLeg.IsRailReplacement && !trainLeg.IsWalkService">
+                                        <div id="tmt-avanti-logo-inner_{{trainLegIndex}}" class="track-train-card-header-logo">
+                                            <img id="tmt-avanti-logo_{{trainLegIndex}}" src="assets/images/logoNew.svg" alt="Avanti West Coast" />
+                                        </div>
+                                        <p id="tmt-station-with-logo_{{trainLegIndex}}" class="track-my-train-stations-name font-dark">
+                                            {{trainLeg.JourneyOriginStation}} to {{trainLeg.JourneyDestinationStation}}
+                                        </p>
+                                    </div>
+
+                                    <!--Start Seat reservation level-->
+                                    <div id="tmt-sr-main_{{trainLegIndex}}" *ngIf="!trainLeg.IsCancelled && trainLeg.IsAvantiTrain && trainLeg.ShowSeatReservationLevel">
+                                        <div id="tmt-sr-no-info_{{trainLegIndex}}" *ngIf="!data?.trainLiveInfo?.SeatReservationLevelList">
+                                            <div id="tmt-sr-no-info-inner_{{trainLegIndex}}" class="track-train-card pe-0 pb-0 w-100 box-shadow-none pt-0">
+                                                <div id="tmt-sr-header_{{trainLegIndex}}" class="track-train-seat-level track-my-train-title-pr">
+                                                    <div id="tmt-sr-header-inner_{{trainLegIndex}}" id="tmt-seat-reservation-title-left" class="track-my-train-seat-title">
+                                                        <div id="tmt-sr-icon_{{trainLegIndex}}">
+                                                            <img id="tmt-sr-img_{{trainLegIndex}}" src="assets/images/no-seat-reservation-level.svg" alt="Seat reservation lavel" />
+                                                        </div>
+                                                        <div id="tmt-sr-header-title-area_{{trainLegIndex}}">
+                                                            <h3 id="tmt-sr-header-title_{{trainLegIndex}}" id="tmt-seat-reservation-title" class="m-0">Seat reservation level</h3>
+                                                            <p id="tmt-sr-sub-title_{{trainLegIndex}}" class="m-0">
+                                                                Information not available at the moment.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="tmt-sr-noinfo-coach-area_{{trainLegIndex}}" class="track-my-train-coach mt-16 no-seat-reservation-overflow">
+                                                    <div id="tmt-sr-noinfo-inner_{{trainLegIndex}}" class="track-my-train-coach-inner">
+                                                        <div id="tmt-sr-noinfo-first-coach_{{trainLegIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-noinfo-first-coach-inner_{{trainLegIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-noinfo-first-coach-icon_{{trainLegIndex}}" class="track-my-train-coach-image">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="88" height="24" viewBox="0 0 88 24" fill="none">
+                                                                        <g clip-path="url(#clip0_2618_763)">
+                                                                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                                                                d="M14.548 0H15H85C86.6569 0 88 1.34315 88 3V21C88 22.6569 86.6569 24 85 24H15H6.7051C3.00198 24 0 21.0695 0 17.4545C0 16.0712 0.448962 14.7234 1.28244 13.6047L9.57719 2.47097C10.7338 0.918504 12.5815 0 14.548 0ZM10.0331 11.5305C10.8888 11.3681 11.646 10.9025 12.1659 10.2194L14.7204 6.86131C14.9054 6.61802 14.9772 6.31958 14.9214 6.02112C14.8654 5.72269 14.6912 5.46846 14.4296 5.30449L11.5701 3.51069L4.32293 12.614L10.0331 11.5305Z"
+                                                                                fill="#C5CFD9" />
+                                                                        </g>
+                                                                        <defs>
+                                                                            <clipPath id="clip0_2618_763">
+                                                                                <rect width="88" height="24" fill="white" />
+                                                                            </clipPath>
+                                                                        </defs>
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-noinfo-second-coach_{{trainLegIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-noinfo-second-coach-inner_{{trainLegIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-noinfo-second-coach-icon_{{trainLegIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="82" height="24" viewBox="0 0 82 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour('')" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-noinfo-third-coach_{{trainLegIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-noinfo-third-coach-inner_{{trainLegIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-noinfo-third-coach-icon_{{trainLegIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="82" height="24" viewBox="0 0 82 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour('')" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-noinfo-fourth-coach_{{trainLegIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-noinfo-fourth-coach-inner_{{trainLegIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-noinfo-fourth-coach-icon_{{trainLegIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="82" height="24" viewBox="0 0 82 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour('')" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-noinfo-last-coach_{{trainLegIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-noinfo-last-coach-inner_{{trainLegIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-noinfo-last-coach-icon_{{trainLegIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="88" height="24" viewBox="0 0 88 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd"
+                                                                            d="M73.452 0H73H3C1.34315 0 0 1.34315 0 3V21C0 22.6569 1.34315 24 3 24H73H81.2949C84.998 24 88 21.0695 88 17.4545C88 16.0712 87.551 14.7234 86.7176 13.6047L78.4228 2.47097C77.2662 0.918504 75.4185 0 73.452 0ZM77.9669 11.5305C77.1112 11.3681 76.354 10.9025 75.8341 10.2194L73.2796 6.86131C73.0946 6.61802 73.0228 6.31958 73.0786 6.02112C73.1346 5.72269 73.3088 5.46846 73.5704 5.30449L76.4299 3.51069L83.6771 12.614L77.9669 11.5305Z"
+                                                                            fill="#C5CFD9"></path>
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="tmt-sr-info_{{trainLegIndex}}_{{seatReservationListIndex}}" *ngFor="let seatReservation of filterSeatReservationLevelByTrainId(trainLeg.TrainId); let seatReservationListIndex = index">
+                                            <div id="tmt-sr-info-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-train-card pe-0 pb-0 w-100 box-shadow-none pt-0">
+                                                <div id="tmt-sr-info-header_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-train-seat-level track-my-train-title-pr">
+                                                    <div id="tmt-sr-info-header-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-seat-title">
+                                                        <div id="tmt-sr-info-header-icon_{{trainLegIndex}}_{{seatReservationListIndex}}">
+                                                            <img id="tmt-sr-info-header-img_{{trainLegIndex}}_{{seatReservationListIndex}}" src="assets/images/seat-reservation-level-icon.svg" alt="Seat reservation lavel" />
+                                                        </div>
+                                                        <div id="tmt-sr-info-header-title-area_{{trainLegIndex}}_{{seatReservationListIndex}}">
+                                                            <h3 id="tmt-sr-info-header-title_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0">Seat reservation level</h3>
+                                                            <p id="tmt-sr-info-header-sub-title_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0" *ngIf="seatReservation">
+                                                                This service has {{seatReservation?.CoachCount}} carriages
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div id="tmt-sr-info-travel-direction_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-direction-right" *ngIf="seatReservation">
+                                                        <p id="tmt-sr-info-travel-direction-txt_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-direction-txt m-0">
+                                                            <img id="tmt-sr-info-travel-direction-img_{{trainLegIndex}}_{{seatReservationListIndex}}" src="assets/images/track-my-train-direction.svg" alt="Travel direction icon" />
+                                                            Travel direction
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div id="tmt-sr-info-coach-area_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach mt-16">
+                                                    <div id="tmt-sr-info-coach-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-inner">
+                                                        <div id="tmt-sr-info-first-coach_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-info-first-coach-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-info-first-coach-icon_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="88" height="24" viewBox="0 0 88 24" fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg">
+                                                                        <path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd"
+                                                                            d="M14.548 0H15H85C86.6569 0 88 1.34315 88 3V21C88 22.6569 86.6569 24 85 24H15H6.7051C3.00198 24 0 21.0695 0 17.4545C0 16.0712 0.448962 14.7234 1.28244 13.6047L9.57719 2.47097C10.7338 0.918504 12.5815 0 14.548 0ZM10.0331 11.5305C10.8888 11.3681 11.646 10.9025 12.1659 10.2194L14.7204 6.86131C14.9054 6.61802 14.9772 6.31958 14.9214 6.02112C14.8654 5.72269 14.6912 5.46846 14.4296 5.30449L11.5701 3.51069L4.32293 12.614L10.0331 11.5305Z"
+                                                                            [attr.fill]="seatReservation ? setCoachColour(seatReservation?.CoachInfoList[0]?.SeatLevel) : setCoachColour('')" />
+                                                                    </svg>
+                                                                    <p id="tmt-sr-info-first-coach-name_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0 coach-txt" [ngClass]="seatReservation?.CoachInfoList[0]?.SeatLevel == trackMyTrainEnum.noSeatLevelText ? 'text-white' : ''" *ngIf="seatReservation">
+                                                                        {{seatReservation?.CoachInfoList[0]?.CoachName}} -
+                                                                        {{seatReservation?.CoachInfoList[0]?.ClassName}}</p>
+                                                                </div>
+                                                                <p id="tmt-sr-info-first-coach-level_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0 coach-seat-txt" *ngIf="seatReservation">
+                                                                    {{seatReservation?.CoachInfoList[0]?.SeatLevel}}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-info-second-coach_{{trainLegIndex}}_{{seatReservationListIndex}}_{{coachIndex}}" class="track-my-train-coach-first" *ngFor="let coach of seatReservation?.CoachInfoList; let coachIndex = index;">
+                                                            <div id="tmt-sr-info-second-coach-inner_{{trainLegIndex}}_{{seatReservationListIndex}}_{{coachIndex}}" class="track-my-train-coach-first-inner" *ngIf="coachIndex != 0 && coachIndex != filterAvailableCoachesLength(seatReservation) - 1">
+                                                                <div id="tmt-sr-info-second-coach-icon_{{trainLegIndex}}_{{seatReservationListIndex}}_{{coachIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="82" height="24" viewBox="0 0 82 24" fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg">
+                                                                        <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour(coach.SeatLevel)" />
+                                                                    </svg>
+                                                                    <p id="tmt-sr-info-second-coach-name_{{trainLegIndex}}_{{seatReservationListIndex}}_{{coachIndex}}" class="m-0 coach-txt" *ngIf="seatReservation" [ngClass]="coach.SeatLevel == trackMyTrainEnum.noSeatLevelText ? 'text-white' : ''">
+                                                                        {{coach.CoachName}} - {{coach.ClassName}}</p>
+                                                                </div>
+                                                                <p id="tmt-sr-info-second-coach-lavel_{{trainLegIndex}}_{{seatReservationListIndex}}_{{coachIndex}}" class="m-0 coach-seat-txt" *ngIf="seatReservation">{{coach.SeatLevel}}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-info-second-last-coach_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first" *ngIf="data?.trainLiveInfo?.SeatReservationLevelList == null">
+                                                            <div id="tmt-sr-info-second-last-coach-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-info-second-last-coach-icon_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="82" height="24" viewBox="0 0 82 24" fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg">
+                                                                        <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour('')" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="tmt-sr-info-last-coach_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first">
+                                                            <div id="tmt-sr-info-last-coach-inner_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-first-inner">
+                                                                <div id="tmt-sr-info-last-coach-icon_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-coach-image">
+                                                                    <svg width="88" height="24" viewBox="0 0 88 24" fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg">
+                                                                        <path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd"
+                                                                            d="M73.452 0H73H3C1.34315 0 0 1.34315 0 3V21C0 22.6569 1.34315 24 3 24H73H81.2949C84.998 24 88 21.0695 88 17.4545C88 16.0712 87.551 14.7234 86.7176 13.6047L78.4228 2.47097C77.2662 0.918504 75.4185 0 73.452 0ZM77.9669 11.5305C77.1112 11.3681 76.354 10.9025 75.8341 10.2194L73.2796 6.86131C73.0946 6.61802 73.0228 6.31958 73.0786 6.02112C73.1346 5.72269 73.3088 5.46846 73.5704 5.30449L76.4299 3.51069L83.6771 12.614L77.9669 11.5305Z"
+                                                                            [attr.fill]="seatReservation ? setCoachColour(seatReservation?.CoachInfoList[filterAvailableCoachesLength(seatReservation) - 1]?.SeatLevel) : setCoachColour('')" />
+                                                                    </svg>
+                                                                    <p id="tmt-sr-info-last-coach-name_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0 coach-txt"
+                                                                        [ngClass]="seatReservation?.CoachInfoList[filterAvailableCoachesLength(seatReservation) - 1]?.SeatLevel == trackMyTrainEnum.noSeatLevelText ? 'text-white' : ''"
+                                                                        *ngIf="seatReservation">
+                                                                        {{seatReservation?.CoachInfoList[filterAvailableCoachesLength(seatReservation) -
+                                                                        1]?.CoachName}} -
+                                                                        {{seatReservation?.CoachInfoList[filterAvailableCoachesLength(seatReservation) -
+                                                                        1]?.ClassName}}</p>
+                                                                </div>
+                                                                <p id="tmt-sr-info-last-coach-level_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0 coach-seat-txt" *ngIf="seatReservation">
+                                                                    {{seatReservation?.CoachInfoList[filterAvailableCoachesLength(seatReservation) -
+                                                                    1]?.SeatLevel}}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="tmt-sr-not-available_{{trainLegIndex}}_{{seatReservationListIndex}}" class="track-my-train-non-info" *ngIf="data?.trainLiveInfo?.SeatReservationLevelList == null">
+                                                        <img id="tmt-sr-not-available-img_{{trainLegIndex}}_{{seatReservationListIndex}}" src="assets/images/track-train-delay-time.svg" alt="No information icon" />
+                                                        <p id="tmt-sr-not-available-txt_{{trainLegIndex}}_{{seatReservationListIndex}}" class="m-0">This information not available at the moment.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--End Seat-->
+
+                                    <div id="tmt-sr-to_{{trainLegIndex}}" class="track-my-train-break track-my-train-padding-space" *ngIf = "trainLeg.TrainOperatorName && !trainLeg.TrainOperatorName.includes(trackMyTrainEnum.avantiTrainOperatorText)">
+                                        <div id="tmt-sr-to-icon_{{trainLegIndex}}" class="track-my-train-break-icon">
+                                            <img id="tmt-sr-to-img_{{trainLegIndex}}" *ngIf="trainLeg.TrainOperatorName && trainLeg.IsTubeService" src="assets/images/track-my-train-london-underground.svg" alt="London Underground icon" />
+                                            <img id="tmt-sr-to-img1_{{trainLegIndex}}" *ngIf="trainLeg.IsRailReplacement" src="assets/images/track-my-train-bus-replacement.svg" alt="Bus replacement icon" />
+                                            <img id="tmt-sr-to-img2_{{trainLegIndex}}" *ngIf="trainLeg.TrainOperatorName && trainLeg.IsWalkService" src="assets/images/track-train-walk.svg" alt="Walk icon" />
+                                        </div>
+                                        <div id="tmt-sr-to-content_{{trainLegIndex}}" class="track-my-train-break-content">
+                                            <p id="tmt-sr-to-content-title_{{trainLegIndex}}" class="m-0 track-my-train-break-title">
+                                                {{trainLeg.TrainOperatorName}}
+                                            </p>
+                                            <span id="tmt-sr-to-content-station-name_{{trainLegIndex}}" class="track-my-train-break-station">
+                                                {{trainLeg.JourneyOriginStation}} to {{trainLeg.JourneyDestinationStation}}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <!-- Tube and walk  -->
+                                    <div id="tmt-sr-tubeandwalk-_{{trainLegIndex}}" class="track-my-train-break-second track-my-train-padding-space" *ngIf="trainLeg.IsTubeService || trainLeg.IsWalkService">
+                                        <div id="tmt-sr-tubeandwalk-inner_{{trainLegIndex}}" class="track-my-train-break-second-box track-my-train-break-second-bg3">
+                                            <div id="tmt-sr-tubeandwalk-first_{{trainLegIndex}}" class="track-my-train-break-second-box-inner">
+                                                <h3 id="tmt-sr-tubeandwalk-first-title_{{trainLegIndex}}" class="m-0 track-my-train-break-tube-walk-title font-400" *ngIf="trainLeg.IsTubeService">
+                                                    Take the <span id="tmt-sr-tubeandwalk-first-title-station_{{trainLegIndex}}" class="font-700">Tube from {{trainLeg.JourneyOriginStation}} to
+                                                        {{trainLeg.JourneyDestinationStation}}.</span>
+                                                </h3>
+                                                <h3 id="tmt-sr-tubeandwalk-first-title2_{{trainLegIndex}}" class="m-0 track-my-train-break-tube-walk-title font-400" *ngIf="trainLeg.IsWalkService">
+                                                    Walk from <span id="tmt-sr-tubeandwalk-first-title2-station_{{trainLegIndex}}" class="font-700">{{trainLeg.JourneyOriginStation}} to
+                                                        {{trainLeg.JourneyDestinationStation}}.</span>
+                                                </h3>
+                                            </div>
+                                            <div id="tmt-sr-tubeandwalk-second_{{trainLegIndex}}" class="track-my-train-break-second-box-content mt-24 upgrade-details-p-mb">
+                                                <p id="tmt-sr-tubeandwalk-second-title_{{trainLegIndex}}" class="m-0 font-dark" *ngIf="trainLeg.IsTubeService">
+                                                    Usually takes <span id="tmt-sr-tubeandwalk-second-title-duration_{{trainLegIndex}}" class="font-700">{{trainLeg.ConnectingServiceDuration}}
+                                                        minutes,</span> Please check the <a id="tmt-sr-tubeandwalk-second-link_{{trainLegIndex}}" href="{{trainLeg.TubeStatusLink}}"
+                                                        target="_blank" rel="noopener"
+                                                        class="text-spark-dark font-dark font-700 underline-offset-02">tube status</a>
+                                                    for any disruptions.
+                                                </p>
+                                                <p id="tmt-sr-tubeandwalk-second_{{trainLegIndex}}" class="m-0 font-dark" *ngIf="trainLeg.IsWalkService">
+                                                    Usually takes <span id="tmt-sr-tubeandwalk-second-duration2_{{trainLegIndex}}" class="font-700">{{trainLeg.ConnectingServiceDuration}}
+                                                        minutes.</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- End Tube and walk  -->
+
+                                    <!-- Start London Euston 2 mins message -->
+                                    <div id="tmt-sr-le_{{trainLegIndex}}" class="track-my-train-break-second track-my-train-padding-space london-euston-tmt-card london-euston-tmt-mt-0" *ngIf="trainLeg?.IsAvantiTrain && trainLeg?.GatesCloseAtStation && trainLeg?.JourneyOriginStation == 'London Euston'">
+                                        <div id="tmt-sr-le-inner_{{trainLegIndex}}" class="track-my-train-break-second-box track-my-train-break-second-bg1">
+                                            <div id="tmt-sr-le-flex_{{trainLegIndex}}" class="d-flex gap-08">
+                                                <div id="tmt-sr-le-icon_{{trainLegIndex}}">
+                                                    <img id="tmt-sr-le-img_{{trainLegIndex}}" class="tmt-london-bus-icon" src="assets/images/black-exclamation.svg" alt="London Euston Icon" />
+                                                </div>
+                                                <div id="tmt-sr-le-content-area_{{trainLegIndex}}">
+                                                    <div id="tmt-sr-le-title-area_{{trainLegIndex}}" class="track-my-train-break-second-box-inner">
+                                                        <h3 id="tmt-sr-le-title_{{trainLegIndex}}" class="m-0 track-my-train-break-second-box-title">Gates at London Euston</h3>
+                                                    </div>
+                                                    <div id="tmt-sr-le-msg-area_{{trainLegIndex}}" class="track-my-train-break-second-box-content">
+                                                        <p id="tmt-sr-le-msg_{{trainLegIndex}}" class="m-0">
+                                                            Please be advised that gates at {{trainLeg.GatesCloseAtStation}} close <span id="tmt-sr-le-duration-msg_{{trainLegIndex}}" class="font-700">{{trainLeg.GatesCloseBeforeMinutes}} minutes</span> prior to
+                                                            departure time.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- End London Euston 2 mins message -->
+
+                                    <div id="tmt-sr-tc_{{trainLegIndex}}" class="track-my-train-break-second track-my-train-padding-space" *ngIf="trainLeg.IsCancelled">
+                                        <div id="tmt-sr-tc-inner_{{trainLegIndex}}" class="track-my-train-break-second-box track-my-train-break-second-bg2 d-flex align-itemes-baseline gap-08">
+                                            <div id="tmt-sr-tc-icon_{{trainLegIndex}}" class="track-my-train-break-second-box-cancelled">
+                                                <img id="tmt-sr-tc-img_{{trainLegIndex}}" src="assets/images/track-train-cancelled-time.svg" alt="Train Cancelled">
+                                            </div>
+                                            <div id="tmt-sr-tc-content_{{trainLegIndex}}">
+                                                <div id="tmt-sr-tc-title-area_{{trainLegIndex}}" class="track-my-train-break-second-box-inner mb-8">
+                                                    <p id="tmt-sr-tc-title_{{trainLegIndex}}" class="m-0 track-my-train-break-second-box-title">This train is cancelled</p>
+                                                </div>
+                                                <div id="tmt-sr-tc-content2_{{trainLegIndex}}" class="track-my-train-break-second-box-content">
+                                                    <p id="tmt-sr-tc-content-txt_{{trainLegIndex}}" class="m-0">
+                                                        It is advised to consider catching the train either before or after your
+                                                        original departure. Please talk with station staff.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="tmt-show-earlier-area_{{trainLegIndex}}" class="track-my-train-show-calling-points mb-16"
+                                        *ngIf="trainLeg.ShowEarlier && !trainLeg.IsTubeService &&  !trainLeg.IsWalkService">
+                                        <button id="tmt-show-earlier-btn_{{trainLegIndex}}" type="button" mat-button (click)="showEarlierStation(trainLegIndex)">
+                                            <span id="tmt-show-earlier-icon_{{trainLegIndex}}" *ngIf="trainLeg.showEarlierCallingPointBtnTxt.includes('Show')">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"
+                                                    fill="none">
+                                                    <path
+                                                        d="M0.666992 8.06784L6.00033 2.66699L11.3337 8.06784L10.0837 9.33366L6.00033 5.19864L1.91699 9.33366L0.666992 8.06784Z"
+                                                        fill="#131E29" />
+                                                </svg>
+                                            </span>
+                                            <span id="tmt-hide-later-icon_{{trainLegIndex}}" *ngIf="trainLeg.showEarlierCallingPointBtnTxt.includes('Hide')">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"
+                                                    fill="none">
+                                                    <path
+                                                        d="M11.3337 3.93282L6.00033 9.33366L0.666992 3.93281L1.91699 2.66699L6.00033 6.80201L10.0837 2.66699L11.3337 3.93282Z"
+                                                        fill="#131E29" />
+                                                </svg>
+                                            </span>
+                                            {{trainLeg.showEarlierCallingPointBtnTxt}}
+                                        </button>
+                                    </div>
+                                    <div id="tmt-station-main_{{trainLegIndex}}" *ngIf="!trainLeg.IsTubeService && !trainLeg.IsWalkService">
+                                        <div id="tmt-station-area_{{trainLegIndex}}_{{callingPointIndex}}" class="track-my-train-loop-li track-my-train-padding-space"
+                                            *ngFor="let callingPoint of trainLeg.CallingPointList; let callingPointIndex = index;">
+                                            <li id="tmt-station-details_{{trainLegIndex}}_{{callingPointIndex}}"
+                                                [ngClass]="{'track-my-train-first-li' : callingPoint.IsJourneyOriginStation, 
+                                                                'track-my-train-second-last-li' : (trainLeg.CallingPointList.length == 2 && callingPointIndex == 0) || (addSecondLastClass(trainLeg.CallingPointList) == callingPointIndex && trainLeg.CallingPointList.length > 2),
+                                                                'track-my-train-first-li-non' : !callingPoint.IsJourneyOriginStation && callingPoint.IsTrainOrigin,
+                                                                'track-my-train-li-non-middle-bottom': addDynamicNonMiddleBottomClass(callingPoint.IsJourneyDestinationStation, callingPoint.IsTrainDestination,trainLeg.CallingPointList,callingPointIndex),
+                                                                'track-my-train-last-li track-my-train-last-journey-icon' : callingPoint.IsJourneyDestinationStation,
+                                                                'track-my-train-li-non-middle' : addClassBeforeJourneyOriginStation(trainLeg.CallingPointList, callingPointIndex),
+                                                                'd-none-earlier' : callingPoint.isEarlierStation,
+                                                                'd-none-later' : callingPoint.isLaterStation,
+                                                                'track-my-train-li-non-last-bottom' : !callingPoint.IsJourneyDestinationStation && trainLeg.CallingPointList.length-1 == callingPointIndex}">
+                                                <img id="tmt-station-track-icon_{{trainLegIndex}}_{{callingPointIndex}}" 
+                                                src="assets/images/track-my-train-main-icon.svg" 
+                                                class="track-my-train-main-icon" alt="Track train" 
+                                                [ngClass]="cssForLiveLocation(callingPoint, trainLeg.CallingPointList, callingPointIndex)"
+                                                *ngIf="callingPoint.LiveLocationIndex != -1">
+                                                <p id="tmt-station-time_{{trainLegIndex}}_{{callingPointIndex}}" class="m-0 station-left-time">
+                                                    <span id="tmt-station-working-time_{{trainLegIndex}}_{{callingPointIndex}}" class="station-left-time-first"
+                                                        [ngClass]="{'station-left-cut-time-first' : callingPoint.IsDelayed, 'line-through' : callingPoint.IsCancelled}">{{callingPoint.WorkingTime}}</span>
+                                                    <span id="tmt-station-estimated-time_{{trainLegIndex}}_{{callingPointIndex}}" class="station-left-time-last"
+                                                        *ngIf="callingPoint.IsDelayed">{{callingPoint.EstimatedTime}}</span>
+                                                </p>
+                                                <p id="tmt-station-name_{{trainLegIndex}}_{{callingPointIndex}}" class="m-0 station-name" [ngClass]="callingPoint.IsCancelled ? 'line-through' : ''">
+                                                    {{callingPoint.StationName}}</p>
+                                                <span id="tmt-station-plateform_{{trainLegIndex}}_{{callingPointIndex}}" class="station-platform-name">
+                                                    <span *ngIf="!trainLeg.IsRailReplacement && !callingPoint.IsCancelled && callingPoint.PlateFormNo 
+                                                        && (callingPoint.IsJourneyDestinationStation || (callingPoint.IsJourneyOriginStation && !trainLeg.IsTrainDepartedFromJourneyOrigin))">Platform
+                                                        {{callingPoint.PlateFormNo}}</span>
+                                                    <span id="tmt-station-cancelled-text_{{trainLegIndex}}_{{callingPointIndex}}" class="train-late-time" *ngIf="callingPoint.IsCancelled">
+                                                        Cancelled
+                                                    </span>
+                                                    <span id="tmt-station-late-time_{{trainLegIndex}}_{{callingPointIndex}}" class="train-late-time"
+                                                        *ngIf="!callingPoint.IsCancelled && callingPoint.IsDelayed && !callingPoint.IsJourneyDestinationStation && !callingPoint.IsJourneyOriginStation">{{callingPoint.TotalDelayInMinutes}}
+                                                        min late</span>
+                                                </span>
+                                            </li>
+                                        </div>
+                                    </div>
+                                    <div id="tmt-show-later-area_{{trainLegIndex}}" class="track-my-train-show-calling-points mt-16" *ngIf="trainLeg.ShowLater && !trainLeg.IsTubeService &&  !trainLeg.IsWalkService">
+                                        <button id="tmt-show-later-btn_{{trainLegIndex}}" type="button" mat-button (click)="showLaterStation(trainLegIndex)">
+                                            <span id="tmt-show-later-icon_{{trainLegIndex}}" *ngIf="trainLeg.showLaterCallingPointBtnTxt.includes('Show')">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"
+                                                    fill="none">
+                                                    <path
+                                                        d="M11.3337 3.93282L6.00033 9.33366L0.666992 3.93281L1.91699 2.66699L6.00033 6.80201L10.0837 2.66699L11.3337 3.93282Z"
+                                                        fill="#131E29" />
+                                                </svg>
+                                            </span>
+                                            <span id="tmt-hide-earlier-icon_{{trainLegIndex}}" *ngIf="trainLeg.showLaterCallingPointBtnTxt.includes('Hide')">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"
+                                                    fill="none">
+                                                    <path
+                                                        d="M0.666992 8.06784L6.00033 2.66699L11.3337 8.06784L10.0837 9.33366L6.00033 5.19864L1.91699 9.33366L0.666992 8.06784Z"
+                                                        fill="#131E29" />
+                                                </svg>
+                                            </span>
+                                            {{trainLeg.showLaterCallingPointBtnTxt}}
+                                        </button>
+                                    </div>
+                                    <div id="tmt-net_{{trainLegIndex}}" class="track-my-train-break-second track-my-train-padding-space"
+                                        *ngIf="trainLeg.IsReachingLateAtJourneyDestination && trainLeg.NextTrainInMinutes > 0 && trainLeg.NextTrainInMinutes < 15 && !trainLeg.IsTubeService &&  !trainLeg.IsWalkService">
+                                        <div id="tmt-net-inner_{{trainLegIndex}}" class="track-my-train-break-second-box" [ngClass]="trainLeg.NextTrainInMinutes <= 5 ? 'track-my-train-break-second-bg2' : 'track-my-train-break-second-bg1'">
+                                            <div id="tmt-net-header_{{trainLegIndex}}" class="track-my-train-break-second-box-inner">
+                                                <h3 id="tmt-net-title_{{trainLegIndex}}" class="m-0 track-my-train-break-second-box-title" *ngIf="trainLeg.NextTrainInMinutes <= 5">Not enough time</h3>
+                                                <h3 id="tmt-net-title2_{{trainLegIndex}}" class="m-0 track-my-train-break-second-box-title"
+                                                    *ngIf="trainLeg.NextTrainInMinutes < 15 && trainLeg.NextTrainInMinutes > 5">Heads
+                                                    up!</h3>
+                                                <span id="tmt-net-sub-title_{{trainLegIndex}}" class="track-my-train-break-second-box-time">{{showNextTrainTimeInMinutes(trainLeg.NextTrainInMinutes)}}</span>
+                                            </div>
+                                            <div id="tmt-net-content_{{trainLegIndex}}" class="track-my-train-break-second-box-content upgrade-details-p-mb">
+                                                <p id="tmt-net-first-txt_{{trainLegIndex}}" class="m-0" *ngIf="trainLeg.NextTrainInMinutes <= 5">
+                                                    Time is tight, do not rush, for your safety. Consider seeking assistance from
+                                                    station staff.
+                                                </p>
+                                                <p id="tmt-net-second-txt_{{trainLegIndex}}" class="m-0" *ngIf="trainLeg.NextTrainInMinutes < 15 && trainLeg.NextTrainInMinutes > 5">
+                                                    Time for your next connection is approaching. Move comfortably, no need to rush.
+                                                    Stay on course.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ul>
+                            </div>
+                            <div id="tmt-last-updated-btn-area" class="track-my-train-padding-space">
+                                <button id="tmt-last-updated-btn" type="button" (click)="callAPIIfIntervalAchieved(true)" mat-button
+                                    aria-labelledby="Last Updated" class="mt-20 track-train-last-updated">
+                                    <img id="tmt-last-updated-icon" src="assets/images/last-updated.svg"
+                                        alt="Last updated icon" />
+                                    <p id="tmt-last-updated-txt" class="m-0 last-updated-txt font-400 upgrade-pl-05">Last updated {{lastUpdatedTimeText}}</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tmt-right-section" class="track-train-right"
+                        [ngClass]="!trainLiveInfo?.IsCancelled && !data?.trackMyTrain?.ErrorMsgHeading && !data?.trackMyTrain?.ErrorMsgText ? 'd-none' : ''"
+                        *ngIf="!data?.trackMyTrain?.ErrorMsgText">
+                        <div id="tmt-seat-reservation-area" class="track-train-card pe-0 pb-0 w-100"
+                            *ngIf="!trainLiveInfo.IsCancelled && trainLiveInfo.IsAvantiTrainAvailable" style="display: none;">
+                            <div id="tmt-seat-reservation-title-area" class="track-train-seat-level track-my-train-title-pr">
+                                <div id="tmt-seat-reservation-title-left" class="track-my-train-seat-title">
+                                    <h3 id="tmt-seat-reservation-title" class="m-0">Seat reservation level</h3>
+                                    <p id="tmt-seat-reservation-sub-title" class="m-0"
+                                        *ngIf="data?.trainLiveInfo?.SeatReservationLevel">This train has
+                                        {{data?.trainLiveInfo?.SeatReservationLevel?.CoachCount}} carriages</p>
+                                </div>
+                                <div id="tmt-seat-reservation-direction-area" class="track-my-train-direction-right"
+                                    *ngIf="data?.trainLiveInfo?.SeatReservationLevel">
+                                    <p id="tmt-seat-reservation-direction-title" class="track-my-train-direction-txt m-0">
+                                        <img id="tmt-seat-reservation-direction-icon"
+                                            src="assets/images/track-my-train-direction.svg"
+                                            alt="Travel direction icon" />
+                                        Travel direction
+                                    </p>
+                                </div>
+                            </div>
+                            <div id="tmt-coach-area" class="track-my-train-coach mt-16">
+                                <div id="tmt-coach-inner" class="track-my-train-coach-inner">
+                                    <div id="tmt-coach-first-area" class="track-my-train-coach-first">
+                                        <div id="tmt-coach-first-inner" class="track-my-train-coach-first-inner">
+                                            <div id="tmt-coach-first-icon" class="track-my-train-coach-image">
+                                                <svg width="88" height="24" viewBox="0 0 88 24" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M14.548 0H15H85C86.6569 0 88 1.34315 88 3V21C88 22.6569 86.6569 24 85 24H15H6.7051C3.00198 24 0 21.0695 0 17.4545C0 16.0712 0.448962 14.7234 1.28244 13.6047L9.57719 2.47097C10.7338 0.918504 12.5815 0 14.548 0ZM10.0331 11.5305C10.8888 11.3681 11.646 10.9025 12.1659 10.2194L14.7204 6.86131C14.9054 6.61802 14.9772 6.31958 14.9214 6.02112C14.8654 5.72269 14.6912 5.46846 14.4296 5.30449L11.5701 3.51069L4.32293 12.614L10.0331 11.5305Z"
+                                                        [attr.fill]="data?.trainLiveInfo?.SeatReservationLevel ? setCoachColour(data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[0]?.SeatLevel) : setCoachColour('')" />
+                                                </svg>
+                                                <p id="tmt-coach-first-section" class="m-0 coach-txt"
+                                                    [ngClass]="data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[0]?.SeatLevel == trackMyTrainEnum.someSeatLevelText ? 'text-white' : ''"
+                                                    *ngIf="data?.trainLiveInfo?.SeatReservationLevel">
+                                                    {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[0]?.CoachName}} -
+                                                    {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[0]?.ClassName}}</p>
+                                            </div>
+                                            <p id="tmt-coach-first-type" class="m-0 coach-seat-txt"
+                                                *ngIf="data?.trainLiveInfo?.SeatReservationLevel">
+                                                {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[0]?.SeatLevel}}</p>
+                                        </div>
+                                    </div>
+                                    <div id="tmt-coach-middle-area_{{coachIndex}}" class="track-my-train-coach-first"
+                                        *ngFor="let coach of data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList; let coachIndex = index;">
+                                        <div id="tmt-coach-middle-inner_{{coachIndex}}" class="track-my-train-coach-first-inner"
+                                            *ngIf="coachIndex != 0 && coachIndex != noOfCoachesAvailable - 1">
+                                            <div id="tmt-coach-middle-coach_{{coachIndex}}" class="track-my-train-coach-image">
+                                                <svg width="82" height="24" viewBox="0 0 82 24" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour(coach.SeatLevel)" />
+                                                </svg>
+                                                <p id="tmt-coach-middle-section_{{coachIndex}}" class="m-0 coach-txt"
+                                                    *ngIf="data?.trainLiveInfo?.SeatReservationLevel"
+                                                    [ngClass]="coach.SeatLevel == trackMyTrainEnum.someSeatLevelText ? 'text-white' : ''">
+                                                    {{coach.CoachName}} - {{coach.ClassName}}</p>
+                                            </div>
+                                            <p id="tmt-coach-middle-type_{{coachIndex}}" class="m-0 coach-seat-txt"
+                                                *ngIf="data?.trainLiveInfo?.SeatReservationLevel">{{coach.SeatLevel}}</p>
+                                        </div>
+                                    </div>
+                                    <div id="tmt-coach-no-info-area" class="track-my-train-coach-first"
+                                        *ngIf="data?.trainLiveInfo?.SeatReservationLevel == null">
+                                        <div id="tmt-coach-no-info-inner" class="track-my-train-coach-first-inner">
+                                            <div id="tmt-coach-no-info-coach" class="track-my-train-coach-image">
+                                                <svg width="82" height="24" viewBox="0 0 82 24" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <rect width="82" height="24" rx="3" [attr.fill]="setCoachColour('')" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="tmt-coach-last-area" class="track-my-train-coach-first">
+                                        <div id="tmt-coach-last-inner" class="track-my-train-coach-first-inner">
+                                            <div id="tmt-coach-last-coach" class="track-my-train-coach-image">
+                                                <svg width="88" height="24" viewBox="0 0 88 24" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M73.452 0H73H3C1.34315 0 0 1.34315 0 3V21C0 22.6569 1.34315 24 3 24H73H81.2949C84.998 24 88 21.0695 88 17.4545C88 16.0712 87.551 14.7234 86.7176 13.6047L78.4228 2.47097C77.2662 0.918504 75.4185 0 73.452 0ZM77.9669 11.5305C77.1112 11.3681 76.354 10.9025 75.8341 10.2194L73.2796 6.86131C73.0946 6.61802 73.0228 6.31958 73.0786 6.02112C73.1346 5.72269 73.3088 5.46846 73.5704 5.30449L76.4299 3.51069L83.6771 12.614L77.9669 11.5305Z"
+                                                        [attr.fill]="data?.trainLiveInfo?.SeatReservationLevel ? setCoachColour(data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[noOfCoachesAvailable - 1]?.SeatLevel) : setCoachColour('')" />
+                                                </svg>
+                                                <p id="tmt-coach-last-section" class="m-0 coach-txt"
+                                                    [ngClass]="data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[noOfCoachesAvailable - 1]?.SeatLevel == trackMyTrainEnum.someSeatLevelText ? 'text-white' : ''"
+                                                    *ngIf="data?.trainLiveInfo?.SeatReservationLevel">
+                                                    {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[noOfCoachesAvailable -
+                                                    1]?.CoachName}} -
+                                                    {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[noOfCoachesAvailable -
+                                                    1]?.ClassName}}</p>
+                                            </div>
+                                            <p id="tmt-coach-last-type" class="m-0 coach-seat-txt"
+                                                *ngIf="data?.trainLiveInfo?.SeatReservationLevel">
+                                                {{data?.trainLiveInfo?.SeatReservationLevel?.CoachInfoList[noOfCoachesAvailable -
+                                                1]?.SeatLevel}}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="tmt-coach-no-info-content-area" class="track-my-train-non-info"
+                                    *ngIf="data?.trainLiveInfo?.SeatReservationLevel == null">
+                                    <img id="tmt-coach-no-info-content-icon"
+                                        src="assets/images/track-train-delay-time.svg" alt="No information icon" />
+                                    <p id="tmt-coach-no-info-content-txt" class="m-0">This information not available at the moment.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tmt-train-status-area" class="track-train-card w-100" *ngIf="!data.trainLiveInfo.IsHideStatusForDelayAtAnyStation && !data.trainLiveInfo?.IsCancelledAtMidOrDestinationStation">
+                            <div id="tmt-train-status-on-time-area" class="track-my-train-status-plain"
+                                *ngIf="!data.trainLiveInfo.IsHideStatusForDelayAtAnyStation && !data.trainLiveInfo.IsDelayed && !data.trainLiveInfo.IsCancelled && !data.trainLiveInfo.IsPartialCancelled">
+                                <img id="tmt-train-status-on-time-icon" src="assets/images/track-train-on-time.svg"
+                                    alt="On time icon" />
+                                <p id="tmt-train-status-on-time-title">{{trackMyTrainEnum.trainOnTimeText}}</p>
+                            </div>
+                            <div id="tmt-train-status-mat-accordion-area" class="mat-track-train-accordion">
+                                <mat-accordion id="tmt-train-status-mat-accordion"
+                                    *ngIf="data.trainLiveInfo.IsDelayed || data.trainLiveInfo.IsCancelled || data.trainLiveInfo.IsPartialCancelled">
+                                    <mat-expansion-panel id="tmt-train-status-mat-panel">
+                                        <mat-expansion-panel-header id="tmt-train-status-mat-panel-header"
+                                            class="mat-track-train-header" (click)="showReadMoreAndLessPara()">
+                                            <mat-panel-title id="tmt-train-status-mat-title">
+                                                <div id="tmt-train-status-types" class="mat-track-train-title">
+                                                    <div id="tmt-train-status-delayed-area" class="mat-track-train-title-status"
+                                                        *ngIf="!data.trainLiveInfo.IsHideStatusForDelayAtAnyStation && data.trainLiveInfo.IsDelayed">
+                                                        <img id="tmt-train-status-delayed-icon"
+                                                            src="assets/images/exclamation_warning.svg"
+                                                            alt="Delayed Icon" class="tmt-popup-delay-icon" />
+                                                        <p id="tmt-train-status-delayed-title">{{trackMyTrainEnum.trainDelayedText}}</p>
+                                                    </div>
+                                                    <div id="tmt-train-status-cancelled-area" class="mat-track-train-title-status"
+                                                        *ngIf="data.trainLiveInfo.IsCancelled">
+                                                        <img id="tmt-train-status-cancelled-icon"
+                                                            src="assets/images/track-train-cancelled-time.svg"
+                                                            alt="Cancelled Icon" />
+                                                        <p id="tmt-train-status-cancelled-title">{{trackMyTrainEnum.trainCancelledText}}
+                                                        </p>
+                                                    </div>
+                                                    <div id="tmt-train-status-partially-cancelled-area"
+                                                        class="mat-track-train-title-status"
+                                                        *ngIf="data.trainLiveInfo.IsPartialCancelled">
+                                                        <img id="tmt-train-status-partially-cancelled-icon"
+                                                            src="assets/images/track-train-cancelled-time.svg"
+                                                            alt="Partially cancelled icon" />
+                                                        <p id="tmt-train-status-partially-cancelled-title">
+                                                            {{trackMyTrainEnum.trainPartiallyCancelledText}}</p>
+                                                    </div>
+                                                </div>
+                                            </mat-panel-title>
+                                            <mat-panel-description id="tmt-train-status-mat-desc-area" class="mat-track-train-desc">
+                                                <p id="tmt-train-status-mat-desc-read-more" class="m-0" *ngIf="isReadMoreShow">Read More
+                                                </p>
+                                                <p id="tmt-train-status-mat-desc-read-less" class="m-0" *ngIf="!isReadMoreShow">Read
+                                                    Less</p>
+                                            </mat-panel-description>
+                                        </mat-expansion-panel-header>
+                                        <div id="tmt-train-status-mat-body" class="mat-track-train-body upgrade-details-p-mb">
+                                            <div id="tmt-train-status-mat-body-inner" *ngIf="!data.trainLiveInfo.IsHideStatusForDelayAtAnyStation && data.trainLiveInfo.IsDelayed">
+                                                <p id="tmt-train-status-mat-delayed-txt" class="f-14 font-dark lh-20"
+                                                    *ngFor="let delay of data.trainLiveInfo?.DelayReason">
+                                                    {{delay.JourneyOriginTime}} {{delay.JourneyOrigin}} to {{delay.JourneyDestination}}
+                                                    has been delayed at London Euston and is now 10 minutes late.
+                                                    {{delay.DisruptionReason}}
+                                                </p>
+                                                <p style="display: none;" id="tmt-train-status-mat-delayed-txt-2" class="f-14 font-dark lh-20">
+                                                    Catering is reduced as there will be no shop service. Disabled toilet facilities are
+                                                    not available in the centre.
+                                                </p>
+                                                <h3 style="display: none;" id="tmt-train-status-mat-delayed-additional-info"
+                                                    class="f-16 font-dark lh-22 font-700">
+                                                    Additional Information
+                                                </h3>
+                                                <p style="display: none;" id="tmt-train-status-mat-delayed-txt-3" class="f-14 font-dark lh-20">
+                                                    Unfortunately, we won't be able to offer an onboard shop service today.
+                                                </p>
+                                                <h3 id="tmt-train-status-mat-delayed-problem" class="f-16 font-dark lh-22 font-700">
+                                                    Problems with your journey ?
+                                                </h3>
+                                                <p *ngIf = "data.trainLiveInfo?.IsAvantiTrainAvailable" id="tmt-train-status-mat-delayed-txt-4" class="f-14 font-dark lh-20">
+                                                    If your journey has been delayed, you might be entitled to compensation. Head
+                                                    to <a id="tmt-train-status-mat-delayed-info-link"
+                                                        href="{{data.trainLiveInfo?.DelayRepayUrl}}"
+                                                        target="_blank">Delay Repay</a> for more information.
+                                                </p>
+                                                <p *ngIf = "!data.trainLiveInfo?.IsAvantiTrainAvailable" id="tmt-train-status-mat-delayed-txt-5" class="f-14 font-dark lh-20">
+                                                    If your journey has been delayed, you might be entitled to compensation. Please
+                                                    visit other operator website for further advice.
+                                                </p>
+                                            </div>
+                                            <div id="tmt-train-status-mat-cancelled-section"
+                                                *ngIf="data.trainLiveInfo.IsCancelled || data.trainLiveInfo.IsPartialCancelled" class="upgrade-details-p-mb">
+                                                <p id="tmt-train-status-mat-cancelled-txt" class="f-14 font-dark lh-20"
+                                                    *ngFor="let cancel of data.trainLiveInfo?.CancelReason">
+                                                    {{cancel.JourneyOriginTime}} {{cancel.JourneyOrigin}} to
+                                                    {{cancel.JourneyDestination}} has been cancelled. {{cancel.DisruptionReason}}
+                                                </p>
+                                                <p id="tmt-train-status-mat-cancelled-txt-2" class="f-14 font-dark lh-20">
+                                                    Your ticket is valid for the one train before or after the original departure
+                                                    on the same operator. Please plan accordingly check <a id="tmt-train-status-mat-live-train-status-info-link"
+                                                    href="{{data.trainLiveInfo?.LiveTrainStatusUrl}}"
+                                                    target="_blank">Live Train Status</a>
+                                                </p>
+                                                <h3 id="tmt-train-status-mat-cancelled-problems" class="f-16 font-dark lh-22 font-700">
+                                                    Problems with your journey ?
+                                                </h3>
+                                                <p id="tmt-train-status-mat-cancelled-txt-3" class="f-14 font-dark lh-20">
+                                                    If your journey has been cancelled, you might be entitled to a refund. Head
+                                                    to <a id="tmt-train-status-mat-cancelled-info-link"
+                                                        href="{{data.trainLiveInfo?.RefundUrl}}"
+                                                        target="_blank">our refunds page</a> for more information.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </mat-expansion-panel>
+                                </mat-accordion>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div *ngIf="data?.trackMyTrain?.ErrorMsgHeading && data?.trackMyTrain?.ErrorMsgText">
+                        <p class="m-0 font-dark f-14 lh-20">
+                            {{data?.trackMyTrain?.ErrorMsgText}}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</app-basic-dialog>
+<ng-template #dialogFooter>
+    <div class="common-popup-theme-footer">
+        <button class="new-default-btn w-xs-100" mat-dialog-close mat-button>Okay</button>
+    </div>
+</ng-template>

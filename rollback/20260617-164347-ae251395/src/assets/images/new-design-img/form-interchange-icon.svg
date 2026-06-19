@@ -1,0 +1,14 @@
+<svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group">
+<g id="Colour/Primary/Solway-Breeze">
+<circle id="Mask" cx="17.5" cy="17.5" r="17.5" fill="#204555"/>
+<mask id="mask0_8267_45797" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="35">
+<circle id="Mask_2" cx="17.5" cy="17.5" r="17.5" fill="white"/>
+</mask>
+<g mask="url(#mask0_8267_45797)">
+</g>
+</g>
+<path id="&#239;&#131;&#186;" d="M14.6356 17.7777L15.5637 16.8497L12.448 13.734H23.4082V12.4082H12.448L15.5637 9.29247L14.6356 8.36439L9.92893 13.0711L14.6356 17.7777Z" fill="white"/>
+<path id="&#239;&#131;&#186; copy" d="M19.3644 17.3643L18.4363 18.2924L21.552 21.4081H10.5918V22.7339H21.552L18.4363 25.8496L19.3644 26.7777L24.0711 22.071L19.3644 17.3643Z" fill="white"/>
+</g>
+</svg>

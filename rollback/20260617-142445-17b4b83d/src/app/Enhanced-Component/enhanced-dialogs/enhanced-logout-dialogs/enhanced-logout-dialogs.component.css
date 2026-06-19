@@ -1,0 +1,15 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.alert-image {
+    display: flex;
+    justify-content: center;
+}
+
+.no-train-found-content {
+    margin-bottom: 1rem;
+}
+
+.logout-popup-btn {
+    height: 3rem !important;
+}

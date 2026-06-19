@@ -131,9 +131,10 @@ public sealed class AngularCriticalDependencyAlignmentPlanner(IAiService ai, IPr
         if (name == "typescript" && action is "align" or "add" && !AngularCriticalDependencyPolicy.IsSupportedTypeScriptForTarget(recommended, targetAngularMajor)) return (false, "TypeScript recommendation is incompatible with the target Angular major.");
         if (action is "align" or "add" && !AngularCriticalDependencyPolicy.IsSafeCriticalAlignment(name, recommended, targetAngularMajor)) return (false, "Recommended version is not safe for Angular critical dependency alignment.");
         if (AngularCriticalDependencyPolicy.RequiresSynchronizedAngularVersion(name) && action is "align" or "add" && !IsExactThreePartVersion(recommended)) return (false, "Synchronized Angular framework package recommendations must use one exact synchronized version, not a range.");
-        if (confidence < 60) return (false, "Critical dependency recommendation confidence is below 60.");
+        if (confidence < 20) return (false, "Critical dependency recommendation confidence is below 20.");
         if (risk == "high" && !(BlocksKnownFailure(item) && ReasonReferencesSpecificCompatibility(name, reason))) return (false, "High-risk critical dependency recommendation requires manual review.");
-        if (confidence < 80 && !ReasonReferencesSpecificCompatibility(name, reason)) return (false, "Medium-confidence recommendation must explicitly reference Angular compatibility.");
+        if (confidence < 80 &&  !AngularCriticalDependencyPolicy.IsAngularOwnedPackage(name)
+&& !ReasonReferencesSpecificCompatibility(name, reason)) return (false, "Medium-confidence recommendation must explicitly reference Angular compatibility.");
         if (item.BoolValue("manualReviewRequired") || action == "manualReview") return (false, string.IsNullOrWhiteSpace(reason) ? "AI requested manual review." : reason);
         return (true, "");
     }

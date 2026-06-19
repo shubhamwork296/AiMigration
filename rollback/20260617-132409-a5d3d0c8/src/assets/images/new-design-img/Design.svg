@@ -1,0 +1,63 @@
+<svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="16" height="14" fill="#1E1E1E"/>
+<g id="All screens and scenario variations">
+<path d="M-13718 -31435C-13718 -31436.1 -13717.1 -31437 -13716 -31437H50403C50404.1 -31437 50405 -31436.1 50405 -31435V37425C50405 37426.1 50404.1 37427 50403 37427H-13716C-13717.1 37427 -13718 37426.1 -13718 37425V-31435Z" fill="#B4B4B4"/>
+<path d="M-13716 -31437V-31436H50403V-31437V-31438H-13716V-31437ZM50405 -31435H50404V37425H50405H50406V-31435H50405ZM50403 37427V37426H-13716V37427V37428H50403V37427ZM-13718 37425H-13717V-31435H-13718H-13719V37425H-13718ZM-13716 37427V37426C-13716.6 37426 -13717 37425.6 -13717 37425H-13718H-13719C-13719 37426.7 -13717.7 37428 -13716 37428V37427ZM50405 37425H50404C50404 37425.6 50403.6 37426 50403 37426V37427V37428C50404.7 37428 50406 37426.7 50406 37425H50405ZM50403 -31437V-31436C50403.6 -31436 50404 -31435.6 50404 -31435H50405H50406C50406 -31436.7 50404.7 -31438 50403 -31438V-31437ZM-13716 -31437V-31438C-13717.7 -31438 -13719 -31436.7 -13719 -31435H-13718H-13717C-13717 -31435.6 -13716.6 -31436 -13716 -31436V-31437Z" fill="white" fill-opacity="0.1"/>
+<g id="Review &#38; delivery">
+<path d="M-10774 -852C-10774 -853.104 -10773.1 -854 -10772 -854H24866C24867.1 -854 24868 -853.105 24868 -852V9122C24868 9123.1 24867.1 9124 24866 9124H-10772C-10773.1 9124 -10774 9123.1 -10774 9122V-852Z" fill="#444444"/>
+<path d="M-10772 -854V-853H24866V-854V-855H-10772V-854ZM24868 -852H24867V9122H24868H24869V-852H24868ZM24866 9124V9123H-10772V9124V9125H24866V9124ZM-10774 9122H-10773V-852H-10774H-10775V9122H-10774ZM-10772 9124V9123C-10772.6 9123 -10773 9122.55 -10773 9122H-10774H-10775C-10775 9123.66 -10773.7 9125 -10772 9125V9124ZM24868 9122H24867C24867 9122.55 24866.6 9123 24866 9123V9124V9125C24867.7 9125 24869 9123.66 24869 9122H24868ZM24866 -854V-853C24866.6 -853 24867 -852.553 24867 -852H24868H24869C24869 -853.656 24867.7 -855 24866 -855V-854ZM-10772 -854V-855C-10773.7 -855 -10775 -853.657 -10775 -852H-10774H-10773C-10773 -852.552 -10772.6 -853 -10772 -853V-854Z" fill="white" fill-opacity="0.1"/>
+<g id="Price breakdown modal Desktop">
+<rect width="1440" height="1024" transform="translate(-575 -269)" fill="black" fill-opacity="0.25"/>
+<g id="Price breakdown modal Desktop_2" clip-path="url(#clip0_3090_119038)" filter="url(#filter0_d_3090_119038)">
+<rect width="720" height="896" transform="translate(-215 -205)" fill="white"/>
+<g id="Frame 1618873211">
+<g id="Scrollable section" clip-path="url(#clip1_3090_119038)">
+<g id="Frame 1618873103">
+<mask id="path-5-inside-1_3090_119038" fill="white">
+<path d="M-215 -94H505V259H-215V-94Z"/>
+</mask>
+<path d="M505 259V258H-215V259V260H505V259Z" fill="#C5CFD9" mask="url(#path-5-inside-1_3090_119038)"/>
+<g id="Ticket purchase summary card">
+<g clip-path="url(#clip2_3090_119038)">
+<g id="Table list items desktop">
+<rect width="672" height="88" transform="translate(-191 -21)" fill="#004F59"/>
+<g id="Frame 11257">
+<g id="Icons/Brand/Arrow">
+<g id="Design">
+<path id="Vector" d="M16 7.005L14.66 5.63833L9.28 0.125L7.20667 2.19833L10.4067 5.41167H0V8.59167L2.6 8.59833L10.4133 8.605L9.76667 9.245L7.20667 11.7983L9.28 13.8717L13.74 9.31167L16 7.005Z" fill="white"/>
+</g>
+</g>
+</g>
+</g>
+</g>
+<rect x="-190.5" y="-20.5" width="671" height="239" rx="4.5" stroke="#C5CFD9"/>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_3090_119038" x="-235" y="-219" width="760" height="936" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="6"/>
+<feGaussianBlur stdDeviation="10"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.0745098 0 0 0 0 0.117647 0 0 0 0 0.160784 0 0 0 0.16 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_3090_119038"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_3090_119038" result="shape"/>
+</filter>
+<clipPath id="clip0_3090_119038">
+<rect width="720" height="896" fill="white" transform="translate(-215 -205)"/>
+</clipPath>
+<clipPath id="clip1_3090_119038">
+<rect width="720" height="391" fill="white" transform="translate(-215 -132)"/>
+</clipPath>
+<clipPath id="clip2_3090_119038">
+<rect x="-191" y="-21" width="672" height="240" rx="5" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -1,0 +1,55 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.expired-journey-content {
+    padding: 1rem;
+    border-radius: 0.313rem;
+    background-color: var(--neutrals-light-grey);
+}
+
+.expired-journey-station {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+    margin: 0;
+}
+
+.expired-journey-station span {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent);
+}
+
+.expired-journey-details {
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.expired-journey-details li {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    position: relative;
+}
+
+.expired-journey-details li::before {
+    content: "";
+    position: absolute;
+    top: 9px;
+    left: -9px;
+    height: 3px;
+    width: 3px;
+    border-radius: 100%;
+    background-color: var(--primary-coalescent);
+}
+
+.expired-journey-details li:first-child::before {
+    display: none;
+}

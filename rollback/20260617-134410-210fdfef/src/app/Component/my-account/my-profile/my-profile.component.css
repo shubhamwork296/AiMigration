@@ -1,0 +1,173 @@
+.preference-mode {
+    border: 1px solid #E9F0F5;
+}
+
+.preference-mode-header {
+    border-bottom: 1px solid #E9F0F5;
+    padding: 15px 30px;
+    background: #E2F5E9;
+    font-size: 16px;
+}
+
+.preference-mode-body {
+    padding: 15px 30px;
+    background: #fff;
+    word-break: break-word;
+}
+
+.flex-lign-center {
+    display: flex;
+    align-items: center;
+}
+
+.bookingbanner {
+    padding: 60px 45px 40px;
+    position: relative;
+}
+
+.bookingbanner-img1 {
+    background: url('../../../../assets/images/banner1.png') no-repeat;
+    background-size: cover;
+}
+
+.bookingbanner-img2 {
+    background: url('../../../../assets/images/banner2.png') no-repeat;
+    background-size: cover;
+}
+
+.m-20 {
+    margin: 20px;
+}
+
+.bookingbanner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.bookingbanner-link {
+    text-decoration: underline;
+}
+
+.bookingbanner-link:hover {
+    color: #fff;
+}
+
+.delete-icon-btn {
+    right: 0px;
+    position: absolute;
+    top: 2px;
+}
+
+mat-form-field .delete-icon-btn {
+    right: 40px;
+}
+
+mat-form-field button.delete-icon-btn img {
+    width: 20px;
+    margin-bottom: -10px;
+}
+
+mat-form-field button.delete-icon-btn {
+    line-height: 22px !important;
+    color: #ff4713;
+    font-size: 14px;
+    border: none;
+}
+
+.edit-icon-btn {
+    right: 30px;
+}
+
+.datepicker-icon {
+    right: 67px;
+}
+
+.underline {
+    text-decoration: underline !important;
+}
+
+/* Changes after upgrading */
+.change-password-arrow {
+    top: -1px;
+    left: 0;
+    position: relative;
+}
+/* End Changes after upgrading */
+
+.add-border-bottom {
+    border-bottom: 1px solid #B3B3B3;
+}
+
+.accountclosour-actions {
+    padding: 0;
+    list-style: none;
+    margin-bottom: 28px;
+}
+
+.accountclosour-actions li {
+    padding-left: 12px;
+    font-size: 16px;
+    position: relative;
+    padding-bottom: 10px;
+    line-height: 22px;
+    color: #131E29;
+}
+
+.accountclosour-actions li:last-child {
+    padding-bottom: 0;
+}
+
+.accountclosour-actions li:before {
+    content: '';
+    width: 3px;
+    height: 3px;
+    display: block;
+    border-radius: 50%;
+    background: #131e29;
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
+
+.account-check-p {
+    margin-top: -6px;
+}
+
+.common-caption .profile-forgot-password.mat-button {
+    line-height: 20px !important;
+    padding: 0 !important;
+}
+
+.my-profile-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+.mb-15-container {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 991px) {
+    .mb-15-container-991 {
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width:767px) {
+  .delete-icon-btn {
+      top: 0px;
+  }
+
+  button.delete-icon-btn img {
+      margin-bottom: 0px;
+  }
+
+  .datepicker-icon {
+      top: -12px;
+  }
+}

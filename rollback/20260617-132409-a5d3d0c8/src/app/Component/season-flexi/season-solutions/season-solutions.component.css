@@ -1,0 +1,257 @@
+.small-qtt {
+    padding: 15px 0;
+    background: #204555;
+}
+
+.routing_icon {
+    width: 40px;
+}
+
+.ticket-info-icon {
+    width: 22px;
+}
+
+.descriptions td.active a:hover {
+    color: #204555;
+    text-decoration: none;
+}
+
+.Journey-theader {
+    padding: 8px;
+    background: #204555;
+}
+
+.Journey-theader p {
+    color: #fff;
+    margin: 8px 0 0 0;
+}
+
+.Journey-theader .arrow-img {
+    margin: 0 4px;
+}
+
+.pre-btn {
+    color: #fff;
+}
+
+.mid-btn {
+    color: #131E29;
+    background: #E2F5E9;
+    line-height: 16px;
+    padding: 5px 22px;
+    font-size: 14px;
+}
+
+.nxt-btn {
+    color: #fff;
+}
+
+.mix-day-btns {
+    float: right;
+    display: flex;
+    width: fit-content;
+}
+
+.hide {
+    display: none !important;
+}
+
+.show {
+    display: block !important;
+}
+
+.season-types {
+    background-color: #D6D1CA;
+    display: flex;
+    justify-content: space-around;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.season-types .types-parent,.seasons {
+    flex-basis: 100%;
+    display: flex;
+    justify-content: space-around;
+    min-width: 100%;
+}
+
+.season-list .action {
+    flex-basis: 10%;
+    text-align: center;
+    background: #fff;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.season-types .action {
+    flex-basis: 10%;
+    text-align: center;
+}
+
+.season-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.season-row {
+    display: flex;
+    min-width: 100%;
+}
+
+.season-list .season {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-right: 1px solid #D9E2E5;
+    padding: 20px;
+    width: 100%;
+    font-size: 12px;
+    position: relative;
+    line-height: 1.5;
+    font-weight: 300;
+}
+
+.season-list .season.selected {
+    display: flex;
+    flex-direction: column;
+    background: #204555;
+    color: #fff;
+    border-right: 1px solid #D9E2E5;
+    padding: 20px;
+    width: 100%;
+    font-size: 12px;
+    position: relative;
+    line-height: 1.5;
+    font-weight: 300;
+}
+
+.season-list .season p {
+    margin-bottom: .25rem !important;
+}
+
+.cost-value {
+    color: #131E29;
+    font-size: 32px;
+    font-weight: 600;
+    vertical-align: middle;
+    display: table-cell;
+    padding-right: 10px;
+    line-height: 30px;
+}
+
+.season-select-radio {
+    position: absolute;
+    top: 9px;
+    right: 0px;
+    transform: scale(0.7);
+}
+
+.season-list .season-row:first-child {
+    margin-top: 10px;
+}
+
+.season-list .season-row {
+    margin-bottom: 10px;
+}
+
+.farebuy-bx {
+    z-index: 1 !important;
+}
+
+.farebuy-bx .cost-value {
+    color: #fff;
+}
+
+.with-parking-btn input {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.season-container {
+    padding-right: 12px!important;
+    padding-left: 12px!important;
+}
+
+.ticket-info-icon .mat-button-focus-overlay {
+    display: none;
+}
+
+.mid-btn.mat-button.mat-button-base {
+    cursor: default;
+}
+
+.season.season-not-available {
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.cursor-pointer-hover:hover {
+    cursor:pointer !important;
+}
+  
+.type-name {
+    width: 100px;
+    text-align: center;
+}
+
+@media only screen and (min-width:768px) and (max-width:1024px) {
+    .cost-value {
+        font-size: 24px;
+    }
+}
+
+@media only screen and (max-width:767px) {
+    .season-list .season-row {
+        flex-direction: column-reverse;
+    }
+
+    .seasons {
+        flex-wrap: wrap;
+    }
+
+    .season-list .season {
+        max-width: 50%;
+        border-top: 1px solid #D9E2E5;
+    }
+
+    .season-list .season-row .action {
+        padding:0px;
+    }
+
+    .season-types {
+        display: none;
+    }
+
+    .cost-value {
+        font-size: 20px;
+    }
+}
+
+@media (max-width:767px){
+    .season.season-not-available {
+        min-height: 180px;
+    }
+
+    .seasons {
+        justify-content: inherit;
+    }
+
+    .route-position {
+        position: relative;
+        margin: 0;
+    }
+
+    .route-icon-position {
+        top: 7px;
+        z-index: 1;
+        right: 10%;
+        transform: translate(10%, 0%);
+    }
+
+    .upgrade-season-container .row {
+        margin: 0;
+    }
+}

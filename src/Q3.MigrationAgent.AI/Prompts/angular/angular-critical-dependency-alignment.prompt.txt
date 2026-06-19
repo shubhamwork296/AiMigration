@@ -64,18 +64,18 @@ STRICT RULES:
 5. Do not use latest, *, x, >=, unbounded ranges, or placeholder versions.
 6. For synchronized Angular framework packages, recommend one exact three-part version shared by all such packages in the response.
 7. Only the synchronized Angular framework group must use the exact @angular/core target patch.
-8. Independent Angular packages must be resolved by major using npm view <package>@<targetMajor> version --json and must not be forced to the @angular/core patch.
+8. Independent Angular packages may recommend the target major version, for example "21", when exact npm view output is not supplied. Do not mark manualReviewRequired only because registry discovery has not happened yet. The migration engine will verify and resolve the exact installable version using npm view after this response. Independent Angular packages must not be forced to the @angular/core patch.
 9. TypeScript must be compatible with the target Angular major’s compiler-cli/build-angular range.
 10. Angular 13 and Angular 14 must not use TypeScript 5.x.
 11. If the current package is already compatible with the target Angular major, preserve it.
 12. If a required framework-critical package is missing and Angular normally requires it for this project type, recommend add.
 13. If a package is obsolete or incompatible for the target Angular major and directly affects Angular build/test, recommend remove only when confidence is high.
 14. If exact compatibility cannot be determined from Angular compatibility rules, local metadata, or supplied failure context, use manualReview.
-15. If a synchronized Angular framework package requires registry verification for an exact patch and no exact version is supplied, use manualReview instead of a range.
+15.Only synchronized Angular framework packages require an exact patch in this response. Independent Angular packages may use the target major and must not be rejected only for requiring later registry verification.
 16. Never invent exact patch versions unless they are supplied in the input or known from Angular compatibility rules.
 17. Prefer bounded compatible ranges only for packages that do not require synchronized exact Angular versions:
     - Synchronized Angular framework packages: use one exact three-part version such as 20.3.25, never ^20.0.0, ~20.0.0, 20.x, latest, or any other range.
-    - Independent Angular packages: use the major-scoped npm discovery result, not the @angular/core patch.
+    - Independent Angular packages: use the supplied major-scoped npm discovery result when available. If it is not supplied, recommend the target major version, for example "21", and set manualReviewRequired=false because the migration engine will verify and resolve the exact installable version later.
     - TypeScript: use the known compatible bounded range for the target Angular major.
     - RxJS, zone.js, and tslib: preserve when compatible; align only when clearly incompatible.
 18. Third-party packages must not be changed here unless they are directly Angular build/runtime/test critical.

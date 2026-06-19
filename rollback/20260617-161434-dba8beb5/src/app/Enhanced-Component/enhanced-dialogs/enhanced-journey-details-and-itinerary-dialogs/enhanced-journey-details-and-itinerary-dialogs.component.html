@@ -1,0 +1,207 @@
+<app-enhanced-basic-dialog class="ticket-details" [dialogTitle]="headerTitle">
+<!----- Common popup body ----->
+<div class="enhanced-common-popup-body">
+  <mat-dialog-content>
+    <div class="journey-details-flex">
+      <div class="journey-details-left">
+        <div class="journey-details-card">
+          <div class="journey-details-card-header">
+            <h3>Journey details</h3>
+          </div>
+          <div class="journey-details-card-body">
+            <div class="journey-details-route" *ngIf="enhancedTravelChanges && enhancedTravelChanges?.length > 0">
+              <div class="journey-details-route-inner" *ngFor="let route of enhancedTravelChanges; let travelChangesIndex = index">
+                <div class="journey-details-route-train" *ngIf="route?.TravelSolutionName !== ''">
+                  <img src="assets/images/new-design-img/header-logo.svg" alt="Avanti West Coast" *ngIf="route?.TravelSolutionName === 'Avanti West Coast'"/>
+                  <p *ngIf="route?.TravelSolutionName !== 'Avanti West Coast'">{{route?.TravelSolutionName}}</p>
+                </div>
+                <div class="journey-details-route-msg" *ngIf="enhancedRouteDetailsResponse?.IsReservationTabEnabled && route?.InLegSeatReservationEnable">
+                  <img src="assets/images/new-design-img/available-seat.svg" alt="" aria-hidden="true" />
+                  <div class="journey-details-route-msg-content">
+                    <h5>Avanti West Coast offers seat reservation</h5>
+                    <p>See yours and what's available at the review stage.</p> 
+                  </div>
+                </div>
+                <div class="journey-details-route-msg neutrals-bright-grey" *ngIf="enhancedRouteDetailsResponse?.IsReservationTabEnabled && !route?.InLegSeatReservationEnable">
+                  <img src="assets/images/new-design-img/available-any-seat.svg" alt="" aria-hidden="true" />
+                  <div class="journey-details-route-msg-content">
+                    <h5>Northern do not offer seat reservation</h5>
+                    <p>Take any available seat in your class of travel.</p> 
+                  </div>
+                </div>
+                <!----- Route station ----->
+                <div class="journey-details-route-stations-container" aria-labelledby="journey-details-route-station">
+                <span class="sr-only" id="journey-details-route-station">{{convertToAmPm(route?.CallingPoints[0]?.DepartureTime) + ' departure from ' + route?.CallingPoints[0]?.Location + ' duration ' + getDuration(route?.CallingPoints[0]?.DepartureTime, route?.CallingPoints[route?.CallingPoints.length - 1]?.ArrivalTime, false) + ' arriving at ' +  route?.CallingPoints[route?.CallingPoints.length - 1]?.Location + ' at ' + convertToAmPm(route?.CallingPoints[route?.CallingPoints.length - 1]?.DepartureTime)}}</span>
+                  <!----- First Route ----->
+                  <div class="journey-details-route-stations journey-details-route-first-stations" aria-hidden="true">
+                    <span class="journey-details-route-stations-time journey-details-route-left-width">{{route?.CallingPoints[0]?.DepartureTime}}</span>
+                    <p class="journey-details-route-stations-name">
+                      {{route?.CallingPoints[0]?.Location}}
+                      <!-- <span class="journey-details-route-train-cancelled">Cancelled</span> -->
+                    </p> 
+                  </div>
+                  <div *ngIf="route?.CallingPoints && route?.CallingPoints?.length > 2" class="journey-details-route-stations journey-details-route-stations-accordion" [ngClass]="route.RouteType != '' ? 'enhanced-d-none' : ''">
+                    <div class="journey-details-route-left-width">
+                      <img src="assets/images/new-design-img/track-train.svg" alt="" aria-hidden="true" />
+                    </div>
+                    <div class="journey-details-route-hide-show">
+                      <mat-accordion multi>
+                        <mat-expansion-panel (opened)="onJourneyStopsOpened(route, true)" (closed)="onJourneyStopsOpened(route, false)">
+                          <mat-expansion-panel-header class="journey-details-route-accordion-header">
+                            <mat-panel-description [attr.aria-label]="getAriaLabelOnStops(route?.isExpanded, route)">
+                              {{ route?.isExpanded ? 'Hide ' + showStops(route) : 'Show ' + showStops(route) }}
+                            </mat-panel-description>
+                          </mat-expansion-panel-header>
+                          <div class="journey-details-route-accordion-inner">
+                            <div class="journey-details-route-stations" *ngFor="let callingPoint of getRouteWiseDataSource(route); let callingPointIndex = index;">
+                              <div class="journey-details-route-stations-inner" *ngIf="callingPointIndex != 0 && callingPointsLength != callingPointIndex + 1">
+                                <span class="journey-details-route-stations-time journey-details-route-left-width">{{callingPoint?.DepartureTime}}</span>
+                                <p class="journey-details-route-stations-name">
+                                  {{callingPoint?.Location}}
+                                  <!-- <span class="journey-details-route-train-cancelled">Cancelled</span> -->
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </mat-expansion-panel>
+                      </mat-accordion>
+                    </div>
+                  </div>
+                  <!----- End Hide and Show Route ----->
+
+                  <!----- Walk ----->
+                  <div [attr.aria-label]= "getDuration(route?.CallingPoints[0]?.DepartureTime, route?.CallingPoints[route?.CallingPoints.length - 1]?.ArrivalTime, false)" *ngIf="route?.RouteType == 'Walk'" class="journey-details-route-stations journey-details-route-other">
+                    <div class="journey-details-route-left-width">
+                      <img src="assets/images/new-design-img/route-walk.svg" alt="" aria-hidden="true" />
+                    </div>
+                    <p class="journey-details-route-stations-name"> 
+                     {{getDuration(route?.CallingPoints[0]?.DepartureTime, route?.CallingPoints[route?.CallingPoints.length - 1]?.ArrivalTime, true)}}
+                     {{route.RouteType}}
+                    </p>
+                  </div>
+                  <!----- End Walk ----->
+
+                  <!----- London Underground ----->
+                  <div *ngIf="route?.RouteType == 'Tube'" class="journey-details-route-stations journey-details-route-other">
+                    <div class="journey-details-route-left-width">
+                      <img src="assets/images/new-design-img/london-underground.svg" alt="" aria-hidden="true" />
+                    </div>
+                    <p class="journey-details-route-stations-name">
+                      London Underground
+                      <span class="journey-details-route-other-time">
+                        {{getDuration(route?.CallingPoints[0]?.DepartureTime, route?.CallingPoints[route?.CallingPoints.length -
+                        1]?.ArrivalTime, true)}}
+                      </span>
+                    </p>
+                  </div>
+                  <!----- End London Underground ----->
+
+                  <!----- Bus replacement ----->
+                  <div class="journey-details-route-stations journey-details-route-other" *ngIf="route?.CallingPoints?.IsBusReplacementAvailable">
+                    <div class="journey-details-route-left-width">
+                      <img src="assets/images/new-design-img/bus-replacement.svg" alt="" aria-hidden="true" />
+                    </div>
+                    <p class="journey-details-route-stations-name journey-details-route-stations-bus-name">
+                      Bus replacement
+                      <span class="journey-details-route-other-time">2h 5mins</span>
+                    </p>
+                  </div>
+                  <!----- End Bus replacement ----->
+
+                  <!----- Last Route ----->
+                  <div class="journey-details-route-stations journey-details-route-last-stations" aria-hidden="true">
+                    <span class="journey-details-route-stations-time journey-details-route-left-width">{{route?.CallingPoints[route?.CallingPoints.length - 1]?.ArrivalTime}}</span>
+                    <p class="journey-details-route-stations-name">
+                      {{route?.CallingPoints[route?.CallingPoints.length - 1]?.Location}}
+                      <!-- <span class="journey-details-route-train-cancelled">Cancelled</span> -->
+                    </p>
+                  </div>
+                  <!----- End Last Route ----->
+                </div>
+                <!----- Route station ----->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="journey-details-right">
+        <div class="journey-details-card" *ngIf="darwinText && darwinText?.length > 0">
+          <div class="journey-details-card-header">
+            <h3>Travel information</h3>
+          </div>
+          <div class="journey-details-card-body">
+            <div class="journey-details-train-info">
+              <div class="journey-details-train-info-inner" *ngFor="let text of darwinText">
+                <span [innerHTML]="text"></span>
+              </div>
+              <!-- <div class="journey-details-train-info-inner">
+                <h4>
+                  All toilets on platforms 3 and 4 are closed for refurbishment at Prexston station.
+                </h4>
+                <p>
+                  Alternative facilities are available.
+                </p>
+              </div> -->
+            </div>
+          </div>
+        </div>
+        <div class="journey-details-card">
+          <div class="journey-details-card-header">
+            <h3>Train facilities</h3>
+          </div>
+          <div class="journey-details-card-body p-t-0 p-b-0">
+            <div class="journey-details-train-facilities-row" *ngIf="enhancedTravelChanges && enhancedTravelChanges?.length > 0">
+              <div class="journey-details-train-facilities" *ngFor="let route of enhancedTravelChanges; let travelRouteIndex = index">
+                <div class="journey-details-train-facilities-inner" *ngIf="route?.Facilities && route?.Facilities?.length > 0">
+                  <mat-accordion>
+                    <mat-expansion-panel [expanded]="travelRouteIndex === 0" (opened)="toggleFacilityPanel(route, true)" (closed)="toggleFacilityPanel(route, false)">
+                      <mat-expansion-panel-header class="journey-details-facilites-accordion-header">
+                        <mat-panel-title> {{route?.Departure}} to {{route?.Arrival}}</mat-panel-title>
+                        <mat-panel-description>
+                          {{route?.isOpen ? 'Hide facilities' : 'Show facilities'}}
+                        </mat-panel-description>
+                      </mat-expansion-panel-header>
+                      <div class="journey-details-train-facilities-list">
+                        <ul>
+                          <li *ngFor="let facility of route?.Facilities; let travelFacilityIndex = index">{{facility?.FacilityType}}
+                          </li>
+                        </ul>
+                      </div>
+                    </mat-expansion-panel>
+                  </mat-accordion>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="journey-details-card">
+          <div class="journey-details-card-header">
+            <h3>Accessibility</h3>
+          </div>
+          <div class="journey-details-card-body">
+            <div class="journey-details-accessibility">
+              <div class="journey-details-accessibility-title">
+                <img src="assets/images/new-design-img/journey-details-accessibility.svg" alt="" aria-hidden="true" />
+                <h4>Passenger Assist</h4>
+              </div>
+              <div class="journey-details-accessibility-content">
+                <p>
+                  Passenger Assist can be booked up to two hours before your journey.
+                </p>
+                <p>
+                  For more information, please refer to the Passenger Assist section on the confirmation page or in the confirmation email.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div> 
+      </div>  
+    </div>
+  </mat-dialog-content>
+</div>
+<!----- End Common popup body ----->
+
+<!----- Common popup footer ----->
+
+<!----- End Common popup footer ----->
+</app-enhanced-basic-dialog>

@@ -1,0 +1,21 @@
+.dialog-close img {
+    width: 15px;
+    margin-top: -2px;
+}
+
+.upgrade-filter-datepicker-close-btn {
+    color: #131E29 !important;
+    font-weight: 400;
+}
+
+@media (max-width: 767px) {
+    .upgrade-filter-datepicker-close-btn {
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .filter-datepicker-popup-title {
+        line-height: 20px;
+    }
+}

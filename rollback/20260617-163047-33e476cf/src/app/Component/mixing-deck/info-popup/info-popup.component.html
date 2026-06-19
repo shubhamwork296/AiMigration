@@ -1,0 +1,8 @@
+<mat-dialog-content>
+    <div class="upgrade-popup-txt" [innerHTML]="message">
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end" class="bt-1 old-flow-popup-btns">
+    <!-- The mat-dialog-close directive optionally accepts a value as a result for the dialog. -->
+    <button mat-button class="default-btn" [mat-dialog-close]="true" (click)="confirm()">{{ctaText ? ctaText : 'OK'}}</button>
+</mat-dialog-actions>

@@ -1,0 +1,46 @@
+.search-loader-icon {
+    width: 110px !important;
+    object-fit: contain;
+    display: block;
+    margin: 4rem auto 1rem;
+    mix-blend-mode: multiply;
+}
+
+.loader-center {
+    margin: 0 auto !important;
+}
+
+.loader-section {
+    text-align: center;
+    width: 90%;
+    margin: 0 auto;
+}
+
+.loader-section h4 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    line-height: 1.563rem;
+    font-weight: 600;
+}
+
+.loader-section p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--primary-coalescent) !important;
+}
+
+@media (width <= 1023px) {
+    .search-loader-icon {
+        margin: 2rem auto 1rem;
+    }
+
+    .loader-section h4 {
+        font-size: 1.125rem;
+        line-height: 1.375rem;
+    }
+
+    .loader-section p {
+        font-size: 0.875rem;
+        line-height: 1.375rem;
+    }
+}

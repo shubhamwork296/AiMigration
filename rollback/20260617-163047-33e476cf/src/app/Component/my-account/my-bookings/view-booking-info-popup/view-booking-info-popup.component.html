@@ -1,0 +1,19 @@
+<span class="dialog-close" mat-dialog-close><img src="assets/images/Close.svg" alt=""></span>
+
+<mat-dialog-content>
+  <ng-container *ngIf="data.isTodCollected">
+    <div>Ticket has already been collected</div>
+    <p>you cannot change the journey through your account.In order to make a change please fill out
+      <a href="https://www.railhelp.co.uk/avantiwestcoast/websupport">the following form</a>
+    </p>
+  </ng-container>
+
+  <ng-container *ngIf="!data.isTodCollected">
+    <div>Change time/date unavailable for {{data.deliveryMode}}</div>
+    <p>you cannot change the journey through your account.In order to make a change please fill out
+      <a href="https://www.railhelp.co.uk/avantiwestcoast/websupport">the following form</a>
+    </p>
+
+  </ng-container>
+</mat-dialog-content>
+

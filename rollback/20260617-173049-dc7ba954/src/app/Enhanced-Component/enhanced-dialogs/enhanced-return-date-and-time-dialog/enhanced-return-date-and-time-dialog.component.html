@@ -1,0 +1,49 @@
+<app-enhanced-basic-dialog [dialogFooter]="dialogFooter" class="enhanced-alert-dialogs" [dialogTitle]="headerTitle">
+  <ng-content>
+    <div class="enhanced-common-popup-theme">
+      <div class="enhanced-common-popup-theme-border">
+
+
+
+        <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="center">
+          <mat-tab label="Specific Date">
+            <div class="alert-content">
+              <p> 
+                
+              </p>
+              </div>
+          </mat-tab>
+          <mat-tab label="Anytime (Open Return)">
+            <div class="alert-content">
+              <p class="mb-0">
+                For flexible travel, choose from a variety of open return tickets. Each offers different conditions, so
+                you can find the option that suits your needs best.
+              </p>
+            </div>
+          </mat-tab>
+
+        </mat-tab-group>
+
+
+
+
+      </div>
+    </div>
+  </ng-content>
+
+
+  <ng-template #dialogFooter>
+    <div class="common-popup-theme-footer d-flex footer-buttons-end">
+      <button id="efc-qtt-footer-price-breakdown-btn" type="button" mat-button class="outline-btn outline-primary-btn-hover">
+        Price breakdown
+    </button>
+        <div class="d-flex gap-24 justify-between">
+          <button id="efc-qtt-footer-next-btn" type="button" mat-button class="fill-btn fill-light-hover-btn">
+            Back to tickets
+           
+        </button>
+        </div>
+    </div>
+  </ng-template>
+
+</app-enhanced-basic-dialog>

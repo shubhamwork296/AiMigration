@@ -1,0 +1,114 @@
+.journey-header::before{
+    content: '';
+    position: absolute;
+    background: #FF4713;
+    width: 10px;
+    height: 54px;
+    top: 0px;
+    left: 0px;
+  }
+  .mat-expansion-panel-header{
+    min-height: 64px !important;
+    height: auto !important;
+  }
+  .mat-expansion-panel.seat-reserv-panel{
+    box-shadow: none;
+    border-radius: 0 !important;
+    overflow: visible;
+  }
+  .mat-expansion-panel.seat-reserv-panel .mat-expansion-panel-header {
+    padding: 0 ;
+  }
+  .journey-header{
+    padding-left: 15px;
+    position: relative;
+    padding-top: 0px;
+  }
+  .warning-bx{
+    background: #E2F5E9;
+    padding: 20px 30px;
+    display: flex;
+}
+.j-smry{
+    background: #FFFFFF;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+.seat-rsrv-bx{
+    background: #FFFFFF;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+#priceBreakDown{
+  background: #fff;
+  padding: 10px;
+  top: 67px;
+  left: -85px;
+  position: absolute;
+  color: #131e29;
+  font-size: 14px;
+  width: 200px;
+  text-align: left;
+  font-weight: 400;
+  z-index: 9;
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgb(19 30 41 / 64%);
+}
+#priceBreakDown::before{
+  content: '';
+  width: 16px;
+  height: 16px;
+  display: block;
+  position: absolute;
+  top: -8px;
+  left: 93px;
+  transform: rotate(45deg);
+  background: #fff;
+}
+.slct-trn-bx{
+  background: #FFFFFF;
+  border: 1px solid #D6D1CA;
+  box-sizing: border-box;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 8px;
+}
+.slct-trn-bx.active-trn{
+  border: 1px solid #131E29;
+}
+.slct-trn-bx button{
+  border: 0;
+  background: 0;
+  font-weight: 400;
+}
+.slct-trn-bx button[disabled]{
+  color: #131E29 !important;
+}
+.slct-trn-bx button svg{
+  width: 24px;
+  margin-right: 10px;
+}
+.closeicon{
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+@media (max-width:767px){
+  #priceBreakDown {
+    top: -135px;
+    left: -55px;
+}
+#priceBreakDown::before {
+  content: '';
+  top: auto;
+  bottom: -8px;
+  left: 63px;
+}
+}
+.train-select-inner-bx{
+  white-space: normal;
+  line-height: 26px;
+  font-weight: 400;
+  text-align: left;
+  padding: 5px 0;
+}

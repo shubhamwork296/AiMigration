@@ -1,0 +1,18 @@
+ <section class="common-container loader-center" *ngIf="isLoaderActive || isPaymentAPICall">
+  <!-- *ngIf="isLoaderActive || isPaymentAPICall" -->
+  <div class="loader-section" aria-hidden="true">
+    <div class="loader-logo">
+      <img src="assets/images/loader.gif" alt="" class="search-loader-icon"/>
+    </div>
+    <h4>{{loaderHeading}}...</h4>
+    <p>
+      {{loaderDescription}}
+    </p>
+  </div>
+
+  <div class="sr-only" aria-live="assertive" aria-atomic="true" role="alert">
+    <ng-container *ngIf="isLoaderActive || isPaymentAPICall">
+      {{ loaderHeading }}... {{ loaderDescription }}
+    </ng-container>
+  </div>
+</section>

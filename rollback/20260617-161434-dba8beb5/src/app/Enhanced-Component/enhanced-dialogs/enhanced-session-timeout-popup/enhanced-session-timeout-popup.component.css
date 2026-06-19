@@ -1,0 +1,28 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.enhanced-alert-content {
+    padding: 1.5rem;
+}
+
+.enhanced-session-timeout-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+
+.enhanced-session-timeout-footer button {
+    height: 3rem !important;
+}
+
+@media screen and (max-width: 768px) {
+    .enhanced-session-timeout-footer {
+        padding: 1rem;
+    }
+
+    .enhanced-button-footer {
+        width: 100%;
+        display: flex;
+        flex-direction: column !important;
+        gap: 1rem;
+    }
+}

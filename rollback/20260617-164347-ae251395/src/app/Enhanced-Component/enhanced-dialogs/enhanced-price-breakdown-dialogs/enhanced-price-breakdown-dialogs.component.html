@@ -1,0 +1,351 @@
+<app-enhanced-basic-dialog class="journey-breakdown-detail-dialog" [dialogTitle]="headerTitle" [attr.aria-labelledby]="'priceBreakdownTitle'">
+  <h2 id="priceBreakdownTitle" class="sr-only">{{ headerTitle }}</h2>
+  
+  <div class="enhanced-common-popup-theme">
+    <mat-tab-group class="price-breakdown-tab" [(selectedIndex)]="selectedTabIndex" [class.hide-price-breakdown-tab-header]="isSingleTab" (selectedTabChange)="onTabChange($event)">
+      <mat-tab class="enhanced-common-popup-theme-border" *ngFor="let fareBreakdown of enhancedFareBreakdownModelData; let outjourneyIndex = index;" [label]="'Journey ' + (outjourneyIndex + 1)">
+      
+        <mat-card class="journey-breakdown-card"
+          *ngIf="fareBreakdown?.OutWardJourney && fareBreakdown?.OutWardJourney?.length > 0">
+          <mat-card-header>
+            <mat-card-title>Outward: {{getOutwardDate(fareBreakdown) | date:'EEE, dd MMM yyyy'}}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details">
+            <div class="journey-breakdown-details-head" [attr.aria-labelledby]="'breakdown-out-details-head-' + outjourneyIndex"> 
+              <span id="{{ 'breakdown-out-details-head-' + outjourneyIndex }}" class="sr-only">
+                {{ getAriaLabelForOutAndRetStations(true, fareBreakdown) }}
+              </span>
+              <div aria-hidden="true">
+                <span class="from-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.departureLocationName) : commonService?.getCityNameOnly(departureLocationName)}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="" aria-hidden="true" />
+                <span class="to-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.arrivalLocationName) : commonService?.getCityNameOnly(arrivalLocationName)}}</span>
+              </div>
+        
+              <div aria-hidden="true">
+                <span class="from-time">{{fareBreakdown?.OutwardDepartureTime}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="" aria-hidden="true" />
+                <span class="to-time">{{fareBreakdown?.OutwardArrivalTime}}</span>
+                <span class="time-stamp">{{fareBreakdown?.OutwardDuration}}, {{fareBreakdown?.OutChanges
+                  === 0 ? 'Direct' : (fareBreakdown?.OutChanges === 1 ? (fareBreakdown?.OutChanges + ' change') :
+                  (fareBreakdown?.OutChanges + '
+                  changes'))}}</span>
+              </div>
+        
+            </div>
+            <div class="journey-breakdown-details-table">
+              <table mat-table [dataSource]="fareBreakdown?.OutWardJourney" class="mat-elevation-z8">
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.DisplayPassenger}} </td>
+                </ng-container>
+                <ng-container matColumnDef="RailCard">
+                  <th mat-header-cell *matHeaderCellDef> Railcard/Offers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.RailCard?.toLowerCase() === appRouteEnum?.newGroupSave?.toLowerCase() ? appRouteEnum?.newGroupSave : element?.RailCard}} </td>
+                </ng-container>
+                <ng-container matColumnDef="PricePerPersonAndTotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let element; let rowIndex = index" class="text-end">
+                    <span class="price-cell" [attr.aria-labelledby]="'breakdown-out-discount-price-' + outjourneyIndex + '-' + rowIndex">
+                      <span id="{{ 'breakdown-out-discount-price-' + outjourneyIndex + '-' + rowIndex }}" class="sr-only">
+                        {{ getAriaLabelOnPrice(element) }}
+                      </span>
+                      <span class="text-strike strike-price-breakdown" aria-hidden="true" *ngIf="element?.IsCheck && (element?.TicketTypeName?.toLowerCase().indexOf(ticketTypeEnum?.familyAdvance?.toLowerCase()) === -1)">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(element?.PricePerPerson)}}</span>
+                      <span class="price-cell-txt" aria-hidden="true">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(element?.TotalPrice)}}</span>
+                    </span>
+                  </td>
+                </ng-container>
+                <!-- Repeat for other columns -->
+        
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+
+            <!-- Outward Extras Table -->
+            <div *ngIf="fareBreakdown?.OutwardJourneyExtrasPerPassenger?.length > 0" class="journey-breakdown-details-table extras-table">
+              <table mat-table [dataSource]="fareBreakdown?.OutwardJourneyExtrasPerPassenger" class="mat-elevation-z8">
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let extra"> {{ extra?.DisplayPassenger }} </td>
+                </ng-container>
+                <ng-container matColumnDef="JourneyExtrasTitle">
+                  <th mat-header-cell *matHeaderCellDef> Travel extras </th>
+                  <td mat-cell *matCellDef="let extra"> {{ getFormattedJourneyExtrasTitle(extra?.JourneyExtrasTitle, extra?.Departure) }} </td>
+                </ng-container>
+                <ng-container matColumnDef="TotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let extra" class="text-end extras-price-txt">
+                    <span class="text-strike strike-price-breakdown" aria-hidden="true" *ngIf="extra?.IsCheck">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(extra?.PricePerPerson)}}</span>
+                    <span class="price-cell-txt">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(extra?.TotalPrice)}}</span>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="displayedExtrasColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedExtrasColumns"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="journey-breakdown-card"
+          *ngIf="checkToShowPureReturnAndOpenReturnCard(fareBreakdown)">
+          <mat-card-header>
+            <mat-card-title *ngIf="checkToShowPureReturnAndOpenReturnCardTitle(fareBreakdown)">Open return: Valid until {{fareBreakdown?.OpenReturnExpiryDate | date:'EEE, dd MMM yyyy'}}</mat-card-title>
+            <mat-card-title *ngIf="!checkToShowPureReturnAndOpenReturnCardTitle(fareBreakdown)">Return: {{getReturnDate(fareBreakdown) | date:'EEE, dd MMM yyyy'}}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details">
+            <div class="journey-breakdown-details-head" [attr.aria-labelledby]="'breakdown-out-details-head-' + outjourneyIndex"> 
+              <span id="{{ 'breakdown-out-details-head-' + outjourneyIndex }}" class="sr-only">
+                {{ getAriaLabelForOutAndRetStations(true, fareBreakdown) }}
+              </span>
+              <div aria-hidden="true">
+                <span class="to-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.arrivalLocationName) : commonService?.getCityNameOnly(arrivalLocationName)}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="to-arrow" aria-hidden="true" />
+                <span class="from-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.departureLocationName) : commonService?.getCityNameOnly(departureLocationName)}}</span>
+              </div>
+        
+              <div aria-hidden="true" *ngIf="!checkToShowPureReturnAndOpenReturnCardTitle(fareBreakdown)">
+                <span class="from-time">{{fareBreakdown?.ReturnDepartureTime}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="to-arrow" aria-hidden="true" />
+                <span class="to-time">{{fareBreakdown?.ReturnArrivalTime}}</span>
+                <span class="time-stamp">{{fareBreakdown?.ReturnDuration}}, {{fareBreakdown?.RetChanges
+                  === 0 ? 'Direct' : (fareBreakdown?.RetChanges === 1 ? (fareBreakdown?.RetChanges + ' change') :
+                  (fareBreakdown?.RetChanges + '
+                  changes'))}}</span>
+              </div>
+              <div aria-hidden="true" *ngIf="checkToShowPureReturnAndOpenReturnCardTitle(fareBreakdown)">
+                <span class="from-time">{{enhancedJourneyType?.openReturn}}</span>
+              </div>
+        
+            </div>
+            <div class="journey-breakdown-details-table">
+              <table mat-table [dataSource]="fareBreakdown?.OutWardJourney" class="mat-elevation-z8">
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.DisplayPassenger}} </td>
+                </ng-container>
+                <ng-container matColumnDef="RailCard">
+                  <th mat-header-cell *matHeaderCellDef> Railcard/Offers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.RailCard?.toLowerCase() === appRouteEnum?.newGroupSave?.toLowerCase() ? appRouteEnum?.newGroupSave : element?.RailCard}} </td>
+                </ng-container>
+                <ng-container matColumnDef="PricePerPersonAndTotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let element; let rowIndex = index" class="text-end">
+                    <span class="price-cell" [attr.aria-labelledby]="'breakdown-out-discount-price-' + outjourneyIndex + '-' + rowIndex">
+                      <!-- <span id="{{ 'breakdown-out-discount-price-' + outjourneyIndex + '-' + rowIndex }}" class="sr-only">
+                        {{ getAriaLabelOnPrice(element) }}
+                      </span> -->
+                      <!-- <span class="text-strike strike-price-breakdown" aria-hidden="true" *ngIf="element?.IsCheck">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(element?.PricePerPerson)}}</span> -->
+                      <span class="price-cell-txt" aria-hidden="true">Included</span>
+                      <span class="next-line-text">in outward ticket</span>
+                    </span>
+                  </td>
+                </ng-container>
+                <!-- Repeat for other columns -->
+        
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+
+            <!-- Outward Extras Table -->
+            <div *ngIf="fareBreakdown?.OutwardJourneyExtrasPerPassenger?.length > 0 && !checkToShowPureReturnAndOpenReturnCardTitle(fareBreakdown)" class="journey-breakdown-details-table extras-table">
+              <table mat-table [dataSource]="fareBreakdown?.OutwardJourneyExtrasPerPassenger" class="mat-elevation-z8">
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let extra"> {{ extra?.DisplayPassenger }} </td>
+                </ng-container>
+                <ng-container matColumnDef="JourneyExtrasTitle">
+                  <th mat-header-cell *matHeaderCellDef> Travel extras </th>
+                  <td mat-cell *matCellDef="let extra"> {{ getFormattedJourneyExtrasTitle(extra?.JourneyExtrasTitle, extra?.Departure) }} </td>
+                </ng-container>
+                <ng-container matColumnDef="TotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let extra" class="text-end">
+                   <span class="extras-price-txt">Included</span> 
+                    <span class="next-line-text">in outward ticket</span> </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="displayedExtrasColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedExtrasColumns"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+        
+        <mat-card class="journey-breakdown-card"
+          *ngIf="fareBreakdown?.ReturnJourney && fareBreakdown?.ReturnJourney?.length > 0">
+          <mat-card-header>
+            <mat-card-title>Return: {{getReturnDate(fareBreakdown) | date:'EEE, dd MMM yyyy'}}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details">
+            <div class="journey-breakdown-details-head" [attr.aria-labelledby]="'breakdown-ret-details-head-' + outjourneyIndex">
+              <span id="{{ 'breakdown-ret-details-head-' + outjourneyIndex }}" class="sr-only">
+                {{ getAriaLabelForOutAndRetStations(false, fareBreakdown) }}
+              </span>
+              <div aria-hidden="true">
+                <span class="from-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.arrivalLocationName) : commonService?.getCityNameOnly(arrivalLocationName)}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="" aria-hidden="true" />
+                <span class="to-location">{{isReviewBuy ? commonService?.getCityNameOnly(fareBreakdown?.departureLocationName) : commonService?.getCityNameOnly(departureLocationName)}}</span>
+              </div>
+        
+              <div aria-hidden="true">
+                <span class="from-time">{{fareBreakdown?.ReturnDepartureTime}}</span>
+                <img src="assets/images/new-design-img/Design.svg" class="station-arrow" alt="" aria-hidden="true" />
+                <span class="to-time">{{fareBreakdown?.ReturnArrivalTime}}</span>
+                <span class="time-stamp">{{fareBreakdown?.ReturnDuration}}, {{fareBreakdown?.RetChanges
+                  === 0 ? 'Direct' : (fareBreakdown?.RetChanges === 1 ? (fareBreakdown?.RetChanges + ' change') :
+                  (fareBreakdown?.RetChanges + '
+                  changes'))}}</span>
+              </div>
+        
+            </div>
+            <div class="journey-breakdown-details-table">
+              <table mat-table [dataSource]="fareBreakdown?.ReturnJourney" class="mat-elevation-z8">
+        
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.DisplayPassenger}} </td>
+                </ng-container>
+                <ng-container matColumnDef="RailCard">
+                  <th mat-header-cell *matHeaderCellDef> Railcard/Offers </th>
+                  <td mat-cell *matCellDef="let element"> {{element?.RailCard?.toLowerCase() === appRouteEnum?.newGroupSave?.toLowerCase() ? appRouteEnum?.newGroupSave : element?.RailCard}} </td>
+                </ng-container>
+                <ng-container matColumnDef="PricePerPersonAndTotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let element; let rowIndex = index" class="text-end">
+                    <span class="price-cell" 
+                    *ngIf = '!fareBreakdown?.IsPureReturnJourney'
+                    [attr.aria-labelledby]="'breakdown-ret-discount-price-' + outjourneyIndex + '-' + rowIndex">
+                      <span id="{{ 'breakdown-ret-discount-price-' + outjourneyIndex + '-' + rowIndex }}" class="sr-only">
+                        {{ getAriaLabelOnPrice(element) }}
+                      </span>
+                      <span class="text-strike strike-price-breakdown" aria-hidden="true" *ngIf="element?.IsCheck && (element?.TicketTypeName?.toLowerCase().indexOf(ticketTypeEnum?.familyAdvance?.toLowerCase()) === -1)">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(element?.PricePerPerson)}}</span>
+                      <span class="price-cell-txt" aria-hidden="true">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(element?.TotalPrice)}}</span>
+                    </span>
+                    <span class="price-cell"  *ngIf = 'fareBreakdown?.IsPureReturnJourney'>
+                      Included
+                    </span>
+                    <span class="next-line-text" *ngIf = 'fareBreakdown?.IsPureReturnJourney'>in outward ticket</span>
+                  </td>
+                </ng-container>
+                <!-- Repeat for other columns -->
+        
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+
+            <!-- Return Extras Table -->
+            <div *ngIf="fareBreakdown?.ReturnJourneyExtrasPerPassenger?.length > 0" class="journey-breakdown-details-table extras-table">
+              <table mat-table [dataSource]="fareBreakdown?.ReturnJourneyExtrasPerPassenger" class="mat-elevation-z8">
+                <ng-container matColumnDef="Passenger">
+                  <th mat-header-cell *matHeaderCellDef> Passengers </th>
+                  <td mat-cell *matCellDef="let extra"> {{ extra?.DisplayPassenger }} </td>
+                </ng-container>
+                <ng-container matColumnDef="JourneyExtrasTitle">
+                  <th mat-header-cell *matHeaderCellDef> Travel extras </th>
+                  <td mat-cell *matCellDef="let extra"> {{ getFormattedJourneyExtrasTitle(extra?.JourneyExtrasTitle, extra?.Departure) }} </td>
+                </ng-container>
+                <ng-container matColumnDef="TotalPrice">
+                  <th mat-header-cell *matHeaderCellDef class="text-end"> Price ({{sharedService.currencySymbol('')}}) </th>
+                  <td mat-cell *matCellDef="let extra" class="text-end extras-price-txt">
+                    <ng-container>
+                      <span class="text-strike strike-price-breakdown" aria-hidden="true" *ngIf="extra?.IsCheck">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(extra?.PricePerPerson)}}</span>
+                      <span class="price-cell-txt">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(extra?.TotalPrice)}}</span>
+                    </ng-container>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="displayedExtrasColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedExtrasColumns"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+       
+        <mat-card class="journey-ticket-delivery"
+          *ngIf="fareBreakdown?.DeliveryDetails && fareBreakdown?.DeliveryDetails?.length > 0">
+          <mat-card-header aria-hidden="true">
+            <mat-card-title class="breakdown-ticket-delivery">Ticket delivery</mat-card-title>
+            <span>Applied to total price (£)</span>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details ticket-delivery-card-content">
+        
+            <div class="journey-breakdown-details-table ticket-delivery-section remove-focus" *ngFor="let delivery of fareBreakdown?.DeliveryDetails; let deliveryDetailsIndex = index" [attr.aria-labelledby]="'breakdown-ticket-delivary-' + outjourneyIndex + '-' + deliveryDetailsIndex">
+              <span id="{{ 'breakdown-ticket-delivary-' + outjourneyIndex + '-' + deliveryDetailsIndex }}" class="sr-only">
+                {{ getTicketDeliveryAriaLabel(delivery) }}
+              </span>
+              <span class="delivery-name" aria-hidden="true">{{getDeliveryTitle(delivery?.JourneyDeliveryTitle)}}</span>
+              <span class="delivery-price" aria-hidden="true">
+                {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(delivery?.TotalPrice)}}
+              </span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="journey-ticket-delivery journey-discount-code remove-focus"
+          *ngIf="+fareBreakdown?.DiscountPercent > 0" [attr.aria-labelledby]="'breakdown-discount-' + outjourneyIndex">
+          <span id="{{ 'breakdown-discount-' + outjourneyIndex }}" class="sr-only">
+            {{ discountAriaLabel(fareBreakdown) }}
+          </span>
+          <mat-card-header aria-hidden="true">
+            <mat-card-title class="breakdown-ticket-delivery">Discount</mat-card-title>
+            <span>Applied to total price (£)</span>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details ticket-delivery-card-content" aria-hidden="true">
+        
+            <div class="journey-breakdown-details-table ticket-delivery-section" *ngFor="let delivery of fareBreakdown?.DeliveryDetails">
+              <span class="delivery-name">{{fareBreakdown?.DiscountType}} (-{{fareBreakdown?.DiscountPercent}}%)</span>
+              <span class="delivery-price">
+                -{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(fareBreakdown?.DiscountPrice)}}
+              </span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="journey-ticket-delivery journey-discount-code remove-focus" *ngIf="evouchPrice && (data?.isBookingConfirmation || enhancedFareBreakdownModelData?.length == 1)" [attr.aria-labelledby]="'breakdown-other-payment-method-' + outjourneyIndex">
+          <span id="{{ 'breakdown-other-payment-method-' + outjourneyIndex }}" class="sr-only">
+            {{ 'Other payment method eVoucher applied to total price - ' + sharedService.currencySymbol('') + sharedService.formatPrice(evouchPrice) }}
+          </span>
+          <mat-card-header aria-hidden="true">
+            <mat-card-title class="breakdown-ticket-delivery">Other payment method</mat-card-title>
+            <span>Applied to total price (£)</span>
+          </mat-card-header>
+          <mat-card-content class="journey-breakdown-details ticket-delivery-card-content" aria-hidden="true">
+        
+            <div class="journey-breakdown-details-table ticket-delivery-section">
+              <span class="delivery-name">{{ isPaidByMultipleEVoucher ? 'eVouchers' : 'eVoucher' }}</span>
+              <span class="delivery-price">
+                -{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(evouchPrice)}}
+              </span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+      </mat-tab>
+</mat-tab-group>
+
+
+  </div>
+
+  <footer [attr.aria-label]="getAriaLabelForTotalCount()" class="remove-focus">
+   <div class="price-total-section">
+    <div class="price-total-section-label">Total</div>
+    <div class="price-section-label-details">
+      <div class="price-section-label-details-railcard">
+        <img src="assets/images/new-design-img/price-breakdown-pax-icon.svg" class="price-breakdown-footer-pax" alt="" aria-hidden="true" />{{ getPassengerSummary(isReviewBuy, activeTabIndex()) }}<span *ngIf="!router?.url?.includes(enhancedAppRouteEnum?.selectTicketAndClass) && !isOnDeliveryAndReviewPage() && !isExistPaymentPage() && !data?.isBookingConfirmation" id="efc-qtt-footer-total-railcard"><span *ngIf="((searchRequest?.PromotionCode && (selectedOutwardFare?.InOffer || selectedReturnFare?.InOffer)) || !searchRequest?.PromotionCode)">, </span>
+        <span *ngIf="searchRequest?.PromotionCode && (selectedOutwardFare?.InOffer || selectedReturnFare?.InOffer)">Promotion applied</span>
+          <span *ngIf="!searchRequest?.PromotionCode">{{(searchRequest?.RailCardList?.length > 0 ? commonService?.getTotalRailCardCount(searchRequest) + ' ' +
+          (commonService?.getTotalRailCardCount(searchRequest) > 1 ? 'Railcards' : 'Railcard') : 'No railcard')}}</span>
+          </span></div>
+        <div *ngIf="isReviewBuy; else totalFareBlock">
+          <div class="price-section-final-price">
+            {{sharedService?.currencySymbol('')}}{{shouldShowDiscountedPrice() ? sharedService?.formatPrice(getFinalJourneyPrice(enhancedFareBreakdownModelData[activeTabIndex()]?.JourneyTotalPrice)) : sharedService?.formatPrice(enhancedFareBreakdownModelData[activeTabIndex()]?.JourneyTotalPrice)}}
+          </div>
+        </div>
+        <ng-template #totalFareBlock>
+          <div class="price-section-final-price">{{sharedService?.currencySymbol('')}}{{sharedService?.formatPrice(totalFare)}}</div>
+        </ng-template>
+    </div>
+   </div>
+</footer>
+
+</app-enhanced-basic-dialog>

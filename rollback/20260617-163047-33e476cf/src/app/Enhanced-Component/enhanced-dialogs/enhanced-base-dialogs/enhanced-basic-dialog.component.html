@@ -1,0 +1,39 @@
+<header id="ebd-base-dialog-header">
+    <ng-container id="ebd-base-dialog--ng-container" *ngIf='dialogTitle'>
+        <h2 id="ebd-base-dialog-title">
+            {{dialogTitle}}
+        </h2>
+        <mat-dialog-actions align="end" *ngIf="iconClose" class="enhanced-action-popup-close">
+            <button mat-button mat-dialog-close class="enhanced-popup-close-btn">
+                <img src="assets/images/new-design-img/close-icons.svg" alt="" aria-hidden="true" />
+                <span class="sr-only">close {{dialogTitle}} modal</span>
+            </button>
+        </mat-dialog-actions>
+        <div *ngIf="showIdleTimer">
+            <div [ngClass]="showIdleTimer ? 'time-counter' : ''">
+                {{showIdleTimer}}
+            </div>
+        </div>
+    </ng-container>
+</header>
+<div id="ebd-base-dialog-body">
+    <ng-content id="ebd-base-dialog-ng-content"></ng-content>
+</div>
+<footer id="ebd-base-dialog-footer" *ngIf="isFooter">
+    <ng-container *ngIf="dialogFooter; else defaultFooter">
+        <ng-container [ngTemplateOutlet]="dialogFooter"></ng-container>
+    </ng-container>
+    <ng-template #defaultFooter>
+        <ng-container [ngSwitch]="cancelButtonType()">
+            <ng-container *ngSwitchCase="'template'">
+                <ng-container [ngTemplateOutlet]="buttonCancel"></ng-container>
+            </ng-container>
+            <ng-container *ngSwitchDefault>
+                <button id="ebd-base-dialog-cancel-btn" aria-label="Cancel" class="outline-btn outline-primary-btn-hover" type="button" *ngIf="buttonCancel" (click)="handleCancel()">
+                    {{buttonCancel}}
+                </button>
+            </ng-container>
+        </ng-container>
+        <button id="ebd-base-dialog-accept-btn" aria-label="Accept" *ngIf="buttonAcceptTitle" class="" type="button" (click)="handleAccept()">{{buttonAcceptTitle}}</button>
+    </ng-template>
+</footer>

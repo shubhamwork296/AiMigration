@@ -1,0 +1,286 @@
+.booking-ticket-section {
+    background: #f6f6f6;
+}
+
+.booking-ticket-section .booking-ticket-box {
+    padding-top: 32px; 
+    border-bottom: 2px solid #D6D1CA; 
+    text-align: center;
+}
+
+.booking-ticket-section .booking-ticket-box a {
+    font-size: 16px; 
+    font-weight: 600; 
+    color: #131E29;
+    padding-bottom: 16px; 
+    border-radius: 0px;
+}
+
+.booking-ticket-section .booking-ticket-box a.selected {
+    border-bottom: 2px solid #FF4713;
+}
+
+.background {
+    height: 10%; 
+    position: relative;
+}
+
+.bannerImage {
+    height: 40%;
+    width: 100%;
+    max-height: 400px;
+}
+
+.booking {
+    position: absolute;
+    z-index: 1;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    bottom: 0%;
+    text-align: left;
+    font-weight: bold;
+    color: #fff;
+    font-size: 30px;
+    background-color: #204555;
+    height: 60px;
+    border-radius: 6px 6px 0 0;
+}
+
+.mobile-tabs {
+    bottom: -59px;
+    border-radius: 0;
+    background-color: #F6F6F6;
+}
+
+.mat-list-base .mat-list-item {
+    display: inline !important;
+}
+
+.mat-list-base .mat-list-item .mat-list-item-content {
+    display: inline-flex !important;
+}
+
+.bookingTabs .empty {
+    background-color: #f5f5f5;
+    height: 25px;
+}
+
+.tripDetail {
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #e2f5e9;
+}
+
+.tripData {
+    background: #e2f5e9;
+    width: 100%;
+}
+
+.tripData .actionRow {
+    background-color: #fff;
+}
+
+.tripData .actionRow td {
+    padding-top: 10px;
+}
+
+.tripDate {
+    font-size: 20px;
+}
+
+.smallSize {
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.tripButtons {
+    border-radius: 6px;
+    background-color: #fff;
+    border: 1px solid red;
+    margin-right: 10px;
+    font-size: 12px;
+}
+
+.buyButton {
+    background-color: red;
+}
+
+.tripType {
+    color: #fff;
+    padding: 5px;
+    border-bottom-right-radius: 6px;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.past {
+    background-color: black;
+}
+
+.upcoming {
+    background-color: rgba(255, 71, 19, 0.5);
+}
+
+.left {
+    float: left;
+}
+
+.right {
+    float:right;
+    margin-bottom: 15px !important;
+}
+
+.mat-expansion-panel-header, .mat-expansion-panel-header.mat-expanded:hover, .mat-expansion-panel-header.mat-expanded:focus {
+    height: 42px;
+    background-color: rgb(226, 245, 233);
+}
+
+.prefOptions {
+    background-color: rgb(226, 245, 233);
+    margin: 20px 20px 0px 20px;
+    height: 42px;
+}
+
+.accountTabs {
+    display: inline;
+}
+
+.accountTabs .mat-button-toggle {
+    font-size: 16px;
+}
+
+.mat-button-toggle-group-appearance-standard {
+    border: none !important;
+    background: none !important;
+    border-radius: 0;
+}
+
+.accountFilterDropDown {
+    float: right;
+    width: 15%;
+}
+
+.account {
+    position: relative;
+}
+
+mat-expansion-panel.outer mat-expansion-panel-header.outer {
+    min-height: 64px !important;
+}
+
+.bookingbanner {
+    padding: 60px 45px 40px;
+    position: relative;
+}
+
+.bookingbanner-img1 {
+    background: url('../../../../assets/images/banner1.png') no-repeat;
+    background-size: cover;
+}
+
+.bookingbanner-img2 {
+    background: url('../../../../assets/images/banner2.png') no-repeat;
+    background-size: cover;
+}
+
+.m-20 {
+    margin: 20px;
+}
+
+.bookingbanner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.bookingbanner-link {
+    text-decoration: underline;
+}
+
+.bookingbanner-link:hover {
+    color: #fff;
+}
+
+.btm-space-td td {
+    padding-bottom: 20px;
+}
+
+.banner {
+    min-height: 340px;
+}
+
+.hero-banner {
+    background-color:  rgba(0, 70, 82, 1);
+    padding: 40px 0;
+    position: relative;
+}
+
+.hero-banner-content h1 {
+    font-size: 36px;
+    font-weight: 600;
+    line-height: normal;
+    color: #fff;
+    margin: 0;
+    word-break: break-word;
+}
+
+.hero-banner-content p {
+    line-height: 22px;
+    font-size: 16px;
+    color: #FFF;
+    margin: 8px 0 0;
+}
+
+a.acc-link.selected {
+    background: #E2F5E9;
+    color: #131E29;
+}
+
+a.acc-link {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.bg-transparent {
+    background: transparent !important;
+}
+
+
+@media (max-width:767px) {
+    .container.plr-xs-5 {
+        overflow: visible;
+    }
+
+    .hero-banner {
+        padding: 24px 0;
+    }
+
+    .banner {
+        min-height: 228px;
+    }
+
+    .mobile-tabs {
+        max-width: 100%;
+    }
+
+    .mobile-tabs .form-group {
+        max-width: 540px;
+        margin: 0 auto !important;
+        padding: 0 15px;
+    }
+
+    .mobile-tabs .form-group .col-md-12 {
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .mobile-tabs .form-group {
+        padding: 0;
+    }
+}

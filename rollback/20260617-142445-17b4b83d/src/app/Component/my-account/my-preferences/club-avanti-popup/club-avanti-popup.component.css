@@ -1,0 +1,61 @@
+.club-avanti-popup-inner {
+    gap: 18px;
+}
+
+.club-avanti-popup-inner h3 {
+    color: #212529;
+}
+
+.club-avanti-popup-inner p {
+    line-height: 22.25px;
+    color: #212529;
+}
+
+.club-avanti-popup-inner a {
+    text-decoration: underline;
+}
+
+.club-avanti-popup-inner a:hover {
+    text-decoration: none;
+}
+
+.club-avanti-alert-icon {
+    height: 42px;
+    width: 48px;
+}
+.club-avanti-saved-popup h3,
+.club-avanti-notsaved-popup h3 {
+    margin-top: -5px;
+} 
+
+.club-avanti-popup-inner .club-avanti-check {
+    height: 32px;
+    width: 32px;
+}
+
+@media (max-width: 767px) {
+    .club-avanti-popup-content h3 {
+        font-size: 20px !important;
+    }
+
+    .club-avanti-popup-content p {
+        font-size: 14px !important;
+    }
+
+    .club-avanti-popup-inner a {
+        word-break: break-all;
+    }
+
+    .club-avanti-popup-inner {
+        gap: 10px;
+    }
+
+    .club-avanti-alert-icon {
+        height: 36px;
+    }
+
+    .club-avanti-saved-popup h3,
+    .club-avanti-notsaved-popup h3 {
+        margin-top: 0;
+    } 
+}

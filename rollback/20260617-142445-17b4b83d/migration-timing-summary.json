@@ -1,0 +1,35 @@
+{
+  "totalSeconds": 1318.537,
+  "timings": [
+    {
+      "name": "AI CLI resolution",
+      "seconds": 9.239,
+      "status": "completed"
+    },
+    {
+      "name": "runtime detection",
+      "seconds": 0.008,
+      "status": "completed"
+    },
+    {
+      "name": "manifest parsing",
+      "seconds": 0.04,
+      "status": "completed"
+    },
+    {
+      "name": "project copy",
+      "seconds": 5.96,
+      "status": "completed"
+    },
+    {
+      "name": "rollback snapshot Angular 19 -\u003E 20",
+      "seconds": 4.855,
+      "status": "completed"
+    },
+    {
+      "name": "Angular hop 19 -\u003E 20",
+      "seconds": 1298.435,
+      "status": "completed"
+    }
+  ]
+}

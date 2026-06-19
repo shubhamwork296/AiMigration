@@ -1,0 +1,303 @@
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import url("../../../../assets/css/enhanced-styles.css");
+
+.price-breakdown-footer-pax {
+    padding-right: 0.25rem;
+    position: relative;
+    top: -0.125rem;
+}
+
+.journey-breakdown-card,
+.journey-ticket-delivery {
+    box-shadow: none;
+    border-bottom: 1px solid var(--neutrals-light-periwinkle);
+    padding: 1.5rem 1.5rem 2.5rem 1.5rem;
+    border-radius: 0 !important;
+}
+
+.journey-breakdown-card mat-card-title {
+    margin-bottom: 1.5rem;
+    color: var(--primary-graphene)
+}
+
+.journey-breakdown-details-head {
+    background: var(--primary-graphene);
+    color: var(--shades-white);
+    padding: 1rem;
+    border-top-left-radius: 0.313rem;
+    border-top-right-radius: 0.313rem;
+    font-weight: 700;
+}
+
+.journey-breakdown-details-head span.time-stamp {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 22px;
+}
+
+.journey-breakdown-details {
+    padding: 0 !important;
+    border: 1px solid var(--neutrals-light-periwinkle);
+    border-radius: 0.375rem 0.375rem 0.313rem 0.313rem;
+}
+
+.ticket-delivery-card-content {
+    border: none;
+    border-radius: none;
+}
+
+.journey-breakdown-details-head div {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+}
+
+.journey-breakdown-details-head div:last-child {
+    margin-bottom: 0;
+}
+
+.summary ul {
+    margin-bottom: 0px !important;
+}
+
+.summary li:last-child {
+    margin-bottom: 0px !important;
+}
+
+.journey-breakdown-card mat-card {
+    box-shadow: none !important;
+}
+
+.journey-ticket-delivery mat-card-header {
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.journey-breakdown-detail-dialog footer {
+    background: var(--primary-graphene);
+    color: var(--shades-white);
+    padding: 1rem 1.5rem !important;
+}
+
+.EnhancedPriceBreakdownDialogs .mat-mdc-dialog-surface {
+    position: relative;
+}
+
+.journey-breakdown-details-table .mat-mdc-table {
+    box-shadow: none !important;
+    border-bottom-left-radius: 0.313rem;
+    border-bottom-right-radius: 0.313rem;
+    overflow: hidden;
+}
+
+.journey-breakdown-details-table .mat-mdc-header-row {
+    height: inherit;
+}
+
+.journey-breakdown-details-table .mat-mdc-header-cell {
+    padding: 0.5rem 1rem !important;
+    background-color: #f6f6f6;
+    font-size: 0.875rem;
+    color: var(--primary-coalescent);
+    font-weight: 400;
+    width: 30%;
+    border-bottom-color: var(--neutrals-light-periwinkle);
+    border-top: 1px solid var(--neutrals-light-periwinkle);
+}
+
+.journey-breakdown-details-table .mdc-data-table__cell {
+    padding: 1rem !important;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 400;
+    color: var(--primary-coalescent);
+    width: 30%;
+    border-bottom-color: var(--neutrals-light-periwinkle);
+}
+
+.journey-breakdown-details-table .price-cell {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.mat-column-PricePerPersonAndTotalPrice span {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.extras-price-txt {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.price-total-section {
+    display: flex;
+    justify-content: space-between;
+}
+
+.price-total-section-label {
+    display: flex;
+    align-items: end;
+    line-height: 35px;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.price-section-label-details-railcard {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 700;
+}
+
+.price-total-section .price-section-final-price {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 35px;
+}
+
+.price-section-label-details {
+    text-align: right;
+}
+
+.strike-price-breakdown {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem;
+    color: var(--primary-coalescent);
+    font-weight: 400 !important;
+}
+
+.price-cell-txt {
+    padding-left: 0.25rem;
+}
+
+.price-cell .text-strike {
+    position: relative;
+    top: 0.5px;
+}
+
+.ticket-delivery-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    border: 1px solid var(--neutrals-light-periwinkle);
+    padding: 1rem;
+    border-radius: 5px
+}
+
+.ticket-delivery-section .delivery-name {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 400;
+    color: var(--primary-coalescent);
+}
+
+.ticket-delivery-section .delivery-price {
+    font-size: 1.25rem;
+    line-height: 1.563rem;
+    font-weight: 600;
+    color: var(--primary-coalescent);
+}
+
+.breakdown-ticket-delivery {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.563rem;
+    color: var(--primary-graphene);
+}
+
+.station-arrow {
+    height: 1rem;
+    width: 1rem;
+}
+
+@media (width <=1023px) {
+    .journey-breakdown-details {
+        border: none;
+        border-radius: 0;
+    }
+
+    .journey-breakdown-details-head div {
+        flex-wrap: wrap;
+    }
+
+    .journey-breakdown-card {
+        padding: 0;
+    }
+
+    .journey-ticket-delivery {
+        padding: 1rem;
+        padding-bottom: 0;
+        border: none;
+    }
+
+    .journey-ticket-delivery mat-card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 22px;
+        color: var(--primary-graphene);
+    }
+
+    .journey-ticket-delivery span {
+        font-size: 0.875rem;
+        text-align: right;
+    }
+
+    .journey-discount-code {
+        border-top: 1px solid var(--neutrals-light-periwinkle);
+    }
+
+    .journey-breakdown-card mat-card-title {
+        margin-bottom: 0;
+        font-size: 1.25rem;
+        padding: 1rem;
+        font-weight: 600;
+        line-height: 1.563rem;
+    }
+
+    .journey-breakdown-details-head {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        font-size: 1rem;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .ticket-delivery-section {
+        border: none;
+        padding: 0.5rem 0;
+        border-radius: 0;
+    }
+
+    .ticket-delivery-section .delivery-price {
+        font-size: 1rem;
+        line-height: 1.5rem;
+        font-weight: 700;
+    }
+
+    .journey-breakdown-details-table .mdc-data-table__cell {
+        font-size: 14px;
+        line-height: 22px;
+        font-weight: 400;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .journey-breakdown-details-table .mat-mdc-header-cell {
+        width: 34%;
+    }
+
+    .mat-column-PricePerPersonAndTotalPrice span {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.5rem;
+    }
+
+    .extras-price-txt {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        line-height: 1.5rem !important;
+    }
+}

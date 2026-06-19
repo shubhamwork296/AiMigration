@@ -1,0 +1,235 @@
+<mat-dialog-content class="travel-extras-modal">
+    <div class="d-flex justify-content-between align-items-start mmt-0">
+        <h1 mat-dialog-title class="f-600 color-graphene f-24 mb-0 mft-24">Travel extras</h1>
+        <button mat-button class="simple-btn" (click)="closeDialog(true, '', false, null, null)" aria-label="Close Button">
+            <svg id="Close" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                <g id="Group_79" data-name="Group 79" transform="translate(0 0)">
+                  <path id="Path_202" data-name="Path 202" d="M18.75,20a1.135,1.135,0,0,1-.875-.375L.375,2.125a1.208,1.208,0,0,1,0-1.75,1.208,1.208,0,0,1,1.75,0l17.5,17.5a1.208,1.208,0,0,1,0,1.75A1.135,1.135,0,0,1,18.75,20Z" transform="translate(0 0)" fill="#131e29"/>
+                </g>
+                <g id="Group_80" data-name="Group 80" transform="translate(0 0)">
+                  <path id="Path_203" data-name="Path 203" d="M1.25,20a1.135,1.135,0,0,1-.875-.375,1.208,1.208,0,0,1,0-1.75l17.5-17.5a1.208,1.208,0,0,1,1.75,0,1.208,1.208,0,0,1,0,1.75l-17.5,17.5A1.135,1.135,0,0,1,1.25,20Z" transform="translate(0 0)" fill="#131e29"/>
+                </g>
+              </svg>
+        </button>
+    </div>
+
+    <div class="travel-extras-body">
+        <div class="row">
+            <div class="col-12">
+                <p class="mt-10 mb-0 f-14 font-dark mft-14 mmt-0">
+                    Where possible we will transfer your travel extras to your new journey date and time.
+                    <br>
+                    Remove any extras you do not wish to transfer before continuing.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class=""
+                    *ngIf="OutBikeReservationNotAvailable || RetBikeReservationNotAvailable || OutTravelCardNotAvailable || RetTravelCardNotAvailable">
+                    <div class="travel-extras-msg bg-solve p-10 mt-10 d-flex br-round"
+                        *ngIf="OutBikeReservationNotAvailable || RetBikeReservationNotAvailable">
+                        <span class="mt-05">
+                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M18 15.5437L9.01919 0L0 15.5437H18ZM9.82516 9.82516H8.17484V6.52452H9.82516V9.82516ZM8.17484 13.0874H9.82516V11.4371H8.17484V13.0874Z"
+                                    fill="#204555" />
+                            </svg>
+                        </span>
+                        <p class="text-coalescent f-14 mb-0 mft-14">
+                            Bicycle reservations are unavailable or sold out on your selected service. If you do require
+                            a reservation, Please select an alternative service or continue without one.
+                            <a href="javascript:void(0)" (click)="closeDialog(true, '', false, null, null)" class="
+                                text-spark-dark">Select an alternative service ></a>
+                        </p>
+                    </div>
+                    <div class="travel-extras-msg bg-solve p-10 mt-10 d-flex br-round"
+                        *ngIf="OutTravelCardNotAvailable || RetTravelCardNotAvailable">
+                        <span class="mt-05">
+                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M18 15.5437L9.01919 0L0 15.5437H18ZM9.82516 9.82516H8.17484V6.52452H9.82516V9.82516ZM8.17484 13.0874H9.82516V11.4371H8.17484V13.0874Z"
+                                    fill="#204555" />
+                            </svg>
+                        </span>
+                        <p class="text-coalescent f-14 mb-0 mft-14">
+                            London Travelcard is not available for this service. See
+                            <a href="https://tfl.gov.uk/fares/how-to-pay-and-where-to-buy-tickets-and-oyster/travelcards-and-group-tickets"
+                                target="_blank" rel="noopener" class="text-spark-dark">more information about London Travelcards</a>
+                        </p>
+                    </div>
+                </div>
+                <div class="extras-popup-btn mt-20 mb-0 d-none d-m-block">
+                    <button mat-button class="default-btn w-100 font-700 border-0 mm-btn"
+                        (click)="onContinue()">Continue and transfer travel extras</button>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="OutTravelExtrasDetails && OutTravelExtrasDetails.length > 0">
+            <div class="col-12">
+                <h2 class="color-graphene f-18 f-600 mt-24 mb-0">Outbound extras</h2>
+            </div>
+            <div class="col-12">
+                <div *ngFor="let outTravelExtra of OutTravelExtrasDetails">
+                    <div class="extras-list mt-10 d-flex"
+                        [ngClass]="outTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-border'">
+                        <div class="extras-list-icon w-40"
+                            [ngClass]="outTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content'">
+                            <svg width="27" height="24" viewBox="0 0 24 21" fill="none"
+                                *ngIf="outTravelExtra?.Description === appConstantsService.bicycleReservation"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M16.875 3.42186C16.5001 3.79686 16.0391 3.98435 15.4922 3.98435C14.9454 3.98435 14.4766 3.78904 14.086 3.39842C13.6954 3.0078 13.5001 2.53905 13.5001 1.99218C13.5001 1.44531 13.6954 0.976558 14.086 0.585935C14.4766 0.195312 14.9454 0 15.4922 0C16.0391 0 16.5079 0.195312 16.8985 0.585935C17.2891 0.976558 17.4844 1.44531 17.4844 1.99218C17.4844 2.53905 17.2813 3.01561 16.875 3.42186ZM12.9841 11.2968V17.4843H11.0154V12.5156L7.781 9.70308C7.40601 9.39058 7.21851 8.92183 7.21851 8.29683C7.21851 7.76559 7.40601 7.29684 7.781 6.89059L10.5935 4.07811C10.906 3.70311 11.3747 3.51561 11.9997 3.51561C12.5622 3.51561 13.0935 3.70311 13.5935 4.07811L15.5153 5.99997C16.5153 6.99997 17.7028 7.49996 19.0778 7.49996V9.51558C17.0778 9.51558 15.3903 8.81246 14.0153 7.40621L13.2185 6.60934L10.781 8.99996L12.9841 11.2968ZM4.99216 20.4843C6.38278 20.4843 7.56246 19.9999 8.53121 19.0311C9.49995 18.0624 9.98433 16.8827 9.98433 15.4921C9.98433 14.1015 9.49995 12.9218 8.53121 11.9531C7.56246 10.9843 6.38278 10.4999 4.99216 10.4999C3.60154 10.4999 2.42186 10.9843 1.45312 11.9531C0.484373 12.9218 0 14.1015 0 15.4921C0 16.8827 0.484373 18.0624 1.45312 19.0311C2.42186 19.9999 3.60154 20.4843 4.99216 20.4843ZM22.5469 19.0311C21.5781 19.9999 20.3985 20.4843 19.0078 20.4843C17.6172 20.4843 16.4375 19.9999 15.4688 19.0311C14.5 18.0624 14.0157 16.8827 14.0157 15.4921C14.0157 14.1015 14.5 12.9218 15.4688 11.9531C16.4375 10.9843 17.6172 10.4999 19.0078 10.4999C20.3985 10.4999 21.5781 10.9843 22.5469 11.9531C23.5156 12.9218 24 14.1015 24 15.4921C24 16.8827 23.5156 18.0624 22.5469 19.0311ZM4.99223 18.9842C4.03911 18.9842 3.2188 18.6405 2.53131 17.953C1.84381 17.2655 1.50006 16.4452 1.50006 15.492C1.50006 14.5389 1.84381 13.7186 2.53131 13.0311C3.2188 12.3436 4.03911 11.9999 4.99223 11.9999C5.94535 11.9999 6.76566 12.3436 7.45316 13.0311C8.14066 13.7186 8.4844 14.5389 8.4844 15.492C8.4844 16.4452 8.14066 17.2655 7.45316 17.953C6.76566 18.6405 5.94535 18.9842 4.99223 18.9842ZM16.5467 17.953C17.2342 18.6405 18.0545 18.9842 19.0077 18.9842C19.9608 18.9842 20.7811 18.6405 21.4686 17.953C22.1561 17.2655 22.4998 16.4452 22.4998 15.492C22.4998 14.5389 22.1561 13.7186 21.4686 13.0311C20.7811 12.3436 19.9608 11.9999 19.0077 11.9999C18.0545 11.9999 17.2342 12.3436 16.5467 13.0311C15.8592 13.7186 15.5155 14.5389 15.5155 15.492C15.5155 16.4452 15.8592 17.2655 16.5467 17.953Z"
+                                    fill="#131E29" />
+                            </svg>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                                *ngIf="outTravelExtra?.Description === appConstantsService.plusBus"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12.7251 14.481H18.6611V6.213H12.7251V14.481ZM17.1191 18.678C16.4511 18.678 15.9101 18.137 15.9101 17.469C15.9101 16.802 16.4511 16.26 17.1191 16.26C17.7871 16.26 18.3281 16.802 18.3281 17.469C18.3281 18.137 17.7871 18.678 17.1191 18.678ZM9.86511 19.428H14.7011V17.928H9.86511V19.428ZM7.44711 18.678C6.77911 18.678 6.23711 18.137 6.23711 17.469C6.23711 16.802 6.77911 16.26 7.44711 16.26C8.11411 16.26 8.65611 16.802 8.65611 17.469C8.65611 18.137 8.11411 18.678 7.44711 18.678ZM5.90511 14.481H11.7441V6.213H5.90511V14.481ZM7.42611 3.552H17.0991V2.37H7.42611V3.552ZM20.0831 4.61V2.713C20.0831 1.192 19.1081 0 17.8641 0H6.60411C5.36011 0 4.38511 1.192 4.38511 2.713V4.61H2.30811V10.332H4.43411V21.625H5.62011V21.775C5.62011 23 6.61611 23.997 7.84111 23.997H8.42711C9.65111 23.997 10.6471 23 10.6471 21.775V21.625H13.9191V21.775C13.9191 23 14.9151 23.997 16.1391 23.997H16.7261C17.9501 23.997 18.9461 23 18.9461 21.775V21.625H20.1311V10.332H22.2571V4.61H20.0831Z"
+                                    fill="#131E29" />
+                            </svg>
+                            <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+                                *ngIf="outTravelExtra?.Description === appConstantsService.londonTravelcard"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12 18.397C9.011 18.397 6.508 16.345 5.805 13.575H18.195C17.492 16.345 14.989 18.397 12 18.397ZM12 5.59995C14.99 5.59995 17.493 7.65295 18.196 10.423H5.804C6.507 7.65295 9.011 5.59995 12 5.59995ZM24 10.423H21.42C20.669 5.89895 16.737 2.44995 12 2.44995C7.263 2.44995 3.332 5.89895 2.58 10.423H0V13.575H2.58C3.332 18.099 7.263 21.551 12 21.551C16.737 21.551 20.668 18.099 21.42 13.575H24V10.423Z"
+                                    fill="#131E29" />
+                            </svg>
+                        </div>
+                        <div class="extras-list-right d-flex justify-content-between align-items-center w-100">
+                            <div class="extras-list-content">
+                                <h3 class="f-16 f-600 font-dark"
+                                    [ngClass]="outTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content'">
+                                    {{createTravelExtraSummary(outTravelExtra)}}</h3>
+                                <p class="mb-0 f-14 font-dark mft-14"
+                                    [ngClass]="outTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content disabled-content-normal'">
+                                    {{outTravelExtra?.Description === appConstantsService.londonTravelcard ?
+                                    createTravelCardSummary(outTravelExtra) : 'Outbound'}}</p>
+                            </div>
+                            <div class="extras-list-btn" *ngIf="outTravelExtra?.IsAvailableForCOJ">
+                                <button mat-button class="font-700 mft-16" attr.aria-label="{{outTravelExtra?.Selected ? 'Remove Button for the' : 'Add Button for the'}} {{createTravelExtraSummary(outTravelExtra)}} {{outTravelExtra?.Description === appConstantsService.londonTravelcard ?
+                                createTravelCardSummary(outTravelExtra) : 'Outbound'}}"
+                                    [ngClass]="outTravelExtra?.Selected ? 'default-btn-2' : 'default-btn-outline travel-extras-add-btn'"
+                                    (click)="onTravelExtraChange(!outTravelExtra?.Selected, outTravelExtra)" [disabled]="isReturnJourney && cojEvaluateTravelRequest?.ChoosedTrainleg == travelSolutionDirectionEnum.return_Leg">
+                                    {{outTravelExtra?.Selected ? 'Remove' : 'Add'}}
+                                </button>
+                            </div>
+                            <div class="extras-disabled-txt" *ngIf="!outTravelExtra?.IsAvailableForCOJ">
+                                <p class="f-14 mb-0 font-dark lh-16 mft-14">
+                                    {{outTravelExtra?.Description == appConstantsService.bicycleReservation ? "Bike
+                                    reservations are unavailable on this service"
+                                    : (outTravelExtra?.Description == appConstantsService.plusBus ? "Selected PlusBus
+                                    unavailable for this service" :
+                                    (outTravelExtra?.Description == appConstantsService.londonTravelcard ? "Selected
+                                    London Travelcard unavailable for this service" : ""))}}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="RetTravelExtrasDetails && RetTravelExtrasDetails.length > 0">
+            <div class="col-12">
+                <h2 class="color-graphene f-18 f-600 mt-24 mb-0">Return extras</h2>
+            </div>
+            <div class="col-12">
+                <div *ngFor="let retTravelExtra of RetTravelExtrasDetails">
+                    <div class="extras-list mt-10 d-flex"
+                        [ngClass]="retTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-border'">
+                        <div class="extras-list-icon w-40"
+                            [ngClass]="retTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content'">
+                            <svg width="27" height="24" viewBox="0 0 24 21" fill="none"
+                                *ngIf="retTravelExtra?.Description === appConstantsService.bicycleReservation"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M16.875 3.42186C16.5001 3.79686 16.0391 3.98435 15.4922 3.98435C14.9454 3.98435 14.4766 3.78904 14.086 3.39842C13.6954 3.0078 13.5001 2.53905 13.5001 1.99218C13.5001 1.44531 13.6954 0.976558 14.086 0.585935C14.4766 0.195312 14.9454 0 15.4922 0C16.0391 0 16.5079 0.195312 16.8985 0.585935C17.2891 0.976558 17.4844 1.44531 17.4844 1.99218C17.4844 2.53905 17.2813 3.01561 16.875 3.42186ZM12.9841 11.2968V17.4843H11.0154V12.5156L7.781 9.70308C7.40601 9.39058 7.21851 8.92183 7.21851 8.29683C7.21851 7.76559 7.40601 7.29684 7.781 6.89059L10.5935 4.07811C10.906 3.70311 11.3747 3.51561 11.9997 3.51561C12.5622 3.51561 13.0935 3.70311 13.5935 4.07811L15.5153 5.99997C16.5153 6.99997 17.7028 7.49996 19.0778 7.49996V9.51558C17.0778 9.51558 15.3903 8.81246 14.0153 7.40621L13.2185 6.60934L10.781 8.99996L12.9841 11.2968ZM4.99216 20.4843C6.38278 20.4843 7.56246 19.9999 8.53121 19.0311C9.49995 18.0624 9.98433 16.8827 9.98433 15.4921C9.98433 14.1015 9.49995 12.9218 8.53121 11.9531C7.56246 10.9843 6.38278 10.4999 4.99216 10.4999C3.60154 10.4999 2.42186 10.9843 1.45312 11.9531C0.484373 12.9218 0 14.1015 0 15.4921C0 16.8827 0.484373 18.0624 1.45312 19.0311C2.42186 19.9999 3.60154 20.4843 4.99216 20.4843ZM22.5469 19.0311C21.5781 19.9999 20.3985 20.4843 19.0078 20.4843C17.6172 20.4843 16.4375 19.9999 15.4688 19.0311C14.5 18.0624 14.0157 16.8827 14.0157 15.4921C14.0157 14.1015 14.5 12.9218 15.4688 11.9531C16.4375 10.9843 17.6172 10.4999 19.0078 10.4999C20.3985 10.4999 21.5781 10.9843 22.5469 11.9531C23.5156 12.9218 24 14.1015 24 15.4921C24 16.8827 23.5156 18.0624 22.5469 19.0311ZM4.99223 18.9842C4.03911 18.9842 3.2188 18.6405 2.53131 17.953C1.84381 17.2655 1.50006 16.4452 1.50006 15.492C1.50006 14.5389 1.84381 13.7186 2.53131 13.0311C3.2188 12.3436 4.03911 11.9999 4.99223 11.9999C5.94535 11.9999 6.76566 12.3436 7.45316 13.0311C8.14066 13.7186 8.4844 14.5389 8.4844 15.492C8.4844 16.4452 8.14066 17.2655 7.45316 17.953C6.76566 18.6405 5.94535 18.9842 4.99223 18.9842ZM16.5467 17.953C17.2342 18.6405 18.0545 18.9842 19.0077 18.9842C19.9608 18.9842 20.7811 18.6405 21.4686 17.953C22.1561 17.2655 22.4998 16.4452 22.4998 15.492C22.4998 14.5389 22.1561 13.7186 21.4686 13.0311C20.7811 12.3436 19.9608 11.9999 19.0077 11.9999C18.0545 11.9999 17.2342 12.3436 16.5467 13.0311C15.8592 13.7186 15.5155 14.5389 15.5155 15.492C15.5155 16.4452 15.8592 17.2655 16.5467 17.953Z"
+                                    fill="#131E29" />
+                            </svg>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                                *ngIf="retTravelExtra?.Description === appConstantsService.plusBus"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12.7251 14.481H18.6611V6.213H12.7251V14.481ZM17.1191 18.678C16.4511 18.678 15.9101 18.137 15.9101 17.469C15.9101 16.802 16.4511 16.26 17.1191 16.26C17.7871 16.26 18.3281 16.802 18.3281 17.469C18.3281 18.137 17.7871 18.678 17.1191 18.678ZM9.86511 19.428H14.7011V17.928H9.86511V19.428ZM7.44711 18.678C6.77911 18.678 6.23711 18.137 6.23711 17.469C6.23711 16.802 6.77911 16.26 7.44711 16.26C8.11411 16.26 8.65611 16.802 8.65611 17.469C8.65611 18.137 8.11411 18.678 7.44711 18.678ZM5.90511 14.481H11.7441V6.213H5.90511V14.481ZM7.42611 3.552H17.0991V2.37H7.42611V3.552ZM20.0831 4.61V2.713C20.0831 1.192 19.1081 0 17.8641 0H6.60411C5.36011 0 4.38511 1.192 4.38511 2.713V4.61H2.30811V10.332H4.43411V21.625H5.62011V21.775C5.62011 23 6.61611 23.997 7.84111 23.997H8.42711C9.65111 23.997 10.6471 23 10.6471 21.775V21.625H13.9191V21.775C13.9191 23 14.9151 23.997 16.1391 23.997H16.7261C17.9501 23.997 18.9461 23 18.9461 21.775V21.625H20.1311V10.332H22.2571V4.61H20.0831Z"
+                                    fill="#131E29" />
+                            </svg>
+                            <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+                                *ngIf="retTravelExtra?.Description === appConstantsService.londonTravelcard"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12 18.397C9.011 18.397 6.508 16.345 5.805 13.575H18.195C17.492 16.345 14.989 18.397 12 18.397ZM12 5.59995C14.99 5.59995 17.493 7.65295 18.196 10.423H5.804C6.507 7.65295 9.011 5.59995 12 5.59995ZM24 10.423H21.42C20.669 5.89895 16.737 2.44995 12 2.44995C7.263 2.44995 3.332 5.89895 2.58 10.423H0V13.575H2.58C3.332 18.099 7.263 21.551 12 21.551C16.737 21.551 20.668 18.099 21.42 13.575H24V10.423Z"
+                                    fill="#131E29" />
+                            </svg>
+                        </div>
+                        <div class="extras-list-right d-flex justify-content-between align-items-center w-100">
+                            <div class="extras-list-content">
+                                <h3 class="f-16 f-600 font-dark"
+                                    [ngClass]="retTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content'">
+                                    {{createTravelExtraSummary(retTravelExtra)}}</h3>
+                                <p class="mb-0 f-14 font-dark mft-14"
+                                    [ngClass]="retTravelExtra?.IsAvailableForCOJ ? '' : 'disabled-content disabled-content-normal'">
+                                    {{retTravelExtra?.Description === appConstantsService.londonTravelcard ?
+                                    createTravelCardSummary(retTravelExtra) : 'Return'}}</p>
+                            </div>
+                            <div class="extras-list-btn" *ngIf="retTravelExtra?.IsAvailableForCOJ">
+                                <button mat-button class="font-700 mft-16" attr.aria-label="{{retTravelExtra?.Selected ? 'Remove Button for the' : 'Add Button for the'}} {{createTravelExtraSummary(retTravelExtra)}} {{retTravelExtra?.Description === appConstantsService.londonTravelcard ?
+                                    createTravelCardSummary(retTravelExtra) : 'Return'}}"
+                                    [ngClass]="retTravelExtra?.Selected ? 'default-btn-2' : 'default-btn-outline travel-extras-add-btn'"
+                                    (click)="onTravelExtraChange(!retTravelExtra?.Selected, retTravelExtra)" [disabled]="isReturnJourney && cojEvaluateTravelRequest?.ChoosedTrainleg == travelSolutionDirectionEnum.outward_Leg">
+                                    {{retTravelExtra?.Selected ? 'Remove' : 'Add'}}
+                                </button>
+                            </div>
+                            <div class="extras-disabled-txt" *ngIf="!retTravelExtra?.IsAvailableForCOJ">
+                                <p class="f-14 mb-0 font-dark lh-16 mft-14">
+                                    {{retTravelExtra?.Description == appConstantsService.bicycleReservation ? "Bike
+                                    reservations are unavailable on this service"
+                                    : (retTravelExtra?.Description == appConstantsService.plusBus ? "Selected PlusBus
+                                    unavailable for this service" :
+                                    (retTravelExtra?.Description == appConstantsService.londonTravelcard ? "Selected
+                                    London Travelcard unavailable for this service" : ""))}}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="travel-extras-table mt-24 mft-16">
+                    <table aria-label="">
+                        <thead class="d-none">
+                            <tr>
+                                <th>(empty)</th>
+                                <th>(empty)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Travel extras:</td>
+                                <td>{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(TravelExtraTotal)}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Train tickets:</td>
+                                <td>{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(TrainTicketTotal)}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="extras-popup-btn mt-20 mb-0">
+                    <button mat-button class="default-btn w-100 font-700 border-0 mm-btn"
+                        (click)="onContinue()">Continue and transfer travel extras</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</mat-dialog-content>

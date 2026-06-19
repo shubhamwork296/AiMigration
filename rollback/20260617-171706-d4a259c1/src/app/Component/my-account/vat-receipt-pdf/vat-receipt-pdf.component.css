@@ -1,0 +1,49 @@
+.vat-receipt {
+    margin: 0 auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -999;
+    height: 100%;
+    opacity: 0;
+}
+
+.vat-receipt table {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 16px;
+    color: #000;
+}
+
+.vat-receipt .pdf-logo {
+    height: 60px;
+}
+
+.pdf-f-700 {
+    font-weight: 700;
+}
+
+.pdf-header-spc {
+    height: 8px;
+}
+
+.pdf-add-spc {
+    height: 16px;
+}
+
+.pdf-add-padding td {
+    padding: 0 24%;
+}
+
+.pdf-footer-border {
+    height: 1px;
+    background-color: #000;
+    width: 100%;
+}
+
+.pdf-footer-txt {
+    color: #000;
+    font-size: 16px;
+    font-weight: 700;
+}

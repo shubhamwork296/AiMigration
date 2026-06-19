@@ -1,0 +1,280 @@
+.journey-header::before {
+    content: '';
+    position: absolute;
+    background: #FF4713;
+    width: 10px;
+    height: 54px;
+    top: 0px;
+    left: 0px;
+}
+
+.mat-expansion-panel-header {
+    min-height: 64px !important;
+    height: auto !important;
+}
+
+.mat-expansion-panel.seat-reserv-panel {
+    box-shadow: none;
+    border-radius: 0 !important;
+    overflow: visible;
+}
+
+.mat-expansion-panel.seat-reserv-panel .mat-expansion-panel-header {
+    padding: 0 ;
+}
+
+.journey-header {
+    padding-left: 15px;
+    position: relative;
+    padding-top: 0px;
+}
+
+.warning-bx {
+    background: #E2F5E9;
+    padding: 20px 30px;
+    display: flex;
+}
+
+.j-smry {
+    background: #FFFFFF;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.seat-rsrv-bx {
+    background: #FFFFFF;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+#priceBreakDown {
+  background: #fff;
+  padding: 10px 12px;
+  bottom: 40px;
+  left: -55px;
+  position: absolute;
+  color: #000;
+  font-size: 14px;
+  width: 200px;
+  text-align: left;
+  font-weight: 400;
+  z-index: 9;
+  border-radius: 5px;
+  box-shadow: 0px 6px 20px 0px rgba(19, 30, 41, 0.16);
+}
+
+#priceBreakDown::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  display: block;
+  position: absolute;
+  top: auto;
+  bottom: -8px;
+  left: 63px;
+  transform: rotate(45deg);
+  background: #fff;
+}
+
+.price-breakdown-bdr {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+  padding-bottom: 10px !important;
+}
+
+#priceBreakDown p {
+  padding: 5px 0;
+}
+
+#priceBreakDown p:first-child {
+  padding-top: 0;
+}
+
+#priceBreakDown p:last-child {
+  padding-bottom: 0;
+}
+
+.slct-trn-bx {
+  background: #FFFFFF;
+  border: 1px solid #D6D1CA;
+  box-sizing: border-box;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 8px;
+}
+
+.slct-trn-bx.active-trn {
+  border: 1px solid #131E29;
+}
+
+.slct-trn-bx button {
+  border: 0;
+  background: 0;
+  font-weight: 400;
+}
+
+.slct-trn-bx button[disabled] {
+  color: #131E29 !important;
+}
+
+.slct-trn-bx button svg {
+  width: 24px;
+  margin-right: 10px;
+}
+
+.closeicon {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.train-select-inner-bx {
+  white-space: normal;
+  line-height: 26px;
+  font-weight: 400;
+  text-align: left;
+  padding: 5px 0;
+}
+
+.coj-refund-price {
+  background-color: #6CAF35;
+  padding: 10px 4px;
+  bottom: -42px;
+  left: 0;
+  width: 100%;
+}
+
+#crb-right-info-icon,
+#crb-right-m-info-icon {
+  cursor: pointer;
+}
+
+.right-discount-code {
+  background-color: #fff;
+  padding: 24px;
+}
+
+.right-discount-code p {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: #131E29;
+  line-height: 21px;
+  margin: 0;
+  padding: 16px;
+  background-color: #F6F6F6;
+  border-radius: 5px;
+}
+
+.right-discount-code p img {
+  height: 18px;
+  margin-top: -2px;
+}
+
+.right-discount-code-m {
+  display: none;
+}
+
+.coj-with-discount-m {
+  display: none;
+}
+
+@media (max-width: 1199px) {
+  .upgrade-right-col {
+    max-width: 100%;
+    flex: 100%;
+  }
+
+  .coj-mobile-refund {
+    margin-bottom: 40px;
+  }
+
+  .mobile-coj-refund {
+    bottom: auto;
+    top: -42px;
+  }
+
+  .right-discount-code {
+    padding: 50px 20px 16px;
+    position: relative;
+    left: -14px;
+    top: -15px;
+    width: 104.5%;
+  }
+
+  .right-discount-code-d {
+    display: none;
+  }
+
+  .right-discount-code-m {
+    display: block;
+  }
+
+  .discount-code-close-btn {
+    text-align: right;
+    position: absolute;
+    right: 15px;
+    top: 16px;
+    font-size: 15px;
+    color: #131E29;
+    font-weight: 400;
+    padding: 0 !important;
+    line-height: normal !important;
+  }
+
+  .coj-with-discount-m {
+    display: block;
+    margin: 12px 0 12px;
+  }
+  
+  .coj-with-discount-m ul {
+    list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+  }
+  
+  .coj-with-discount-m ul li {
+    background-color: #FFF;
+    border-radius: 5px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 21px;
+    color: #131E29;
+  }
+
+  .coj-with-discount-m ul li img {
+    height: 18px;
+    width: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .coj-with-discount-m {
+    margin: 12px 0 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  .upgrade-coj-modify-seat-picker-btn,
+  .upgrade-coj-review-continue-btn {
+    font-size: 12px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .mobile-coj-refund {
+    top: -64px;
+  }
+
+  .coj-mobile-refund {
+    margin-bottom: 60px;
+  }
+}

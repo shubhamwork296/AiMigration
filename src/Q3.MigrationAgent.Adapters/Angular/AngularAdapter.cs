@@ -171,6 +171,20 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             : await AnalyzePeerDependencyCompatibilityAsync(projectPath, target, config, progress, stage, logPath, cancellationToken);
 
         var commands = new JsonArray();
+        var nodeCompatibility = await EnsureCompatibleNodeVersionAsync(projectPath, hop.ToVersion, config, progress, stage, logPath, cancellationToken);
+        if (nodeCompatibility.BoolValue("attemptedInstall") && nodeCompatibility["installResult"] is JsonObject nodeInstallResult)
+        {
+            commands.Add(nodeInstallResult.DeepClone());
+        }
+        if (!nodeCompatibility.BoolValue("success"))
+        {
+            var failure = new FailureInfo("node version incompatibility", stage, [], nodeCompatibility.StringValue("failureReason", "Node.js version is incompatible with the target Angular hop."), nodeCompatibility.StringValue("suggestedNextAction", "Install a compatible Node.js version and rerun the migration."), false, true);
+            var failed = ClassifiedFailedHopResult(hop, commands, ChangedStructuralFiles(projectPath, beforeFiles), preflight, failure, new JsonArray());
+            failed["nodeCompatibility"] = nodeCompatibility.DeepClone();
+            AddAngularAiHopDetails(failed, new JsonObject(), new JsonObject(), new JsonObject(), [], new JsonObject { ["passed"] = false, ["errors"] = failure.Reason });
+            return failed;
+        }
+
         var packageUpdate = await ApplyAiDrivenPackageJsonUpdateAsync(projectPath, hop, config, progress, stage, logPath, cancellationToken);
         if (packageUpdate["success"]?.GetValue<bool>() != true)
         {
@@ -540,7 +554,10 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return new JsonArray(new JsonObject { ["name"] = "use-application-builder", ["available"] = true, ["applied"] = enabled, ["reason"] = "Optional Angular 18 application builder migration.", ["command"] = new JsonArray("npx", "--yes", "-p", "@angular/cli@18", "ng", "update", "@angular/cli", "--name", "use-application-builder") });
     }
 
-    public JsonArray CheckCompatibility(string projectPath, int targetMajor)
+    public JsonArray CheckCompatibility(string projectPath, int targetMajor) =>
+        CheckCompatibilityAsync(projectPath, targetMajor).GetAwaiter().GetResult();
+
+    private async Task<JsonArray> CheckCompatibilityAsync(string projectPath, int targetMajor, string? logPath = null, CancellationToken cancellationToken = default)
     {
         var issues = new JsonArray();
         var packageJson = ReadJson(Path.Combine(projectPath, "package.json"));
@@ -555,6 +572,23 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         {
             issues.Add(new JsonObject { ["name"] = "rxjs", ["blocking"] = true, ["message"] = "RxJS version is incompatible with Angular target." });
         }
+
+        var nodeCompatibility = await EvaluateNodeCompatibilityAsync(projectPath, targetMajor, logPath, cancellationToken);
+        if (!nodeCompatibility.BoolValue("compatible"))
+        {
+            issues.Add(new JsonObject
+            {
+                ["name"] = "node",
+                ["blocking"] = true,
+                ["message"] = nodeCompatibility.StringValue("message", "Node.js version is incompatible with the target Angular hop."),
+                ["currentVersion"] = nodeCompatibility.StringValue("currentVersion"),
+                ["requiredRange"] = nodeCompatibility.StringValue("requiredRange"),
+                ["preferredInstallVersion"] = nodeCompatibility.StringValue("preferredInstallVersion"),
+                ["source"] = nodeCompatibility.StringValue("source"),
+                ["suggestedAction"] = nodeCompatibility.StringValue("suggestedAction")
+            });
+        }
+
         return issues;
     }
 
@@ -1733,6 +1767,24 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             {
                 warnings.Add($"Package {dependency.Name} may declare Angular peer dependencies. Treating as advisory; install/build validation will decide whether remediation is required.");
             }
+        }
+
+        var nodeCompatibility = await EvaluateNodeCompatibilityAsync(projectPath, target, logPath, cancellationToken);
+        checkedItems.Add(new JsonObject { ["package"] = "node", ["version"] = nodeCompatibility.StringValue("currentVersion"), ["role"] = "runtime" });
+        if (!nodeCompatibility.BoolValue("compatible"))
+        {
+            blockers.Add(new JsonObject
+            {
+                ["package"] = "node",
+                ["issueType"] = "runtime-version-mismatch",
+                ["severity"] = "blocker",
+                ["reason"] = nodeCompatibility.StringValue("message", "Node.js version is incompatible with the target Angular hop."),
+                ["suggestedAction"] = nodeCompatibility.StringValue("suggestedAction", "Install a compatible Node.js version before migrating."),
+                ["currentVersion"] = nodeCompatibility.StringValue("currentVersion"),
+                ["requiredRange"] = nodeCompatibility.StringValue("requiredRange"),
+                ["preferredInstallVersion"] = nodeCompatibility.StringValue("preferredInstallVersion"),
+                ["source"] = nodeCompatibility.StringValue("source")
+            });
         }
 
         var status = blockers.Count > 0 && config.PreflightRemediationMode == "off" ? "blocked" : "passed";
@@ -4400,6 +4452,210 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             return "";
         }
     }
+
+    private async Task<JsonObject> EvaluateNodeCompatibilityAsync(string projectPath, int targetMajor, string? logPath, CancellationToken cancellationToken)
+    {
+        var requirement = await ResolveNodeCompatibilityRequirementAsync(projectPath, targetMajor);
+        var currentVersion = await ToolVersionAsync("node", projectPath, logPath, cancellationToken);
+        var requiredRange = requirement.StringValue("requiredRange", "");
+        var preferredInstallVersion = requirement.StringValue("preferredInstallVersion", "");
+        var compatible = NodeVersionSatisfies(currentVersion, requiredRange);
+        return new JsonObject
+        {
+            ["compatible"] = compatible,
+            ["currentVersion"] = currentVersion,
+            ["requiredRange"] = requiredRange,
+            ["preferredInstallVersion"] = preferredInstallVersion,
+            ["source"] = requirement.StringValue("source", "Angular default compatibility range"),
+            ["message"] = compatible ? "" : $"Node.js {currentVersion} does not satisfy the required Angular range {requiredRange}.",
+            ["suggestedAction"] = compatible
+                ? ""
+                : string.IsNullOrWhiteSpace(preferredInstallVersion)
+                    ? "Install a compatible Node.js version and rerun the migration."
+                    : $"Install Node.js {preferredInstallVersion} and rerun the migration."
+        };
+    }
+
+    private Task<JsonObject> ResolveNodeCompatibilityRequirementAsync(string projectPath, int targetMajor)
+    {
+        var packageJson = ReadJson(Path.Combine(projectPath, "package.json"));
+        var candidates = new (string Value, string Source)[]
+        {
+            (ReadVersionFile(Path.Combine(projectPath, ".nvmrc")), ".nvmrc"),
+            (ReadVersionFile(Path.Combine(projectPath, ".node-version")), ".node-version"),
+            (packageJson["volta"]?.AsObject()?.StringValue("node", "") ?? "", "package.json volta.node"),
+            (packageJson["engines"]?.AsObject()?.StringValue("node", "") ?? "", "package.json engines.node")
+        };
+
+        foreach (var (value, source) in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(value)) continue;
+            var normalized = NormalizeNodeRequirement(value);
+            if (string.IsNullOrWhiteSpace(normalized)) continue;
+            return Task.FromResult(new JsonObject
+            {
+                ["requiredRange"] = normalized,
+                ["preferredInstallVersion"] = PreferredNodeInstallVersion(normalized),
+                ["source"] = source
+            });
+        }
+
+        var fallback = DefaultNodeRequirementForAngular(targetMajor);
+        return Task.FromResult(new JsonObject
+        {
+            ["requiredRange"] = fallback,
+            ["preferredInstallVersion"] = PreferredNodeInstallVersion(fallback),
+            ["source"] = $"Angular {targetMajor} default compatibility range"
+        });
+    }
+
+    private async Task<JsonObject> EnsureCompatibleNodeVersionAsync(string projectPath, int targetMajor, MigrationConfig config, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken)
+    {
+        var compatibility = await EvaluateNodeCompatibilityAsync(projectPath, targetMajor, logPath, cancellationToken);
+        if (compatibility.BoolValue("compatible"))
+        {
+            compatibility["success"] = true;
+            compatibility["attemptedInstall"] = false;
+            return compatibility;
+        }
+
+        var requiredRange = compatibility.StringValue("requiredRange");
+        var installVersion = compatibility.StringValue("preferredInstallVersion");
+        if (string.IsNullOrWhiteSpace(installVersion))
+        {
+            compatibility["success"] = false;
+            compatibility["attemptedInstall"] = false;
+            compatibility["failureReason"] = string.IsNullOrWhiteSpace(requiredRange)
+                ? "Node.js compatibility requirement could not be resolved."
+                : $"Node.js {compatibility.StringValue("currentVersion", "unknown")} does not satisfy {requiredRange}.";
+            compatibility["failureCategory"] = "nodeVersionIncompatible";
+            compatibility["suggestedNextAction"] = "Install a compatible Node.js version manually and rerun the migration.";
+            return compatibility;
+        }
+
+        var manager = await DetectNodeVersionManagerAsync(projectPath, logPath, cancellationToken);
+        if (string.IsNullOrWhiteSpace(manager))
+        {
+            compatibility["success"] = false;
+            compatibility["attemptedInstall"] = false;
+            compatibility["failureReason"] = $"Node.js {compatibility.StringValue("currentVersion", "unknown")} does not satisfy {requiredRange}, and no Node version manager was detected.";
+            compatibility["failureCategory"] = "nodeVersionManagerUnavailable";
+            compatibility["suggestedNextAction"] = "Install nvm, fnm, nvs, or Volta, then rerun the migration.";
+            return compatibility;
+        }
+
+        var installCommand = BuildNodeInstallCommand(manager, installVersion);
+        if (installCommand.Count == 0)
+        {
+            compatibility["success"] = false;
+            compatibility["attemptedInstall"] = false;
+            compatibility["failureReason"] = $"Node.js {compatibility.StringValue("currentVersion", "unknown")} does not satisfy {requiredRange}, but the detected version manager could not build an install command.";
+            compatibility["failureCategory"] = "nodeVersionInstallUnsupported";
+            compatibility["suggestedNextAction"] = "Install a compatible Node.js version manually and rerun the migration.";
+            return compatibility;
+        }
+
+        progress?.Stage(stage, $"Installing compatible Node.js {installVersion} using {manager}.");
+        var installResult = await commandRunner.RunAsync(installCommand, projectPath, timeoutSeconds: config.CommandTimeoutSeconds, progress: progress, stage: stage, description: $"node version install via {manager}", logPath: logPath, heartbeatIntervalSeconds: 45, idleTimeoutSeconds: config.CommandIdleTimeoutSeconds, cancellationToken: cancellationToken);
+        compatibility["attemptedInstall"] = true;
+        compatibility["installManager"] = manager;
+        compatibility["installCommand"] = new JsonArray(installCommand.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
+        compatibility["installResult"] = CommandObject(installCommand, installResult);
+        if (installResult.ReturnCode != 0)
+        {
+            compatibility["success"] = false;
+            compatibility["failureReason"] = $"Failed to install compatible Node.js {installVersion} using {manager}.";
+            compatibility["failureCategory"] = "nodeVersionInstallFailed";
+            compatibility["suggestedNextAction"] = "Install a compatible Node.js version manually and rerun the migration.";
+            return compatibility;
+        }
+
+        var refreshedVersion = await ToolVersionAsync("node", projectPath, logPath, cancellationToken);
+        var installedCompatible = NodeVersionSatisfies(refreshedVersion, requiredRange);
+        compatibility["currentVersionAfterInstall"] = refreshedVersion;
+        compatibility["compatibleAfterInstall"] = installedCompatible;
+        compatibility["success"] = installedCompatible;
+        if (installedCompatible)
+        {
+            compatibility["currentVersion"] = refreshedVersion;
+            compatibility["message"] = $"Installed compatible Node.js {installVersion} using {manager}.";
+            compatibility["suggestedAction"] = "";
+            compatibility["failureReason"] = "";
+            compatibility["failureCategory"] = "";
+            return compatibility;
+        }
+
+        compatibility["failureReason"] = $"Node.js install completed, but the active version is still incompatible with {requiredRange}.";
+        compatibility["failureCategory"] = "nodeVersionInstallVerificationFailed";
+        compatibility["suggestedNextAction"] = "Verify the active Node.js version manager setup, then rerun the migration.";
+        return compatibility;
+    }
+
+    private static string ReadVersionFile(string path)
+    {
+        if (!File.Exists(path)) return "";
+        var text = File.ReadAllText(path).Trim();
+        if (text.StartsWith("v", StringComparison.OrdinalIgnoreCase)) text = text[1..];
+        return text;
+    }
+
+    private static string NormalizeNodeRequirement(string requirement)
+    {
+        var trimmed = requirement.Trim();
+        if (trimmed.StartsWith("v", StringComparison.OrdinalIgnoreCase)) trimmed = trimmed[1..];
+        return trimmed;
+    }
+
+    private static bool NodeVersionSatisfies(string? version, string? requirement)
+    {
+        var current = NormalizeNodeRequirement(version ?? "");
+        var normalized = NormalizeNodeRequirement(requirement ?? "");
+        if (string.IsNullOrWhiteSpace(current) || string.IsNullOrWhiteSpace(normalized)) return false;
+        return normalized.Split("||", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Any(part => NpmVersionRange.Satisfies(current, part));
+    }
+
+    private static string PreferredNodeInstallVersion(string requirement)
+    {
+        var candidate = NormalizeNodeRequirement(requirement).Split("||", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "";
+        var match = Regex.Match(candidate, @"\d+(?:\.\d+){0,2}");
+        return match.Success ? match.Value : "";
+    }
+
+    private static string DefaultNodeRequirementForAngular(int targetMajor) => targetMajor switch
+    {
+        13 => "^12.20.0 || ^14.15.0 || ^16.10.0",
+        14 => "^14.15.0 || ^16.10.0",
+        15 => "^14.20.0 || ^16.13.0 || ^18.10.0",
+        16 => "^16.14.0 || ^18.10.0",
+        17 => "^18.13.0 || ^20.9.0",
+        18 => "^18.19.1 || ^20.11.1 || ^22.0.0",
+        19 => "^18.19.1 || ^20.11.1 || ^22.0.0",
+        20 => "^20.19.0 || ^22.12.0 || ^24.0.0",
+        21 => "^20.19.0 || ^22.12.0 || ^24.0.0",
+        _ => "^20.19.0 || ^22.12.0 || ^24.0.0"
+    };
+
+    private async Task<string> DetectNodeVersionManagerAsync(string projectPath, string? logPath, CancellationToken cancellationToken)
+    {
+        foreach (var manager in new[] { "nvm", "fnm", "nvs", "volta" })
+        {
+            if (!string.IsNullOrWhiteSpace(await ToolVersionAsync(manager, projectPath, logPath, cancellationToken)))
+            {
+                return manager;
+            }
+        }
+
+        return "";
+    }
+
+    private static IReadOnlyList<string> BuildNodeInstallCommand(string manager, string version) => manager switch
+    {
+        "nvm" => ["cmd", "/c", $"nvm install {version} && nvm use {version}"],
+        "fnm" => ["cmd", "/c", $"fnm install {version} && fnm use {version}"],
+        "nvs" => ["cmd", "/c", $"nvs add {version} && nvs use {version}"],
+        "volta" => ["cmd", "/c", $"volta install node@{version}"],
+        _ => []
+    };
 
     private async Task<JsonObject> RunOfficialAngularUpdateIfRequiredAsync(string projectPath, MigrationHop hop, MigrationConfig config, JsonObject configPlan, JsonObject analysis, IProgressReporter? progress, string stage, string? logPath, CancellationToken cancellationToken, string? forceReason = null)
     {

@@ -1,0 +1,783 @@
+<header id="ebcc-header" class="enhanced-booking-confirmation-header">
+    <app-enhanced-navigation-header></app-enhanced-navigation-header>
+</header>
+
+<main id="ebcc-main">
+    <iframe [src]="iframeSrc" width="100%" height="0px" frameborder="0"  style="display:none" *ngIf="iframeSrc"></iframe>
+    <h1 id="ebcc-booking-confirmation-title" class="sr-only">Booking confirmation</h1>
+
+    <!----- Booking confirmation ----->
+    <section id="ebcc-booking-confirmation-section">
+        <div id="ebcc-booking-confirmation-inner" class="confirmation-message">
+            <div id="ebcc-booking-confirmation-center" class="enhanced-booking horizontal-center">
+                <div id="ebcc-booking-confirmation-container" class="common-container payment-container-m ebc-banner-space">
+                    <div id="ebcc-booking-confirmation-flex" class="confirmation-message-flex">
+                        <img id="ebcc-booking-confirmation-icon" src="assets/images/new-design-img/confirmation.svg" alt="" aria-hidden="true" />
+                        <h2 id="ebcc-booking-confirmation-thank-you">Thank you for booking with us {{customerFirstName}}.</h2>
+                        <h3 id="ebcc-booking-reference-number-title">
+                            Booking reference:<span id="ebcc-booking-confirmation-number">{{validatePaymentResponse?.ReferenceNumber}}</span>
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!----- End Booking confirmation ----->
+
+    <h2 id="ebcc-journey-summary-title" class="sr-only">Journey summary</h2>
+
+    <!----- Journey details tab group ----->
+    <div id="ebcc-booking-confirmation-tab-section" class="enhanced-booking-confirmation-section">
+        <ng-container *ngIf="validatePaymentResponse?.Journey?.length > 1; else singleJourney">
+            <mat-tab-group id="ebcc-mat-tab-group" class=""
+            [(selectedIndex)]="selectedIndex"
+                    (selectedTabChange)="onTabChange($event)"
+                    animationDuration="0ms">
+                <mat-tab id="ebcc-mat-tab_{{i}}" *ngFor="let j of validatePaymentResponse?.Journey; let i = index" [label]="'Journey ' + (i + 1)" [attr.aria-label]="getJourneyTabAriaLabel(i)" [attr.aria-selected]="selectedIndex === i"> 
+                    <ng-template matTabContent>
+                        <ng-container *ngTemplateOutlet="journeyContent; context: { $implicit: j, i: i }">
+                        </ng-container>
+                    </ng-template>
+                </mat-tab>
+            </mat-tab-group>
+        </ng-container>
+
+        <!-- Single journey: no tabs -->
+        <ng-template #singleJourney>
+            <ng-container *ngIf="validatePaymentResponse?.Journey?.length">
+                <ng-container
+                *ngTemplateOutlet="journeyContent; context: { $implicit: validatePaymentResponse?.Journey[0], i: 0 }">
+                </ng-container>
+            </ng-container>
+        </ng-template>
+
+        <ng-template #journeyContent let-item let-index="i">
+            <div id="ebcc-mat-tab-center" class="enhanced-booking horizontal-center">
+                <div id="ebcc-mat-tab-inner" class="common-container payment-container-m">
+                    <!----- Delivery and extras ----->
+                    <div id="ebcc-delivery-and-extras-card" class="ebc-journey-details-card">
+                        <!----- Journey station details ----->
+                        <div id="ebcc-station-details-section" class="booking-journey-details">
+                            <div id="ebcc-station-details-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-station-details-left" class="booking-journey-details-txt-flex">
+                                    <h3 id="ebcc-station-name-title">
+                                        {{item.Departure.split('(')[0]}}
+                                        <img id="ebcc-station-name-icon-return_{{index}}" *ngIf="item?.ReturnDetail || item?.OutwardDetail?.OpenReturnExpiryDate" src="assets/images/new-design-img/interchange-icon.svg" alt="" aria-hidden="true" />
+                                        <img id="ebcc-station-name-icon-outward-img_{{index}}" *ngIf="item?.OutwardDetail && !item?.OutwardDetail?.OpenReturnExpiryDate && !item?.ReturnDetail" src="assets/images/new-design-img/search-journey-arrow.svg" alt="" aria-hidden="true" />
+                                        {{item.Arrival.split('(')[0]}}
+                                    </h3>
+                                    <p id="ebcc-station-details-sub-txt">
+                                        <span id="ebcc-journey-station-date">Departing {{item.DepartureDate | date:'EEE, dd MMM yyyy'}}</span>
+                                        <span id="ebcc-journey-station-way">{{item.GAJourneyType?.toLowerCase() === enhancedJourneyType?.openReturn?.toLowerCase() ? enhancedJourneyType?.openReturn : item.GAJourneyType}} journey</span>
+                                        <span id="ebcc-journey-station-pax"  class="mobile-hide">
+                                            {{item?.Adult}} {{item?.Adult > 1 ? enhancedPassangerTypeEnum.adultText + 's' : enhancedPassangerTypeEnum.adultText}}<span id="ebcc-journey-station-pax-inner" *ngIf="item?.Child > 0">, {{item?.Child}} {{item?.Child > 1 ? enhancedPassangerTypeEnum.ChildrenText : enhancedPassangerTypeEnum.ChildText}}</span>
+                                        </span>
+                                        <span id="ebcc-journey-station-price"  class="mobile-hide">Total {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(item?.OutwardDetail?.Price
+                  + (item?.ReturnDetail ? item?.ReturnDetail?.Price : 0) + (item?.DeliveryDetail ? item?.DeliveryDetail[0]?.Price : 0) + calculateTotalTravelExtrasPrice(item?.OutwardJourneyExtras) + calculateTotalTravelExtrasPrice(item?.ReturnJourneyExtras))}}</span>
+                  <span class="mobile-show custom-block">
+
+                    <span id="ebcc-journey-station-pax1">
+                        {{item?.Adult}} {{item?.Adult > 1 ? enhancedPassangerTypeEnum.adultText + 's' : enhancedPassangerTypeEnum.adultText}}<span id="ebcc-journey-station-pax-inner1" *ngIf="item?.Child > 0">, {{item?.Child}} {{item?.Child > 1 ? enhancedPassangerTypeEnum.ChildrenText : enhancedPassangerTypeEnum.ChildText}}</span>
+                    </span>
+                    <span id="ebcc-journey-station-price1">Total {{sharedService.currencySymbol('')}}{{sharedService.formatPrice(item?.OutwardDetail?.Price
++ (item?.ReturnDetail ? item?.ReturnDetail?.Price : 0) + (item?.DeliveryDetail ? item?.DeliveryDetail[0]?.Price : 0) + calculateTotalTravelExtrasPrice(item?.OutwardJourneyExtras) + calculateTotalTravelExtrasPrice(item?.ReturnJourneyExtras))}}</span>
+
+
+                    </span>
+                                    </p>
+                                </div>
+                                <div id="ebcc-station-details-right" class="booking-journey-details-btn-flex">
+                                    <button id="ebcc-add-to-calendar-btn" type="button" mat-button class="fill-btn fill-light-hover-btn bc-min-h-48" (click)="calendarClick(index)" [attr.aria-label]="getAriaLabel('calendar', item)">Add to calendar</button>
+                                    <button id="ebcc-view-in-your-account-btn-desktop" type="button" mat-button class="outline-btn outline-primary-btn-hover bc-min-h-48 d-btn" (click)="navigateToBooking()" [attr.aria-label]="getAriaLabel('viewAccount', item)">
+                                        View in your account
+                                    </button>
+                                    <button id="ebcc-view-in-your-account-btn-mobile" type="button" mat-button class="simple-btn simple-hover-btn m-btn" (click)="navigateToBooking()">
+                                        View in your account
+                                        <img id="ebcc-view-in-your-account-btn-mobile-arrow" class="view-account-img" src="assets/images/new-design-img/view-in-your-accoount-arrow.svg" alt="" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Journey station details ----->
+
+                        <!----- Rail replacement bus service ----->
+                        <div id="ebcc-bus-relacement-section" class="booking-journey-details booking-extras enhanced-d-none">
+                            <div id="ebcc-bus-relacement-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-bus-relacement-content" class="booking-tod-content">
+                                    <img id="ebcc-bus-relacement-icon" src="assets/images/new-design-img/rail-replacement-bus-booking-confirmation.svg" alt="" aria-hidden="true" class="booking-rail-replace-img" />
+                                    <div id="ebcc-bus-relacement-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-bus-relacement-title">Rail replacement bus service</h2>
+                                        <p id="ebcc-bus-relacement-subcontent">Your journey includes a rail replacement bus service due to planned engineering works.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Rail replacement bus service ----->
+
+                        <!----- Collect at station ticket delivery ----->
+                        <div id="ebcc-tod-section" class="booking-journey-details booking-tod" *ngIf="item?.DeliveryDetail[0]?.DeliveryModeType == appRouteEnum?.DeliveryMode_TOD">
+                            <div id="ebcc-tod-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-tod-left" class="booking-tod-content">
+                                    <img id="ebcc-tod-icon" class="booking-tod-delivery-img" src="assets/images/new-design-img/collect-at-station-booking-confirmation.svg" alt="" aria-hidden="true" />
+                                    <div id="ebcc-tod-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-tod-ticket-delivery-title">Ticket delivery</h2>
+                                        <h3 id="ebcc-tod-collect-at-station-title">Collect at station</h3>
+                                        <p id="ebcc-tod-subcontent">Use your reference to collect your ticket at any station with a ticket machine. Your payment card may be required.</p>
+                                    </div>
+                                </div>
+                                <div id="ebcc-tod-right" class="booking-tod-collection-ref">
+                                    <h4 id="ebcc-tod-collection-reference-title">Collection reference</h4>
+                                    <p id="ebcc-tod-collection-reference-number">{{validatePaymentResponse?.JourneyReferenceNumber}}</p>
+                                </div>
+                            </div>
+                            <div id="ebcc-tod-wrabness-section" class="wrabness-info-msg info-icon-hw" *ngIf="item?.DeliveryModesDto && !item?.DeliveryModesDto?.IsTvmAvailableForTod">
+                                <img id="ebcc-tod-wrabness-icon" src="assets/images/new-design-img/wrabness-info.svg" alt="" aria-hidden="true" />
+                                <div id="ebcc-tod-wrabness-content" class="wrabness-info-content">
+                                    <h5 id="ebcc-tod-wrabness-title">{{item?.Departure?.split('(')[0]}} does not have a ticket machine.</h5>
+                                    <p id="ebcc-tod-wrabness-subcontent">
+                                        Please choose a different ticket delivery option or find an <a id="ebcc-tod-wrabness-alternative-station" href="https://www.nationalrail.co.uk/find-a-station/" target="_blank" rel="noopener">alternative station</a> to collect your ticket from.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Collect at station ticket delivery ----->
+                        
+                        <!----- eTicket ticket delivery ----->
+                        <div id="ebcc-eticket-section" class="booking-journey-details booking-tod" *ngIf="item?.DeliveryDetail[0]?.DeliveryModeType == appRouteEnum?.DeliveryModeETicket" >
+                            <div id="ebcc-eticket-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-eticket-left" class="booking-tod-content">
+                                    <img id="ebcc-eticket-icon" class="booking-e-ticket-delivery-img" src="assets/images/new-design-img/e-ticket-booking-confirmation.svg" alt="" aria-hidden="true" />
+                                    <div id="ebcc-eticket-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-eticket-ticket-delivery-title">Ticket delivery</h2>
+                                        <h3 id="ebcc-eticket-title">eTicket</h3>
+                                    </div>
+                                </div>
+                                <div id="ebcc-download-eticket" class="booking-journey-details-btn-flex">
+                                    <div id="ebcc-download-eticket-inner" class="w-100-m" *ngIf="item?.IsEticket && item?.Status != journeyTypeEnum?.refundedJourney">
+                                        <button class="outline-btn outline-primary-btn-hover bc-min-h-48 bcp-download-btn w-100-m" *ngIf="item?.EntitlementId?.length == 1" (click)="downloadTicket(item, validatePaymentResponse?.ReferenceNumber)" mat-button [attr.aria-label]="getAriaLabel('download', item)">
+                                            Download eTicket
+                                        </button>
+                                        
+                                        <button class="outline-btn outline-primary-btn-hover bc-min-h-48 bcp-download-btn w-100-m" mat-button [matMenuTriggerFor]="menu" 
+                                        #downloadMenuTrigger="matMenuTrigger" *ngIf="item?.EntitlementId?.length > 1"
+                                        (click)="downloadTicket(item, validatePaymentResponse?.ReferenceNumber)" [attr.aria-label]="getDownloadAriaLabel(item)">
+                                            Download eTicket
+                                            <span class="booking-e-ticket" *ngIf="item?.EntitlementId?.length > 1">
+                                                <img src="assets/images/new-design-img/download-eticket-arrow.svg" alt="" aria-hidden="true" />
+                                            </span>
+                                        </button>
+
+                                        <mat-menu #menu="matMenu" class="e-ticket-btn-group" [disableRipple]="true">
+                                            <ng-container *ngIf="item?.ShowDownloadOptions">
+                                                <ng-container *ngFor="let eticket of enhancedEticketResponse?.Eticket; let i = index;">
+                                                    <button mat-menu-item class="e-ticket-btn font-dark" (click)="downloadPassengerTicket(eticket); $event.stopPropagation()" [attr.aria-label]="getDownloadAriaLabel(item, enhancedEticketResponse?.Eticket, eticket, i)">
+                                                        {{eticket.Text}}
+                                                        <span class="e-ticket-check" *ngIf="eticket?.DownloadedList">
+                                                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M3.65625 8.9375L11.6562 0.9375L10.7188 0L3.65625 7.0625L0.9375 4.34375L0 5.28125L3.65625 8.9375Z" fill="#131E29" />
+                                                            </svg>
+                                                        </span>
+                                                        <span class="e-ticket-check" *ngIf="!eticket?.DownloadedList">
+                                                            <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M0 12.5H11.64V14.18H0V12.5ZM11.64 5L5.82 10.82L0 5H3.32V0H8.32V5H11.64Z" fill="#131E29" />
+                                                            </svg>
+                                                        </span>
+                                                    </button>
+                                                </ng-container>
+                                            </ng-container>
+                                        </mat-menu>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End eTicket ticket delivery ----->
+
+                        <!----- Load ticket ticket delivery ----->
+                        <div id="ebcc-load-ticket-section" class="booking-journey-details booking-tod" *ngIf="item?.DeliveryDetail[0]?.DeliveryModeType == appRouteEnum?.DeliveryMode_Smart_Card">
+                            <div id="ebcc-load-ticket-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-load-ticket-content" class="booking-tod-content booking-tod-title-native">
+                                    <img id="ebcc-load-ticket-icon" class="booking-load-ticket-delivery-img" src="assets/images/new-design-img/load-ticket-booking-confirmation.svg" alt="" aria-hidden="true" />
+                                    <div id="ebcc-load-ticket-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-load-ticket-delivery-title">Ticket delivery</h2>
+                                        <h3 id="ebcc-load-ticket-title">Load ticket at {{item?.Departure?.split('(')[0]}}</h3>
+                                        <p id="ebcc-load-ticket-subcontent">Load tickets onto your Smartcard at a ticket machine or on the ticket barriers.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Load ticket ticket delivery ----->
+
+                        <!----- Post ticket delivery ----->
+                        <div id="ebcc-post-ticket-section" class="booking-journey-details booking-tod" *ngIf="item?.DeliveryDetail[0]?.DeliveryModeType == appRouteEnum?.DeliveryMode_FRTFIRSTCLASS || item?.DeliveryDetail[0]?.DeliveryModeType == appRouteEnum?.DeliveryMode_FRTNEXTDAY">
+                            <div id="ebcc-post-ticket-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-post-ticket-content" class="booking-tod-content">
+                                    <img id="ebcc-post-ticket-icon" class="booking-post-delivery-img" src="assets/images/new-design-img/post-booking-confirmation.svg" alt="" aria-hidden="true" />
+                                    <div id="ebcc-post-ticket-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-post-ticket-delivery-title">Ticket delivery</h2>
+                                        <h3 id="ebcc-post-ticket-title2">Your tickets are in the post</h3>
+                                        <p id="ebcc-post-ticket-subcontent" class="post-sub-content">We’ll send your tickets to: <span id="ebcc-post-ticket-content-address">{{ item?.SelectedDeliveryAddress?.Address1 ? item?.SelectedDeliveryAddress?.Address1 + ', ' : ''}}
+                                                        {{ item?.SelectedDeliveryAddress?.Address2 ? item?.SelectedDeliveryAddress?.Address2 + ', ' : '' }}
+                                                        {{ item?.SelectedDeliveryAddress?.Address3 ? item?.SelectedDeliveryAddress?.Address3 + ', ' : ''}}
+                                                        {{ item?.SelectedDeliveryAddress?.City ? item?.SelectedDeliveryAddress?.City + ', ' : '' }}
+                                                        {{ item?.SelectedDeliveryAddress?.Country ? item?.SelectedDeliveryAddress?.Country + ', ' : '' }}
+                                                        {{ item?.SelectedDeliveryAddress?.CountryCode ? item?.SelectedDeliveryAddress?.CountryCode + ', '  : ''}}
+                                                    {{ item?.SelectedDeliveryAddress?.PostCode}}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Post ticket delivery ----->
+
+                        <!----- Remember your Railcard ----->
+                        <div id="ebcc-remember-railcard-section" class="booking-journey-details booking-extras" *ngIf="noOfRailcardSelectedInJourneyInCaseOfGroupSave(item?.OutwardDetail?.RailCardPrice) != permissionTextEnum?.noText || noOfRailcardSelectedInJourneyInCaseOfGroupSave(item?.ReturnDetail?.RailCardPrice) != permissionTextEnum?.noText">
+                            <div id="ebcc-remember-railcard-inner" class="booking-journey-details-flex">
+                                <div id="ebcc-remember-railcard-left" class="booking-tod-content">
+                                    <img id="ebcc-remember-railcard-icon" src="assets/images/new-design-img/railcard-booking-confirmation.svg" alt="" aria-hidden="true" class="booking-railcard-img" />
+                                    <div id="ebcc-remember-railcard-title-section" class="booking-tod-title">
+                                        <h2 id="ebcc-remember-railcard-title">Remember your Railcard</h2>
+                                        <p id="ebcc-remember-railcard-subcontent">Always take yours with you, if you can’t show it you will have to pay the full fare or even a Penalty Fare.</p>
+                                    </div>
+                                </div>
+                                <div id="ebcc-remember-railcard-right" class="booking-extras-gray-txt booking-railcard-gray-txt">
+                                    <h3 id="ebcc-remember-railcard-applied-title">Railcard applied:</h3>
+                                    <p id="ebcc-remember-railcard-applied-subcontent" class="primary-coalescent">
+                                        <span id="ebcc-remember-railcard-applied-disabled-pax_{{appliedRailcardIndex}}" *ngFor = 'let railcard of getRailcardSummary(item); let appliedRailcardIndex = index;'>{{railcard}}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Remember your Railcard ----->
+
+                        <!----- Your bike reservation ----->
+                        <div id="ebcc-bike-reservation-section" class="booking-journey-details booking-extras" *ngIf = "hasBicycleReservationOutward(index) || hasBicycleReservationReturn(index)">
+                            <div id="ebcc-bike-reservation-innner" class="booking-journey-details-flex">
+                                <div id="ebcc-bike-reservation-left" class="booking-tod-content">
+                                    <img id="ebcc-bike-reservation-icon" src="assets/images/new-design-img/extra-free-bike-reservation.svg" alt="" aria-hidden="true" class="booking-bike-img" />
+                                    <div id="ebcc-bike-reservation-title-content" class="booking-tod-title">
+                                        <h2 id="ebcc-bike-reservation-title">Your bike reservation</h2>
+                                        <p id="ebcc-bike-reservation-subcontent">Be ready to board your bike at least 10 minutes before the train goes and have your tickets and reservation handy.</p>
+                                        <a id="ebcc-bike-reservation-link" href="https://www.avantiwestcoast.co.uk/travel-information/onboard/bikes" target="_blank" rel="noopener">Travelling with a bike</a>
+                                    </div>
+                                </div>
+                                <div id="ebcc-bike-reservation-right" class="booking-extras-gray-txt booking-extras-bike">
+                                    <div id="ebcc-bike-reservation-outward" class="booking-extras-gray-txt-row" *ngIf = "hasBicycleReservationOutward(index)">
+                                        <h3 id="ebcc-bike-reservation-outward-title">Outward:</h3>
+                                        <p id="ebcc-bike-reservation-outward-space" class="primary-coalescent">{{getBicycleReservationTextOutward(index)}}</p>
+                                    </div>
+                                    <div id="ebcc-bike-reservation-return" class="booking-extras-gray-txt-row" *ngIf = "hasBicycleReservationReturn(index)">
+                                        <h3 id="ebcc-bike-reservation-return-title">Return:</h3>
+                                        <p id="ebcc-bike-reservation-return-space" class="primary-coalescent">{{getBicycleReservationTextReturn(index)}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Your bike reservation ----->
+                    </div>
+                    <!----- End Delivery and extras ----->
+
+                    <!----- Outward and return journey details ----->
+                    <div id="ebcc-out-ret-details-section" class="ebc-journey-details-card ebc-out-ret-card">
+                        <div id="ebcc-out-ret-inner" class="booking-journey-details booking-outwar-returne-journey">
+                            <div id="ebcc-out-ret-sub-inner" class="review-out-retu-details p-0">
+                                <!----- Outward Journey Details ----->
+                                <div id="ebcc-out-section" class="review-inner-container">
+                                    <h2 id="ebcc-out-main-title" class="reivew-title">
+                                        Outward
+                                        <span id="eterdc-out-title-date">{{item?.OutwardDetail?.DepartureTime | date:'EEE, dd MMM yyyy' : 'UTC'}}</span>
+                                    </h2>
+                                    <div id="ebcc-out-inner-border" class="review-inner-border ebc-inner-border">
+                                        <div id="ebcc-out-header" class="review-column-header" aria-labelledby="booking-confirmation-out-journey">
+                                            <span id="booking-confirmation-out-journey" class="sr-only">
+                                                {{ getAriaLabelForOutAndRetStations(true, item) }}
+                                            </span>
+                                            <div id="ebcc-out-header-station" class="review-column-header-station" aria-hidden="true">
+                                                <span id="ebcc-out-arrive-station-name">{{commonService.getCityNameOnly(item?.Departure)}}</span>
+                                                <img id="ebcc-out-icon" src="assets/images/new-design-img/review-station-arrow.svg" alt="" aria-hidden="true" />
+                                                <span id="ebcc-out-depart-station-name">{{commonService.getCityNameOnly(item?.Arrival)}}</span>
+                                            </div>
+                                            <div id="ebcc-out-header-time-duration" class="review-column-header-time-duration" aria-hidden="true">
+                                                <span id="ebcc-out-header-time-inner" class="review-column-header-time">
+                                                    <span id="ebcc-out-header-arrive-time">{{item?.OutwardDetail?.DepartureTimeStart}}</span>
+                                                    <img id="ebcc-out-header-time-icon" src="assets/images/new-design-img/review-station-arrow.svg" alt="" aria-hidden="true" />
+                                                    <span id="ebcc-out-header-depart-time">{{item?.OutwardDetail?.ArrivalTimeStart}}</span>
+                                                </span>
+                                                <span id="ebcc-out-header-duration-section">
+                                                    <span id="ebcc-out-header-duration-total" class="review-column-header-duration">{{item?.OutwardDetail?.Duration}}</span><span id="ebcc-out-header-duration-changes" class="review-column-header-duration">, <span *ngIf="item?.OutwardDetail?.Changes > 0">{{item?.OutwardDetail?.Changes}}</span>{{ item?.OutwardDetail?.Changes == 0 ? ' Direct' : item?.OutwardDetail?.Changes == 1 ? ' change' : ' changes' }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div id="ebcc-out-body" class="review-column-body">
+                                            <div id="ebcc-out-operator-section_{{outwardIndex}}" class="review-column-operator-details" *ngFor="let outwardSeatData of item?.OutwardSeat; let outwardIndex = index">
+                                                <div id="ebcc-out-operator-name-section_{{outwardIndex}}" class="review-column-operator-name" *ngIf="!outwardSeatData?.SaleCompanyName?.includes('London Underground') && !outwardSeatData?.SaleCompanyName?.includes('Walk')">
+                                                    <span id="ebcc-out-operator-name_{{outwardIndex}}" *ngIf="!outwardSeatData?.SaleCompanyName?.includes('Avanti West Coast')">{{outwardSeatData?.SaleCompanyName}}</span>
+                                                    <img id="ebcc-out-operator-avanti-logo_{{outwardIndex}}" src="assets/images/new-design-img/header-logo.svg" alt="Avanti West Coast" *ngIf="outwardSeatData?.SaleCompanyName?.includes('Avanti West Coast')"/>
+                                                </div>
+                                                <div id="ebcc-out-operator-route-section_{{outwardIndex}}" class="review-column-operator-route">
+                                                    <div id="ebcc-out-operator-route-station_{{outwardIndex}}" class="review-column-operator-route-staion">
+                                                        <span id="ebcc-out-operator-route-station-time_{{outwardIndex}}" class="review-column-operator-staion-time">{{outwardSeatData?.DepartureTime}}</span>
+                                                        <span id="ebcc-out-operator-route-station-name_{{outwardIndex}}" class="review-column-operator-staion-name">{{commonService.getCityNameOnly(outwardSeatData?.Departure)}}</span>
+                                                    </div>
+                                                    <div id="ebcc-out-operator-walk-section_{{outwardIndex}}" class="review-column-walk" *ngIf="outwardSeatData?.SaleCompanyName?.includes('Walk')">
+                                                        <img id="ebcc-out-operator-walk-icon_{{outwardIndex}}" src="assets/images/new-design-img/route-walk.svg" alt="" aria-hidden="true" />
+                                                        <p id="ebcc-out-operator-title_{{outwardIndex}}">{{commonService?.getDuration(outwardSeatData?.DepartureTime, outwardSeatData?.ArrivalTime, true)}}{{' ' + outwardSeatData?.SaleCompanyName?.toLowerCase()}}</p>
+                                                    </div>
+                                                    <div id="ebcc-out-operator-london-section_{{outwardIndex}}" class="review-column-walk" *ngIf="outwardSeatData?.SaleCompanyName?.includes('London Underground')">
+                                                        <img id="ebcc-out-operator-london-icon_{{outwardIndex}}" src="assets/images/new-design-img/london-underground.svg" alt="" aria-hidden="true" />
+                                                        <p id="ebcc-out-operator-london-title_{{outwardIndex}}">{{outwardSeatData?.SaleCompanyName}}</p>
+                                                    </div>
+                                                    <div id="ebcc-out-operator-station2_{{outwardIndex}}" class="review-column-operator-route-staion">
+                                                        <span id="ebcc-out-operator-station-time2_{{outwardIndex}}" class="review-column-operator-staion-time">{{outwardSeatData?.ArrivalTime}}</span>
+                                                        <span id="ebcc-out-operator-station-name2_{{outwardIndex}}" class="review-column-operator-staion-name">{{commonService.getCityNameOnly(outwardSeatData?.Arrival)}}</span>
+                                                    </div>
+                                                </div>
+                                                <div id="ebcc-out-seat-section_{{outwardIndex}}" class="review-column-seat-details"
+                                                [ngClass]="showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData) ? 'neutrals-bright-grey' : 'feel-good-green'"
+                                                *ngIf="!outwardSeatData?.SaleCompanyName?.includes('London Underground') && !outwardSeatData?.SaleCompanyName?.includes('Walk')">
+                                                    <div id="ebcc-out-seat-reserve_{{outwardIndex}}" class="review-column-seat-reserve">
+                                                        <div id="ebcc-out-seat-left_{{outwardIndex}}" class="review-column-seat-left">
+                                                            <img id="ebcc-out-seat-reserved-icon_{{outwardIndex}}" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData)" src="assets/images/new-design-img/review-seat-reserved.svg" alt="" aria-hidden="true" />
+                                                            <img id="ebcc-out-seat-no-reserved-icon_{{outwardIndex}}" *ngIf="showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData)" src="assets/images/new-design-img/review-no-seat-reserved.svg" alt="" aria-hidden="true" />
+                                                            <div id="ebcc-out-seat-content_{{outwardIndex}}" class="review-column-seat-txt">
+                                                                <p id="ebcc-out-seat-no-reservation-title_{{outwardIndex}}" class="review-column-seat-reserve-title">{{showReservedOrNoReservedMessageForOutward(outwardSeatData)}}</p>
+                                                                <p id="ebcc-out-seat-take-any-title_{{outwardIndex}}" class="review-column-seat-coach review-column-any-seat" [ngClass]="showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData) ? 'review-column-any-seat' : ''">
+                                                                    {{showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData) ? 'Take any available seat' : 'Coach ' + commonService?.coachTextDisplay(outwardSeatData?.Seat)}}
+                                                                    <span id="ebcc-out-seat-take-any-type_{{outwardIndex}}" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData)">({{item?.OutwardDetail?.TicketClass}})</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="ebcc-out-seat-msg-section_{{outwardIndex}}" class="review-column-seat-msg">
+                                                        <p id="ebcc-out-seat-msg-title_{{outwardIndex}}">
+                                                            {{showReservationMessage(item, outwardSeatData, false)}}
+                                                        </p>
+                                                    </div>
+                                                    <div id="ebcc-out-seat-accordion-section_{{outwardIndex}}" class="review-column-seat-accordion" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(outwardSeatData)">
+                                                        <mat-accordion id="ebcc-out-seat-accordion_{{outwardIndex}}" class="review-column-seat-mat-accordion">
+                                                            <mat-expansion-panel id="ebcc-out-seat-accordion-panel_{{outwardIndex}}" class="review-column-seat-mat-panel"
+                                                            [expanded]="isOutSeatDetailsOpenMap[getPanelKey(outwardSeatData, outwardIndex, item?.Journey)]"
+                                                            (opened)="onParentPanelOpened(item); isOutSeatDetailsOpenMap[getPanelKey(outwardSeatData, outwardIndex, item?.Journey)] = true"
+                                                            (closed)="isOutSeatDetailsOpenMap[getPanelKey(outwardSeatData, outwardIndex, item?.Journey)] = false">
+                                                                <mat-expansion-panel-header id="ebcc-out-seat-accordion-header_{{outwardIndex}}" class="review-column-seat-mat-header" [attr.aria-label]="getSeatAccordionAriaLabel(outwardSeatData, outwardIndex, item?.Journey, true)">
+                                                                    <p id="ebcc-out-seat-numbers_{{outwardIndex}}" class="review-column-seat-numbers">
+                                                                        {{commonService?.getFormattedSeatInfo(outwardSeatData?.Seat)}}
+                                                                    </p>
+                                                                    <p id="ebcc-out-seat-show-hide-title_{{outwardIndex}}" class="review-column-seat-numbers-hide-show">
+                                                                        <span id="ebcc-out-seat-show-hide-text_{{outwardIndex}}">{{ isOutSeatDetailsOpenMap[getPanelKey(outwardSeatData, outwardIndex, item?.Journey)] ? showAndHideDetailTextEnum?.hideDetail : showAndHideDetailTextEnum?.showDetail }}</span>
+                                                                    </p>
+                                                                </mat-expansion-panel-header>
+                                                                <div id="ebcc-out-seat-accordion-body_{{outwardIndex}}_{{outwardIndex}}" class="review-column-seat-mat-accordion-body" *ngFor="let seat of outwardSeatData.Seat; let outwardIndex=index;">
+                                                                    <p id="ebcc-out-seat-details-inner_{{outwardIndex}}_{{outwardIndex}}">
+                                                                        <span id="ebcc-out-seat-details-number_{{outwardIndex}}_{{outwardIndex}}" class="reivew-seat-numer" *ngIf="seat?.CoachNumber !='' && seat?.CoachNumber !='*'">
+                                                                           {{seat.CoachNumber}}{{seat.ReservationType != 'UNSUPPORTED' ? seat.Seat : ''}}:
+                                                                        </span>
+                                                                        <span id="ebcc-out-seat-type_{{outwardIndex}}_{{outwardIndex}}" class="reivew-seat-type">
+                                                                            {{commonService?.filterSeatInfo(commonService.getSeatInfoAndCoachType(seat))}}
+                                                                        </span>
+                                                                    </p>
+                                                                </div>
+                                                            </mat-expansion-panel>
+                                                        </mat-accordion>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                
+                                        <!-- Outward ticket class details -->
+                                        <div id="ebcc-out-ticket-class-section" class="review-column-ticket-class ebc-out-ticket-class">
+                                            <div id="ebcc-out-ticket-class-header" class="review-column-ticket-class-header">
+                                                <span id="ebcc-out-ticket-class-title" class="review-column-your-ticket">Your ticket</span>
+                                                <button id="ebcc-out-ticket-class-pax-btn" type="button" mat-button class="review-column-ticket-class-pax" (click)="openPriceBreakdown(item, validatePaymentResponse?.Journey)" [attr.aria-label]="getPriceBreakdownAriaLabel(item, true)">{{item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}}<span id="ebcc-out-ticket-class-header-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.OutwardDetail?.RailCardPrice) === 0 && checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) === 0">, {{noRailcardTextChange(enhancedRailCardTypeEnum?.noRailcardText)}}</span><span id="eterdc-out-tc-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.OutwardDetail?.RailCardPrice) > 0 && checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) === 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}</span><span id="eterdc-out-tc-groupsave" *ngIf="checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) > 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}, {{appRouteEnum?.newGroupSave}}</span></button>
+                                            </div>
+                                            <div id="ebcc-out-ticket-class-body" class="review-column-ticket-class-body" *ngIf="item?.OutwardDetail != null">
+                                                <div id="ebcc-out-ticket-class-type" class="review-column-ticket-class-name-type">
+                                                    <h3 id="ebcc-out-ticket-class-type-title">{{item?.OutwardDetail?.TicketType?.includes('1st') ? item.OutwardDetail.TicketType.replace('1st', '') : item.OutwardDetail.TicketType}}</h3>
+                                                    <p id="ebcc-out-ticket-class-type-title2" [ngClass]="{'review-std-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.standardClass, 'review-std-premimum-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.stdPremiumClass, 'review-first-class-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.firstClass}">
+                                                        {{item?.OutwardDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.OutwardDetail?.TicketClass : item?.OutwardDetail?.TicketClass + ' Class'}}
+                                                    </p>
+                                                </div>
+                                                <ul id="ebcc-out-ticket-class-list" [attr.aria-label]="getTicketClassListAriaLabel(item, false)">
+                                                    <li id="ebcc-out-ticket-class-item_{{outTicketFareDesc}}" *ngFor="let outwardFareDescription of item?.OutwardDetail?.FareDescription; let outTicketFareDesc = index">
+                                                        {{outwardFareDescription}}
+                                                    </li>
+                                                </ul>
+                                                <div id="ebcc-out-ticket-class-btn-section" class="review-column-ticket-class-details-link">
+                                                    <button id="ebcc-out-ticket-class-btn" type="button" (click)="openTicketDetailInfo(item?.OutwardDetail)" mat-button [attr.aria-label]="getTicketDetailAriaLabel(item, true)">
+                                                        Ticket details
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <ng-container id="ebcc-out-ticket-class-plusbus-london-travelcard" *ngFor="let outwardExtra of item?.OutwardJourneyExtras; let idOutwardExtra = index;">
+                                                <div id="ebcc-out-ticket-class-plusbus_{{idOutwardExtra}}" class="booking-out-ret-last-card" *ngIf="outwardExtra?.JourneyExtraName == 'PLUSBUS'">
+                                                    <h4 id="ebcc-out-ticket-class-plusbus-title_{{idOutwardExtra}}">
+                                                    PlusBus <span id="ebcc-out-ticket-class-plusbus-for_{{idOutwardExtra}}">for {{outwardExtra?.Departure}}</span>
+                                                    </h4>
+                                                    <button id="ebcc-out-ticket-class-plusbus-more-btn_{{idOutwardExtra}}" class="plusbus-more-info-btn" type="button" mat-button [attr.aria-label]="getExtraAriaLabel(item, true, outwardExtra)" (click)="openPlusBusInfo()">More information about PlusBus</button>
+                                                </div>
+                                                <div id="ebcc-out-ticket-class-london-travelcard_{{idOutwardExtra}}" class="booking-out-ret-last-card" *ngIf="outwardExtra?.JourneyExtraName == 'London Travelcard'">
+                                                    <h4 id="ebcc-out-ticket-class-london-title_{{idOutwardExtra}}" class="booking-out-ret-london-title">
+                                                    London Travelcard <span id="ebcc-out-ticket-class-london-zone-title_{{idOutwardExtra}}">{{formatZoneString(outwardExtra?.ServiceName)}}</span>
+                                                    </h4>
+                                                    <button id="ebcc-out-ticket-class-london-more-btn_{{idOutwardExtra}}" class="plusbus-more-info-btn" type="button" mat-button [attr.aria-label]="getExtraAriaLabel(item, true, outwardExtra)" (click)="openLondonTravelcardInfo()">More information about London Travelcard</button>
+                                                </div>
+                                            </ng-container>
+                                        </div>
+                                        <!-- End outward ticket class details -->
+                                    </div>
+                                </div>
+                                <!----- End Outward Journey Details ----->
+                
+                                <!----- Return Journey Details ----->
+                                <div id="ebcc-ret-section" class="review-inner-container">
+                                    <div id="ebcc-ret-inner" *ngIf="item?.ReturnDetail || item?.OutwardDetail?.OpenReturnExpiryDate">
+                                        <h2 id="ebcc-ret-main-title" class="reivew-title" *ngIf="!item?.OutwardDetail?.OpenReturnExpiryDate">
+                                            Return
+                                            <span id="ebcc-ret-main-date">{{item?.ReturnDetail?.DepartureTime | date:'EEE, dd MMM yyyy' : 'UTC'}}</span>
+                                        </h2>
+                                        <h2 id="ebcc-open-ret-main-title" class="reivew-title" *ngIf="item?.OutwardDetail?.OpenReturnExpiryDate">
+                                            Open return
+                                            <span id="ebcc-open-ret-main-date">Valid until {{item?.OutwardDetail?.OpenReturnExpiryDate | date:'EEE, dd MMM yyyy'}}</span>
+                                        </h2>
+                                        <div id="ebcc-ret-inner-border" class="review-inner-border ebc-inner-border">
+                                            <div id="ebcc-ret-header" class="review-column-header" aria-labelledby="booking-confirmation-ret-journey">
+                                                <span id="booking-confirmation-ret-journey" class="sr-only">
+                                                    {{ getAriaLabelForOutAndRetStations(false, item) }}
+                                                </span>
+                                                <div id="ebcc-ret-header-title" class="review-column-header-station" aria-hidden="true">
+                                                    <span id="ebcc-ret-header-arrive-station">{{commonService.getCityNameOnly(item?.Arrival)}}</span>
+                                                    <img id="ebcc-ret-header-station-icon" src="assets/images/new-design-img/review-station-arrow.svg" alt="" aria-hidden="true" />
+                                                    <span id="ebcc-ret-header-depart-station">{{commonService.getCityNameOnly(item?.Departure)}}</span>
+                                                </div>
+                                                <div id="ebcc-ret-header-duration-time" class="review-column-header-time-duration" aria-hidden="true">
+                                                    <span id="ebcc-ret-header-time" class="review-column-header-time" *ngIf="!item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                        <span id="ebcc-ret-header-arrive-time">{{item?.ReturnDetail?.DepartureTimeStart}}</span>
+                                                        <img id="ebcc-ret-header-time-icon" src="assets/images/new-design-img/review-station-arrow.svg" alt="" aria-hidden="true" />
+                                                        <span id="ebcc-ret-header-depart-time">{{item?.ReturnDetail?.ArrivalTimeStart}}</span>
+                                                    </span>
+                                                    <span id="ebcc-ret-header-duration" *ngIf="!item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                        <span id="ebcc-ret-header-duration-total" class="review-column-header-duration">{{item?.ReturnDetail?.Duration}}</span><span id="ebcc-ret-header-duration-changes" class="review-column-header-duration">, <span id="ebcc-ret-header-total-changes" *ngIf="item?.ReturnDetail?.Changes > 0">{{ item?.ReturnDetail?.Changes }}</span> {{ item?.ReturnDetail?.Changes == 0 ? ' Direct' : item?.ReturnDetail?.Changes == 1 ? ' change' : ' changes' }}</span>
+                                                    </span>
+                                                    <span class="review-column-header-time" *ngIf="item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                        <span id="eterdc-open-ret-expiry-txt">Open return</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div id="eterdc-open-ret-body" class="review-column-body" *ngIf="item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                <div id="eterdc-open-ret-inner" class="review-column-operator-details">
+                                                    <div id="eterdc-open-ret-grey" class="review-column-seat-details neutrals-bright-grey">
+                                                        <div id="eterdc-open-ret-seat-area" class="review-column-seat-reserve">
+                                                            <div id="eterdc-open-ret-seat-left" class="review-column-seat-left">
+                                                                <img id="eterdc-open-ret-seat-img" src="assets/images/new-design-img/review-no-seat-reserved.svg" alt="" aria-hidden="true" />
+                                                                <div id="eterdc-open-ret-seat-content" class="review-column-seat-txt">
+                                                                    <p id="eterdc-open-ret-no-seat-reservation" class="review-column-seat-reserve-title">No seat reservation
+                                                                    </p>
+                                                                    <p id="eterdc-open-ret-take-any-avail-seat" class="review-column-seat-coach review-column-any-seat">
+                                                                        Take any available seat
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="eterdc-open-ret-tt-area" class="review-column-seat-msg">
+                                                            <p id="eterdc-open-ret-tt-txt" *ngIf="item?.OutwardDetail.TicketType?.includes('Off-Peak') || item?.OutwardDetail.TicketType?.includes('Anytime')">
+                                                                {{enhancedReservationMessageEnum?.noSeatReservationForAllTOCFlexibleTicket}}
+                                                            </p>
+                                                            <p id="eterdc-open-ret-tt-txt1" *ngIf="!item?.OutwardDetail.TicketType?.includes('Off-Peak') && !item?.OutwardDetail.TicketType?.includes('Anytime')">
+                                                                {{enhancedReservationMessageEnum?.noSeatReservedForAllTOCNonFlexibleTicket}}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="eterdc-ret-yt-area" class="review-column-ticket-class ebc-out-ticket-class" *ngIf="item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                <div id="eterdc-ret-yt-header" class="review-column-ticket-class-header">
+                                                    <span id="eterdc-ret-yt-title" class="review-column-your-ticket">Your ticket</span>
+                                                    <button id="eterdc-ret-yt-addon-area" type="button" mat-button (click)="openPriceBreakdown(item, validatePaymentResponse?.Journey)" class="review-column-ticket-class-pax" [attr.aria-label]="getPriceBreakdownAriaLabel(item, true)">{{item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}}<span id="eterdc-ret-yt-no-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.OutwardDetail?.RailCardPrice) === 0 && checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) === 0">, {{noRailcardTextChange(enhancedRailCardTypeEnum?.noRailcardText)}}</span><span id="eterdc-ret-yt-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.OutwardDetail?.RailCardPrice) > 0 && checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) === 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}</span><span id="eterdc-ret-yt-groupsave" *ngIf="checkForGroupSaveRailcard(item?.OutwardDetail?.RailCardPrice) > 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}, {{appRouteEnum?.newGroupSave}}</span></button>
+                                                </div>
+                                                <div id="eterdc-ret-yt-body" class="review-column-ticket-class-body" *ngIf="item?.OutwardDetail != null">
+                                                    <div id="eterdc-ret-yt-name-type" class="review-column-ticket-class-name-type">
+                                                        <h3 id="eterdc-ret-yt-txt">{{item?.OutwardDetail?.TicketType?.includes('1st') ? item.OutwardDetail.TicketType.replace('1st', '') : item.OutwardDetail.TicketType}}</h3>
+                                                        <p id="eterdc-ret-yt-class-txt" [ngClass]="{'review-std-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.standardClass, 'review-std-premimum-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.stdPremiumClass, 'review-first-class-tag-bg': item?.OutwardDetail?.TicketClass === classTypeEnum?.firstClass}">
+                                                            {{item?.OutwardDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.OutwardDetail?.TicketClass : item?.OutwardDetail?.TicketClass + ' Class'}}
+                                                        </p>
+                                                    </div>
+                                                    <ul id="eterdc-ret-yt-list" [attr.aria-label]="getTicketClassListAriaLabel(item, false)">
+                                                        <li id="eterdc-ret-yt-li_{{openRetTicketFareDesc}}" *ngFor="let outwardFareDescription of item?.OutwardDetail?.FareDescription; let openRetTicketFareDesc = index">
+                                                        {{outwardFareDescription}} 
+                                                        </li>
+                                                    </ul>
+                                                    <div id="eterdc-ret-yt-tc-area" class="review-column-ticket-class-details-link">
+                                                        <button id="eterdc-ret-yt-tc-btn" type="button" (click)="openTicketDetailInfo(item?.OutwardDetail)" mat-button [attr.aria-label]="getTicketDetailAriaLabel(item, true)">
+                                                            Ticket details
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="ebcc-ret-body" class="review-column-body" *ngIf="!item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                <div id="ebcc-ret-body-inner_{{returnSeatIndex}}" class="review-column-operator-details" *ngFor="let returnSeatData of item?.ReturnSeat; let returnSeatIndex = index">
+                                                    <div id="ebcc-ret-operator-section_{{returnSeatIndex}}" class="review-column-operator-name" *ngIf="!returnSeatData?.SaleCompanyName?.includes('London Underground') && !returnSeatData?.SaleCompanyName?.includes('Walk')">
+                                                        <span id="ebcc-ret-operator-name_{{returnSeatIndex}}" *ngIf="!returnSeatData?.SaleCompanyName?.includes('Avanti West Coast')">{{returnSeatData?.SaleCompanyName}}</span>
+                                                        <img id="ebcc-ret-operator-avanti-logo_{{returnSeatIndex}}" *ngIf="returnSeatData?.SaleCompanyName?.includes('Avanti West Coast')" src="assets/images/new-design-img/header-logo.svg" alt="Avanti West Coast" />
+                                                    </div>
+                                                    <div id="ebcc-ret-route-section_{{returnSeatIndex}}" class="review-column-operator-route">
+                                                        <div id="ebcc-ret-route-arrive-station_{{returnSeatIndex}}" class="review-column-operator-route-staion">
+                                                            <span id="ebcc-ret-route-arrive-station-time_{{returnSeatIndex}}" class="review-column-operator-staion-time">{{returnSeatData?.DepartureTime}}</span>
+                                                            <span id="ebcc-ret-route-arrive-station-name_{{returnSeatIndex}}" class="review-column-operator-staion-name">{{commonService.getCityNameOnly(returnSeatData?.Departure)}}</span>
+                                                        </div>
+                                                        <div id="ebcc-ret-route-walk-section_{{returnSeatIndex}}" class="review-column-walk" *ngIf="returnSeatData?.SaleCompanyName?.includes('Walk')">
+                                                            <img id="ebcc-ret-route-walk-icon_{{returnSeatIndex}}" src="assets/images/new-design-img/route-walk.svg" alt="" aria-hidden="true" />
+                                                            <p id="ebcc-ret-route-walk-title_{{returnSeatIndex}}">{{commonService?.getDuration(returnSeatData?.DepartureTime, returnSeatData?.ArrivalTime, true)}}{{' '+returnSeatData?.SaleCompanyName?.toLowerCase()}}</p>
+                                                        </div>
+                                                        <div id="ebcc-ret-route-london-section_{{returnSeatIndex}}" class="review-column-walk" *ngIf="returnSeatData?.SaleCompanyName?.includes('London Underground')">
+                                                            <img id="ebcc-ret-route-london-icon_{{returnSeatIndex}}" src="assets/images/new-design-img/london-underground.svg" alt="" aria-hidden="true" />
+                                                            <p id="ebcc-ret-route-london-title_{{returnSeatIndex}}">{{returnSeatData?.SaleCompanyName}}</p>
+                                                        </div>
+                                                        <div id="ebcc-ret-route-depart-section_{{returnSeatIndex}}" class="review-column-operator-route-staion">
+                                                            <span id="ebcc-ret-route-depart-station-time_{{returnSeatIndex}}" class="review-column-operator-staion-time">{{returnSeatData?.ArrivalTime}}</span>
+                                                            <span id="ebcc-ret-route-depart-station-name_{{returnSeatIndex}}" class="review-column-operator-staion-name">{{commonService.getCityNameOnly(returnSeatData?.Arrival)}}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div id="ebcc-ret-seat-section_{{returnSeatIndex}}" class="review-column-seat-details"
+                                                    [ngClass]="showSeatPickerBasedOnAvailibilityForOutward(returnSeatData) ? 'neutrals-bright-grey' : 'feel-good-green'"
+                                                    *ngIf="!returnSeatData?.SaleCompanyName?.includes('London Underground') && !returnSeatData?.SaleCompanyName?.includes('Walk')">
+                                                        <div id="ebcc-ret-seat-no-reserve-inner_{{returnSeatIndex}}" class="review-column-seat-reserve">
+                                                            <div id="ebcc-ret-seat-no-reserve-left_{{returnSeatIndex}}" class="review-column-seat-left">
+                                                                <img id="ebcc-ret-seat-reserve-icon_{{returnSeatIndex}}" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(returnSeatData)"  src="assets/images/new-design-img/review-seat-reserved.svg" alt="" aria-hidden="true" />
+                                                                <img id="ebcc-ret-seat-no-reserve-icon_{{returnSeatIndex}}" *ngIf="showSeatPickerBasedOnAvailibilityForOutward(returnSeatData)" src="assets/images/new-design-img/review-no-seat-reserved.svg" alt="" aria-hidden="true" />
+                                                                <div id="ebcc-ret-seat-no-reserve-title-section_{{returnSeatIndex}}" class="review-column-seat-txt">
+                                                                    <p id="ebcc-ret-seat-no-reserve-title_{{returnSeatIndex}}" class="review-column-seat-reserve-title">{{showReservedOrNoReservedMessageForOutward(returnSeatData)}}</p>
+                                                                    <p id="ebcc-ret-seat-no-reserve-coach-title_{{returnSeatIndex}}" class="review-column-seat-coach" [ngClass]="showSeatPickerBasedOnAvailibilityForOutward(returnSeatData) ? 'review-column-any-seat' : ''">
+                                                                        {{showSeatPickerBasedOnAvailibilityForOutward(returnSeatData) ? 'Take any available seat' : 'Coach ' + commonService?.coachTextDisplay(returnSeatData?.Seat)}}
+                                                                        <span id="ebcc-ret-seat-no-reserve-coach-type-title_{{returnSeatIndex}}" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(returnSeatData)">({{item?.ReturnDetail?.TicketClass}})</span>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="ebcc-ret-seat-no-reserve-msg_{{returnSeatIndex}}" class="review-column-seat-msg">
+                                                            <p id="ebcc-ret-seat-no-reserve-msg-title_{{returnSeatIndex}}">
+                                                                {{showReservationMessage(item, returnSeatData, true)}}
+                                                            </p>
+                                                        </div>
+                                                        <div id="ebcc-ret-seat-accordion-section_{{returnSeatIndex}}" class="review-column-seat-accordion" *ngIf="!showSeatPickerBasedOnAvailibilityForOutward(returnSeatData)">
+                                                            <mat-accordion id="ebcc-ret-seat-accordion_{{returnSeatIndex}}" class="review-column-seat-mat-accordion">
+                                                                <mat-expansion-panel id="ebcc-ret-seat-panel_{{returnSeatIndex}}" class="review-column-seat-mat-panel"
+                                                                [expanded]="isRetSeatDetailsOpenMap[getPanelKey(returnSeatData, returnSeatIndex, item?.Journey)]"
+                                                                (opened)="onParentPanelOpened(item); isRetSeatDetailsOpenMap[getPanelKey(returnSeatData, returnSeatIndex, item?.Journey)] = true"
+                                                                (closed)="isRetSeatDetailsOpenMap[getPanelKey(returnSeatData, returnSeatIndex, item?.Journey)] = false">
+                                                                    <mat-expansion-panel-header id="ebcc-ret-seat-header_{{returnSeatIndex}}" class="review-column-seat-mat-header" [attr.aria-label]="getSeatAccordionAriaLabel(returnSeatData, returnSeatIndex, item?.Journey, false)">
+                                                                        <p id="ebcc-ret-seat-numbers_{{returnSeatIndex}}" class="review-column-seat-numbers">
+                                                                            {{commonService?.getFormattedSeatInfo(returnSeatData?.Seat)}}
+                                                                        </p>
+                                                                        <p id="ebcc-ret-seat-show-hide-title_{{returnSeatIndex}}" class="review-column-seat-numbers-hide-show">
+                                                                            <span id="ebcc-ret-seat-show-hide-text_{{returnSeatIndex}}">{{ isRetSeatDetailsOpenMap[getPanelKey(returnSeatData, returnSeatIndex, item?.Journey)] ? showAndHideDetailTextEnum?.hideDetail : showAndHideDetailTextEnum?.showDetail }}</span>
+                                                                        </p>
+                                                                    </mat-expansion-panel-header>
+                                                                    <div id="ebcc-ret-seat-accordion-body_{{returnSeatIndex}}_{{returnIndex}}" class="review-column-seat-mat-accordion-body" *ngFor="let seat of returnSeatData.Seat; let returnIndex=index;">
+                                                                        <p id="ebcc-ret-seat-details-content_{{returnSeatIndex}}_{{returnIndex}}">
+                                                                            <span id="ebcc-ret-seat-details-title_{{returnSeatIndex}}_{{returnIndex}}" class="reivew-seat-numer" *ngIf="seat?.CoachNumber !='' && seat?.CoachNumber !='*'">
+                                                                                {{seat.CoachNumber}}{{seat.ReservationType != 'UNSUPPORTED' ? seat.Seat : ''}}:
+                                                                            </span>
+                                                                            <span id="ebcc-ret-seat-details-type_{{returnSeatIndex}}_{{returnIndex}}" class="reivew-seat-type">
+                                                                                {{commonService?.filterSeatInfo(commonService.getSeatInfoAndCoachType(seat))}}
+                                                                            </span>
+                                                                        </p>
+                                                                    </div>
+                                                                </mat-expansion-panel>
+                                                            </mat-accordion>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                    
+                                            <!-- Return ticket class details -->
+                                            <div id="ebcc-ret-ticket-class-section" class="review-column-ticket-class ebc-out-ticket-class" *ngIf="!item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                <div id="ebcc-ret-ticket-class-header" class="review-column-ticket-class-header">
+                                                    <span id="ebcc-ret-ticket-class-title" class="review-column-your-ticket">Your ticket</span>
+                                                    <button id="ebcc-ret-ticket-class-pax-btn" type="button" mat-button (click)="openPriceBreakdown(item, validatePaymentResponse?.Journey)" class="review-column-ticket-class-pax" [attr.aria-label]="getPriceBreakdownAriaLabel(item, false)">{{item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}}<span id="ebcc-ret-ticket-class-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.ReturnDetail?.RailCardPrice) === 0 && checkForGroupSaveRailcard(item?.ReturnDetail?.RailCardPrice) === 0">, {{noRailcardTextChange(enhancedRailCardTypeEnum?.noRailcardText)}}</span><span id="eterdc-ret-tc-header-railcard" *ngIf="noOfRailcardSelectedInJourney(item?.ReturnDetail?.RailCardPrice) > 0 && checkForGroupSaveRailcard(item?.ReturnDetail?.RailCardPrice) === 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}</span><span id="eterdc-ret-tc-header-groupsave" *ngIf="checkForGroupSaveRailcard(item?.ReturnDetail?.RailCardPrice) > 0">, {{appRouteEnum?.newBookingFlowRailcardAppliedTxt}}, {{appRouteEnum?.newGroupSave}}</span></button>
+                                                </div>
+                                                <div id="ebcc-ret-ticket-class-body" class="review-column-ticket-class-body" *ngIf="item?.ReturnDetail != null">
+                                                    <div id="ebcc-ret-ticket-class-type" class="review-column-ticket-class-name-type">
+                                                        <h3 id="ebcc-ret-ticket-class-type-title">{{item?.ReturnDetail?.TicketType?.includes('1st') ? item.ReturnDetail.TicketType.replace('1st', '') : item.ReturnDetail.TicketType}}</h3>
+                                                        <p id="ebcc-ret-ticket-class-type-title2" [ngClass]="{'review-std-tag-bg': item?.ReturnDetail?.TicketClass === classTypeEnum?.standardClass, 'review-std-premimum-tag-bg': item?.ReturnDetail?.TicketClass === classTypeEnum?.stdPremiumClass, 'review-first-class-tag-bg': item?.ReturnDetail?.TicketClass === classTypeEnum?.firstClass}">
+                                                            {{item?.ReturnDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.ReturnDetail?.TicketClass : item?.ReturnDetail?.TicketClass + ' Class'}}
+                                                        </p>
+                                                    </div>
+                                                    <ul id="ebcc-ret-ticket-class-list" [attr.aria-label]="getTicketClassListAriaLabel(item, true)">
+                                                        <li id="ebcc-ret-ticket-class-item_{{retTicketFareDesc}}" *ngFor="let returnFareDescription of item?.ReturnDetail?.FareDescription; let retTicketFareDesc = index">
+                                                            {{returnFareDescription}} 
+                                                        </li>
+                                                    </ul>
+                                                    <div id="ebcc-ret-ticket-class-details" class="review-column-ticket-class-details-link">
+                                                        <button id="ebcc-ret-ticket-class-details-btn" (click)="openTicketDetailInfo(item?.ReturnDetail)" type="button" mat-button [attr.aria-label]="getTicketDetailAriaLabel(item, false)">
+                                                            Ticket details
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <ng-container *ngFor="let returnExtra of item?.ReturnJourneyExtras; let idReturnExtra = index;">
+                                                    <div id="ebcc-ret-ticket-class-plusbus_{{idReturnExtra}}" class="booking-out-ret-last-card" *ngIf="returnExtra?.JourneyExtraName == 'PLUSBUS'">
+                                                        <h4 id="ebcc-ret-ticket-class-plusbus-title_{{idReturnExtra}}">
+                                                        PlusBus <span id="ebcc-ret-ticket-class-plusbus-for_{{idReturnExtra}}">for {{returnExtra?.Departure}}</span>
+                                                        </h4>
+                                                        <button id="ebcc-ret-ticket-class-plusbus-more-btn_{{idReturnExtra}}" class="plusbus-more-info-btn" type="button" mat-button [attr.aria-label]="getExtraAriaLabel(item, false, returnExtra)" (click)="openPlusBusInfo()">More information about PlusBus</button>
+                                                    </div>
+                                                    <div id="ebcc-ret-ticket-class-london-travelcard_{{idReturnExtra}}" class="booking-out-ret-last-card" *ngIf="returnExtra?.JourneyExtraName == 'London Travelcard'">
+                                                        <h4 id="ebcc-ret-ticket-class-london-title_{{idReturnExtra}}" class="booking-out-ret-london-title">
+                                                        London Travelcard <span id="ebcc-ret-ticket-class-london-zone-title_{{idReturnExtra}}">{{formatZoneString(returnExtra?.ServiceName)}}</span>
+                                                        </h4>
+                                                        <button id="ebcc-ret-ticket-class-london-more-btn_{{idReturnExtra}}" class="plusbus-more-info-btn" type="button" mat-button [attr.aria-label]="getExtraAriaLabel(item, false, returnExtra)" (click)="openLondonTravelcardInfo()">More information about London Travelcard</button>
+                                                    </div>
+                                                </ng-container>
+                                            </div>
+                                            <!-- End return ticket class details -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <!----- End Return Journey Details ----->
+                            </div>
+                        </div>
+
+                        <!----- Had a change of plans or want to switch your seats? ----->
+                        <div id="ebcc-switch-seat-section" class="booking-journey-details change-plans-section">
+                            <div id="ebcc-switch-seat-inner" class="booking-switch-seats">
+                                <div id="ebcc-switch-seat-title-section" class="booking-switch-seats-content">
+                                    <h2 id="ebcc-switch-seat-title">Had a change of plans or want to switch your seats?</h2>
+                                    <p id="ebcc-switch-seat-subcontent">You can amend your tickets through the 'My Booking' page on our website or via the Avanti West Coast app.</p>
+                                </div>
+                                <div id="ebcc-switch-seat-btn-section" class="booking-switch-seats-btn">
+                                    <button id="ebcc-switch-seat-manage-booking-btn" type="button" mat-button class="outline-btn outline-primary-btn-hover bc-min-h-48" (click)="onClickManageBooking(item)" [attr.aria-label]="getManageBookingAriaLabel(item)">Manage booking</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Had a change of plans or want to switch your seats? ----->
+
+                        <!----- Passenger Assist ----->
+                        <div id="ebcc-passenger-assist-section" class="booking-journey-details change-plans-section" *ngIf="item.SeasonDeatil == null">
+                            <div id="ebcc-passenger-assist-inner" class="booking-switch-seats">
+                                <div id="ebcc-passenger-assist-content" class="booking-switch-seats-content">
+                                    <h2 id="ebcc-passenger-assist-title">
+                                        <img id="ebcc-passenger-assist-icon" src="assets/images/new-design-img/booking-passenger-assist.svg" alt="" aria-hidden="true" />
+                                        Passenger Assist
+                                    </h2>
+                                    <p id="ebcc-passenger-assist-subcontent">
+                                        <span id="ebcc-passenger-assist-text">Let us know your travel requirements in advance and we’ll make sure you have a hassle-free journey.</span>
+                                        <span id="ebcc-passenger-assist-text2">Passenger Assist can be booked up to two hours before your journey.</span>
+                                    </p>
+                                </div>
+                                <div id="ebcc-passenger-assist-btn-section" class="booking-switch-seats-btn">
+                                    <button id="ebcc-passenger-assist-book-btn" type="button" mat-button class="outline-btn outline-primary-btn-hover bc-min-h-48" (click)="bookPassengerAssistDetails(item)" aria-label="book passenger assist external site will open a new tab">Book Passenger Assist</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!----- End Passenger Assist ----->
+                    </div>
+                    <!----- End Outward and return journey details ----->
+
+                    <!----- Payment summary ----->
+                    <div id="ebcc-payment-summary" class="ebc-journey-details-card"
+                    *ngIf="validatePaymentResponse != null && (validatePaymentResponse.PaymentRecords.length > 0 || validatePaymentResponse.PaymentDetailsWithModeList.length > 0)">
+                        <div id="ebcc-payment-summary-inner" class="payment-summary-accordion">
+                            <mat-accordion id="ebcc-payment-summary-accordion">
+                                <mat-expansion-panel id="ebcc-payment-summary-accordion-panel" expanded="true" class="payment-summary-mat-panel" [attr.aria-expanded]="panelOpenState" (opened)="onPaymentSummaryToggle(true)" (closed)="onPaymentSummaryToggle(false)">
+                                    <mat-expansion-panel-header id="ebcc-payment-summary-accordion-header">
+                                        <mat-panel-title id="ebcc-payment-summary-accordion-title">
+                                            <h2 id="ebcc-payment-summary-title">Payment summary</h2>
+                                        </mat-panel-title>
+                                    </mat-expansion-panel-header>
+                                    <div id="ebcc-payment-summary-accordion-body" class="booking-payment-summary-content">
+                                        <div id="ebcc-payment-summary-user-details_{{paymentRecord}}" class="payment-accordion-body" *ngFor="let paymentdetail of paymentRecords; let paymentRecord = index;">
+                                            <div id="ebcc-payment-summary-user-details-inner_{{paymentRecord}}" class="payment-user-details">
+                                                <dl id="ebcc-payment-summary-user-name-details_{{paymentRecord}}">
+                                                    <dt id="ebcc-payment-summary-name-on-card_{{paymentRecord}}">Name on card</dt>
+                                                    <dd id="ebcc-payment-summary-user-name_{{paymentRecord}}">{{ paymentdetail.FirstName + ' ' + paymentdetail.LastName }}</dd>
+                                                </dl>
+                                                <dl id="ebcc-payment-summary-user-card-details_{{paymentRecord}}">
+                                                    <dt id="ebcc-payment-summary-user-card-title_{{paymentRecord}}">Card number</dt>
+                                                    <dd id="ebcc-payment-summary-user-card-number_{{paymentRecord}}">{{paymentdetail.CardNumber}}</dd>
+                                                </dl>
+                                                <dl id="ebcc-payment-summary-user-address-details_{{paymentRecord}}">
+                                                    <dt id="ebcc-payment-summary-user-address-title_{{paymentRecord}}">Address</dt>
+                                                    <dd id="ebcc-payment-summary-user-address_{{paymentRecord}}">{{ validatePaymentResponse?.Addresses?.Address?.Address1 + ', '}}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.Address2 }}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.Address3 }}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.PostCode + ', '}}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.City }}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.Country }}
+                                                        {{ validatePaymentResponse?.Addresses?.Address?.CountryCode ? '(' + validatePaymentResponse?.Addresses?.Address?.CountryCode
+                                                        + ')' : ''}}
+                                                    </dd>
+                                                </dl>
+                                            </div>
+                                        </div>
+                                        <div id="ebcc-payment-joureny-details-body" class="payment-journey-details-body" *ngIf="!isSeason && item?.PaymentSummaryList && item?.PaymentSummaryList.length > 0">
+                                            <div id="ebcc-payment-journey-details-inner" class="payment-journey-details-table">
+                                                <div id="ebcc-payment-journey-details-out-ret" class="payment-journey-details-table-row">
+                                                    <dl id="ebcc-payment-journey-details-out" *ngIf="item?.OutwardDetail && !item?.IsPureReturnJourney && !item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                        <dt id="ebcc-payment-journey-details-out-title">Outward</dt>
+                                                        <dd id="ebcc-payment-journey-details-out-pax">{{item?.OutwardDetail?.TicketType?.includes('1st') ? item.OutwardDetail.TicketType.replace('1st', '') : item.OutwardDetail.TicketType}} ({{item?.OutwardDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.OutwardDetail?.TicketClass : item?.OutwardDetail?.TicketClass + ' Class'}}){{', ' + item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}} <span id="ebcc-payment-journey-details-out-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(calculateTotalFare(item?.OutwardDetail?.RailCardPrice, item?.PaymentSummaryList, true))}}</span></dd>
+                                                    </dl>
+                                                    <dl id="ebcc-payment-journey-details-ret" *ngIf="item?.ReturnDetail && !item?.IsPureReturnJourney && !item?.OutwardDetail?.OpenReturnExpiryDate">
+                                                        <dt id="ebcc-payment-journey-details-ret-title">Return</dt>
+                                                        <dd id="ebcc-payment-journey-details-ret-pax">{{item?.ReturnDetail?.TicketType?.includes('1st') ? item.ReturnDetail.TicketType.replace('1st', '') : item.ReturnDetail.TicketType}} ({{item?.ReturnDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.ReturnDetail?.TicketClass : item?.ReturnDetail?.TicketClass + ' Class'}}){{', ' + item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}}<span id="ebcc-payment-journey-details-ret-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(calculateTotalFare(item?.ReturnDetail?.RailCardPrice, item?.PaymentSummaryList, false))}}</span></dd>
+                                                    </dl>
+                                                    <dl id="ebcc-payment-journey-details-pure" *ngIf="item?.OutwardDetail?.OpenReturnExpiryDate || item?.IsPureReturnJourney">
+                                                        <dt id="ebcc-payment-journey-details-pure-title">Tickets</dt>
+                                                        <dd id="ebcc-payment-journey-details-pure-pax">{{item?.OutwardDetail?.TicketType?.includes('1st') ? item.OutwardDetail.TicketType.replace('1st', '') : item.OutwardDetail.TicketType}} ({{item?.OutwardDetail?.TicketClass == classTypeEnum?.stdPremiumClass ? item?.OutwardDetail?.TicketClass : item?.OutwardDetail?.TicketClass + ' Class'}}){{', ' + item?.Adult}} Adult{{item?.Adult > 1 ? 's' : ''}}{{item?.Child > 0 ? ', ' + item?.Child : ''}}{{item?.Child == 0 ? '' : (item?.Child > 1 ? ' Children' : ' Child')}}<span id="ebcc-payment-journey-details-pure-ret-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(calculateTotalFare(item?.OutwardDetail?.RailCardPrice, item?.PaymentSummaryList, true))}}</span></dd>
+                                                    </dl>
+                                                </div>
+                                                <div id="ebcc-payment-journey-details-discount" class="payment-journey-details-table-row" *ngIf = "showPaymentSummaryIfAvailable(discountPaymentSummaryListArrayObject, item)">
+                                                    <dl id="ebcc-payment-journey-details-discount-dl">
+                                                        <dt id="ebcc-payment-journey-details-discount-title">Discount</dt>
+                                                        <dd id="ebcc-payment-journey-details-radilcard-discount-title_{{idDiscountIndex}}" *ngFor = "let discount of discountPaymentSummaryListArrayObject; let idDiscountIndex = index;">
+                                                            <span id="ebcc-payment-journey-details-radilcard-discount-name_{{idDiscountIndex}}" *ngIf="discount?.Journey == item?.Journey">{{setDiscountPaymentSummaryDetail(discount, item)}}</span>
+                                                            <span id="ebcc-payment-journey-details-railcard-discount-priceidDiscountIndex" *ngIf="discount?.Journey == item?.Journey">-{{sharedService.currencySymbol('')}}{{showDiscountPriceInPaymentSummaryDetail(discount, item)}}</span>
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                                <div id="ebcc-payment-journey-details-extras" class="payment-journey-details-table-row" *ngIf="showPaymentSummaryIfAvailable(travelExtrasPaymentSummaryListArrayObject, item)">
+                                                    <dl id="ebcc-payment-journey-details-extras-dl">
+                                                        <dt id="ebcc-payment-journey-details-extras-title">Extras</dt>
+                                                        <dd id="ebcc-payment-journey-details-radilcard-extras-title_{{idTravelExtrasIndex}}" *ngFor="let travelExtras of travelExtrasPaymentSummaryListArrayObject; let idTravelExtrasIndex = index;">
+                                                            <span id="ebcc-payment-journey-details-radilcard-extras-name_{{idTravelExtrasIndex}}" *ngIf="travelExtras?.Journey == item?.Journey">{{setTravelExtrasPaymentSummaryName(travelExtras, travelExtras, item)}}</span>
+                                                            <span id="ebcc-payment-journey-details-railcard-extras-price_{{idTravelExtrasIndex}}" *ngIf="travelExtras?.Journey == item?.Journey && travelExtras?.Name?.toLowerCase() !== appConstantService?.bicycleReservation?.toLowerCase()">
+                                                                {{sharedService.currencySymbol('')}}{{showDiscountPriceInPaymentSummaryDetail(travelExtras, item)}}
+                                                            </span>
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                                <div id="ebcc-payment-journey-details-delivery" class="payment-journey-details-table-row" *ngIf="deliveryPaymentSummaryListArrayObject?.length > 0">
+                                                    <dl id="ebcc-payment-journey-details-delivery-dl">
+                                                        <dt id="ebcc-payment-journey-details-delivery-title">Delivery</dt>
+                                                        <ng-container *ngFor="let delivery of deliveryPaymentSummaryListArrayObject; let idDeliveryIndex = index;">
+                                                            <dd id="ebcc-payment-journey-details-delivery-type_{{idDeliveryIndex}}" *ngIf="delivery?.Journey == item?.Journey && delivery?.Name != 'Train Ticket'">
+                                                                <span id="ebcc-payment-journey-details-delivery-name_{{idDeliveryIndex}}" *ngIf="delivery?.Journey == item?.Journey && delivery?.Name != 'Train Ticket'"> {{setDeliveryModeNameOrTrainTicket(delivery, item)}}</span> 
+                                                                <span id="ebcc-payment-journey-details-delivery-priceidDeliveryIndex" *ngIf="delivery?.Journey == item?.Journey && delivery?.Name != 'Train Ticket'">
+                                                                    {{sharedService.currencySymbol('')}}{{bindDeliveryPriceInPaymentSummaryDetail(delivery, item)}}
+                                                                </span>
+                                                            </dd>
+                                                        </ng-container>
+                                                    </dl>
+                                                </div>
+                                                <div id="ebcc-payment-journey-amount" class="payment-journey-details-table-row booking-payment-total-amount">
+                                                    <h3 id="ebcc-payment-journey-amount-total-title">Total <p id="ebcc-payment-journey-amount-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(checkPaymentSummaryListForTotalPrice(item))}}</p></h3>
+                                                    <dl id="ebcc-payment-journey-amount-dl">
+                                                        <dd id="ebcc-payment-journey-amount-deducted-evoucher-title" *ngIf="item?.PaymentSummaryDetails?.PaidByEVoucher > 0" class="payment-journey-deducted-price">Deducted from {{item?.PaymentSummaryDetails?.IsPaidByMultipleEVoucher ? 'eVouchers ' : 'eVoucher '}}({{ item.PaymentSummaryDetails.EVoucherCodes }})<span id="ebcc-payment-journey-amount-deducted-evoucher-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(item?.PaymentSummaryDetails?.PaidByEVoucher)}}</span></dd>
+                                                        <dd id="ebcc-payment-journey-amount-deducted-gpay-title" *ngIf="checkIsApplePayGPayOrPayPalMode(item?.PaymentSummaryDetails)" class="payment-journey-deducted-price">Deducted from {{displayTextInCaseOfApplePayGPayOrPaypal(item?.PaymentSummaryDetails)}} <span id="ebcc-payment-journey-amount-deducted-card-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(amountOfApplePayGPayOrPaypal(item?.PaymentSummaryDetails))}}</span></dd>
+                                                        <dd id="ebcc-payment-journey-amount-deducted-card-title" *ngIf="item?.PaymentSummaryDetails?.PaidByCard > 0" class="payment-journey-deducted-price">Deducted from {{extractCardName()}} <span id="ebcc-payment-journey-amount-deducted-gpay-price">{{sharedService.currencySymbol('')}}{{sharedService.formatPrice(item?.PaymentSummaryDetails?.PaidByCard)}}</span></dd>
+                                                    </dl>
+                                                </div>
+                                                <div id="ebcc-biil-section" class="payment-journey-details-bill" *ngIf="(item?.Adult + item?.Child) > 1">
+                                                    <h3 id="ebcc-biil-title">Need to divide the bill?</h3>
+                                                    <button id="ebcc-biil-see-price-per-person-btn" type="button" mat-button class="review-column-ticket-class-pax see-price-pp-btn" (click)="openPriceBreakdown(item, validatePaymentResponse?.Journey)" aria-label="See price per person to divide the bill">See price per person</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+                        </div>
+                    </div>
+                    <!----- End Payment summary ----->
+                </div>
+            </div>
+        </ng-template>
+    </div>
+    <!----- Journey details tab group ----->
+</main>

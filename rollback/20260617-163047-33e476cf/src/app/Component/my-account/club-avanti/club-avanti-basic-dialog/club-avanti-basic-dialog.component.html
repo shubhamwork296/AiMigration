@@ -1,0 +1,102 @@
+<app-basic-dialog [dialogTitle]="headerTitle" [dialogFooter]="dialogFooter" [clubAvantiTrainTicketIcon]="clubAvantiTrainTicketIcon">
+    <div id="cabd-popup-inner" class="common-popup-theme-in">
+        <div id="cabd-popup-border" class="common-popup-theme-border">
+            <div id="cabd-popup-middle" class="common-popup-theme-middle common-popup-theme-fare-middle common-popup-theme-why-middle">
+                <div id="cabd-top-content" class="forgot-password-sucess">
+                    <!-- This content will show for barcode image popup -->
+                    <div id="cabd-barcode-content" *ngIf="hasTenPercentDiscountOrHotCoffeeTypeReward()">
+                        <div id="cabd-barcode-container" class="barcode-img-container">
+                            <h2 id="cabd-barcode-desc" class="font-dark font-700 m-0 lh-22">Description</h2>
+                            <p id="cabd-barcode-coach" class="mb-0 lh-20" *ngIf="codeType?.includes(rewardCodeTypeEnum.freeCoffee)">
+                                Get a free hot drink from the onboard shop.
+                            </p>
+                            <p id="cabd-barcode-lounges" class="mb-0 lh-20" *ngIf="codeType?.includes(rewardCodeTypeEnum?.compFirstClassLounge)">
+                                Get a one time free access to the First Class Lounge at London Euston.
+                            </p>
+                            <p id="cabd-barcode-reward" class="mb-0 lh-20" *ngIf="codeType?.includes(rewardCodeTypeEnum?.tenPercentDiscount)">
+                                Get {{clubAvantiEnum.tenPercentLoyaltyRewardText}} from the onboard shop.
+                            </p>
+                        </div>
+                        <div id="cabd-barcode-instruction" class="barcode-img-container mt-16">
+                            <h2 id="cabd-barcode-instruction-title" class="font-dark font-700 m-0 lh-22">Instructions</h2>
+                            <p id="cabd-barcode-instruction-details" class="mb-0 lh-20" *ngIf="!codeType?.includes(rewardCodeTypeEnum?.compFirstClassLounge)">
+                                Show the server the barcode below. They will scan it to activate the discount.
+                            </p>
+                            <p id="cabd-first-class-loungepass-instruction-details" class="mb-0 lh-20" *ngIf="codeType?.includes(rewardCodeTypeEnum?.compFirstClassLounge)">
+                                For your First Class Lounge Pass, please refer to your Platinum tier upgrade email for the download link.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- End here this content will show for barcode image popup -->
+
+                    <!-- This content will show for copy barcode popup popup -->
+                    <div id="cabd-copy-barcode-area" *ngIf="!codeType?.includes(rewardCodeTypeEnum.tenPercentDiscount) && !codeType?.includes(rewardCodeTypeEnum.freeCoffee) && !codeType?.includes(rewardCodeTypeEnum?.compFirstClassLounge)">
+                        <div id="cabd-copy-barcode-container" class="barcode-img-container">
+                            <h2 id="cabd-copy-barcode-desc" class="font-dark font-700 m-0 lh-22">Description</h2>
+                            <p id="cabd-copy-barcode-type" class="mb-0 lh-20">
+                                Get {{showRewardDescription(codeType)}}* on an Avanti service when booking directly with us either online or via the Avanti West Coast app.
+                            </p>
+                            <p id="cabd-copy-barcode-advance-ticket" class="mb-0 lh-20 mt-14" *ngIf="codeType?.includes(rewardCodeTypeEnum?.eCom)">
+                                *Must be an Advance ticket.
+                            </p>
+                            <p id="cabd-copy-barcode-txt" class="mb-0 lh-20 mt-14" *ngIf="!codeType?.includes(rewardCodeTypeEnum?.eCom)">
+                                *Must be an Advance ticket and booked at least seven days before of travel.
+                            </p>
+                        </div>
+                        <div id="cabd-copy-barcode-container-2" class="barcode-img-container mt-16">
+                            <h2 id="cabd-copy-barcode-instr-2" class="font-dark font-700 m-0 lh-22">Instructions</h2>
+                            <p id="cabd-copy-barcode-instr-details" class="mb-0 lh-20">
+                                Copy the code below and paste it into the Discount code field.
+                            </p>
+                        </div>
+                        <div id="cabd-copy-barcode-container-3" class="barcode-img-container mt-16">
+                            <h3 id="cabd-copy-barcode-faq" class="font-dark font-700 m-0 lh-20">Where can I find the Discount code field?</h3>
+                            <ul id="cabd-copy-barcode-ul">
+                                <li id="cabd-copy-barcode-li">
+                                    <span id="cabd-copy-barcode-online" class="font-700">Online</span> - On the review step, at the bottom of the page.
+                                </li>
+                                <li id="cabd-copy-barcode-li-2">
+                                    <span id="cabd-copy-barcode-app" class="font-700">App</span> - On the ‘Tickets’ tab, tap on ‘See more’ above the ‘Find tickets’ button.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- End here this content will show for copy barcode popup popup -->
+                </div>
+                <div id="cabd-barcode-area" class="barcode-area" [ngClass]="barCode ? 'mt-16' : ''" *ngIf="!codeType?.includes(rewardCodeTypeEnum?.compFirstClassLounge)">
+                    <!-- This div will show for barcode image popup -->
+                    <div id="cabd-barcode-img-area" class="barcode-img-area" *ngIf="hasTenPercentDiscountOrHotCoffeeTypeReward()">
+                        <ngx-barcode6 [bc-format]="'CODE128'" [bc-value]="barCode" [bc-display-value]="true" [bc-width]="barCodeWidth" 
+                        [bc-height]="barCodeHeight" [bc-font-size]="barCodeFontSize" [bc-font]="barCodeFont" [bc-margin]="barCodeMargin" 
+                        [bc-margin-top]="barCodeMarginTop" [bc-margin-bottom]="barCodeMarginBottom" [bc-margin-left]="barCodeMarginLeft" 
+                        [bc-margin-right]="barCodeMarginRight"></ngx-barcode6>
+                    </div>
+                    <button id="cabd-barcode-addToWallet-btn" class="new-default-outline-btn d-none" mat-button aria-label="Add to wallet">Add to wallet</button>
+                    <!-- End here this div will show for barcode image popup -->
+
+                    <!-- This div will show for copy barcode popup popup -->
+                    <div id="cabd-barcode-txt-area" class="barcode-text-area" *ngIf="!codeType?.includes(rewardCodeTypeEnum.tenPercentDiscount) && !codeType?.includes(rewardCodeTypeEnum.freeCoffee)">
+                        <h1 id="cabd-barcode-txt" class="m-0">
+                            {{barCode}}
+                        </h1>
+                        <button id="cabd-barcode-copyCode-btn" class="new-default-outline-btn" mat-button aria-label="Copy code" (click)="copyBarCodeText()">Copy code</button>
+                    </div>
+                    <!-- End here this div will show for copy barcode popup popup -->
+                </div>
+
+                <!-- This div will show for both -->
+                <div id="cabd-barcode-terms-area" class="barcode-img-container mt-16">
+                    <h2 id="cabd-barcode-terms-title" class="font-dark font-700 m-0 lh-22">Terms & conditions</h2>
+                    <button id="cabd-barcode-terms-link" type="button" (click)="onClickOnTermsAndCondition()" mat-button>View full terms & conditions.</button>
+                </div>
+                <!-- End here This div will show for both -->
+
+            </div>
+        </div>
+    </div>
+</app-basic-dialog>
+<ng-template #dialogFooter>
+    <div id="cabd-popup-footer" class="common-popup-theme-footer">
+        <button id="cabd-close-btn" class="new-default-btn w-xs-100" mat-dialog-close mat-button>Close</button>
+    </div>
+</ng-template>

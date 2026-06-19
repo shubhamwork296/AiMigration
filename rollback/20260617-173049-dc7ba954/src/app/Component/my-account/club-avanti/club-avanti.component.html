@@ -1,0 +1,460 @@
+<app-header></app-header>
+<app-account-header [newHeaderFlag]="myProfileHideHeaderFlag" [headerFlag]="hideHeaderFlag" class="account-profile"></app-account-header>
+<div id="ca-container" class="club-avanti-main-container" *ngIf="clubAvantiMemberShipDetailResponse || isThisInternalServerError">
+    <div id="ca-inner-container" class="container plr-xs-5 club-avanti-container">
+        <div id="ca-row" class="row mlr-xs-5">
+            <div id="ca-col" class="col-12 p-0">
+                <div id="ca-register-card" class="new-club-avanti-initial" *ngIf="showClubAvantiRegistrationOrInProcessBanner()">
+                    <div id="ca-register-inner" class="new-club-avanti-initial-left" *ngIf="!clubAvantiMemberShipDetailResponse?.IsRegisteredToLoyality && !clubAvantiMemberShipDetailResponse?.IsRegistrationInProgress">
+                        <img id="ca-register-logo" src="assets/images/club-avanti/logo-2.svg" alt="Logo" class="logo" />
+                        <div id="ca-register-title" class="new-club-avanti-initial-title">
+                            <h1 id="ca-register-join-title">Join the club that</h1>
+                            <h2 id="ca-register-place-title">takes you places</h2>
+                        </div>
+                        <div id="ca-register-point-area" class="new-club-avanti-initial-list">
+                            <h3 id="ca-register-point-title" class="new-club-avanti-initial-subtitle">
+                                The rewards start straight away
+                            </h3>
+                            <ul id="ca-register-point-list">
+                                <li id="ca-register-point-li">
+                                    Free hot drink onboard & 10% off your next journey* when you join.
+                                </li>
+                                <li id="ca-register-point-li-2">
+                                    Access to always on benefits like 10% food & drink onboard.
+                                </li>
+                                <li id="ca-register-point-li-3">
+                                    Progress through the tiers to receive additional rewards like a free First Class Return*.
+                                </li>
+                            </ul>
+                        </div>
+                        <div id="ca-register-confirm-area" class="new-club-avanti-confirm">
+                            <mat-checkbox id="ca-register-confirm-mat-checkbox" class="new-club-avanti-checkbox" aria-label="Club Avanti Terms and Conditions" [(ngModel)]="joinClubAvantiCheckbox">
+                                <span id="ca-register-confirm-age" class="new-club-avanti-checkbox-txt">
+                                    I confirm I am 16+ and accept the
+                                </span>
+                                <button id="ca-register-confirm-terms" type="button" class="new-club-avanti-terms-btn" (click)="onClickOnTermsAndCondition()" mat-button>
+                                    Club Avanti Terms and Conditions.
+                                </button>
+                            </mat-checkbox>
+                        </div>
+                        <button id="ca-register-confirm-join-btn" class="common-dark-bg-btn fit-content w-xs-100" (click) = "openLoyaltySignupPopup()"
+                        [ngClass]="!joinClubAvantiCheckbox || isLoaderOnJoinClubAvantiBtn ? 'common-dark-bg-loader-btn' : ''" mat-button
+                        [disabled] = "!joinClubAvantiCheckbox">
+                            Join Club Avanti for free
+                            <span id="ca-register-confirm-btn-loader" [ngClass]="isLoaderOnJoinClubAvantiBtn ? 'new-club-avanti-loader' : 'd-none'"></span>
+                        </button>
+                    </div>
+
+                    <div id="ca-complete-register-area" class="new-club-avanti-initial-left bg-white" *ngIf="clubAvantiMemberShipDetailResponse?.IsRegistrationInProgress">
+                        <div id="ca-complete-register-thanks" class="new-club-avanti-initial-thanks">
+                            <img id="ca-complete-register-thanks-icon" src="assets/images/club-avanti/check_circle.svg" alt="Check icon" class="new-club-avanti-initial-check" />
+                            <h1 id="ca-complete-register-thanks-content" class="m-0">Thank you for joining Club Avanti, {{customerFirstName}}!</h1>
+                        </div>
+                        <div id="ca-complete-register-step" class="new-club-avanti-initial-happens">
+                            <h2 id="ca-complete-register-step-title" class="m-0">What happens next?</h2>
+                            <p id="ca-complete-register-step-content" class="m-0">
+                                You’ll receive an email confirmation once your membership has been processed.
+                            </p>
+                        </div>
+                        <div id="ca-complete-register-email-container" class="new-club-avanti-initial-happens">
+                            <h2 id="ca-complete-register-email-title" class="m-0">Still waiting for email confirmation?</h2>
+                            <p id="ca-complete-register-email-area" class="m-0">
+                                Email us directly at <a id="ca-complete-register-email-link" href="mailto:clubavanti@avantiwestcoast.co.uk" rel="noopener" class="orange-underline-link">clubavanti&#64;avantiwestcoast.co.uk</a> and we’ll find out why.
+                            </p>
+                            <p id="ca-complete-register-email-content" class="m-0">
+                                Our opening hours are 9am-5pm Monday-Friday. We’ll do our best to get back to you within 24 hours.
+                            </p>
+                        </div>
+                    </div>
+                    <div id="ca-complete-register-thank-icons" class="new-club-avanti-initial-right">
+                        <img id="ca-complete-register-thank-icon" src="assets/images/club-avanti/club-avanti-1.png" alt="Club Avanti thank you" *ngIf="clubAvantiMemberShipDetailResponse?.IsRegistrationInProgress" />
+                        <img id="ca-complete-register-thank-icon-2" src="assets/images/club-avanti/club-avanti-2.png" alt="Club Avanti" *ngIf="!clubAvantiMemberShipDetailResponse?.IsRegisteredToLoyality && !clubAvantiMemberShipDetailResponse?.IsRegistrationInProgress"/>
+                    </div>
+                </div>
+
+                <!-- Something went wrong -->
+                <div id="ca-something-wrong-area" class="new-club-avanti-error bg-white" *ngIf="isThisInternalServerError || clubAvantiMemberShipDetailResponse?.IsRegistrationError">
+                    <div id="ca-something-wrong-title-are" class="new-club-avanti-error-title">
+                        <img id="ca-something-wrong-title-icon" src="assets/images/exclamation_warning.svg" alt="Exclamation Icon" />
+                        <h1 id="ca-something-wrong-title">
+                            Something went wrong
+                        </h1>
+                    </div>
+                    <div id="ca-something-wrong-content-area" class="new-club-avanti-error-content">
+                        <p id="ca-something-wrong-content" class="font-dark m-0">
+                            We couldn’t load the page due to a technical issue. Please try refreshing it.
+                        </p>
+                        <p id="ca-something-wrong-content-2" class="font-dark m-0">
+                            If this doesn’t work, email us directly at <a id="ca-something-wrong-email" href="mailto:clubavanti@avantiwestcoast.co.uk" rel="noopener" class="orange-underline-link">clubavanti&#64;avantiwestcoast.co.uk</a> and we’ll investigate. Our opening hours are 9am-5pm Monday-Friday. We’ll do our best to get back to you within 24 hours.
+                        </p>
+                    </div>
+                    <button id="ca-something-wrong-refresh-btn" class="new-default-btn fit-content" aria-label="Refresh" (click)="onRefreshClick()" mat-button>
+                        Refresh
+                    </button>
+                </div>
+                <!-- End here Something went wrong -->
+
+                <div id="ca-content-main" *ngIf="showClubAvantiRegisteredUserJourneyDetailDiv()">
+                    <div id="ca-content-container" class="new-rewards-container" *ngIf="clubAvantiMemberShipDetailResponse?.MyReward?.RewardCount && clubAvantiMemberShipDetailResponse?.MyReward?.RewardCount !== 0">
+                        <a id="ca-rewards-card" (click)="scrollIntoViewOnRewardsSection()">
+                            <div id="ca-rewards-inner" class="new-rewards-card cursor-pointer">
+                                <div id="ca-rewards-count-area" class="new-total-rewards">
+                                    <span id="ca-rewards-count">{{clubAvantiMemberShipDetailResponse?.MyReward?.RewardCount}}</span>
+                                </div>
+                                <div id="ca-rewards-content" class="new-rewards-content">
+                                    <h1 id="ca-rewards-title">
+                                        View {{clubAvantiMemberShipDetailResponse?.MyReward?.RewardCount > 1 ? 'rewards' : 'reward'}}
+                                    </h1>
+                                    <p id="ca-rewards-subContent">
+                                        You have {{noOfRewardsTextMessage(clubAvantiMemberShipDetailResponse?.MyReward?.RewardCount)}} to redeem.
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div id="ca-main-row" class="row mt-24">
+                        <div id="ca-main-col" class="col-12">
+                            <div id="ca-progress-container" class="new-tier-progress-container">
+                                <div id="ca-progress-inner" class="new-tier-card new-tier-card-silver-bg"
+                                [ngClass]="{'new-tier-card-silver-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.silverTier?.toLowerCase(),
+                                'new-tier-card-gold-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.goldTier?.toLowerCase(),
+                                'new-tier-card-platinum-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.platinumTier?.toLowerCase()}">
+                                    <h1 id="ca-progress-title" class="new-tier-banner-title font-700 m-0">Your tier & progress</h1>
+                                    <p id="ca-progress-tier-tag" class="new-tier-tag mb-0" [ngClass]="{'new-tier-sliver-tag-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.silverTier?.toLowerCase(),
+                                'new-tier-gold-tag-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.goldTier?.toLowerCase(),
+                                'new-tier-platinum-tag-bg' : clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.platinumTier?.toLowerCase()}">
+                                        {{clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toUpperCase()}}
+                                    </p>
+                                    <div id="ca-progress-journey-msg" class="new-rewards-msg" *ngIf="clubAvantiMemberShipDetailResponse?.IsMembershipBenefitsReset">
+                                        <h2 id="ca-progress-journey-title" class="font-dark font-700 ">
+                                            Where are my qualifying journeys?
+                                        </h2>
+                                        <p id="ca-progress-journey-subContent" class="font-dark">
+                                            Qualifying journeys and rewards are reset after each year of membership. Your tier and always on benefits are retained.
+                                        </p>
+                                    </div>
+                                    <h2 id="ca-progress-qualifying-journeys" class="new-qualifying-journeys mb-0 font-700">Qualifying journeys</h2>
+                                    <div id="ca-progress-bar-area" class="new-tier-progress-bar">
+                                        <div id="ca-progress-bar-area-inner" class='section2'>
+                                            <div id="ca-progress-bar-container" class='section2__progressBarContainer'>
+                                                <div id="ca-progress-bar-inner" class='section2__progressBar'>
+                                                    <div id="ca-progress-bar-card" class='section2__progressBarRect' [ngClass]="showQualifyingJourneyProgressBar()">
+                                                        <span id="ca-progress-bar-animation" class='section2__progressBarCircle' *ngIf="!hideProgressBarIconInCaseOfZeroOrNullJourneys()">
+                                                            <img id="ca-progress-bar-engine" src="assets/images/club-avanti/train-engine.svg" alt="Train engine" />
+                                                        </span>
+                                                    </div>
+                                                    <span id="ca-progress-bar-gold" class="gold-tier-bar" *ngIf="clubAvantiMemberShipDetailResponse?.TripsCompleted < 9">G</span>
+                                                    <span id="ca-progress-bar-platinum" class="platinum-tier-bar" *ngIf="clubAvantiMemberShipDetailResponse?.TripsCompleted < 21">P</span>
+                                                    <img id="ca-progress-bar-gold-check-icon" *ngIf="!hideProgressBarIconInCaseOfZeroOrNullJourneys() && clubAvantiMemberShipDetailResponse?.TripsCompleted >= 9" src="assets/images/check-icon.svg" alt="Gold tier" class="gold-tier-bar-check" />
+                                                    <img id="ca-progress-bar-platinum-check-icon" *ngIf="!hideProgressBarIconInCaseOfZeroOrNullJourneys() && clubAvantiMemberShipDetailResponse?.TripsCompleted >= 21" src="assets/images/check-icon.svg" alt="Platinum tier" class="platinum-tier-bar-check" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="ca-progress-journey-completed" class="new-tier-completed">
+                                        <span id="ca-progress-journey-completed-title">{{clubAvantiMemberShipDetailResponse?.TripsCompleted}} completed</span>
+                                        <span id="ca-progress-journey-completed-msg">{{remainingJourneysToCompleteCurrentTier()}} {{showUpcomingLoyaltyTierMessage()}}</span>
+                                    </div>
+                                    <button id="ca-progress-journey-view-btn" class="new-default-dark-outline-btn mt-16 w-100 text-white" aria-label="View journey history" 
+                                    (click) = "getClubAvantiJourneyList()" [disabled]="disabledViewPreviousJourneyBtn()" mat-button>
+                                        View journey history
+                                    </button>
+                                    <div id="ca-progress-last-update" class="new-last-update">
+                                        <img id="ca-progress-last-update-icon" src="assets/images/club-avanti/last-update.svg" alt="Last update icon" class="white-filter" />
+                                        <p id="ca-progress-last-update-txt" class="text-white">Last updated: {{clubAvantiMemberShipDetailResponse?.LastUpdated | date: 'dd MMM yyyy'}} at {{clubAvantiMemberShipDetailResponse?.LastUpdated | date: 'HH:mm'}}.</p>
+                                    </div>
+                                </div>
+                                <div id="ca-progress-banner-area" class="new-tier-card-img">
+                                    <img id="ca-progress-banner-sliver" *ngIf="clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.silverTier?.toLowerCase()" src="assets/images/club-avanti/sliver-tier.jpg" alt="Sliver Tier" />
+                                    <img id="ca-progress-banner-gold" *ngIf="clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.goldTier?.toLowerCase()" src="assets/images/club-avanti/gold-tier.jpg" alt="Gold Tier" class="gold-position-center" />
+                                    <img id="ca-progress-banner-platinum" *ngIf="clubAvantiMemberShipDetailResponse?.LoyaltyTier?.toLowerCase() === clubAvantiTierEnum?.platinumTier?.toLowerCase()" src="assets/images/club-avanti/platinum-tier.jpg" alt="Platinum Tier" class="platinum-position-center" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-24" id="rewardSectionDiv">
+                        <div id="ca-grid-section" class="col-12">
+                            <div id="ca-grid-container" class="new-rewards-benefits-container">
+                                <div id="ca-reward-card" class="new-rewards-container bg-white p-relative">
+                                    <h2 id="ca-reward-title" class="font-dark font-700">Your rewards</h2>
+                                    <div id="ca-reward-msg" class="new-rewards-msg">
+                                        <h3 id="ca-reward-msg-title" class="font-dark font-700">
+                                            Why are rewards I’ve redeemed still visible? 
+                                        </h3>
+                                        <p id="ca-reward-msg-txt" class="font-dark">
+                                            Due to technical limitations, reward redemptions are updated daily. We are working to improve this.
+                                        </p>
+                                    </div>
+                                    <div id="ca-reward-discount-" class="new-club-avanti-station-discount" [ngClass]="travelDiscountsRewardsObject?.length > 0 ? '' : 'justify-unset'">
+                                        <div id="ca-reward-discount-card" class="new-station-onboard">
+                                            <h3 id="ca-reward-discount-title" class="link-tag">At the station & onboard</h3>
+                                            <div id="ca-reward-discount-option" class="new-club-avanti-options">
+                                                <div id="ca-reward-discount-list_{{i}}" class="new-club-avanti-list" *ngFor="let reward of atTheStationRewardsObject; let i = index">
+                                                    <div id="ca-reward-discount-icon_{{i}}" class="new-club-avanti-option-icon">
+                                                        <img id="ca-reward-discount-img_{{i}}" [src]="bindRewardIcon(reward?.CodeType, reward?.RewardCodeStatus)" [alt]="bindAltAttributeOfRewardIcon(reward?.CodeType)" />
+                                                    </div>
+                                                    <div id="ca-reward-discount-content_{{i}}" class="new-club-avanti-list-content">
+                                                        <h3 id="ca-reward-discount-title_{{i}}" [ngClass]="addDisabledClassInCaseOfRedeemedOrExpired(reward?.RewardCodeStatus)">{{reward?.RewardCategoryCodeDescription}}</h3>
+                                                        <p id="ca-reward-discount-expiry-date_{{i}}" *ngIf="showOrHideClubAvantiRewardStatusParaTag(reward)">{{setRewardsDateAccordingToStatus(reward?.RewardCodeStatus, reward?.RewardExpiryDate)}}</p>
+                                                        <div id="ca-reward-discount-flex_{{i}}" [ngClass]="addDynamicClassInCaseOfRedeemedOrExpiredReward(reward)">
+                                                            <button id="ca-reward-discount-redeem-btn_{{i}}" mat-button class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto h-auto"
+                                                             aria-label="Redeem now" *ngIf="checkToShowRedeemAndBookNowBtn(reward)" (click)="openClubAvantiBarCodePopup(reward)">
+                                                                Redeem now
+                                                                <span id="ca-reward-discount-redeem-icon_{{i}}" class="pl-08 change-password-arrow">
+                                                                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                    </svg>  
+                                                                </span>  
+                                                            </button>
+                                                            <div id="ca-reward-discount-redeemed-status_{{i}}" class="new-redeemed-rewards" *ngIf="showRedeemedTextDiv(reward)">
+                                                                <img id="ca-reward-discount-redeemed-status-icon_{{i}}" src="assets/images/club-avanti/redeem-now-tick.svg" alt="Redeemed" />
+                                                                <p id="ca-reward-discount-redeemed-status-title_{{i}}" [ngClass]="addDisabledClassOnRewardTextInCaseOfRedeemedOrExpiredReward(reward)">
+                                                                    Redeemed
+                                                                </p>
+                                                            </div>
+                                                            <p id="ca-reward-discount-redeemed-expiry-date_{{i}}" class="new-expired-rewards" [ngClass]="addDisabledClassOnRewardTextInCaseOfRedeemedOrExpiredReward(reward)" *ngIf="showExpiredTextPara(reward)">{{setRewardsDateAccordingToStatus(reward?.RewardCodeStatus, reward?.RewardExpiryDate)}}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="ca-travel-discount-area" class="new-station-onboard">
+                                            <h3 id="ca-travel-discount-title" class="link-tag">Travel discounts</h3>
+                                            <div id="ca-travel-discount-options" class="new-club-avanti-options">
+                                                <div id="ca-travel-discount-loop_{{i}}" class="new-club-avanti-list" *ngFor="let reward of travelDiscountsRewardsObject; let i = index">
+                                                    <div id="ca-travel-discount-icon_{{i}}" class="new-club-avanti-option-icon">
+                                                        <img id="ca-travel-discount-img_{{i}}" [src]="bindRewardIcon(reward?.CodeType, reward?.RewardCodeStatus)" [alt]="bindAltAttributeOfRewardIcon(reward?.CodeType)" />
+                                                    </div>
+                                                    <div id="ca-travel-discount-content_{{i}}" class="new-club-avanti-list-content">
+                                                        <h3 id="ca-travel-discount-title_{{i}}"
+                                                        [ngClass]="addDisabledClassInCaseOfRedeemedOrExpired(reward?.RewardCodeStatus)">
+                                                            {{reward?.RewardCategoryCodeDescription}}
+                                                        </h3>
+                                                        <p id="ca-travel-discount-expiry-date_{{i}}" *ngIf="showOrHideClubAvantiRewardStatusParaTag(reward)">{{setRewardsDateAccordingToStatus(reward?.RewardCodeStatus, reward?.RewardExpiryDate)}}.</p>
+                                                        <div id="ca-travel-discount-flex_{{i}}" [ngClass]="addDynamicClassInCaseOfRedeemedOrExpiredReward(reward)">
+                                                            <button id="ca-travel-discount-redeem-btn_{{i}}" mat-button class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto h-auto" 
+                                                            aria-label="Book now" *ngIf="checkToShowRedeemAndBookNowBtn(reward)"
+                                                            (click)="openClubAvantiBarCodePopup(reward)">
+                                                                Redeem now
+                                                                <span id="ca-travel-discount-redeem-icon_{{i}}" class="pl-08 change-password-arrow">
+                                                                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                    </svg>  
+                                                                </span>  
+                                                            </button>
+                                                            <div id="ca-travel-discount-redeemed-status_{{i}}" class="new-redeemed-rewards" *ngIf="showRedeemedTextDiv(reward)">
+                                                                <img id="ca-travel-discount-redeemed-status-icon_{{i}}"  src="assets/images/club-avanti/redeem-now-tick.svg" alt="Redeemed" />
+                                                                <p id="ca-travel-discount-redeemed-status-txt_{{i}}" id="ca-reward-discount-redeemed-status-title_{{i}}" [ngClass]="addDisabledClassOnRewardTextInCaseOfRedeemedOrExpiredReward(reward)">
+                                                                    Redeemed
+                                                                </p>
+                                                            </div>
+                                                            <p id="ca-travel-discount-redeemed-status-expiry-date_{{i}}" [ngClass]="addDisabledClassOnRewardTextInCaseOfRedeemedOrExpiredReward(reward)"  class="new-expired-rewards" *ngIf="showExpiredTextPara(reward)">{{setRewardsDateAccordingToStatus(reward?.RewardCodeStatus, reward?.RewardExpiryDate)}}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="ca-last-update-area"  class="new-last-update new-last-update-position">
+                                        <img id="ca-last-update-icon" src="assets/images/club-avanti/last-update.svg" alt="Last update icon 2" />
+                                        <p id="ca-last-update-txt">Last updated: {{clubAvantiMemberShipDetailResponse?.LastUpdated | date: 'dd MMM yyyy'}} at {{clubAvantiMemberShipDetailResponse?.LastUpdated | date: 'HH:mm'}}.</p>
+                                    </div>
+                                </div>
+                                <div id="ca-benefits-container" class="new-benefits-container bg-white">
+                                    <h2 id="ca-benefits-title" class="font-dark font-700">Your always on benefits</h2>
+                                    <div id="ca-benefits-inner" class="new-station-onboard">
+                                        <div id="ca-benefits-options" class="new-club-avanti-options">
+                                            <div id="ca-benefits-loop">
+                                                <div id="ca-benefits-list_{{i}}" class="new-club-avanti-list" *ngFor="let reward of alwaysOnBenefitRewardsObject; let i = index">
+                                                    <div id="ca-benefits-icon_{{i}}" class="new-club-avanti-option-icon">
+                                                        <img id="ca-benefits-img_{{i}}" [src]="bindRewardIcon(reward?.CodeType, reward?.RewardCodeStatus)" [alt]="bindAltAttributeOfRewardIcon(reward?.CodeType)" />
+                                                    </div>
+                                                    <div id="ca-benefits-content_{{i}}" class="new-club-avanti-list-content">
+                                                        <h3 id="ca-benefits-content-title_{{i}}">{{reward?.RewardCategoryCodeDescription}}</h3>
+                                                        <p id="ca-benefits-content-sub_{{i}}"> 
+                                                            Get 10% off all food and drink from our onboard shop every time you travel with us.
+                                                        </p>
+                                                        <div id="ca-benefits-content-flex_{{i}}" class="pt-04">
+                                                            <button id="ca-benefits-view-discount-code-btn_{{i}}" mat-button class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto" 
+                                                            aria-label="View discount barcode" (click)="openClubAvantiBarCodePopup(reward)">
+                                                                View discount barcode
+                                                                <span id="ca-benefits-view-discount-code-btn-icon_{{i}}" class="pl-08 change-password-arrow">
+                                                                    <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                    </svg>  
+                                                                </span>  
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="ca-ticket-list" class="new-club-avanti-list">
+                                                <div id="ca-ticket-icon" class="new-club-avanti-option-icon">
+                                                    <img id="ca-ticket-img" src="assets/images/club-avanti/priority_ticket_alerts.svg" alt="Priority Ticket Alerts via email icon" />
+                                                </div>
+                                                <div id="ca-ticket-content" class="new-club-avanti-list-content">
+                                                    <h3 id="ca-ticket-title">Priority Ticket Alerts via email</h3>
+                                                    <p id="ca-ticket-subContent"> 
+                                                        Get access to the cheapest tickets before anyone else. Tell us when and where you’re planning to travel, and we’ll email you when tickets go on sale.
+                                                    </p>
+                                                    <div id="ca-ticket-flex" class="pt-04">
+                                                        <button id="ca-ticket-setup-alert-btn" mat-button class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto h-auto" 
+                                                        aria-label="Set up an alert" (click)="onClickSetUpAnAlert()">
+                                                            Set up an alert
+                                                            <span id="ca-ticket-setup-alert-btn-icon" class="pl-08 change-password-arrow">
+                                                                <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                </svg>  
+                                                            </span>  
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="ca-boarding-notification-area" class="new-club-avanti-list">
+                                                <div id="ca-boarding-notification-icon" class="new-club-avanti-option-icon">
+                                                    <img id="ca-boarding-notification-img" src="assets/images/club-avanti/priority_boarding.svg" alt="Early Boarding Notifications at London Euston icon" />
+                                                </div>
+                                                <div id="ca-boarding-notification-content" class="new-club-avanti-list-content">
+                                                    <h3 id="ca-boarding-notification-title">Early Boarding Notifications at London Euston</h3>
+                                                    <p id="ca-boarding-notification-subContent" *ngIf="clubAvantiMemberShipDetailResponse?.CustomerMobileNo == null || clubAvantiMemberShipDetailResponse?.CustomerMobileNo == ''">
+                                                        Add your mobile number to your profile and we’ll send you early boarding notifications by text/SMS.
+                                                    </p>
+                                                    <p id="ca-boarding-notification-mobile-number" *ngIf="clubAvantiMemberShipDetailResponse?.CustomerMobileNo">
+                                                        Mobile number {{clubAvantiMemberShipDetailResponse?.CustomerMobileNo}}
+                                                    </p>
+                                                    <div id="ca-boarding-notification-flex" class="pt-04">
+                                                        <button id="ca-boarding-notification-btn" mat-button class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto h-auto" 
+                                                        aria-label="Add mobile number" (click)="onClickOfAddAndUpdateMobileNo()">
+                                                            {{showAddOrUpdateMobileNoText(clubAvantiMemberShipDetailResponse?.CustomerMobileNo)}}
+                                                            <span id="ca-boarding-notification-btn-icon" class="pl-08 change-password-arrow">
+                                                                <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                </svg>  
+                                                            </span>  
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="ca-offers-area" class="new-club-avanti-list">
+                                                <div id="ca-offers-icon" class="new-club-avanti-option-icon">
+                                                    <img id="ca-offers-img" src="assets/images/club-avanti/alert.svg" alt="Exclusive offers & updates icon" />
+                                                </div>
+                                                <div id="ca-offers-content" class="new-club-avanti-list-content">
+                                                    <h3 id="ca-offers-title">Exclusive offers & updates</h3>
+                                                    <p id="ca-offers-subContent">
+                                                        Update your communication preferences to get notified about exclusive offers from Avanti and our trusted partners.
+                                                    </p>
+                                                    <div id="ca-offers-flex" class="pt-04">
+                                                        <button id="ca-offers-update-preferences-btn" mat-button (click)="onClickOfUpdateCommsPref()" class="mt-0 font-700 f-16 dark-spark p-0 ms-0 lh-0 del-add-btn min-width-auto h-auto" aria-label="Update comms preferences">
+                                                            Update comms preferences
+                                                            <span id="ca-offers-update-preferences-btn-icon" class="pl-08 change-password-arrow">
+                                                                <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M1.92989 0.666504L7.33073 5.99984L1.92989 11.3332L0.664062 10.0832L4.79908 5.99984L0.664062 1.9165L1.92989 0.666504Z" fill="#E42B00"/>
+                                                                </svg>  
+                                                            </span>  
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="ca-book-now-are" class="new-club-avanti-book-now" *ngIf="clubAvantiMemberShipDetailResponse?.TripsCompleted < clubAvantiTierMaxAndMinJourneyEnum.minJourneyForPlatinum">
+                                    <div id="ca-book-now-inner" class="new-club-avanti-book-now-inner">
+                                        <div id="ca-book-now-content" class="new-book-now-banner-content">
+                                            <h3 id="ca-book-now-title" class="text-white m-0">Only {{remainingJourneysToCompleteCurrentTier()}} {{showUpcomingLoyaltyTierMessageOnBookNowBanner()}}</h3>
+                                            <p id="ca-book-now-subContent" class="text-white m-0" *ngIf="clubAvantiMemberShipDetailResponse?.TripsCompleted >= 0 && clubAvantiMemberShipDetailResponse?.TripsCompleted < clubAvantiTierMaxAndMinJourneyEnum.minJourneyForGold">
+                                                Plus a free Standard Premium Return!
+                                            </p>
+                                            <p id="ca-book-now-subContent-2" class="text-white m-0" *ngIf="clubAvantiMemberShipDetailResponse?.TripsCompleted >= clubAvantiTierMaxAndMinJourneyEnum.minJourneyForGold && clubAvantiMemberShipDetailResponse?.TripsCompleted < clubAvantiTierMaxAndMinJourneyEnum.minJourneyForPlatinum">
+                                                Plus a free First Class Return!
+                                            </p>
+                                        </div>
+                                        <button id="ca-book-now-btn" class="new-default-btn fit-content" aria-label="Book now" (click)="onClickOfBookNow()" mat-button>
+                                            Book now
+                                        </button>
+                                    </div>
+                                    <div id="ca-book-now-banner" class="new-book-now-banner-img">
+                                        <img id="ca-book-now-img" src="assets/images/club-avanti/book-now-banner.png" alt="Book now banner" />
+                                    </div>
+                                </div>
+                                <div id="ca-membership-section" class="new-club-avanti-bottom-section">
+                                    <div id="ca-membership-inner" class="new-club-avanti-member bg-white">
+                                        <h2 id="ca-membership-title" class="font-dark font-700">Membership details</h2>
+                                        <div id="ca-membership-content" class="new-club-avanti-member-inner">
+                                            <div id="ca-membership-number" class="club-avanti-member-detail">
+                                                <h2 id="ca-membership-number-title" class="font-dark m-0 font-700">Membership number</h2>
+                                                <p id="ca-membership-number-txt" class="font-dark m-0">{{clubAvantiMemberShipDetailResponse?.MembershipId}}</p>
+                                            </div>
+                                            <div id="ca-membership-year" class="club-avanti-member-detail">
+                                                <h2 id="ca-membership-year-title" class="font-dark m-0 font-700">Membership year</h2>
+                                                <p id="ca-membership-year-txt" class="font-dark m-0">{{clubAvantiMemberShipDetailResponse?.MembershipYear}}</p>
+                                            </div>
+                                            <div id="ca-membership-date" class="club-avanti-member-detail">
+                                                <h2 id="ca-membership-date-title" class="font-dark m-0 font-700">Join date</h2>
+                                                <p id="ca-membership-date-txt" class="font-dark m-0">{{clubAvantiMemberShipDetailResponse?.MembershipStartDate | date:'dd MMMM yyyy'}}</p>
+                                            </div>
+                                            <div id="ca-membership-refresh-date" class="club-avanti-member-detail">
+                                                <h2 id="ca-membership-refresh-date-title" class="font-dark m-0 font-700 info-title">
+                                                    Refresh date 
+                                                    <ng-template id="ca-membership-rewards-tooltip" #refreshDate>
+                                                        <p class="text-start mb-0">
+                                                            On this date your total of qualifying journeys will be reset to zero. You will remain in your current membership tier for the next year.
+                                                        </p>
+                                                    </ng-template>
+                                                    <button type="button" id="ca-membership-refresh-date-icon" tabindex="0" class="refresh-date-info-btn h-auto" mat-button tooltipClass="club-avanti-refresh-date-tooltip" placement="top" container="body" aria-label="On this date your total of qualifying journeys will be reset to zero. You will remain in your current membership tier for the next year." [ngbTooltip]="refreshDate" #tooltip2="ngbTooltip" [autoClose]="false">
+                                                        <img id="ca-membership-refresh-date-img" src="assets/images/club-avanti/info.svg" alt="Refresh date info" />
+                                                    </button>
+                                                </h2>
+                                                <p id="ca-membership-refresh-date-txt" class="font-dark m-0">{{clubAvantiMemberShipDetailResponse?.MembershipEndDate | date:'dd MMMM yyyy'}} {{calculateDateDifference(clubAvantiMemberShipDetailResponse?.MembershipEndDate)}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="ca-suggest-area" class="new-club-avanti-suggest bg-white d-none">
+                                        <h2 id="ca-suggest-title" class="font-dark font-700">Suggest rewards</h2>
+                                        <div id="ca-suggest-inner" class="new-club-avanti-member-inner">
+                                            <div id="ca-suggest-subtitle" class="new-club-avanti-member-subtitle">
+                                                <p id="ca-suggest-subtitle-txt" class="m-0 font-dark">Tell us how you want to be rewarded.</p>
+                                            </div>
+                                            <mat-form-field id="ca-suggest-form-field" class="d-block example-full-width default-input default-input-brdr new-input" floatLabel="never">
+                                                <input id="ca-suggest-input" matInput placeholder="Type your suggestion here.">
+                                            </mat-form-field>
+                                            <button id="ca-suggest-send-btn" class="new-default-outline-btn w-100" aria-label="Send" mat-button>
+                                                Send
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="ca-help-area" class="new-club-avanti-help bg-white">
+                                        <h2 id="ca-help-title" class="font-dark font-700">Help & support</h2>
+                                        <div id="ca-help-conetent" class="new-club-avanti-member-inner">
+                                            <h3 id="ca-help-title" class="font-700 m-0 new-club-avanti-faq">
+                                                Frequently asked questions
+                                            </h3>
+                                            <p id="ca-help-subContent" class="font-dark m-0 new-club-avanti-faq-txt">
+                                                We’ve compiled a list of answers to the questions we are most commonly asked about the programme.
+                                            </p>
+                                            <button id="ca-help-faq-btn" class="new-default-outline-btn w-100" aria-label="View Club Avanti FAQs"
+                                            (click)="onClickViewClubAvantiFAQ()" mat-button>
+                                                View Club Avanti FAQs
+                                            </button>
+                                            <h3 id="ca-help-email" class="font-700 m-0 new-club-avanti-faq">
+                                                Email
+                                            </h3>
+                                            <p id="ca-help-faq-txt" class="font-dark m-0 new-club-avanti-faq-txt">
+                                                If you can’t find the answer to your question then feel free to email us directly at <a id="ca-help-faq-link" href="mailto:clubavanti@avantiwestcoast.co.uk" rel="noopener" class="orange-underline-link">clubavanti&#64;avantiwestcoast.co.uk</a>
+                                            </p>
+                                            <p id="ca-help-faq-txt-2" class="font-dark m-0 new-club-avanti-faq-txt">
+                                                Our opening hours are 9am-5pm Monday-Friday. We’ll do our best to get back to you within 24 hours.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<app-footer></app-footer>

@@ -1,0 +1,63 @@
+<div class="ticket-info-popup-title upgrade-ticket-info-popup-header">
+    <h2 mat-dialog-title class="login-signin-title">Ticket Information</h2>
+    <button class="dialog-close simple-btn" mat-dialog-close aria-label="Close">
+        <img src="assets/images/Close.svg" alt="">
+    </button>
+</div>
+<mat-dialog-content class="fare-heading-list-box ticket-dialog-box upgrade-ticket-info-popup-body">
+    <div class="non-season" *ngIf="(data.TicketType != 'season') && (data.TicketType != 'flexi')">
+        <div class="old-flow-tkt-details-txt upgrade-ticket-details-list" *ngIf="((isViewBooking ? data?.TicketRestriction : data?.fare?.TicketRestriction) && (isViewBooking ? data?.TicketRestriction.toLowerCase : data?.fare?.TicketRestriction.toLowerCase)) && (isViewBooking ? data.TicketRestriction.toLowerCase().indexOf('not applicable.') == -1 : data?.fare?.TicketRestriction.toLowerCase().indexOf('not applicable.') == -1)" [innerHTML]="isViewBooking ? data?.TicketRestriction : data.fare?.TicketRestriction"></div>
+
+        <p class="font-weight-500">{{data.TicketType}}</p>
+        <p>{{isViewBooking ? (data?.TicketDescription || '') : data?.fare?.TicketDescription}}</p>
+        <p class="font-weight-500" *ngIf="data?.TicketInformation || data?.fare?.TicketInformation">Ticket Description</p>
+
+        <p>{{isViewBooking ? (data?.TicketInformation || '' ): data.fare.TicketInformation}}</p>
+        <p class="font-weight-500" *ngIf="ticketInformation?.discounts">Discounts</p>
+        <p>{{ticketInformation.discounts}}</p>
+        <p class="font-weight-500" *ngIf="ticketInformation?.child">Child</p>
+        <p *ngIf="ticketInformation?.child" [innerHTML]="ticketInformation?.child"></p>
+       <p class="font-weight-500" *ngIf="ticketInformation?.railCard">Railcard</p>
+        <p>{{ticketInformation.railCard}}</p>
+
+      
+        <p class="font-weight-500" *ngIf="!isAdvanceTicket && !isFamilyTicket && ticketInformation?.refundableTicket">Refunds</p>
+        <p *ngIf="!isAdvanceTicket && !isFamilyTicket">{{ticketInformation.refundableTicket}}</p>
+        <p *ngIf="isAdvanceTicket">{{ticketInformation.nonRefundableTicket}}</p>
+        <p *ngIf="isFamilyTicket">{{ticketInformation.nonRefundableTicketForFamily}}</p>
+        <p *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"' class="font-weight-500">Changes to travel plans</p>
+        <p *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"' [innerHTML]="ticketInformation.changeTravelPlan"></p>
+        <p class="font-weight-500" *ngIf="ticketInformation?.breakOfJourney">Break of journey</p>
+        <p *ngIf="ticketInformation?.breakOfJourney" [innerHTML]="ticketInformation?.breakOfJourney"></p>
+        <p class="font-weight-500" *ngIf="ticketInformation?.bookingDeadline">Booking deadline</p>
+        <p *ngIf="ticketInformation?.bookingDeadline" [innerHTML]="ticketInformation?.bookingDeadline"></p>
+</div>
+<div class="season-flexi upgrade-season-flexi" *ngIf="(data.TicketType == 'season') || (data.TicketType == 'flexi')">
+    <p class="font-weight-500" *ngIf="ticketInformation?.forSeasonTicketTypeDescription">Description</p>
+    <p>{{ticketInformation.forSeasonTicketTypeDescription}}</p>
+   
+    <p class="font-weight-500" *ngIf="ticketInformation?.trainOperator">Train Operator</p>
+    <p>{{ticketInformation.trainOperator}}</p>
+    <p class="font-weight-500" *ngIf="ticketInformation?.seasonBookingDeadline">Booking Deadlines</p>
+    <p>{{ticketInformation.seasonBookingDeadline}}</p>
+    <p class="font-weight-500" *ngIf="ticketInformation?.seasonTicketTypeRefunds">Refunds</p>
+    <p>{{ticketInformation.seasonTicketTypeRefunds}}</p>
+
+    <p *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"' class="font-weight-500">Changes To Travel Plans</p>
+    <p *ngIf = 'ticketInformation?.changeTravelPlan && ticketInformation?.changeTravelPlan != "<p>-</p>"'>{{ticketInformation.changeTravelPlan}}</p>
+
+    <p class="font-weight-500" *ngIf="ticketInformation?.conditions">Conditions</p>
+    <p>{{ticketInformation.conditions}}</p>
+    <p class="font-weight-500" *ngIf="ticketInformation?.seasonBreakOfJourney">Break of journey:</p>
+    <p>{{ticketInformation.seasonBreakOfJourney}}</p>
+    <p class="font-weight-500" *ngIf="ticketInformation?.isAvailability">Availability</p>
+    <p>{{ticketInformation.isAvailability}}</p>
+    <p class="font-weight-500" *ngIf="ticketInformation?.isValidity">Validity</p>
+    <p>{{ticketInformation.isValidity}}</p>
+</div>
+</mat-dialog-content>
+<mat-dialog-actions class="ticket-info-popup-action upgrade-ticket-info-footer">
+<div class="text-start">
+    <a href="https://www.avantiwestcoast.co.uk/tickets-and-savings/ticket-types" target="_blank" rel="noopener" class="font-weight-500 forgot-password-btn send-email text-spark-dark">Understanding Tickets</a>
+</div>
+</mat-dialog-actions>
