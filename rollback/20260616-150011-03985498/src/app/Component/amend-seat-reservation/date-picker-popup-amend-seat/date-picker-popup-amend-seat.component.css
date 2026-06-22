@@ -1,9 +1,0 @@
-@media (max-width:767px){
-    .mat-dialog-title {
-        padding-right: 70px;
-        line-height: 24px;
-    }
-    .datepicker-info span.dialog-close {
-        right: 10px;
-    }
-}

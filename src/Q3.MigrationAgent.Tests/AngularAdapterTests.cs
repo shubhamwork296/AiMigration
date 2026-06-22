@@ -172,11 +172,17 @@ public sealed class AngularAdapterTests
             EmptyCriticalAlignment(18, 19),
             EmptyConfigPlan(),
             InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            CandidateRanking("@ng-bootstrap/ng-bootstrap", "18.0.4", "18.0.0"),
             InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "retry after third-party peer remediation"));
         var installRuns = 0;
         var runner = new RecordingRunner(command =>
         {
-            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap@^18.0.0") return new CommandResult { ReturnCode = 0, Stdout = """["18.0.0","18.0.4"]""" };
+            if (command.SequenceEqual(["node", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "v20.19.0" };
+            if (command.SequenceEqual(["npm", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "10.8.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap" && command[3] == "versions") return new CommandResult { ReturnCode = 0, Stdout = """["17.0.1","18.0.0","18.0.4"]""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap" && command[3] == "dist-tags") return new CommandResult { ReturnCode = 0, Stdout = """{"latest":"18.0.4"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap@18.0.4" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^18.0.0","@angular/core":"^18.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-bootstrap/ng-bootstrap@18.0.0" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^19.0.0","@angular/core":"^19.0.0"}""" };
             if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["19.2.25","5.5.4","0.15.1"]""" };
             if (command.Take(2).SequenceEqual(["npm", "install"]))
             {
@@ -204,12 +210,79 @@ npm ERR! peer @angular/common@"^18.0.0" from @ng-bootstrap/ng-bootstrap@17.0.1
         var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
 
         Assert.Equal("done", result.StringValue("status"));
-        Assert.Equal("^18.0.0", deps["@ng-bootstrap/ng-bootstrap"]!.ToString());
+        Assert.Equal("18.0.0", deps["@ng-bootstrap/ng-bootstrap"]!.ToString());
         Assert.Equal("^5.3.2", deps["bootstrap"]!.ToString());
         Assert.False(result.BoolValue("installFallbackUsed"));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
-        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@ng-bootstrap/ng-bootstrap@^18.0.0", "version", "--json"]));
-        Assert.Contains(result["cleanInstallSummary"]!["thirdPartyPeerConflictRemediations"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@ng-bootstrap/ng-bootstrap" && r.StringValue("toVersion") == "^18.0.0");
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("^18.0.0", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@ng-bootstrap/ng-bootstrap@18.0.4", "peerDependencies", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@ng-bootstrap/ng-bootstrap@18.0.0", "peerDependencies", "--json"]));
+        Assert.Contains(result["cleanInstallSummary"]!["thirdPartyPeerConflictRemediations"]!.AsArray().OfType<JsonObject>(), r => r.StringValue("packageName") == "@ng-bootstrap/ng-bootstrap" && r.StringValue("toVersion") == "18.0.0");
+    }
+
+    [Fact]
+    public async Task Third_Party_Peer_Conflict_Never_Writes_Angular_Major_Guess_For_Ng_Select_Option_Highlight()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""@ng-select/ng-option-highlight"":""^0.0.7""");
+        var ai = new SequenceAi(
+            Angular13To14PackagePlanWithNgSelectOptionHighlight(),
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/common", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/compiler", "~13.1.0", "^14.2.13", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "~13.1.2", "^14.2.13", "Angular CLI aligned."),
+                VersionRecommendation("@angular/compiler-cli", "~13.1.0", "^14.2.13", "Angular compiler aligned."),
+                VersionRecommendation("@angular-devkit/build-angular", "^13.3.10", "^14.2.13", "Angular DevKit aligned."),
+                VersionRecommendation("typescript", "~4.5.2", "~4.8.4", "TypeScript aligned.")),
+            EmptyCriticalAlignment(13, 14),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            CandidateRanking("@ng-select/ng-option-highlight", "0.0.7", "0.0.8"),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "retry after third-party peer remediation"));
+        var installRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command.SequenceEqual(["node", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "v16.20.0" };
+            if (command.SequenceEqual(["npm", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "8.19.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-select/ng-option-highlight" && command[3] == "versions") return new CommandResult { ReturnCode = 0, Stdout = """["0.0.7","0.0.8","14.0.0-beta.1"]""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-select/ng-option-highlight" && command[3] == "dist-tags") return new CommandResult { ReturnCode = 0, Stdout = """{"latest":"0.0.8"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-select/ng-option-highlight@0.0.7" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^13.0.0","@angular/core":"^13.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "@ng-select/ng-option-highlight@0.0.8" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^14.0.0","@angular/core":"^14.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["14.2.13","4.8.4"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                installRuns++;
+                if (installRuns == 1)
+                {
+                    return new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! Found: @angular/common@14.2.13
+npm ERR! peer @angular/common@"^13.0.0" from @ng-select/ng-option-highlight@0.0.7
+"""
+                    };
+                }
+                CreateLocalAngularCli(root, 14);
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader()).ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var packageJsonText = await File.ReadAllTextAsync(Path.Combine(root, "package.json"));
+        var deps = JsonNode.Parse(packageJsonText)!["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("0.0.8", deps["@ng-select/ng-option-highlight"]!.ToString());
+        Assert.DoesNotContain("^14.0.0", packageJsonText);
+        Assert.DoesNotContain(">=14.0.0 <15.0.0", packageJsonText);
+        Assert.DoesNotContain("latest", packageJsonText);
+        Assert.DoesNotContain(@"""*""", packageJsonText);
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Any(part => part.Contains("^14.0.0", StringComparison.OrdinalIgnoreCase) || part.Contains(">=14.0.0", StringComparison.OrdinalIgnoreCase) || part is "latest" or "*"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "@ng-select/ng-option-highlight@0.0.8", "peerDependencies", "--json"]));
     }
 
     [Fact]
@@ -640,6 +713,45 @@ npm ERR! peer @angular/core@"^14.0.0" from ngx-bootstrap@6.2.0
         Assert.Contains("one synchronized patch version", result.StringValue("failureReason", result.StringValue("reason")));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Take(2).SequenceEqual(["npm", "install"]));
         Assert.Contains(progress.Messages, m => m.Contains("Rejected mixed-version Angular-owned recommendation"));
+    }
+
+    [Fact]
+    public async Task Package_Resolution_Progress_Lists_Final_Accepted_Rejected_And_Preserved_Packages()
+    {
+        var root = await Angular13Workspace(extraDependencies: @",""left-pad"":""^1.3.0""");
+        await File.WriteAllTextAsync(Path.Combine(root, ".nvmrc"), "16.10.0");
+        var ai = new SequenceAi(new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "~13.1.0", "dependencies", "angular_framework_package", "~14.3.0", "upgrade"),
+                PackageDecision("@angular/common", "~13.1.0", "dependencies", "angular_framework_package", "~14.3.0", "upgrade"),
+                PackageDecision("@angular/compiler", "~13.1.0", "dependencies", "angular_framework_package", "~14.3.0", "upgrade"),
+                PackageDecision("@angular/cli", "~13.1.2", "devDependencies", "angular_tooling_package", "~14.3.0", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "~13.1.0", "devDependencies", "angular_tooling_package", "~14.3.0", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "^13.3.10", "devDependencies", "angular_tooling_package", "~14.2.13", "upgrade"),
+                PackageDecision("typescript", "~4.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~4.8.4", "upgrade"),
+                PackageDecision("left-pad", "^1.3.0", "dependencies", "business_or_unknown_package", "^99.0.0", "upgrade")),
+            ["notes"] = new JsonArray()
+        }, EmptyVersionRecommendations(14), EmptyCriticalAlignment(13, 14), EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"));
+        var progress = new RecordingProgress();
+        var runner = new RecordingRunner(command =>
+        {
+            if (command[0] == "node" && command[1] == "--version") return new CommandResult { ReturnCode = 0, Stdout = "v16.10.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2].StartsWith("left-pad@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 1, Stderr = "npm ERR! code E404" };
+            if (command[0] == "npm" && command[1] == "view" && command[2].StartsWith("typescript@", StringComparison.OrdinalIgnoreCase)) return new CommandResult { ReturnCode = 0, Stdout = """["4.8.4"]""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["14.3.0"]""" };
+            return new CommandResult { ReturnCode = 0 };
+        });
+        var adapter = new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader());
+
+        var result = await adapter.ExecuteMigrationHopAsync(root, new MigrationHop(13, 14, "Angular 13 to 14"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "13"), To = new RuntimeSpec("angular", "14"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, PackageVersionVerificationMode = "strict-npm-view" }, progress, null);
+
+        Assert.True(result.StringValue("status") == "done", result.ToJsonString(JsonHelpers.SerializerOptions));
+        Assert.Contains(progress.Messages, m => m.Contains("Final package decisions: accepted="));
+        Assert.Contains(progress.Messages, m => m.Contains("Accepted package target: @angular/core"));
+        Assert.Contains(progress.Messages, m => m.Contains("Rejected AI package decision: left-pad"));
+        Assert.Contains(progress.Messages, m => m.Contains("Preserved package: left-pad@^1.3.0"));
     }
 
     [Fact]
@@ -3577,6 +3689,20 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["notes"] = new JsonArray()
     };
 
+    private static JsonObject Angular13To14PackagePlanWithNgSelectOptionHighlight() => new()
+    {
+        ["packages"] = new JsonArray(
+            PackageDecision("@angular/core", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+            PackageDecision("@angular/common", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+            PackageDecision("@angular/compiler", "~13.1.0", "dependencies", "angular_framework_package", "^14.2.13", "upgrade"),
+            PackageDecision("@angular/cli", "~13.1.2", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+            PackageDecision("@angular/compiler-cli", "~13.1.0", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+            PackageDecision("@angular-devkit/build-angular", "^13.3.10", "devDependencies", "angular_tooling_package", "^14.2.13", "upgrade"),
+            PackageDecision("typescript", "~4.5.2", "devDependencies", "typescript_runtime_or_compiler_package", "~4.8.4", "upgrade"),
+            PackageDecision("@ng-select/ng-option-highlight", "^0.0.7", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+        ["notes"] = new JsonArray()
+    };
+
     private static JsonObject PackageDecision(string name, string current, string section, string category, string? target, string action) => new()
     {
         ["name"] = name,
@@ -3680,6 +3806,19 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["reason"] = "Validation proved this direct third-party Angular package blocks the hop.",
         ["errorCategory"] = "third_party_angular_library_incompatibility",
         ["expectedCodeImpact"] = "none"
+    };
+
+    private static JsonObject CandidateRanking(string packageName, params string[] versions) => new()
+    {
+        ["action"] = "recommend_candidates",
+        ["packageName"] = packageName,
+        ["candidateVersions"] = new JsonArray(versions.Select(v => (JsonNode?)new JsonObject
+        {
+            ["version"] = v,
+            ["reason"] = "test candidate",
+            ["confidence"] = 0.9
+        }).ToArray()),
+        ["reason"] = "test ranking"
     };
 
     private static SequenceAi Angular15To16AiWithThirdPartyResponse(JsonObject thirdPartyResponse) => new(

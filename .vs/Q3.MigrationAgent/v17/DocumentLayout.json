@@ -1,70 +1,12 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "D:\\Projects\\AI\\AiMigration\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{09E50A90-6E6E-480C-B3C0-A78F92F84CD5}|src\\Q3.MigrationAgent.AI\\Q3.MigrationAgent.AI.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.ai\\providers\\aiproviderresolver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{09E50A90-6E6E-480C-B3C0-A78F92F84CD5}|src\\Q3.MigrationAgent.AI\\Q3.MigrationAgent.AI.csproj|solutionrelative:src\\q3.migrationagent.ai\\providers\\aiproviderresolver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.adapters\\angular\\angularcriticaldependencyalignmentplanner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|solutionrelative:src\\q3.migrationagent.adapters\\angular\\angularcriticaldependencyalignmentplanner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.adapters\\angular\\angularadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|solutionrelative:src\\q3.migrationagent.adapters\\angular\\angularadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": [
-        {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
-          "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "AiProviderResolver.cs",
-              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.AI\\Providers\\AiProviderResolver.cs",
-              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.AI\\Providers\\AiProviderResolver.cs",
-              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.AI\\Providers\\AiProviderResolver.cs",
-              "RelativeToolTip": "src\\Q3.MigrationAgent.AI\\Providers\\AiProviderResolver.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-18T06:43:18.995Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "AngularCriticalDependencyAlignmentPlanner.cs",
-              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularCriticalDependencyAlignmentPlanner.cs",
-              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularCriticalDependencyAlignmentPlanner.cs",
-              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularCriticalDependencyAlignmentPlanner.cs",
-              "RelativeToolTip": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularCriticalDependencyAlignmentPlanner.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-17T10:36:50.743Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "AngularAdapter.cs",
-              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
-              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
-              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
-              "RelativeToolTip": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
-              "ViewState": "AgIAAPAUAAAAAAAAAAAAwPQUAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-17T10:34:22.838Z"
-            }
-          ]
-        }
-      ]
+      "DocumentGroups": []
     }
   ]
 }

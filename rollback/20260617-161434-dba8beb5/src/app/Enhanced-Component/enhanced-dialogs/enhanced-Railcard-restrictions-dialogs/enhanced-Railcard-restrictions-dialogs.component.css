@@ -1,6 +1,0 @@
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
-@import url("../../../../assets/css/enhanced-styles.css");
-
-.railcard-not-applied-popup-btn {
-    height: 3rem !important;
-}

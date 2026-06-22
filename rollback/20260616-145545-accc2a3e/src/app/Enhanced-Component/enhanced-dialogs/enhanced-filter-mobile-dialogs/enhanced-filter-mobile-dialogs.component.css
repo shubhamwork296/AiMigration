@@ -1,7 +1,0 @@
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
-@import url("../../../../assets/css/enhanced-styles.css");
-
-.alert-content p {
-    padding: 1.188rem 1rem;
-    border-bottom: 0.063rem solid var(--neutrals-light-periwinkle);
-}

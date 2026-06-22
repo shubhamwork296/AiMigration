@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25">
-  <g id="Group_2940" data-name="Group 2940" transform="translate(-417.811 -127)">
-    <g id="vehicle" transform="translate(417.811 127)">
-      <path id="Path_1936" data-name="Path 1936" d="M19.81,0H5.19A5.2,5.2,0,0,0,0,5.19V19.81A5.2,5.2,0,0,0,5.19,25H19.81A5.2,5.2,0,0,0,25,19.81V5.19A5.2,5.2,0,0,0,19.81,0Zm4.24,19.81a4.246,4.246,0,0,1-4.24,4.241H5.19A4.246,4.246,0,0,1,.949,19.81V5.19A4.245,4.245,0,0,1,5.19.949H19.81a4.245,4.245,0,0,1,4.24,4.24Z" fill="#ff4713"/>
-    </g>
-    <text id="P" transform="translate(430 146)" fill="#ff4713" font-size="20" font-family="DIN2014-ExtraBold, "DIN 2014"" font-weight="800"><tspan x="-5.91" y="0">P</tspan></text>
-  </g>
-</svg>
