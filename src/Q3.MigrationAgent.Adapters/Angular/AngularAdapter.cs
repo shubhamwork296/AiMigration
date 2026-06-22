@@ -1406,6 +1406,59 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         return new NpmPackageTargetResolution(null, "inconclusive", "inconclusive", command, $"npm verification returned no stable version for {packageName}@{proposedRange}; broad discovery was not attempted.", proposedResult.Error, proposedResult.AttemptCount, proposedRange, "", "", false, "");
     }
 
+    private async Task<NpmPackageTargetResolution> ResolveRootRuntimePeerCompatibleVersionAsync(
+        string packageName,
+        string currentRange,
+        string requiredPeerRange,
+        int targetAngularMajor,
+        string targetAngularVersion,
+        MigrationConfig config,
+        string projectPath,
+        string? logPath,
+        CancellationToken cancellationToken)
+    {
+        var candidates = RuntimePeerCandidateRanges(packageName, currentRange, requiredPeerRange, targetAngularMajor);
+        if (candidates.Count == 0)
+        {
+            return new NpmPackageTargetResolution(null, "manual_review", "manual_review", "", $"No safe bounded candidate range could be derived for {packageName} peer {requiredPeerRange}.", "", 0, currentRange, "", "", false, "");
+        }
+
+        var attempts = 0;
+        foreach (var candidate in candidates)
+        {
+            var command = $"npm view {packageName}@{candidate} version --json";
+            if (!NpmVersionRange.IsSafe(candidate))
+            {
+                AppendRunLog(logPath, $"[Package Resolution] Rejected {packageName} candidate {candidate}; reason=unsafe npm range.");
+                continue;
+            }
+
+            var result = await NpmViewWithRetryAsync($"{packageName}@{candidate}", "version", "--json", Math.Max(0, config.NpmLookupRetries), config.NpmLookupTimeoutSeconds, config.NpmLookupIdleTimeoutSeconds, projectPath, logPath, cancellationToken);
+            attempts += result.AttemptCount;
+            var exact = SelectLatestStableMajorVersion(result.Value, NpmVersionRange.Major(candidate) ?? NpmVersionRange.Major(requiredPeerRange) ?? 0);
+            if (string.IsNullOrWhiteSpace(exact))
+            {
+                AppendRunLog(logPath, $"[Package Resolution] Rejected {packageName} candidate {candidate}; reason=npm validation returned {result.Status}.");
+                continue;
+            }
+
+            var compatibility = RuntimeSupportPeerCompatibility(packageName, exact, currentRange, requiredPeerRange, targetAngularMajor);
+            if (!compatibility.Accepted)
+            {
+                AppendRunLog(logPath, $"[Package Resolution] Rejected {packageName} candidate {candidate}; reason={compatibility.Reason}.");
+                continue;
+            }
+
+            var finalTarget = ShouldMaterializeResolvedRange(candidate) ? $"{RangePrefix(candidate)}{exact}" : candidate;
+            var reason = $"{packageName}@{exact} satisfies peer {requiredPeerRange} and Angular {targetAngularMajor} compatibility policy";
+            if (!string.IsNullOrWhiteSpace(targetAngularVersion)) reason += $" for selected Angular {targetAngularVersion}";
+            AppendRunLog(logPath, $"[Package Resolution] Accepted {packageName} update {currentRange} -> {finalTarget} because it satisfies peer {requiredPeerRange} and Angular {targetAngularMajor} compatibility policy.");
+            return new NpmPackageTargetResolution(finalTarget, "verified", "verified", command, reason, result.Error, attempts, currentRange, "", "", false, "");
+        }
+
+        return new NpmPackageTargetResolution(null, "manual_review", "manual_review", $"npm view {packageName}@<candidate> version --json", $"No npm-verified {packageName} range satisfied peer {requiredPeerRange} and Angular {targetAngularMajor} compatibility policy.", "", attempts, currentRange, "", "", false, "");
+    }
+
     private async Task<NpmPackageTargetResolution> ResolveAiGuidedThirdPartyPeerCompatibleVersionAsync(
         string packageName,
         string currentRange,
@@ -1435,7 +1488,7 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
 
         var aiCandidates = await RequestAiThirdPartyPeerCandidateVersionsAsync(packageName, currentRange, targetAngularMajor, targetAngularVersion, conflict, availableVersions, distTags.Value, config, cancellationToken);
         AppendRunLog(logPath, $"[Package Resolution] {packageName}: AI candidate versions=[{string.Join(", ", aiCandidates)}].");
-        var candidates = aiCandidates.Count > 0 ? aiCandidates : SmallDeterministicThirdPartyCandidates(availableVersions, currentRange);
+        var candidates = ThirdPartyPeerCandidateVersions(availableVersions, currentRange, targetAngularMajor, aiCandidates);
         var source = aiCandidates.Count > 0 ? "ai-guided" : "small-deterministic-fallback";
         if (candidates.Count == 0)
         {
@@ -1531,10 +1584,26 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
         .OrderBy(VersionTuple, Comparer<int[]?>.Create((a, b) => a is null ? -1 : b is null ? 1 : Compare(a, b)))
         .ToArray();
 
-    private static IReadOnlyList<string> SmallDeterministicThirdPartyCandidates(IReadOnlyList<string> availableVersions, string currentRange)
+    private static IReadOnlyList<string> ThirdPartyPeerCandidateVersions(IReadOnlyList<string> availableVersions, string currentRange, int targetAngularMajor, IReadOnlyList<string> aiCandidates)
+    {
+        var targetMajorVersions = availableVersions
+            .Where(v => VersionTuple(v) is { } tuple && tuple[0] == targetAngularMajor)
+            .ToArray();
+        var deterministic = SmallDeterministicThirdPartyCandidates(availableVersions, currentRange, targetAngularMajor);
+        return aiCandidates
+            .Concat(targetMajorVersions)
+            .Concat(deterministic)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> SmallDeterministicThirdPartyCandidates(IReadOnlyList<string> availableVersions, string currentRange, int targetAngularMajor = 0)
     {
         var current = VersionTuple(currentRange);
         if (current is null) return availableVersions.TakeLast(Math.Min(10, availableVersions.Count)).Reverse().ToArray();
+        var targetMajorVersions = targetAngularMajor > 0
+            ? availableVersions.Where(v => VersionTuple(v) is { } tuple && tuple[0] == targetAngularMajor)
+            : [];
         var nearestAbove = availableVersions
             .Where(v => VersionTuple(v) is { } tuple && Compare(tuple, current) > 0)
             .Take(10);
@@ -1544,12 +1613,79 @@ public sealed class AngularAdapter(ICommandRunner commandRunner, PackageClassifi
             .Where(v => v.Tuple is not null && v.Tuple[0] >= currentMajor && v.Tuple[0] <= currentMajor + 5)
             .GroupBy(v => v.Tuple![0])
             .Select(g => g.Last().Version);
-        return nearestAbove.Concat(latestPatchPerMajor).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return targetMajorVersions.Concat(nearestAbove).Concat(latestPatchPerMajor).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     private static bool SatisfiesNpmPeerRange(string version, string range) =>
         range.Split("||", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Any(part => NpmVersionRange.Satisfies(version, part));
+
+    private static bool IsAngularRuntimeSupportPeer(string packageName) =>
+        packageName is "rxjs" or "tslib" or "zone.js" or "typescript";
+
+    private static IReadOnlyList<string> RuntimePeerCandidateRanges(string packageName, string currentRange, string requiredPeerRange, int targetAngularMajor)
+    {
+        var candidates = new List<string>();
+        void Add(string? candidate)
+        {
+            candidate = NpmVersionRange.Normalize(candidate);
+            if (!string.IsNullOrWhiteSpace(candidate) && NpmVersionRange.IsSafe(candidate) && !candidates.Contains(candidate, StringComparer.OrdinalIgnoreCase)) candidates.Add(candidate);
+        }
+
+        var peerRanges = requiredPeerRange
+            .Split("||", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(NpmVersionRange.Normalize)
+            .Where(r => !string.IsNullOrWhiteSpace(r) && NpmVersionRange.IsSafe(r))
+            .ToArray();
+
+        if (!packageName.Equals("typescript", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var range in peerRanges) Add(range);
+        }
+        if (packageName.Equals("typescript", StringComparison.OrdinalIgnoreCase)) Add(TypeScriptVersionForAngular(targetAngularMajor));
+        if (packageName.Equals("rxjs", StringComparison.OrdinalIgnoreCase) && targetAngularMajor >= 15) Add("~7.5.0");
+        if (packageName.Equals("zone.js", StringComparison.OrdinalIgnoreCase) && targetAngularMajor >= 16) Add("~0.13.0");
+        if (packageName.Equals("tslib", StringComparison.OrdinalIgnoreCase) && VersionTuple(currentRange) is { } current && current[0] < 2) Add("^2.3.0");
+        if (packageName.Equals("typescript", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var range in peerRanges) Add(range);
+        }
+        return candidates;
+    }
+
+    private static (bool Accepted, string Reason) RuntimeSupportPeerCompatibility(string packageName, string exactVersion, string currentRange, string requiredPeerRange, int targetAngularMajor)
+    {
+        if (!SatisfiesNpmPeerRange(exactVersion, requiredPeerRange)) return (false, $"{exactVersion} does not satisfy required peer range {requiredPeerRange}");
+        if (packageName.Equals("rxjs", StringComparison.OrdinalIgnoreCase) && IsRuntimePeerDowngrade(currentRange, exactVersion)) return (false, "rxjs candidate would downgrade the root runtime package");
+        if (packageName.Equals("typescript", StringComparison.OrdinalIgnoreCase) && !IsTypeScriptCompatibleWithAngular(exactVersion, targetAngularMajor)) return (false, $"{exactVersion} is outside Angular {targetAngularMajor} TypeScript policy");
+        if (packageName.Equals("rxjs", StringComparison.OrdinalIgnoreCase) && !IsRxJsCompatibleWithAngular(exactVersion, targetAngularMajor)) return (false, $"{exactVersion} is outside Angular {targetAngularMajor} RxJS policy");
+        if (packageName.Equals("zone.js", StringComparison.OrdinalIgnoreCase) && !IsZoneJsCompatibleWithAngular(exactVersion, targetAngularMajor)) return (false, $"{exactVersion} is outside Angular {targetAngularMajor} zone.js policy");
+        if (packageName.Equals("tslib", StringComparison.OrdinalIgnoreCase))
+        {
+            var tslib = VersionTuple(exactVersion);
+            if (tslib is null || tslib[0] < 2) return (false, $"{exactVersion} is outside Angular {targetAngularMajor} tslib policy");
+        }
+        return (true, "");
+    }
+
+    private static bool IsRuntimePeerDowngrade(string currentRange, string candidateVersion) =>
+        VersionTuple(currentRange) is { } current && VersionTuple(candidateVersion) is { } candidate && Compare(candidate, current) < 0;
+
+    private static bool IsRxJsCompatibleWithAngular(string version, int targetAngularMajor)
+    {
+        var tuple = VersionTuple(version);
+        if (tuple is null) return false;
+        if (targetAngularMajor >= 15) return tuple[0] == 7 && Compare(tuple, [7, 4, 0]) >= 0 || tuple[0] == 6 && Compare(tuple, [6, 5, 3]) >= 0;
+        return tuple[0] is 6 or 7;
+    }
+
+    private static bool IsZoneJsCompatibleWithAngular(string version, int targetAngularMajor)
+    {
+        var tuple = VersionTuple(version);
+        if (tuple is null) return false;
+        if (targetAngularMajor >= 16) return tuple[0] == 0 && tuple.Length > 1 && tuple[1] >= 13;
+        return tuple[0] == 0;
+    }
 
     private static bool IsExactStableVersion(string? version) => Regex.IsMatch(version?.Trim() ?? "", @"^\d+\.\d+\.\d+$");
 
@@ -4070,6 +4206,14 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
                 continue;
             }
             if (classification == "peerDependencyConflict" && installAttempt.LegacyPeerDepsUsed) return attempts;
+            if (classification == "peerDependencyConflict" && config.AllowLegacyPeerDepsFallback && !attempts.Any(a => a.LegacyPeerDepsUsed))
+            {
+                progress?.Stage(stage, "npm install still reports ERESOLVE after verified remediation checks. Retrying once with --legacy-peer-deps as a bypass fallback.");
+                var legacyDecision = DeterministicDecision("legacyPeerDepsInstall", "Verified peer remediation did not produce a safe package.json patch; legacy peer deps is allowed only as fallback.", "medium", true, true, "peerDependencyConflict");
+                var legacyAttempt = await RunInstallAttemptAsync(projectPath, LegacyPeerDepsNpmInstallCommand, legacyDecision, "deterministic-peer-conflict-fallback", true, true, 1, false, false, "", false, config, progress, stage, logPath, cancellationToken);
+                attempts.Add(legacyAttempt);
+                return attempts;
+            }
             if (classification == "transientNetworkFailure" && retryCounts.GetValueOrDefault(commandText) >= 2) return attempts;
             if (attempts.Count >= 4) return attempts;
             progress?.Stage(stage, $"Dependency install failed ({classification}). Asking for next validated install strategy.");
@@ -4125,12 +4269,75 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         if (cleanInstall["thirdPartyPeerConflictRemediations"] is null) cleanInstall["thirdPartyPeerConflictRemediations"] = remediations;
         var changed = false;
 
-        foreach (var conflict in PeerConflictItems(installAttempt.PeerDependencyConflict).Where(c => c.StringValue("classification") == "thirdPartyPeerConflict"))
+        foreach (var conflict in PeerConflictItems(installAttempt.PeerDependencyConflict).Where(c => c.StringValue("classification") == "thirdPartyPeerConflict" || c.StringValue("classification") == "angularRuntimeMismatch" && IsAngularRuntimeSupportPeer(c.StringValue("conflictingPackage")) && !c.StringValue("requiredByPackage").StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)))
         {
             var requiredByPackage = conflict.StringValue("requiredByPackage");
             var requiredRange = conflict.StringValue("requiredPeerRange");
-            if (!LooksAngularCoupledThirdParty(requiredByPackage)) continue;
-            if (!conflict.StringValue("conflictingPackage").StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) continue;
+            var conflictingPackage = conflict.StringValue("conflictingPackage");
+            if (IsAngularRuntimeSupportPeer(conflictingPackage))
+            {
+                if (!LooksAngularCoupledThirdParty(requiredByPackage)) continue;
+
+                var runtimeSection = DependencySection(packageJson, conflictingPackage);
+                if (runtimeSection is null || packageJson[runtimeSection] is not JsonObject runtimeDeps || !runtimeDeps.ContainsKey(conflictingPackage)) continue;
+
+                var currentRuntimeRange = runtimeDeps[conflictingPackage]?.ToString() ?? "";
+                var angularCoreRange = AllDependencies(packageJson).GetValueOrDefault("@angular/core", "");
+                var targetAngularMajor = hop.ToVersion > 0 ? hop.ToVersion : NpmVersionRange.Major(angularCoreRange) ?? 0;
+                var targetAngularVersion = ExactStableVersionText(angularCoreRange);
+                if (string.IsNullOrWhiteSpace(targetAngularVersion) && targetAngularMajor > 0) targetAngularVersion = $"{targetAngularMajor}.0.0";
+
+                progress?.Stage(stage, $"[Package Resolution] npm install reported peer conflict on runtime support package {conflictingPackage} required by {requiredByPackage}@{conflict.StringValue("requiredByVersion")}; resolving root {conflictingPackage} range.");
+                AppendRunLog(logPath, $"[Package Resolution] npm install reported peer conflict on runtime support package {conflictingPackage} required by {requiredByPackage}@{conflict.StringValue("requiredByVersion")}; resolving root {conflictingPackage} range.");
+                var runtimeVerified = await ResolveRootRuntimePeerCompatibleVersionAsync(conflictingPackage, currentRuntimeRange, requiredRange, targetAngularMajor, targetAngularVersion, config, projectPath, logPath, cancellationToken);
+                if (runtimeVerified.FinalTarget is null)
+                {
+                    progress?.Stage(stage, $"[Package Resolution] Manual review required for root {conflictingPackage}: {runtimeVerified.FallbackReason}");
+                    AddUnresolvedPeerConflict(cleanInstall, conflictingPackage, currentRuntimeRange, requiredRange, requiredByPackage, targetAngularVersion, "no verified compatible version found");
+                    remediations.Add(new JsonObject
+                    {
+                        ["packageName"] = conflictingPackage,
+                        ["currentVersion"] = currentRuntimeRange,
+                        ["fromVersion"] = currentRuntimeRange,
+                        ["section"] = runtimeSection,
+                        ["conflictingPackage"] = conflictingPackage,
+                        ["requiredPeerRange"] = requiredRange,
+                        ["requiredBy"] = conflict.StringValue("requiredBy"),
+                        ["requiredByPackage"] = requiredByPackage,
+                        ["requiredByVersion"] = conflict.StringValue("requiredByVersion"),
+                        ["status"] = "manual_review",
+                        ["versionRecommendationSource"] = "runtime-peer-dependency-remediation",
+                        ["reason"] = runtimeVerified.FallbackReason
+                    });
+                    continue;
+                }
+                if (currentRuntimeRange.Equals(runtimeVerified.FinalTarget, StringComparison.OrdinalIgnoreCase)) continue;
+
+                runtimeDeps[conflictingPackage] = runtimeVerified.FinalTarget;
+                changed = true;
+                var reason = $"Accepted {conflictingPackage} update because it satisfies {requiredByPackage}@{conflict.StringValue("requiredByVersion")} peer {conflictingPackage} {requiredRange} and Angular {targetAngularMajor} compatibility policy.";
+                remediations.Add(new JsonObject
+                {
+                    ["packageName"] = conflictingPackage,
+                    ["fromVersion"] = currentRuntimeRange,
+                    ["toVersion"] = runtimeVerified.FinalTarget,
+                    ["section"] = runtimeSection,
+                    ["conflictingPackage"] = conflictingPackage,
+                    ["requiredPeerRange"] = requiredRange,
+                    ["requiredBy"] = conflict.StringValue("requiredBy"),
+                    ["requiredByPackage"] = requiredByPackage,
+                    ["requiredByVersion"] = conflict.StringValue("requiredByVersion"),
+                    ["verificationCommand"] = runtimeVerified.VerificationCommand,
+                    ["npmValidationResult"] = runtimeVerified.ValidationResult,
+                    ["angularCompatibilityReason"] = reason,
+                    ["versionRecommendationSource"] = "runtime-peer-dependency-remediation",
+                    ["status"] = "verified",
+                    ["reason"] = reason
+                });
+                progress?.Stage(stage, $"[Package Resolution] Accepted {conflictingPackage} update {currentRuntimeRange} -> {runtimeVerified.FinalTarget} because it satisfies {requiredByPackage}@{conflict.StringValue("requiredByVersion")} peer {conflictingPackage} {requiredRange} and Angular {targetAngularMajor} compatibility policy.");
+                continue;
+            }
+            if (!conflictingPackage.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase)) continue;
 
             var section = DependencySection(packageJson, requiredByPackage);
             if (section is null || packageJson[section] is not JsonObject deps || !deps.ContainsKey(requiredByPackage)) continue;
@@ -4142,14 +4349,18 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             if (verified.FinalTarget is null)
             {
                 progress?.Stage(stage, $"[Package Resolution] Manual review required for {requiredByPackage}: {verified.FallbackReason}");
+                AddUnresolvedPeerConflict(cleanInstall, requiredByPackage, currentRange, requiredRange, requiredByPackage, TargetAngularVersionText(hop, conflict), "no verified compatible version found");
                 remediations.Add(new JsonObject
                 {
                     ["packageName"] = requiredByPackage,
+                    ["currentVersion"] = currentRange,
                     ["fromVersion"] = currentRange,
                     ["section"] = section,
-                    ["conflictingPackage"] = conflict.StringValue("conflictingPackage"),
+                    ["conflictingPackage"] = conflictingPackage,
                     ["requiredPeerRange"] = requiredRange,
                     ["requiredBy"] = conflict.StringValue("requiredBy"),
+                    ["requiredByPackage"] = requiredByPackage,
+                    ["requiredByVersion"] = conflict.StringValue("requiredByVersion"),
                     ["status"] = "manual_review",
                     ["reason"] = verified.FallbackReason
                 });
@@ -4165,9 +4376,11 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
                 ["fromVersion"] = currentRange,
                 ["toVersion"] = verified.FinalTarget,
                 ["section"] = section,
-                ["conflictingPackage"] = conflict.StringValue("conflictingPackage"),
+                ["conflictingPackage"] = conflictingPackage,
                 ["requiredPeerRange"] = requiredRange,
                 ["requiredBy"] = conflict.StringValue("requiredBy"),
+                ["requiredByPackage"] = requiredByPackage,
+                ["requiredByVersion"] = conflict.StringValue("requiredByVersion"),
                 ["verificationCommand"] = verified.VerificationCommand,
                 ["status"] = "verified",
                 ["reason"] = "npm reported an Angular peer dependency conflict from an Angular-coupled third-party package; selected an exact npm-verified compatible version before using legacy peer deps."
@@ -4180,6 +4393,34 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         var lockPath = Path.Combine(projectPath, "package-lock.json");
         if (File.Exists(lockPath)) File.Delete(lockPath);
         return true;
+    }
+
+    private static void AddUnresolvedPeerConflict(JsonObject cleanInstall, string packageName, string currentVersion, string requiredPeerRange, string requiredByPackage, string targetAngularVersion, string reason)
+    {
+        var unresolved = cleanInstall["unresolvedPeerConflicts"] as JsonArray ?? new JsonArray();
+        if (cleanInstall["unresolvedPeerConflicts"] is null) cleanInstall["unresolvedPeerConflicts"] = unresolved;
+        var exists = unresolved.OfType<JsonObject>().Any(item =>
+            item.StringValue("packageName").Equals(packageName, StringComparison.OrdinalIgnoreCase) &&
+            item.StringValue("requiredPeerRange").Equals(requiredPeerRange, StringComparison.OrdinalIgnoreCase) &&
+            item.StringValue("requiredByPackage").Equals(requiredByPackage, StringComparison.OrdinalIgnoreCase));
+        if (exists) return;
+        unresolved.Add(new JsonObject
+        {
+            ["packageName"] = packageName,
+            ["currentVersion"] = currentVersion,
+            ["requiredPeerRange"] = requiredPeerRange,
+            ["requiredByPackage"] = requiredByPackage,
+            ["targetAngularVersion"] = targetAngularVersion,
+            ["reason"] = reason,
+            ["status"] = "manual_review"
+        });
+    }
+
+    private static string TargetAngularVersionText(MigrationHop hop, JsonObject conflict)
+    {
+        var planned = ExactStableVersionText(conflict.StringValue("plannedVersion"));
+        if (!string.IsNullOrWhiteSpace(planned)) return planned;
+        return hop.ToVersion > 0 ? hop.ToVersion.ToString() : "";
     }
 
     private static int RetryCountFor(IReadOnlyList<string> command, Dictionary<string, int> retryCounts) => command.Count == 0 ? 0 : retryCounts.GetValueOrDefault(string.Join(" ", command));
@@ -4277,7 +4518,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
             AiStrategyRejectedReason = rejectedReason,
             ManualActionRequired = manualActionRequired,
             FailureClassification = result.ReturnCode == 0 ? null : ClassifyInstallFailure(command, result),
-            PeerDependencyConflict = result.ReturnCode == 0 ? null : ParsePeerDependencyConflict(projectPath, result)
+            PeerDependencyConflict = result.ReturnCode == 0 ? null : ParsePeerDependencyConflict(projectPath, result, logPath)
         };
     }
 
@@ -4320,6 +4561,10 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         result["transientNetworkRetriesUsed"] = installAttempts.Count(a => a.FailureClassification?.Category == "transientNetworkFailure" || (a.RetryUsed && a.Decision.FailureClassification == "transientNetworkFailure"));
         result["peerDependencyFallbackUsed"] = installAttempts.Any(a => a.LegacyPeerDepsUsed);
         result["peerDependencyConflicts"] = new JsonArray(installAttempts.Select(a => a.PeerDependencyConflict).Where(c => c is not null).Select(c => c!.DeepClone()).ToArray());
+        var installPassedWithPeerBypass = installAttempts.LastOrDefault()?.Result.ReturnCode == 0 && installAttempts.Any(a => a.LegacyPeerDepsUsed);
+        result["installPassedWithPeerBypass"] = installPassedWithPeerBypass;
+        result["compatibilityProven"] = !installPassedWithPeerBypass;
+        result["unresolvedPeerConflicts"] = cleanInstall["unresolvedPeerConflicts"]?.DeepClone() ?? new JsonArray();
         result["manualActionRequired"] = cleanInstall.BoolValue("manualActionRequired") || installAttempts.Any(a => a.ManualActionRequired);
         result["migrateOnlySkipped"] = true;
         result["migrateOnlySkippedReason"] = "disabled by new default flow";
@@ -4399,6 +4644,7 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         if (strategy == "retrySameCommand" && !transientNetwork) return (false, "retrySameCommand is allowed only after transient network failures.");
         if (strategy == "retrySameCommand" && previousCommand is not null && !command.SequenceEqual(previousCommand)) return (false, "retrySameCommand must repeat the exact previous command.");
         if (transientNetwork && previousCommand is not null && !command.SequenceEqual(previousCommand)) return (false, "Transient network failures must not change install command or package versions.");
+        if (strategy == "legacyPeerDepsInstall" && previousFailure?.Category != "peerDependencyConflict") return (false, "legacy-peer-deps is only allowed after a normal npm install fails with a peer dependency conflict.");
         if (strategy == "legacyPeerDepsInstall" && IsFrameworkCriticalMismatchOutput(context.StringValue("previousInstallFailureOutput"))) return (false, "legacy-peer-deps must not hide a framework-critical dependency mismatch.");
         if (strategy == "legacyPeerDepsInstall" && !peerConflict && decision.Confidence < 0.9) return (false, "legacy-peer-deps requires a peer conflict or high-confidence Angular compatibility reasoning.");
         if (strategy == "legacyPeerDepsInstall" && !config.AllowLegacyPeerDepsFallback && !peerConflict) return (false, "legacy-peer-deps requires configuration allowance or a peer conflict.");
@@ -4419,14 +4665,33 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
 
     private static bool ContainsAny(string text, params string[] needles) => needles.Any(n => text.Contains(n, StringComparison.OrdinalIgnoreCase));
 
-    private static JsonObject? ParsePeerDependencyConflict(string projectPath, CommandResult result)
+    private static JsonObject? ParsePeerDependencyConflict(string projectPath, CommandResult result, string? logPath = null)
     {
         if (!IsPeerDependencyConflict(result)) return null;
         var output = $"{result.Stdout}\n{result.Stderr}";
-        var matches = Regex.Matches(output, @"peer\s+(@?[\w./-]+)@""([^""]+)""\s+from\s+(@?[\w./-]+)@([^\s]+)", RegexOptions.IgnoreCase);
+        var data = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
+        if (ParseBlockingPeerDependencyFromCouldNotResolveBlock(output) is { } blocking)
+        {
+            var blockingPrimary = BuildPeerDependencyConflict(output, data, blocking);
+            var scannedMatches = Regex.Matches(output, PeerDependencyLinePattern, RegexOptions.IgnoreCase);
+            var scannedConflicts = scannedMatches.Select(match => BuildPeerDependencyConflict(output, data, match)).ToArray();
+
+            AppendRunLog(logPath, $"[Package Resolution] Parsed blocking peer dependency from npm Could not resolve dependency block: {blockingPrimary.StringValue("conflictingPackage")} {blockingPrimary.StringValue("requiredPeerRange")} required by {blockingPrimary.StringValue("requiredBy")}.");
+            foreach (var ignored in scannedConflicts.Where(c =>
+                         !c.StringValue("requiredBy").Equals(blockingPrimary.StringValue("requiredBy"), StringComparison.OrdinalIgnoreCase) &&
+                         c.StringValue("conflictingPackage").Equals(blockingPrimary.StringValue("conflictingPackage"), StringComparison.OrdinalIgnoreCase)))
+            {
+                AppendRunLog(logPath, $"[Package Resolution] Ignored compatible peer explanation line from {ignored.StringValue("requiredBy")} because a blocking peer line was found after Could not resolve dependency.");
+            }
+
+            var blockingResult = blockingPrimary.DeepClone().AsObject();
+            blockingResult["conflicts"] = new JsonArray(blockingPrimary.DeepClone());
+            return blockingResult;
+        }
+
+        var matches = Regex.Matches(output, PeerDependencyLinePattern, RegexOptions.IgnoreCase);
         if (matches.Count == 0) return new JsonObject { ["classification"] = "unknownPeerConflict", ["decision"] = "manualReview", ["conflicts"] = new JsonArray() };
 
-        var data = File.Exists(Path.Combine(projectPath, "package.json")) ? ReadJson(Path.Combine(projectPath, "package.json")) : new JsonObject();
         var conflicts = new JsonArray(matches.Select(match => (JsonNode?)BuildPeerDependencyConflict(output, data, match)).ToArray());
         var primary = conflicts.OfType<JsonObject>().FirstOrDefault(c => c.StringValue("classification") != "unknownPeerConflict") ?? conflicts.OfType<JsonObject>().First();
         var resultObject = primary.DeepClone().AsObject();
@@ -4434,16 +4699,63 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         return resultObject;
     }
 
+    private const string PeerDependencyLinePattern = @"peer\s+((?:@[\w.-]+/)?[\w.-]+)@""([^""]+)""\s+from\s+((?:@[\w.-]+/)?[\w.-]+)@([^\s]+)";
+
+    private static JsonObject? ParseBlockingPeerDependencyFromCouldNotResolveBlock(string output)
+    {
+        var marker = Regex.Match(output, @"Could not resolve dependency:", RegexOptions.IgnoreCase);
+        if (!marker.Success) return null;
+
+        var blockLines = new List<string>();
+        foreach (var rawLine in output[marker.Index..].Split(["\r\n", "\n"], StringSplitOptions.None).Skip(1))
+        {
+            var line = Regex.Replace(rawLine, @"^\s*npm\s+ERR!\s*", "", RegexOptions.IgnoreCase).Trim();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                if (blockLines.Count > 0) break;
+                continue;
+            }
+            blockLines.Add(line);
+        }
+
+        var block = string.Join('\n', blockLines);
+        var peer = Regex.Match(block, PeerDependencyLinePattern, RegexOptions.IgnoreCase);
+        return peer.Success ? PeerDependencyMatchToJson(peer) : null;
+    }
+
     private static JsonObject BuildPeerDependencyConflict(string output, JsonObject packageJson, Match peer)
+    {
+        return BuildPeerDependencyConflict(output, packageJson, PeerDependencyMatchToJson(peer));
+    }
+
+    private static JsonObject PeerDependencyMatchToJson(Match peer)
     {
         var package = peer.Groups[1].Value;
         var requiredRange = peer.Groups[2].Value;
-        var requiredBy = peer.Groups[3].Value;
+        var requiredByPackage = peer.Groups[3].Value;
         var requiredByVersion = peer.Groups[4].Value.TrimEnd(',', ')');
+        return new JsonObject
+        {
+            ["package"] = package,
+            ["conflictingPackage"] = package,
+            ["requiredPeerRange"] = requiredRange,
+            ["requiredRange"] = requiredRange,
+            ["requiredBy"] = $"{requiredByPackage}@{requiredByVersion}",
+            ["requiredByPackage"] = requiredByPackage,
+            ["requiredByVersion"] = requiredByVersion
+        };
+    }
+
+    private static JsonObject BuildPeerDependencyConflict(string output, JsonObject packageJson, JsonObject peer)
+    {
+        var package = peer.StringValue("conflictingPackage", peer.StringValue("package"));
+        var requiredRange = peer.StringValue("requiredPeerRange", peer.StringValue("requiredRange"));
+        var requiredBy = peer.StringValue("requiredByPackage");
+        var requiredByVersion = peer.StringValue("requiredByVersion");
         var plannedVersion = AllDependencies(packageJson).GetValueOrDefault(package, "");
         var installed = Regex.Match(output, $@"Found:\s+{Regex.Escape(package)}@([^\s]+)", RegexOptions.IgnoreCase);
         var currentInstalledVersion = installed.Success ? installed.Groups[1].Value.TrimEnd(',', ')') : "";
-        var angularRuntimeMismatch = requiredBy.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) && AngularCoupledRuntimePackages.Contains(package);
+        var angularRuntimeMismatch = AngularCoupledRuntimePackages.Contains(package) && (requiredBy.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) || LooksAngularCoupledThirdParty(requiredBy));
         var classification = angularRuntimeMismatch ? "angularRuntimeMismatch" : LooksAngularCoupledThirdParty(requiredBy) || LooksAngularCoupledThirdParty(package) ? "thirdPartyPeerConflict" : "unknownPeerConflict";
         var decision = classification switch
         {
@@ -4453,8 +4765,10 @@ Only include packages listed in validationProvenBlockers. For each Angular libra
         };
         return new JsonObject
         {
+            ["package"] = package,
             ["conflictingPackage"] = package,
             ["requiredPeerRange"] = requiredRange,
+            ["requiredRange"] = requiredRange,
             ["plannedVersion"] = plannedVersion,
             ["installedVersion"] = currentInstalledVersion,
             ["requiredBy"] = $"{requiredBy}@{requiredByVersion}",

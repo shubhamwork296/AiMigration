@@ -430,7 +430,19 @@ public sealed class MarkdownReportWriter
     private static IEnumerable<string> FormatCleanInstall(IReadOnlyList<JsonObject> hopResults)
     {
         if (hopResults.Count == 0) return ["- None"];
-        return hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: node_modules deleted={r.BoolValue("nodeModulesDeleted")}; package-lock.json deleted={r.BoolValue("packageLockDeleted")}; install command=`{r.StringValue("installCommandUsed", "not run")}`; fallback used={r.BoolValue("installFallbackUsed")}");
+        var lines = new List<string>();
+        foreach (var r in hopResults)
+        {
+            var label = $"Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}";
+            lines.Add($"- {label}: node_modules deleted={r.BoolValue("nodeModulesDeleted")}; package-lock.json deleted={r.BoolValue("packageLockDeleted")}; install command=`{r.StringValue("installCommandUsed", "not run")}`; fallback used={r.BoolValue("installFallbackUsed")}");
+            foreach (var remediation in r["cleanInstallSummary"]?["thirdPartyPeerConflictRemediations"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var runtimePeer = remediation.StringValue("versionRecommendationSource") == "runtime-peer-dependency-remediation";
+                var prefix = runtimePeer ? "root runtime peer package remediated" : "peer conflict package remediated";
+                lines.Add($"- {label}: {prefix}={remediation.StringValue("packageName", "unknown")}; {remediation.StringValue("fromVersion", "unknown")} -> {remediation.StringValue("toVersion", "manual review")}; requiredByPackage={remediation.StringValue("requiredByPackage", remediation.StringValue("requiredBy", "unknown"))}; requiredPeerRange={remediation.StringValue("requiredPeerRange", "unknown")}; source={remediation.StringValue("versionRecommendationSource", "third-party-peer-conflict-remediation")}; npm validation={remediation.StringValue("npmValidationResult", remediation.StringValue("status", "unknown"))}; verification=`{remediation.StringValue("verificationCommand", "not run")}`; reason={remediation.StringValue("angularCompatibilityReason", remediation.StringValue("reason"))}");
+            }
+        }
+        return lines;
     }
 
     private static IEnumerable<string> FormatBuildVerification(IReadOnlyList<JsonObject> hopResults)

@@ -286,6 +286,122 @@ npm ERR! peer @angular/common@"^13.0.0" from @ng-select/ng-option-highlight@0.0.
     }
 
     [Fact]
+    public async Task Third_Party_Peer_Conflict_Checks_Target_Angular_Major_Published_Versions()
+    {
+        var root = await Angular16Workspace(extraDependencies: @",""angularx-qrcode"":""16.0.0""");
+        var ai = new SequenceAi(
+            PackagePlan17WithThirdParty("angularx-qrcode", "16.0.0"),
+            VersionRecommendations17(),
+            EmptyCriticalAlignment(16, 17),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            new JsonObject { ["action"] = "manual_review", ["packageName"] = "angularx-qrcode" },
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "retry after third-party peer remediation"));
+        var installRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command.SequenceEqual(["node", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "v20.19.0" };
+            if (command.SequenceEqual(["npm", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "10.8.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "angularx-qrcode" && command[3] == "versions") return new CommandResult { ReturnCode = 0, Stdout = """["16.0.0","17.0.0","17.0.1"]""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "angularx-qrcode" && command[3] == "dist-tags") return new CommandResult { ReturnCode = 0, Stdout = """{"latest":"17.0.1"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "angularx-qrcode@17.0.0" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^16.0.0","@angular/core":"^16.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "angularx-qrcode@17.0.1" && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^17.0.0","@angular/core":"^17.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["17.3.12","5.2.2","0.14.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                installRuns++;
+                if (installRuns == 1)
+                {
+                    return new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! Found: @angular/common@17.3.12
+npm ERR! peer @angular/common@"^16.0.0" from angularx-qrcode@16.0.0
+"""
+                    };
+                }
+                CreateLocalAngularCli(root, 17);
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(16, 17, "Angular 16 to 17"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "16"), To = new RuntimeSpec("angular", "17"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("17.0.1", deps["angularx-qrcode"]!.ToString());
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angularx-qrcode@17.0.0", "peerDependencies", "--json"]));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "angularx-qrcode@17.0.1", "peerDependencies", "--json"]));
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+    }
+
+    [Fact]
+    public async Task Third_Party_Peer_Conflict_Records_Unresolved_Then_Uses_Legacy_Bypass_Fallback()
+    {
+        var root = await Angular16Workspace(extraDependencies: @",""ng-dynamic-breadcrumb"":""6.0.0""");
+        var ai = new SequenceAi(
+            PackagePlan17WithThirdParty("ng-dynamic-breadcrumb", "6.0.0"),
+            VersionRecommendations17(),
+            EmptyCriticalAlignment(16, 17),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            new JsonObject { ["action"] = "manual_review", ["packageName"] = "ng-dynamic-breadcrumb" });
+        var installRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command.SequenceEqual(["node", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "v20.19.0" };
+            if (command.SequenceEqual(["npm", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "10.8.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "ng-dynamic-breadcrumb" && command[3] == "versions") return new CommandResult { ReturnCode = 0, Stdout = """["6.0.0","7.0.0"]""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "ng-dynamic-breadcrumb" && command[3] == "dist-tags") return new CommandResult { ReturnCode = 0, Stdout = """{"latest":"7.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view" && command[2].StartsWith("ng-dynamic-breadcrumb@", StringComparison.Ordinal) && command[3] == "peerDependencies") return new CommandResult { ReturnCode = 0, Stdout = """{"@angular/common":"^16.0.0","@angular/core":"^16.0.0"}""" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["17.3.12","5.2.2","0.14.10"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                installRuns++;
+                if (!command.Contains("--legacy-peer-deps"))
+                {
+                    return new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! Found: @angular/common@17.3.12
+npm ERR! peer @angular/common@"^16.0.0" from ng-dynamic-breadcrumb@6.0.0
+"""
+                    };
+                }
+                CreateLocalAngularCli(root, 17);
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(16, 17, "Angular 16 to 17"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "16"), To = new RuntimeSpec("angular", "17"), Ai = new AiConfig { UseAi = true, Provider = "codex" }, AllowLegacyPeerDepsFallback = true }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+        var unresolved = Assert.Single(result["unresolvedPeerConflicts"]!.AsArray().OfType<JsonObject>());
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("6.0.0", deps["ng-dynamic-breadcrumb"]!.ToString());
+        Assert.True(result.BoolValue("installPassedWithPeerBypass"));
+        Assert.False(result.BoolValue("compatibilityProven"));
+        Assert.Equal("ng-dynamic-breadcrumb", unresolved.StringValue("packageName"));
+        Assert.Equal("6.0.0", unresolved.StringValue("currentVersion"));
+        Assert.Equal("^16.0.0", unresolved.StringValue("requiredPeerRange"));
+        Assert.Equal("ng-dynamic-breadcrumb", unresolved.StringValue("requiredByPackage"));
+        Assert.Equal("17.3.12", unresolved.StringValue("targetAngularVersion"));
+        Assert.Equal("no verified compatible version found", unresolved.StringValue("reason"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "install", "--ignore-scripts", "--legacy-peer-deps", "--no-audit", "--no-fund"]));
+        Assert.Equal(2, installRuns);
+    }
+
+    [Fact]
     public void Optional_Dependency_Output_Is_Ignored_When_Exit_Code_Is_Zero()
     {
         var classification = AngularAdapter.ClassifyInstallFailure(["npm", "install"], new CommandResult { ReturnCode = 0, Stderr = "failed optional dependency fsevents" });
@@ -677,6 +793,131 @@ npm ERR! peer @angular/core@"^14.0.0" from ngx-bootstrap@6.2.0
         Assert.Equal(2, remediations.Length);
         Assert.Equal(2, runner.Calls.Count(c => c.Command.Take(2).SequenceEqual(["npm", "install"])));
         Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+    }
+
+    [Fact]
+    public async Task Runtime_Support_Peer_Conflict_Patches_Root_Rxjs_Not_Required_By_Package()
+    {
+        var root = TestWorkspace.Create();
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  "scripts": {"build":"ng build"},
+  "dependencies": {
+    "@angular/core": "15.2.10",
+    "@angular/common": "15.2.10",
+    "@angular/compiler": "15.2.10",
+    "@angular/cli": "15.2.10",
+    "rxjs": "~7.4.0",
+    "zone.js": "0.12.0",
+    "angular-user-idle": "4.0.0"
+  },
+  "devDependencies": {
+    "@angular/compiler-cli": "15.2.10",
+    "@angular-devkit/build-angular": "15.2.10",
+    "typescript": "~4.9.5"
+  }
+}
+""");
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        var packagePlan = new JsonObject
+        {
+            ["packages"] = new JsonArray(
+                PackageDecision("@angular/core", "15.2.10", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular/common", "15.2.10", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular/compiler", "15.2.10", "dependencies", "angular_framework_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular/cli", "15.2.10", "dependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular/compiler-cli", "15.2.10", "devDependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                PackageDecision("@angular-devkit/build-angular", "15.2.10", "devDependencies", "angular_tooling_package", "^16.2.12", "upgrade"),
+                PackageDecision("typescript", "~4.9.5", "devDependencies", "typescript_runtime_or_compiler_package", "~5.1.6", "upgrade"),
+                PackageDecision("rxjs", "~7.4.0", "dependencies", "third_party_runtime_package", null, "preserve"),
+                PackageDecision("zone.js", "0.12.0", "dependencies", "angular_runtime_support_package", "~0.13.0", "upgrade"),
+                PackageDecision("angular-user-idle", "4.0.0", "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+            ["notes"] = new JsonArray()
+        };
+        var ai = new SequenceAi(
+            packagePlan,
+            VersionRecommendations(
+                VersionRecommendation("@angular/core", "15.2.10", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/common", "15.2.10", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/compiler", "15.2.10", "^16.2.12", "Angular framework package aligned."),
+                VersionRecommendation("@angular/cli", "15.2.10", "^16.2.12", "Angular CLI aligned."),
+                VersionRecommendation("@angular/compiler-cli", "15.2.10", "^16.2.12", "Angular compiler aligned."),
+                VersionRecommendation("@angular-devkit/build-angular", "15.2.10", "^16.2.12", "Angular build tooling aligned."),
+                VersionRecommendation("typescript", "~4.9.5", "~5.1.6", "TypeScript compatible with Angular 16."),
+                VersionRecommendation("zone.js", "0.12.0", "~0.13.0", "Zone.js compatible with Angular 16.")),
+            EmptyCriticalAlignment(15, 16),
+            EmptyConfigPlan(),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "safe install"),
+            InstallDecision("normalInstall", "npm install --ignore-scripts --no-audit --no-fund", "retry after runtime peer remediation"));
+        var installRuns = 0;
+        var runner = new RecordingRunner(command =>
+        {
+            if (command.SequenceEqual(["node", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "v18.19.0" };
+            if (command.SequenceEqual(["npm", "--version"])) return new CommandResult { ReturnCode = 0, Stdout = "10.8.0" };
+            if (command[0] == "npm" && command[1] == "view" && command[2] == "rxjs@^7.5.0" && command[3] == "version") return new CommandResult { ReturnCode = 0, Stdout = "\"7.8.2\"" };
+            if (command[0] == "npm" && command[1] == "view") return new CommandResult { ReturnCode = 0, Stdout = """["16.2.12","5.1.6","0.13.3"]""" };
+            if (command.Take(2).SequenceEqual(["npm", "install"]))
+            {
+                installRuns++;
+                if (installRuns == 1)
+                {
+                    return new CommandResult
+                    {
+                        ReturnCode = 1,
+                        Stderr = """
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! Found: rxjs@7.4.0
+npm ERR! rxjs@"~7.4.0" from the root project
+npm ERR! peer rxjs@"^6.5.3 || ^7.4.0" from @angular/common@16.2.12
+npm ERR!
+npm ERR! Could not resolve dependency:
+npm ERR! peer rxjs@"^7.5.0" from angular-user-idle@4.0.0
+"""
+                    };
+                }
+                CreateLocalAngularCli(root, 16);
+                return new CommandResult { ReturnCode = 0 };
+            }
+            if (command.SequenceEqual(["npm", "run", "build"])) return new CommandResult { ReturnCode = 0 };
+            return new CommandResult { ReturnCode = 0 };
+        });
+
+        var result = await new AngularAdapter(runner, ai: ai, promptLoader: new PromptLoader())
+            .ExecuteMigrationHopAsync(root, new MigrationHop(15, 16, "Angular 15 to 16"), new JsonObject(), Config(root) with { From = new RuntimeSpec("angular", "15"), To = new RuntimeSpec("angular", "16"), Ai = new AiConfig { UseAi = true, Provider = "codex" } }, null, null);
+        var deps = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "package.json")))!["dependencies"]!.AsObject();
+        var remediations = result["cleanInstallSummary"]!["thirdPartyPeerConflictRemediations"]!.AsArray().OfType<JsonObject>().ToArray();
+        var conflict = Assert.Single(result["peerDependencyConflicts"]!.AsArray().OfType<JsonObject>());
+        var report = new MarkdownReportWriter().GenerateAdapterHopReport(new JsonObject { ["manifest"] = new JsonObject(), ["to"] = "angular16" }, [new MigrationHop(15, 16, "Angular 15 to 16")], [result], new ValidationResult { Passed = true });
+
+        Assert.Equal("done", result.StringValue("status"));
+        Assert.Equal("^7.5.0", deps["rxjs"]!.ToString());
+        Assert.Equal("4.0.0", deps["angular-user-idle"]!.ToString());
+        Assert.Equal("16.2.12", deps["@angular/common"]!.ToString());
+        Assert.DoesNotContain(runner.Calls, c => c.Command.Contains("--legacy-peer-deps"));
+        Assert.Contains(runner.Calls, c => c.Command.SequenceEqual(["npm", "view", "rxjs@^7.5.0", "version", "--json"]));
+        Assert.Equal("rxjs", conflict.StringValue("package"));
+        Assert.Equal("rxjs", conflict.StringValue("conflictingPackage"));
+        Assert.Equal("^7.5.0", conflict.StringValue("requiredPeerRange"));
+        Assert.Equal("^7.5.0", conflict.StringValue("requiredRange"));
+        Assert.Equal("angular-user-idle", conflict.StringValue("requiredByPackage"));
+        Assert.Equal("4.0.0", conflict.StringValue("requiredByVersion"));
+        Assert.Equal("7.4.0", conflict.StringValue("installedVersion"));
+        Assert.Equal("~7.4.0", conflict.StringValue("plannedVersion"));
+        var remediation = Assert.Single(remediations, r => r.StringValue("packageName") == "rxjs");
+        Assert.Equal("~7.4.0", remediation.StringValue("fromVersion"));
+        Assert.Equal("^7.5.0", remediation.StringValue("toVersion"));
+        Assert.Equal("angular-user-idle", remediation.StringValue("requiredByPackage"));
+        Assert.Equal("4.0.0", remediation.StringValue("requiredByVersion"));
+        Assert.Equal("^7.5.0", remediation.StringValue("requiredPeerRange"));
+        Assert.Equal("rxjs", remediation.StringValue("conflictingPackage"));
+        Assert.Equal("runtime-peer-dependency-remediation", remediation.StringValue("versionRecommendationSource"));
+        Assert.DoesNotContain(remediations, r => r.StringValue("packageName") is "angular-user-idle" or "@angular/common");
+        Assert.Contains("root runtime peer package remediated=rxjs", report);
+        Assert.Contains("package=rxjs; requiredRange=^7.5.0; planned=~7.4.0; installed=7.4.0; requiredBy=angular-user-idle@4.0.0; classification=angularRuntimeMismatch; decision=revisePackagePlan", report);
+        Assert.DoesNotContain("requiredRange=^6.5.3 || ^7.4.0; planned=~7.4.0; installed=7.4.0; requiredBy=@angular/common@16.2.12", report);
+        Assert.Contains("requiredByPackage=angular-user-idle", report);
+        Assert.Contains("Angular 16 compatibility policy", report);
+        Assert.Contains("npm validation=verified", report);
     }
 
     [Fact]
@@ -3484,6 +3725,21 @@ Optimization error [main.123.js]: Unexpected token: punc ({)
         return root;
     }
 
+    private static async Task<string> Angular16Workspace(string extraDependencies = "", bool hasBuildScript = true)
+    {
+        var root = TestWorkspace.Create();
+        var scripts = hasBuildScript ? @"""scripts"": {""build"":""ng build""}," : @"""scripts"": {},";
+        await File.WriteAllTextAsync(Path.Combine(root, "package.json"), """
+{
+  SCRIPTS
+  "dependencies": {"@angular/core":"16.2.12","@angular/common":"16.2.12","@angular/compiler":"16.2.12","@angular/cli":"16.2.12","rxjs":"7.8.1","zone.js":"0.13.3"EXTRA_DEPENDENCIES},
+  "devDependencies": {"typescript":"~5.1.6","@angular/compiler-cli":"16.2.12","@angular-devkit/build-angular":"16.2.12"}
+}
+""".Replace("SCRIPTS", scripts).Replace("EXTRA_DEPENDENCIES", extraDependencies));
+        await File.WriteAllTextAsync(Path.Combine(root, "angular.json"), "{}");
+        return root;
+    }
+
     private static async Task<string> Angular19Workspace()
     {
         var root = TestWorkspace.Create();
@@ -3675,6 +3931,22 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
         ["notes"] = new JsonArray()
     };
 
+    private static JsonObject PackagePlan17WithThirdParty(string thirdPartyPackage, string thirdPartyCurrentVersion) => new()
+    {
+        ["packages"] = new JsonArray(
+            PackageDecision("@angular/core", "16.2.12", "dependencies", "angular_framework_package", "^17.0.0", "upgrade"),
+            PackageDecision("@angular/common", "16.2.12", "dependencies", "angular_framework_package", "^17.0.0", "upgrade"),
+            PackageDecision("@angular/compiler", "16.2.12", "dependencies", "angular_framework_package", "^17.0.0", "upgrade"),
+            PackageDecision("@angular/cli", "16.2.12", "dependencies", "angular_tooling_package", "^17.0.0", "upgrade"),
+            PackageDecision("@angular/compiler-cli", "16.2.12", "devDependencies", "angular_tooling_package", "^17.0.0", "upgrade"),
+            PackageDecision("@angular-devkit/build-angular", "16.2.12", "devDependencies", "angular_tooling_package", "^17.0.0", "upgrade"),
+            PackageDecision("rxjs", "7.8.1", "dependencies", "third_party_runtime_package", null, "preserve"),
+            PackageDecision("zone.js", "0.13.3", "dependencies", "angular_runtime_support_package", "~0.14.0", "upgrade"),
+            PackageDecision("typescript", "~5.1.6", "devDependencies", "typescript_runtime_or_compiler_package", "~5.2.2", "upgrade"),
+            PackageDecision(thirdPartyPackage, thirdPartyCurrentVersion, "dependencies", "angular_ui_or_extension_package", null, "preserve")),
+        ["notes"] = new JsonArray()
+    };
+
     private static JsonObject PackagePlan20(bool preserveTypeScript = false) => new()
     {
         ["packages"] = new JsonArray(
@@ -3741,6 +4013,21 @@ Error: Can't resolve '{import}' in 'D:\Projects\AI\AiMigration\Output\src\assets
             VersionRecommendation("@angular-devkit/build-angular", "18.2.12", "^19.0.0", "Angular build package aligned to Angular 19."),
             VersionRecommendation("zone.js", "0.14.10", "~0.15.0", "Zone.js version compatible with Angular 19."),
             VersionRecommendation("typescript", "~5.5.2", "~5.5.4", "TypeScript version compatible with Angular 19.")),
+        ["warnings"] = new JsonArray()
+    };
+
+    private static JsonObject VersionRecommendations17() => new()
+    {
+        ["targetAngularMajor"] = 17,
+        ["recommendations"] = new JsonArray(
+            VersionRecommendation("@angular/core", "16.2.12", "^17.0.0", "Angular framework package aligned to Angular 17."),
+            VersionRecommendation("@angular/common", "16.2.12", "^17.0.0", "Angular framework package aligned to Angular 17."),
+            VersionRecommendation("@angular/compiler", "16.2.12", "^17.0.0", "Angular framework package aligned to Angular 17."),
+            VersionRecommendation("@angular/cli", "16.2.12", "^17.0.0", "Angular CLI package aligned to Angular 17."),
+            VersionRecommendation("@angular/compiler-cli", "16.2.12", "^17.0.0", "Angular compiler package aligned to Angular 17."),
+            VersionRecommendation("@angular-devkit/build-angular", "16.2.12", "^17.0.0", "Angular build package aligned to Angular 17."),
+            VersionRecommendation("zone.js", "0.13.3", "~0.14.0", "Zone.js version compatible with Angular 17."),
+            VersionRecommendation("typescript", "~5.1.6", "~5.2.2", "TypeScript version compatible with Angular 17.")),
         ["warnings"] = new JsonArray()
     };
 
