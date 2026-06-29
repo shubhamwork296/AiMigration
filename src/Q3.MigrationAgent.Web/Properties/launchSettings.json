@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Q3.MigrationAgent.Web": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "/",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:50519"
+    }
+  }
+}

@@ -304,6 +304,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
 
     private static bool IsExpectedResponseSchema(JsonObject obj) =>
         IsRemediationPlanSchema(obj) ||
+        IsMigrationAnalysisSchema(obj) ||
         IsRecommendationSchema(obj) ||
         IsPackageClassificationSchema(obj) ||
         IsThirdPartyPackageRemediationSchema(obj) ||
@@ -324,6 +325,16 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
             if (string.IsNullOrWhiteSpace(changeObj.StringValue("file"))) return false;
             if (string.IsNullOrWhiteSpace(changeObj.StringValue("reason"))) return false;
         }
+        return true;
+    }
+
+    private static bool IsMigrationAnalysisSchema(JsonObject obj)
+    {
+        if (obj["summary"] is null || obj["confidence"] is null || obj["risk"] is null) return false;
+        if (obj["changes"] is not JsonArray || obj["recommendations"] is not JsonArray) return false;
+        if (obj["packageUpdates"] is not null and not JsonArray) return false;
+        if (obj["manualReview"] is not null and not JsonArray) return false;
+        if (obj.StringValue("risk") is not ("low" or "medium" or "high")) return false;
         return true;
     }
 
@@ -460,6 +471,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
             if (first is null) return "";
             if (first["recommendations"] is JsonArray recommendations)
             {
+                if (IsMigrationAnalysisSchema(first)) return "";
                 if (recommendations.Count == 0) return "parseFailureReason=empty-recommendations. ";
                 foreach (var item in recommendations.OfType<JsonObject>())
                 {

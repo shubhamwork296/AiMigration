@@ -348,6 +348,110 @@ peer tslib@"^2.3.0" from @angular/core@16.2.12
     }
 
     [Fact]
+    public async Task DotNet_Nu1605_Deterministic_Remediation_Updates_Direct_Package()
+    {
+        var root = TestWorkspace.Create();
+        var projectDir = Path.Combine(root, "PICO.API.Bussiness");
+        Directory.CreateDirectory(projectDir);
+        var csproj = Path.Combine(projectDir, "PICO.API.Bussiness.csproj");
+        await File.WriteAllTextAsync(csproj, """
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+  </ItemGroup>
+</Project>
+""");
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            FailureCommand = ["dotnet", "build"],
+            Output = $"""
+{csproj} : error NU1605: Warning As Error: Detected package downgrade: Microsoft.Extensions.Options from 8.0.0 to 7.0.1.
+{csproj} : error NU1605:  PICO.API.Bussiness -> Microsoft.Extensions.Logging 8.0.0 -> Microsoft.Extensions.Options (>= 8.0.0)
+{csproj} : error NU1605:  PICO.API.Bussiness -> Microsoft.Extensions.Options (>= 7.0.1)
+"""
+        };
+
+        var result = await AiRemediationPlanner.TryApplyDeterministicRemediationAsync(root, validation, 1, 3);
+
+        Assert.NotNull(result);
+        Assert.Equal("package_update", result!.StringValue("type"));
+        Assert.Equal("Microsoft.Extensions.Options", result.StringValue("packageName"));
+        Assert.Equal("8.0.0", result.StringValue("toVersion"));
+        Assert.Contains("""<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />""", await File.ReadAllTextAsync(csproj));
+    }
+
+    [Fact]
+    public void DotNet_Nu1605_Package_Update_Is_Accepted_Without_Npm_Verification()
+    {
+        var root = TestWorkspace.Create();
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            Output = """
+PICO.API.Bussiness\PICO.API.Bussiness.csproj : error NU1605: Warning As Error: Detected package downgrade: Microsoft.Extensions.Options from 8.0.0 to 7.0.1.
+PICO.API.Bussiness\PICO.API.Bussiness.csproj : error NU1605:  PICO.API.Bussiness -> Microsoft.Extensions.Logging 8.0.0 -> Microsoft.Extensions.Options (>= 8.0.0)
+PICO.API.Bussiness\PICO.API.Bussiness.csproj : error NU1605:  PICO.API.Bussiness -> Microsoft.Extensions.Options (>= 7.0.1)
+"""
+        };
+        var plan = new JsonObject
+        {
+            ["summary"] = "Align direct NuGet dependency with transitive requirement.",
+            ["confidence"] = 0.92,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "PICO.API.Bussiness/PICO.API.Bussiness.csproj",
+                ["type"] = "package_update",
+                ["packageName"] = "Microsoft.Extensions.Options",
+                ["reason"] = "NU1605 requires Microsoft.Extensions.Options >= 8.0.0.",
+                ["before"] = """<PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />""",
+                ["after"] = """<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />"""
+            })
+        };
+
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, validation, root);
+
+        Assert.True(safety.Safe, safety.Reason);
+    }
+
+    [Fact]
+    public void DotNet_Nu1605_Package_Update_Rejects_Unproven_Target_Version()
+    {
+        var root = TestWorkspace.Create();
+        var validation = new ValidationResult
+        {
+            Passed = false,
+            Output = "Project.csproj : error NU1605: Warning As Error: Detected package downgrade: Microsoft.Extensions.Options from 8.0.0 to 7.0.1."
+        };
+        var plan = new JsonObject
+        {
+            ["summary"] = "Wrong version",
+            ["confidence"] = 0.92,
+            ["risk"] = "low",
+            ["requiresManualCorrection"] = false,
+            ["businessLogicChanged"] = false,
+            ["changes"] = new JsonArray(new JsonObject
+            {
+                ["file"] = "Project.csproj",
+                ["type"] = "package_update",
+                ["packageName"] = "Microsoft.Extensions.Options",
+                ["reason"] = "NU1605 requires a package update.",
+                ["before"] = """<PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />""",
+                ["after"] = """<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />"""
+            })
+        };
+
+        var safety = AiRemediationPlanner.ValidatePlanForTesting(plan, validation, root);
+
+        Assert.False(safety.Safe);
+        Assert.Contains("npm version verification", safety.Reason);
+    }
+
+    [Fact]
     public async Task Unsafe_Node_Modules_Edit_Is_Rejected()
     {
         var root = TestWorkspace.Create();

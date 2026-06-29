@@ -366,6 +366,33 @@ public sealed class AiProviderResolverTests
     }
 
     [Fact]
+    public void ParseCodexResponse_Accepts_Migration_Analysis_Recommendation_Action_Text()
+    {
+        var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +
+                     "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":" + JsonString("""
+                        {
+                          "summary": "ok",
+                          "confidence": 80,
+                          "risk": "low",
+                          "packageUpdates": [],
+                          "manualReview": [],
+                          "changes": [],
+                          "recommendations": [
+                            {
+                              "action": "Ensure",
+                              "reason": "Run validation after structural changes."
+                            }
+                          ]
+                        }
+                        """) + "}}\n";
+
+        var parsed = AiProviderResolver.ParseCodexResponse(stdout, "", ["codex", "exec", "--json"], "codex");
+
+        var recommendation = parsed["recommendations"]!.AsArray().OfType<JsonObject>().Single();
+        Assert.Equal("Ensure", recommendation["action"]?.ToString());
+    }
+
+    [Fact]
     public void ParseCodexResponse_Extracts_Critical_Dependency_Alignment_From_Jsonl_Agent_Message()
     {
         var stdout = "{\"type\":\"thread.started\",\"thread_id\":\"thread_123\"}\n" +

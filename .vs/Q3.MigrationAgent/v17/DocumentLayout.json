@@ -1,12 +1,105 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "D:\\Projects\\AI\\AiMigration\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\services\\migrationconfigservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\services\\migrationconfigservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\models\\migrationstartrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\models\\migrationstartrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\models\\migrationconfigdefaults.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\models\\migrationconfigdefaults.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\hubs\\migrationhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\hubs\\migrationhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "index.html",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\wwwroot\\index.html",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\wwwroot\\index.html",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\wwwroot\\index.html",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\wwwroot\\index.html",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAACIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-06-29T06:38:39.54Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MigrationConfigService.cs",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Services\\MigrationConfigService.cs",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\Services\\MigrationConfigService.cs",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Services\\MigrationConfigService.cs",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\Services\\MigrationConfigService.cs",
+              "ViewState": "AgIAAHIAAAAAAAAAAAAmwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-29T06:38:18.665Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MigrationStartRequest.cs",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Models\\MigrationStartRequest.cs",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\Models\\MigrationStartRequest.cs",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Models\\MigrationStartRequest.cs",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\Models\\MigrationStartRequest.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-29T06:38:15.995Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MigrationConfigDefaults.cs",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Models\\MigrationConfigDefaults.cs",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\Models\\MigrationConfigDefaults.cs",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Models\\MigrationConfigDefaults.cs",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\Models\\MigrationConfigDefaults.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-29T06:38:13.419Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MigrationHub.cs",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Hubs\\MigrationHub.cs",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\Hubs\\MigrationHub.cs",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Hubs\\MigrationHub.cs",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\Hubs\\MigrationHub.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-29T06:38:10.557Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

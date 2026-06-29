@@ -289,7 +289,7 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             if (IsCompilerTargetedSourceUpdate(type) && !ValidationMentionsFile(validation, file)) return (false, $"Source file {file} is not directly tied to the validation failure.");
             if (IsCompilerTargetedSourceUpdate(type) && !ValidationOutputHasCompilerEvidence(validation, file)) return (false, $"Source file {file} lacks exact compiler/build evidence in the validation failure.");
             if (string.Equals(type, "script_update", StringComparison.OrdinalIgnoreCase) && !IsSafeScriptUpdate(change, validation)) return (false, $"Script update in {file} is not tied to a deprecated CLI flag validation failure.");
-            if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !change.BoolValue("requiresVersionVerification")) return (false, $"Package update in {file} must require npm version verification before applying.");
+            if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !IsNuGetNu1605PackageUpdate(change, validation) && !change.BoolValue("requiresVersionVerification")) return (false, $"Package update in {file} must require npm version verification before applying.");
             if (string.Equals(type, "package_update", StringComparison.OrdinalIgnoreCase) && !IsValidationProvenPackageUpdate(change, validation)) return (false, $"Package update in {file} is not limited to a validation-proven blocker package.");
             if (string.Equals(type, "config_update", StringComparison.OrdinalIgnoreCase) && !IsSafeConfigUpdate(file, change, validation)) return (false, $"Config update in {file} is not minimal or directly tied to the validation failure.");
             if (string.Equals(type, "style_import_update", StringComparison.OrdinalIgnoreCase))
@@ -494,6 +494,9 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
         if (materialSassRemediation is not null) return materialSassRemediation;
 
         var failureText = $"{validation.Output}\n{validation.Errors}";
+        var nu1605Remediation = await TryApplyNu1605PackageDowngradeRemediationAsync(outputPath, validation, failureText, attempt, maxAttempts, cancellationToken);
+        if (nu1605Remediation is not null) return nu1605Remediation;
+
         var entryComponentsRemediation = sourceCompatibilityRemediation
             ? await TryRemoveEntryComponentsAsync(outputPath, validation, failureText, attempt, maxAttempts, cancellationToken)
             : null;
@@ -535,6 +538,72 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             ["scripts"] = changedScripts,
             ["businessFile"] = false
         };
+    }
+
+    private static async Task<JsonObject?> TryApplyNu1605PackageDowngradeRemediationAsync(string outputPath, ValidationResult validation, string failureText, int attempt, int maxAttempts, CancellationToken cancellationToken)
+    {
+        var downgrade = ExtractNu1605Downgrades(failureText).FirstOrDefault();
+        if (downgrade is null) return null;
+
+        var projectFile = ResolveProjectFile(outputPath, downgrade.ProjectFile);
+        if (projectFile is null || !File.Exists(projectFile)) return null;
+
+        var beforeContent = await File.ReadAllTextAsync(projectFile, cancellationToken);
+        var afterContent = ReplaceNuGetPackageVersion(beforeContent, downgrade.PackageName, downgrade.CurrentVersion, downgrade.RequestedVersion);
+        if (string.Equals(beforeContent, afterContent, StringComparison.Ordinal)) return null;
+
+        await File.WriteAllTextAsync(projectFile, afterContent, cancellationToken);
+        var relativeFile = NormalizeRelativePath(Path.GetRelativePath(outputPath, projectFile));
+        return new JsonObject
+        {
+            ["attempt"] = attempt,
+            ["maxAttempts"] = maxAttempts,
+            ["type"] = "package_update",
+            ["file"] = relativeFile,
+            ["packageName"] = downgrade.PackageName,
+            ["name"] = downgrade.PackageName,
+            ["fromVersion"] = downgrade.CurrentVersion,
+            ["toVersion"] = downgrade.RequestedVersion,
+            ["reason"] = $"Align direct {downgrade.PackageName} reference with NU1605 transitive requirement.",
+            ["change"] = "package_update",
+            ["mode"] = "deterministic",
+            ["failedCommand"] = FailedCommand(validation),
+            ["failureCause"] = $"NuGet restore detected package downgrade for {downgrade.PackageName} from {downgrade.RequestedVersion} to {downgrade.CurrentVersion}.",
+            ["failureCategory"] = "dependency",
+            ["confidence"] = 1.0,
+            ["risk"] = "low",
+            ["businessLogicChanged"] = false,
+            ["businessFile"] = false,
+            ["nugetErrorCode"] = "NU1605"
+        };
+    }
+
+    private static string? ResolveProjectFile(string outputPath, string projectFile)
+    {
+        if (string.IsNullOrWhiteSpace(projectFile)) return null;
+        var normalized = projectFile.Trim().Trim('"').Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        var full = Path.IsPathRooted(normalized) ? Path.GetFullPath(normalized) : Path.GetFullPath(Path.Combine(outputPath, normalized));
+        if (IsUnderRoot(full, outputPath)) return full;
+
+        var fileName = Path.GetFileName(normalized);
+        return Directory.EnumerateFiles(outputPath, fileName, SearchOption.AllDirectories)
+            .FirstOrDefault(path => IsUnderRoot(path, outputPath));
+    }
+
+    private static string ReplaceNuGetPackageVersion(string content, string packageName, string currentVersion, string requestedVersion)
+    {
+        var package = Regex.Escape(packageName);
+        var current = Regex.Escape(currentVersion);
+        content = Regex.Replace(
+            content,
+            $@"(<PackageReference\b[^>]*(?:Include|Update)=[""']{package}[""'][^>]*\bVersion=)[""']{current}[""']",
+            match => $"{match.Groups[1].Value}\"{requestedVersion}\"",
+            RegexOptions.IgnoreCase);
+        return Regex.Replace(
+            content,
+            $@"(<PackageReference\b[^>]*(?:Include|Update)=[""']{package}[""'][^>]*>\s*<Version>){current}(</Version>)",
+            match => $"{match.Groups[1].Value}{requestedVersion}{match.Groups[2].Value}",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
     }
 
     private static async Task<JsonObject?> TryRemoveEntryComponentsAsync(string outputPath, ValidationResult validation, string failureText, int attempt, int maxAttempts, CancellationToken cancellationToken)
@@ -1346,11 +1415,36 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
             return false;
         }
 
+        if (IsNuGetNu1605PackageUpdate(change, validation)) return true;
+
         var packageNames = ProvenSourcePackageNamesFromPackageUpdate(change).ToArray();
         if (packageNames.Length == 0) return false;
         var text = validation.Output + "\n" + validation.Errors;
         var provenPackages = ExtractValidationMentionedPackages(text).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return packageNames.Any(packageName => provenPackages.Contains(packageName) || text.Contains(packageName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsNuGetNu1605PackageUpdate(JsonObject change, ValidationResult validation)
+    {
+        if (!change.StringValue("file").EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)) return false;
+        var packageNames = ProvenSourcePackageNamesFromPackageUpdate(change).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (packageNames.Count == 0) return false;
+        var requestedVersion = ExtractPackageUpdateTargetVersion(change);
+        if (string.IsNullOrWhiteSpace(requestedVersion)) return false;
+
+        return ExtractNu1605Downgrades(validation.Output + "\n" + validation.Errors)
+            .Any(downgrade => packageNames.Contains(downgrade.PackageName) && string.Equals(downgrade.RequestedVersion, requestedVersion, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string ExtractPackageUpdateTargetVersion(JsonObject change)
+    {
+        var direct = change.StringValue("toVersion", change.StringValue("targetVersion"));
+        if (!string.IsNullOrWhiteSpace(direct)) return direct;
+        var after = change.StringValue("after");
+        var attribute = Regex.Match(after, @"\bVersion=[""'](?<version>[^""']+)[""']", RegexOptions.IgnoreCase);
+        if (attribute.Success) return attribute.Groups["version"].Value;
+        var element = Regex.Match(after, @"<Version>\s*(?<version>[^<\s]+)\s*</Version>", RegexOptions.IgnoreCase);
+        return element.Success ? element.Groups["version"].Value : "";
     }
 
     private static bool HasThirdPartyAngularRootCause(ValidationResult validation)
@@ -1381,15 +1475,36 @@ public sealed class AiRemediationPlanner(IAiService ai, IPromptLoader? promptLoa
                 if (!string.IsNullOrWhiteSpace(packageName)) yield return packageName;
             }
         }
-        foreach (var text in new[] { change.StringValue("before") })
+        foreach (var text in new[] { change.StringValue("before"), change.StringValue("after") })
         {
             foreach (Match match in Regex.Matches(text, "\"(?<name>(?:@[^/\"\\s]+/)?[^@\"\\s:]+)\"\\s*:", RegexOptions.IgnoreCase))
             {
                 var name = match.Groups["name"].Value;
                 if (!string.IsNullOrWhiteSpace(name) && !name.StartsWith("http", StringComparison.OrdinalIgnoreCase)) yield return name;
             }
+            foreach (Match match in Regex.Matches(text, @"<PackageReference\b[^>]*(?:Include|Update)=[""'](?<name>[^""']+)[""']", RegexOptions.IgnoreCase))
+            {
+                var name = match.Groups["name"].Value;
+                if (!string.IsNullOrWhiteSpace(name)) yield return name;
+            }
         }
     }
+
+    private static IEnumerable<Nu1605Downgrade> ExtractNu1605Downgrades(string text)
+    {
+        foreach (Match match in Regex.Matches(text, @"(?:(?<file>[^\r\n]+?\.csproj)\s*:\s*)?error\s+NU1605:.*?Detected package downgrade:\s*(?<name>\S+)\s+from\s+(?<requested>\S+)\s+to\s+(?<current>\S+)", RegexOptions.IgnoreCase))
+        {
+            yield return new Nu1605Downgrade(
+                match.Groups["file"].Value.Trim(),
+                CleanVersionToken(match.Groups["name"].Value),
+                CleanVersionToken(match.Groups["requested"].Value),
+                CleanVersionToken(match.Groups["current"].Value));
+        }
+    }
+
+    private static string CleanVersionToken(string value) => value.Trim().TrimEnd('.', ',', ';', ':', ')');
+
+    private sealed record Nu1605Downgrade(string ProjectFile, string PackageName, string RequestedVersion, string CurrentVersion);
 
     private static IEnumerable<string> ExtractValidationMentionedPackages(string text)
     {
