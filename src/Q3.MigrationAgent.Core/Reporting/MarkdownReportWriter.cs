@@ -81,6 +81,11 @@ public sealed class MarkdownReportWriter
     public string GenerateAdapterHopReport(JsonObject analysis, IReadOnlyList<MigrationHop> hops, IReadOnlyList<JsonObject> hopResults, ValidationResult validation)
     {
         var manifest = analysis["manifest"]?.AsObject() ?? new JsonObject();
+        if (!manifest.StringValue("runtime").Equals("angular", StringComparison.OrdinalIgnoreCase))
+        {
+            return GenerateGenericAdapterHopReport(analysis, manifest, hops, hopResults, validation);
+        }
+
         var executed = hopResults.ToDictionary(r => $"{r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}", r => r);
         var changedFiles = hopResults.SelectMany(r => r["files"]?.AsArray()?.Select(n => n?.ToString() ?? "") ?? []).Where(s => s.Length > 0).Distinct().Order().ToArray();
         var lines = new List<string>
@@ -200,6 +205,48 @@ public sealed class MarkdownReportWriter
         lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: passed={r["validation"]?["passed"]}"));
         lines.AddRange(["", "## Optional Angular Migrations", "- None", "", "## Manual Actions Required", validation.Passed == true ? "- None" : $"- Review failed hop: {validation.FailedHop ?? "unknown"}", "", "## Failures / Manual Actions Required"]);
         lines.Add(validation.Passed == true ? "- None" : $"- Failed hop: {validation.FailedHop ?? "unknown"}");
+        if (validation.SnapshotPath is not null) lines.Add($"- Snapshot available at: {validation.SnapshotPath}");
+        lines.Add($"- Rollback mode: {validation.RollbackMode}");
+        lines.Add($"- Automatic rollback applied: {validation.AutomaticRollbackApplied}");
+        lines.Add("");
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string GenerateGenericAdapterHopReport(JsonObject analysis, JsonObject manifest, IReadOnlyList<MigrationHop> hops, IReadOnlyList<JsonObject> hopResults, ValidationResult validation)
+    {
+        var runtime = manifest.StringValue("runtime", "unknown");
+        var display = runtime.Equals("dotnet", StringComparison.OrdinalIgnoreCase) ? ".NET" : runtime;
+        var executed = hopResults.ToDictionary(r => $"{r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}", r => r);
+        var changedFiles = hopResults.SelectMany(r => r["files"]?.AsArray()?.Select(n => n?.ToString() ?? "") ?? []).Where(s => s.Length > 0).Distinct().Order().ToArray();
+        var commands = hopResults.SelectMany(r => r["commands"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray();
+        var lines = new List<string>
+        {
+            "# Migration Report",
+            "",
+            "## Detection Summary",
+            $"- Detected runtime: {runtime}",
+            $"- Runtime: {analysis.StringValue("from")} -> {analysis.StringValue("to")}",
+            "",
+            "## Planned Migration Hops"
+        };
+        lines.AddRange(hops.Select(h => $"- {display} {h.FromVersion} -> {h.ToVersion}"));
+        lines.AddRange(["", "## Migration Hops"]);
+        foreach (var hop in hops)
+        {
+            var key = $"{hop.FromVersion} -> {hop.ToVersion}";
+            lines.Add($"- [{(executed.TryGetValue(key, out var result) ? result.StringValue("status", "pending") : "pending")}] {display} {key}");
+        }
+        lines.AddRange(["", "## Validation Summary"]);
+        lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- {display} {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: passed={r["validation"]?["passed"]}"));
+        lines.AddRange(["", "## Commands Executed"]);
+        lines.AddRange(commands.Length == 0 ? ["- None"] : commands.Select(c => $"- [{(c.IntValue("returncode") == 0 ? "passed" : "failed")}] {string.Join(" ", c["command"]?.AsArray()?.Select(x => x?.ToString()) ?? [])}"));
+        lines.AddRange(["", "## Command Failure Classification"]);
+        var failures = commands.Where(c => c.IntValue("returncode") != 0).ToArray();
+        lines.AddRange(failures.Length == 0 ? ["- No command failures recorded"] : failures.Select(c => $"- {c.StringValue("failureCategory", "command failed")}: {c.StringValue("failureReason")} Suggestion: {c.StringValue("suggestedNextAction")}"));
+        lines.AddRange(["", "## Structural File Changes"]);
+        lines.AddRange(changedFiles.Length == 0 ? ["- None"] : changedFiles.Select(file => $"- {file}"));
+        lines.AddRange(["", "## Manual Actions Required"]);
+        lines.Add(validation.Passed == true ? "- None" : $"- Review failed hop: {validation.FailedHop ?? "unknown"}");
         if (validation.SnapshotPath is not null) lines.Add($"- Snapshot available at: {validation.SnapshotPath}");
         lines.Add($"- Rollback mode: {validation.RollbackMode}");
         lines.Add($"- Automatic rollback applied: {validation.AutomaticRollbackApplied}");
