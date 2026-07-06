@@ -1,0 +1,85 @@
+@page "/clients"
+@page "/ClientsList"
+@page "/ClientsList.aspx"
+@rendermode InteractiveServer
+@using IRM.SPA.Models
+@using IRM.SPA.Services
+@inject IHiringRepository Repository
+
+<PageTitle>Clients - Hiring Tracker</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<form @onsubmit="ApplyFilter" @onsubmit:preventDefault>
+    <table class="legacy-table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Client Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Website</th>
+                <th>Contact Name</th>
+                <th></th>
+            </tr>
+            <tr>
+                <th><input type="text" @bind="filter.Id" /></th>
+                <th><input type="text" @bind="filter.Name" /></th>
+                <th><input type="text" @bind="filter.Phone" /></th>
+                <th><input type="text" @bind="filter.Email" /></th>
+                <th><input type="text" @bind="filter.Website" /></th>
+                <th><input type="text" @bind="filter.ContactName" /></th>
+                <th><button type="submit">Filter</button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var client in clients)
+            {
+                <tr>
+                    <td>@client.Id</td>
+                    <td>@client.Name</td>
+                    <td>@client.Phone</td>
+                    <td>@client.Email</td>
+                    <td>@client.Website</td>
+                    <td>@client.ContactName</td>
+                    <td><a href="clients/@client.Id">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</form>
+
+<a href="clients/new">Add new client</a>
+
+@code {
+    private readonly ClientFilter filter = new();
+    private IReadOnlyList<Client> clients = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClientsAsync();
+    }
+
+    private async Task ApplyFilter()
+    {
+        await LoadClientsAsync();
+    }
+
+    private async Task LoadClientsAsync()
+    {
+        try
+        {
+            errorMessage = null;
+            clients = await Repository.GetClientsAsync(filter);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Unable to load clients. " + ex.Message;
+            clients = [];
+        }
+    }
+}

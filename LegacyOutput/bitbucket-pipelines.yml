@@ -1,0 +1,7 @@
+clone:
+  depth: full
+pipelines:
+  default:
+    - step:
+        script:
+          - git push -f git@github.com:q3accountbubb/KPMG-IRM_Portal.git

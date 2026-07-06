@@ -1,0 +1,20 @@
+{
+  "projectPath": "D:\\Projects\\AI\\WebFormsMigrationDemo\\Source",
+  "from": {
+    "runtime": "legacy-webforms",
+    "version": "4.8"
+  },
+  "to": {
+    "runtime": "blazor-ssr",
+    "version": "8"
+  },
+  "targetArchitecturePath": "D:\\Projects\\q3_architecture\\DotNet\\BasicArchitecture\\Blazor-SPA-SSR",
+  "migrationContextPath": "D:\\Projects\\AI\\WebFormsMigrationDemo\\Source\\MIGRATION_CONTEXT.md",
+  "outputPath": "D:\\Projects\\AI\\AiMigration\\LegacyOutput",
+  "dryRun": false,
+  "useAi": true,
+  "aiCli": "codex",
+  "aiCliCommand": ["codex", "exec", "--skip-git-repo-check"],
+  "aiTimeoutSeconds": 600,
+  "commandTimeoutSeconds": 600
+}

@@ -1,0 +1,247 @@
+html,
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+}
+
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.dl-horizontal dt {
+    white-space: normal;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="select"] {
+    max-width: 280px;
+}
+
+.jumbotron {
+    padding: 30px;
+    margin-bottom: 30px;
+    color: inherit;
+    background-color: #eee;
+    border-radius: 6px;
+}
+
+.jumbotron h1 {
+    font-size: 63px;
+}
+
+.lead {
+    margin-bottom: 20px;
+    font-size: 21px;
+    font-weight: 300;
+    line-height: 1.4;
+}
+
+.navbar-inverse {
+    background-color: #222;
+    border-color: #080808;
+}
+
+.navbar-fixed-top {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+    top: 0;
+    border-width: 0 0 1px;
+}
+
+.navbar {
+    min-height: 50px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+}
+
+.navbar-header {
+    float: left;
+}
+
+.navbar-brand {
+    float: left;
+    height: 50px;
+    padding: 15px;
+    font-size: 18px;
+    line-height: 20px;
+}
+
+.navbar-inverse .navbar-brand,
+.navbar-inverse .navbar-nav > li > a {
+    color: #9d9d9d;
+}
+
+.navbar-inverse .navbar-brand:hover,
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a.active {
+    color: #fff;
+    text-decoration: none;
+}
+
+.navbar-nav {
+    float: left;
+    margin: 0;
+}
+
+.nav > li {
+    position: relative;
+    display: block;
+}
+
+.navbar-nav > li {
+    float: left;
+}
+
+.nav > li > a {
+    position: relative;
+    display: block;
+    padding: 10px 15px;
+}
+
+.navbar-nav > li > a {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    line-height: 20px;
+}
+
+.btn-default {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+.btn {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.formLabel {
+    display: inline-block;
+    width: 200px;
+}
+
+.legacy-table {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+
+.legacy-table th,
+.legacy-table td {
+    padding: 1px;
+    font-weight: normal;
+    text-align: left;
+    vertical-align: top;
+}
+
+.legacy-table th {
+    font-weight: bold;
+}
+
+.legacy-table input[type="text"] {
+    width: 130px;
+}
+
+.description-input {
+    width: 500px;
+    max-width: 100%;
+    vertical-align: top;
+}
+
+.link-button {
+    padding: 0;
+    color: #337ab7;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+}
+
+.link-button:hover {
+    color: #23527c;
+    text-decoration: underline;
+}
+
+.alert {
+    padding: 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+@media screen and (min-width: 768px) {
+    .jumbotron {
+        margin-top: 20px;
+    }
+
+    .body-content {
+        padding: 0;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .navbar-header,
+    .navbar-nav,
+    .navbar-nav > li {
+        float: none;
+    }
+
+    .navbar-fixed-top {
+        position: static;
+    }
+
+    body {
+        padding-top: 0;
+    }
+
+    .jumbotron h1 {
+        font-size: 42px;
+    }
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}

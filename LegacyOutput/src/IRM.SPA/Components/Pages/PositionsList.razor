@@ -1,0 +1,88 @@
+@page "/positions"
+@page "/PositionsList"
+@page "/PositionsList.aspx"
+@rendermode InteractiveServer
+@using IRM.SPA.Models
+@using IRM.SPA.Services
+@inject IHiringRepository Repository
+
+<PageTitle>Positions - Hiring Tracker</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<form @onsubmit="ApplyFilter" @onsubmit:preventDefault>
+    <table class="legacy-table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Start Date</th>
+                <th>Deadline</th>
+                <th>Position Closed</th>
+                <th>Client Contact</th>
+                <th></th>
+            </tr>
+            <tr>
+                <th><input type="text" @bind="filter.Id" /></th>
+                <th><input type="text" @bind="filter.Name" /></th>
+                <th><input type="text" @bind="filter.Description" /></th>
+                <th><input type="text" @bind="filter.StartDate" /></th>
+                <th><input type="text" @bind="filter.Deadline" /></th>
+                <th></th>
+                <th><input type="text" @bind="filter.ClientContact" /></th>
+                <th><button type="submit">Filter</button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var position in positions)
+            {
+                <tr>
+                    <td>@position.Id</td>
+                    <td>@position.Name</td>
+                    <td>@position.Description</td>
+                    <td>@position.StartDate</td>
+                    <td>@position.Deadline</td>
+                    <td>@position.Hired</td>
+                    <td>@position.ClientName (@position.ClientContactName)</td>
+                    <td><a href="positions/@position.Id">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</form>
+
+<a href="positions/new">Add new position</a>
+
+@code {
+    private readonly PositionFilter filter = new();
+    private IReadOnlyList<Position> positions = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPositionsAsync();
+    }
+
+    private async Task ApplyFilter()
+    {
+        await LoadPositionsAsync();
+    }
+
+    private async Task LoadPositionsAsync()
+    {
+        try
+        {
+            errorMessage = null;
+            positions = await Repository.GetPositionsAsync(filter);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Unable to load positions. " + ex.Message;
+            positions = [];
+        }
+    }
+}
