@@ -107,6 +107,39 @@ h1 {
     grid-column: 1 / -1;
 }
 
+.mode-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 180px));
+    width: fit-content;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px;
+    background: var(--panel-strong);
+}
+
+.mode-option {
+    min-height: 36px;
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 12px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.mode-option.active {
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    color: #00101a;
+}
+
+.legacy-only {
+    display: none;
+}
+
+body[data-mode="legacy"] .legacy-only {
+    display: grid;
+}
+
 label {
     color: var(--muted);
     font-size: 0.9rem;
@@ -228,6 +261,11 @@ button.danger {
     }
 
     .migration-form {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-toggle {
+        width: 100%;
         grid-template-columns: 1fr;
     }
 

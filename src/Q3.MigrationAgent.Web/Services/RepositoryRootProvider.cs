@@ -11,6 +11,8 @@ public sealed class RepositoryRootProvider
 
     public string ConfigPath => Path.Combine(RootPath, "migrate.config.json");
 
+    public string LegacyConfigPath => Path.Combine(RootPath, "legacy-migrate.config.json");
+
     private static string FindRepositoryRoot(string startPath)
     {
         var current = new DirectoryInfo(startPath);

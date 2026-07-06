@@ -32,4 +32,19 @@ public sealed class CommandRunnerTests
             Environment.SetEnvironmentVariable("PATH", originalPath);
         }
     }
+
+    [Fact]
+    public async Task Timed_Out_Command_Returns_Timeout_Result()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var root = TestWorkspace.Create();
+        var result = await new CommandRunner().RunAsync(
+            ["powershell.exe", "-NoProfile", "-Command", "Start-Sleep -Seconds 30"],
+            root,
+            timeoutSeconds: 1);
+
+        Assert.Equal(124, result.ExitCode);
+        Assert.Contains("Command timed out after 1 seconds", result.Output);
+    }
 }

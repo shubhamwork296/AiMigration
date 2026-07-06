@@ -1,0 +1,24 @@
+{
+  "projectPath": "D:\\Projects\\AI\\WebFormsMigrationDemo\\Source",
+  "outputPath": "D:\\Projects\\AI\\AiMigration\\rollback",
+  "targetArchitecturePath": "D:\\Projects\\q3_architecture\\DotNet\\BasicArchitecture\\Blazor-SPA-SSR",
+  "migrationContextPath": "D:\\Projects\\AI\\WebFormsMigrationDemo\\Source\\MIGRATION_CONTEXT.md",
+  "from": {
+    "runtime": "legacy-webforms",
+    "version": "4.8"
+  },
+  "to": {
+    "runtime": "blazor-ssr",
+    "version": "8"
+  },
+  "dryRun": false,
+  "useAi": true,
+  "aiCli": "codex",
+  "aiCliCommand": [
+    "codex",
+    "exec",
+    "--skip-git-repo-check"
+  ],
+  "aiTimeoutSeconds": 2000,
+  "commandTimeoutSeconds": 2000
+}

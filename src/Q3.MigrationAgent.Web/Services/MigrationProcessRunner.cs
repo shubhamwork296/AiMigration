@@ -7,6 +7,7 @@ namespace Q3.MigrationAgent.Web.Services;
 public sealed class MigrationProcessRunner
 {
     public const string CommandDisplay = "dotnet run --project src/Q3.MigrationAgent.Cli -- --config migrate.config.json";
+    public const string LegacyCommandDisplay = "dotnet run --project src/Q3.LegacyMigration.Cli -- --config legacy-migrate.config.json";
 
     private readonly RepositoryRootProvider _rootProvider;
     private readonly IHubContext<MigrationHub> _hubContext;
@@ -35,9 +36,13 @@ public sealed class MigrationProcessRunner
         }
     }
 
-    public Task<bool> StartAsync()
+    public Task<bool> StartAsync(string? migrationMode = null)
     {
         Process process;
+        var isLegacy = string.Equals(migrationMode?.Trim(), "legacy", StringComparison.OrdinalIgnoreCase);
+        var arguments = isLegacy
+            ? "run --project src/Q3.LegacyMigration.Cli -- --config legacy-migrate.config.json"
+            : "run --project src/Q3.MigrationAgent.Cli -- --config migrate.config.json";
 
         lock (_gate)
         {
@@ -51,7 +56,7 @@ public sealed class MigrationProcessRunner
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "dotnet",
-                    Arguments = "run --project src/Q3.MigrationAgent.Cli -- --config migrate.config.json",
+                    Arguments = arguments,
                     WorkingDirectory = _rootProvider.RootPath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -64,7 +69,7 @@ public sealed class MigrationProcessRunner
             _process = process;
         }
 
-        _ = RunProcessAsync(process);
+        _ = RunProcessAsync(process, isLegacy ? LegacyCommandDisplay : CommandDisplay);
         return Task.FromResult(true);
     }
 
@@ -93,30 +98,31 @@ public sealed class MigrationProcessRunner
         }
     }
 
-    private async Task RunProcessAsync(Process process)
+    private async Task RunProcessAsync(Process process, string commandDisplay)
     {
-        await BroadcastStatusAsync($"Starting: {CommandDisplay}");
+        await BroadcastStatusAsync($"Starting: {commandDisplay}");
 
         try
         {
             process.Start();
+
+            var stdoutTask = ReadLinesAsync(process.StandardOutput, "stdout");
+            var stderrTask = ReadLinesAsync(process.StandardError, "stderr");
+
+            await process.WaitForExitAsync();
+            await Task.WhenAll(stdoutTask, stderrTask);
+            await BroadcastCompletedAsync(process.ExitCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start migration process.");
-            await BroadcastLogAsync("stderr", $"Failed to start migration process: {ex.Message}");
+            _logger.LogError(ex, "Migration process runner failed.");
+            await BroadcastLogAsync("stderr", $"Migration process runner failed: {ex.Message}");
             await BroadcastCompletedAsync(-1);
-            ClearProcess(process);
-            return;
         }
-
-        var stdoutTask = ReadLinesAsync(process.StandardOutput, "stdout");
-        var stderrTask = ReadLinesAsync(process.StandardError, "stderr");
-
-        await process.WaitForExitAsync();
-        await Task.WhenAll(stdoutTask, stderrTask);
-        await BroadcastCompletedAsync(process.ExitCode);
-        ClearProcess(process);
+        finally
+        {
+            ClearProcess(process);
+        }
     }
 
     private async Task ReadLinesAsync(StreamReader reader, string stream)

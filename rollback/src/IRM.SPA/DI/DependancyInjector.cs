@@ -17,7 +17,6 @@ namespace IRM.SPA.DI
         {
            
 
-            services.AddScoped<IHiringRepository, HiringRepository>();
             RegisterApiClients(services, config);           
             RegisterModelValidators(services);
         }

@@ -19,6 +19,11 @@
 
             <section class="panel">
                 <form id="migrationForm" class="migration-form">
+                    <div class="mode-toggle field-wide" role="group" aria-label="Migration type">
+                        <button id="standardModeButton" class="mode-option active" type="button" data-mode="standard">Framework Upgrade</button>
+                        <button id="legacyModeButton" class="mode-option" type="button" data-mode="legacy">Legacy Migration</button>
+                    </div>
+
                     <div class="field field-wide">
                         <label for="sourcePath">Source folder</label>
                         <div class="browse-row">
@@ -35,22 +40,30 @@
                         </div>
                     </div>
 
+                    <div class="field field-wide legacy-only">
+                        <label for="targetArchitecturePath">Target architecture folder</label>
+                        <div class="browse-row">
+                            <input id="targetArchitecturePath" name="targetArchitecturePath" type="text" autocomplete="off">
+                            <button class="secondary" type="button" data-browse="targetArchitecturePath">Browse</button>
+                        </div>
+                    </div>
+
+                    <div class="field field-wide legacy-only">
+                        <label for="migrationContextPath">Context file</label>
+                        <div class="browse-row">
+                            <input id="migrationContextPath" name="migrationContextPath" type="text" autocomplete="off">
+                            <button class="secondary" type="button" data-browse-file="migrationContextPath">Browse</button>
+                        </div>
+                    </div>
+
                     <div class="field">
                         <label for="currentTechnology">Current technology</label>
-                        <select id="currentTechnology" name="currentTechnology">
-                            <option value=""></option>
-                            <option value="Angular">Angular</option>
-                            <option value="DotNet">DotNet</option>
-                        </select>
+                        <input id="currentTechnology" name="currentTechnology" list="technologyOptions" type="text" autocomplete="off">
                     </div>
 
                     <div class="field">
                         <label for="targetTechnology">Target technology</label>
-                        <select id="targetTechnology" name="targetTechnology">
-                            <option value=""></option>
-                            <option value="Angular">Angular</option>
-                            <option value="DotNet">DotNet</option>
-                        </select>
+                        <input id="targetTechnology" name="targetTechnology" list="technologyOptions" type="text" autocomplete="off">
                     </div>
 
                     <div class="field">
@@ -74,6 +87,13 @@
                         <option value="19"></option>
                         <option value="20"></option>
                         <option value="21"></option>
+                    </datalist>
+
+                    <datalist id="technologyOptions">
+                        <option value="Angular"></option>
+                        <option value="DotNet"></option>
+                        <option value="legacy-webforms"></option>
+                        <option value="blazor-ssr"></option>
                     </datalist>
 
                     <div class="actions">

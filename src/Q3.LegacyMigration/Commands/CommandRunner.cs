@@ -43,7 +43,17 @@ public sealed class CommandRunner : ICommandRunner
             await process.StandardInput.FlushAsync(cancellationToken);
             process.StandardInput.Close();
         }
-        await process.WaitForExitAsync(linked.Token);
+        try
+        {
+            await process.WaitForExitAsync(linked.Token);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            KillProcessTree(process);
+            output.AppendLine($"Command timed out after {timeoutSeconds} seconds: {string.Join(" ", command)}");
+            return new CommandResult(124, output.ToString());
+        }
+
         return new CommandResult(process.ExitCode, output.ToString());
     }
 
@@ -124,6 +134,20 @@ public sealed class CommandRunner : ICommandRunner
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2)
         {
             return null;
+        }
+    }
+
+    private static void KillProcessTree(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (InvalidOperationException)
+        {
         }
     }
 }

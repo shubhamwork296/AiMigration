@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "D:\\Projects\\AI\\AiMigration\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFC5EED4-A17A-4A8C-9AD2-864398BA9569}|src\\Q3.MigrationAgent.Web\\Q3.MigrationAgent.Web.csproj|solutionrelative:src\\q3.migrationagent.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|d:\\projects\\ai\\aimigration\\src\\q3.migrationagent.adapters\\angular\\angularadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{2F58A239-1DD8-484E-825A-E2F233C1C4A0}|src\\Q3.MigrationAgent.Adapters\\Q3.MigrationAgent.Adapters.csproj|solutionrelative:src\\q3.migrationagent.adapters\\angular\\angularadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -30,11 +34,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Program.cs",
+              "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Web\\Program.cs",
+              "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Web\\Program.cs",
+              "RelativeToolTip": "src\\Q3.MigrationAgent.Web\\Program.cs",
+              "ViewState": "AgIAAFgAAAAAAAAAAAAawGMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-06T07:17:38.646Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "DotNetAdapter.cs",
               "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\DotNet\\DotNetAdapter.cs",
               "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Adapters\\DotNet\\DotNetAdapter.cs",
@@ -46,20 +63,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "AngularAdapter.cs",
               "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
               "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
               "ToolTip": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
               "RelativeToolTip": "src\\Q3.MigrationAgent.Adapters\\Angular\\AngularAdapter.cs",
-              "ViewState": "AgIAAOgWAAAAAAAAAADwv+wWAACIAAAAAAAAAA==",
+              "ViewState": "AgIAAOgWAAAAAAAAAADwv+0WAABGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-30T09:16:16.606Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "AiUsageStats.cs",
               "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Core\\Logging\\AiUsageStats.cs",
               "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Core\\Logging\\AiUsageStats.cs",
@@ -71,7 +88,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "CliAiProviderBase.cs",
               "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.AI\\Providers\\CliAiProviderBase.cs",
               "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.AI\\Providers\\CliAiProviderBase.cs",
@@ -83,7 +100,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "MigrationExecutor.cs",
               "DocumentMoniker": "D:\\Projects\\AI\\AiMigration\\src\\Q3.MigrationAgent.Core\\Execution\\MigrationExecutor.cs",
               "RelativeDocumentMoniker": "src\\Q3.MigrationAgent.Core\\Execution\\MigrationExecutor.cs",

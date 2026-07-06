@@ -11,7 +11,6 @@ namespace IRM.SPA
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            AppDomain.CurrentDomain.SetData("DataDirectory", Path.Combine(builder.Environment.ContentRootPath, "App_Data"));
             ConfigurationOptions config = builder.Configuration.Get<ConfigurationOptions>() ?? new ConfigurationOptions();
             // Add services to the container.
             builder.Services.AddRazorComponents()

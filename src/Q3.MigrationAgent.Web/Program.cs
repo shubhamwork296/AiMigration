@@ -39,6 +39,17 @@ app.MapPost("/api/migration/browse-folder", async (
         : Results.Ok(new { path = selectedPath });
 });
 
+app.MapPost("/api/migration/browse-file", async (
+    BrowseFolderRequest request,
+    FolderDialogService folderDialogService,
+    CancellationToken cancellationToken) =>
+{
+    var selectedPath = await folderDialogService.BrowseFileAsync(request.InitialPath, cancellationToken);
+    return selectedPath is null
+        ? Results.NoContent()
+        : Results.Ok(new { path = selectedPath });
+});
+
 app.MapPost("/api/migration/start", async (
     MigrationStartRequest request,
     MigrationConfigService configService,
@@ -56,9 +67,9 @@ app.MapPost("/api/migration/start", async (
     }
 
     var effectiveConfig = configService.BuildEffectiveConfig(request);
-    configService.SaveConfig(effectiveConfig);
+    configService.SaveConfig(effectiveConfig, request.MigrationMode);
 
-    var started = await runner.StartAsync();
+    var started = await runner.StartAsync(request.MigrationMode);
     if (!started)
     {
         return Results.Conflict(new { message = "A migration is already running." });
@@ -67,7 +78,9 @@ app.MapPost("/api/migration/start", async (
     return Results.Accepted("/api/migration/start", new
     {
         message = "Migration started.",
-        command = MigrationProcessRunner.CommandDisplay
+        command = string.Equals(request.MigrationMode?.Trim(), "legacy", StringComparison.OrdinalIgnoreCase)
+            ? MigrationProcessRunner.LegacyCommandDisplay
+            : MigrationProcessRunner.CommandDisplay
     });
 });
 
@@ -88,6 +101,7 @@ app.Run();
 
 static string? ValidatePathRequest(MigrationStartRequest request)
 {
+    var isLegacy = string.Equals(request.MigrationMode?.Trim(), "legacy", StringComparison.OrdinalIgnoreCase);
     if (IsRelativePath(request.SourcePath))
     {
         return "Source folder must be an absolute path, for example D:\\Projects\\AWC\\awc_bookingflow_api\\PICO.API.";
@@ -101,6 +115,34 @@ static string? ValidatePathRequest(MigrationStartRequest request)
     if (IsRelativePath(request.OutputPath))
     {
         return "Output folder must be an absolute path, for example D:\\Projects\\AWC\\awc_bookingflow_api\\PICO.API_Output.";
+    }
+
+    if (isLegacy)
+    {
+        if (IsRelativePath(request.TargetArchitecturePath))
+        {
+            return "Target architecture folder must be an absolute path.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TargetArchitecturePath))
+        {
+            return "Target architecture folder is required for legacy migration.";
+        }
+
+        if (!Directory.Exists(request.TargetArchitecturePath.Trim()))
+        {
+            return $"Target architecture folder does not exist: {request.TargetArchitecturePath.Trim()}";
+        }
+
+        if (IsRelativePath(request.MigrationContextPath))
+        {
+            return "Context file must be an absolute path.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MigrationContextPath) && !File.Exists(request.MigrationContextPath.Trim()))
+        {
+            return $"Context file does not exist: {request.MigrationContextPath.Trim()}";
+        }
     }
 
     return null;
