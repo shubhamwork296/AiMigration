@@ -30,6 +30,7 @@ public sealed record MigrationConfig
     public bool AllowBusinessLogicChanges { get; init; }
     public bool SourceCompatibilityRemediation { get; init; }
     public bool PreferNgUpdate { get; init; } = true;
+    public bool ManualReviewAutoAccept { get; init; } = true;
     public bool AvoidFullVersionScans { get; init; } = true;
     public bool DirectDependenciesOnlyPreflight { get; init; } = true;
     public string PackageVersionVerificationMode { get; init; } = "install-first";

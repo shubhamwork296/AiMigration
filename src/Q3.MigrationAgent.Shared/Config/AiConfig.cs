@@ -7,8 +7,9 @@ public sealed record AiConfig
     public string Mode { get; init; } = "cli";
     public IReadOnlyList<string>? CliCommand { get; init; }
     public string AiCli { get; init; } = "auto";
+    public int TimeoutSeconds { get; init; } = 300;
+    public int IdleTimeoutSeconds { get; init; } = 120;
     public string? CliVersion { get; init; }
     public string? LatestVersion { get; init; }
     public IReadOnlyList<string> CliWarnings { get; init; } = Array.Empty<string>();
 }
-

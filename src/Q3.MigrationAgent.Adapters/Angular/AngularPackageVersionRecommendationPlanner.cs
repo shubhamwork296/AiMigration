@@ -9,6 +9,9 @@ namespace Q3.MigrationAgent.Adapters.Angular;
 
 public sealed class AngularPackageVersionRecommendationPlanner(IAiService ai, IPromptLoader promptLoader)
 {
+    private const double MinimumRecommendationConfidence = 30;
+    private const double MinimumNonAngularRecommendationConfidence = 30;
+
     private static readonly HashSet<string> Actions = ["upgrade", "preserve", "remove", "manualReview"];
     private static readonly HashSet<string> Risks = ["low", "medium", "high"];
     private static readonly HashSet<string> Impacts = ["required", "advisory", "none", "unknown"];
@@ -192,8 +195,8 @@ public sealed class AngularPackageVersionRecommendationPlanner(IAiService ai, IP
         if (!Impacts.Contains(installImpact) || !Impacts.Contains(buildImpact)) return (false, "Recommendation impact is not allowlisted.");
         if (item.BoolValue("manualReviewRequired") || action == "manualReview") return (false, item.StringValue("reason", "AI requested manual review."));
         if (risk == "high" && !criticalAlignment) return (false, "High-risk package version recommendation requires manual review.");
-        if (confidence < 60) return (false, "Package version recommendation confidence is below 60.");
-        if (confidence < 80 && !angularOwned) return (false, "Non-Angular package version recommendation confidence is below 80.");
+        if (confidence < MinimumRecommendationConfidence) return (false, $"Package version recommendation confidence is below {MinimumRecommendationConfidence}.");
+        if (confidence < MinimumNonAngularRecommendationConfidence && !angularOwned) return (false, $"Non-Angular package version recommendation confidence is below {MinimumNonAngularRecommendationConfidence}.");
         if (action != "upgrade") return (true, "");
         if (!angularOwned && !validationDriven) return (false, "Third-party package upgrades require validationDriven=true after an install/build/test failure.");
         if (string.IsNullOrWhiteSpace(recommended)) return (false, "Upgrade recommendation requires recommendedVersion.");

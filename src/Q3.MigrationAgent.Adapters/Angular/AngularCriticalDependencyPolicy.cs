@@ -11,18 +11,45 @@ internal static class AngularCriticalDependencyPolicy
         "@angular/compiler",
         "@angular/core",
         "@angular/forms",
+        "@angular/localize",
         "@angular/platform-browser",
         "@angular/platform-browser-dynamic",
         "@angular/router",
         "@angular/compiler-cli",
-        "@angular/cli",
-        "@angular-devkit/build-angular",
+        "@angular/language-service",
         "@angular/cdk",
         "@angular/material",
+        "@angular/material-moment-adapter",
+        "@angular/cli",
+        "@angular-devkit/build-angular",
         "typescript",
         "rxjs",
         "zone.js",
         "tslib"
+    };
+
+    public static readonly HashSet<string> SynchronizedAngularPackages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "@angular/animations",
+        "@angular/common",
+        "@angular/compiler",
+        "@angular/core",
+        "@angular/forms",
+        "@angular/localize",
+        "@angular/platform-browser",
+        "@angular/platform-browser-dynamic",
+        "@angular/router",
+        "@angular/compiler-cli",
+        "@angular/language-service"
+    };
+
+    public static readonly HashSet<string> IndependentAngularPackages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "@angular/cdk",
+        "@angular/material",
+        "@angular/material-moment-adapter",
+        "@angular/cli",
+        "@angular-devkit/build-angular"
     };
 
     public static bool IsCriticalPackage(string name) =>
@@ -31,6 +58,9 @@ internal static class AngularCriticalDependencyPolicy
     public static bool IsAngularOwnedPackage(string name) =>
         name.StartsWith("@angular/", StringComparison.OrdinalIgnoreCase) ||
         name.StartsWith("@angular-devkit/", StringComparison.OrdinalIgnoreCase);
+
+    public static bool RequiresSynchronizedAngularVersion(string name) =>
+        SynchronizedAngularPackages.Contains(name);
 
     public static bool IsSupportedTypeScriptForTarget(string version, int targetAngularMajor)
     {
@@ -44,6 +74,8 @@ internal static class AngularCriticalDependencyPolicy
             16 => Compare(tuple, [4, 9, 3]) >= 0 && Compare(tuple, [5, 2, 0]) < 0,
             17 => Compare(tuple, [5, 2, 0]) >= 0 && Compare(tuple, [5, 5, 0]) < 0,
             18 => Compare(tuple, [5, 4, 0]) >= 0 && Compare(tuple, [5, 6, 0]) < 0,
+            19 => Compare(tuple, [5, 5, 0]) >= 0 && Compare(tuple, [5, 9, 0]) < 0,
+            20 => Compare(tuple, [5, 8, 0]) >= 0 && Compare(tuple, [6, 0, 0]) < 0,
             _ => true
         };
     }
@@ -56,7 +88,9 @@ internal static class AngularCriticalDependencyPolicy
         16 => "~5.1.6",
         17 => "~5.4.5",
         18 => "~5.5.4",
-        _ => "~5.5.4"
+        19 => "~5.6.3",
+        20 => "~5.8.3",
+        _ => "~5.8.3"
     };
 
     public static bool IsSafeCriticalAlignment(string packageName, string targetVersion, int targetAngularMajor)
@@ -68,7 +102,12 @@ internal static class AngularCriticalDependencyPolicy
             return IsSupportedTypeScriptForTarget(targetVersion, targetAngularMajor);
         }
 
-        if (IsAngularOwnedPackage(packageName))
+        if (RequiresSynchronizedAngularVersion(packageName))
+        {
+            return NpmVersionRange.Major(targetVersion) == targetAngularMajor;
+        }
+
+        if (IndependentAngularPackages.Contains(packageName))
         {
             return NpmVersionRange.Major(targetVersion) == targetAngularMajor;
         }

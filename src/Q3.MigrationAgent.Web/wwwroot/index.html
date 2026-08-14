@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Migration Agent</title>
+    <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="workspace">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Local Web Runner</p>
+                    <h1>AI Migration Agent</h1>
+                </div>
+                <div id="connectionStatus" class="status-pill">Connecting</div>
+            </header>
+
+            <section class="panel">
+                <form id="migrationForm" class="migration-form">
+                    <div class="field field-wide">
+                        <label for="sourcePath">Source folder</label>
+                        <div class="browse-row">
+                            <input id="sourcePath" name="sourcePath" type="text" autocomplete="off">
+                            <button class="secondary" type="button" data-browse="sourcePath">Browse</button>
+                        </div>
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="outputPath">Output folder</label>
+                        <div class="browse-row">
+                            <input id="outputPath" name="outputPath" type="text" autocomplete="off">
+                            <button class="secondary" type="button" data-browse="outputPath">Browse</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="currentTechnology">Current technology</label>
+                        <select id="currentTechnology" name="currentTechnology">
+                            <option value=""></option>
+                            <option value="Angular">Angular</option>
+                            <option value="DotNet">DotNet</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="targetTechnology">Target technology</label>
+                        <select id="targetTechnology" name="targetTechnology">
+                            <option value=""></option>
+                            <option value="Angular">Angular</option>
+                            <option value="DotNet">DotNet</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="currentVersion">Current version</label>
+                        <input id="currentVersion" name="currentVersion" list="versionOptions" type="text" autocomplete="off">
+                    </div>
+
+                    <div class="field">
+                        <label for="targetVersion">Target version</label>
+                        <input id="targetVersion" name="targetVersion" list="versionOptions" type="text" autocomplete="off">
+                    </div>
+
+                    <datalist id="versionOptions">
+                        <option value="6"></option>
+                        <option value="8"></option>
+                        <option value="14"></option>
+                        <option value="15"></option>
+                        <option value="16"></option>
+                        <option value="17"></option>
+                        <option value="18"></option>
+                        <option value="19"></option>
+                        <option value="20"></option>
+                        <option value="21"></option>
+                    </datalist>
+
+                    <div class="actions">
+                        <button id="startButton" type="submit">Start Migration</button>
+                        <button id="cancelButton" class="danger" type="button" disabled>Cancel</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="terminal-wrap">
+                <div class="terminal-header">
+                    <span>Live Console</span>
+                    <button id="clearButton" class="ghost" type="button">Clear</button>
+                </div>
+                <pre id="terminal" class="terminal"></pre>
+            </section>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

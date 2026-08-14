@@ -81,6 +81,11 @@ public sealed class MarkdownReportWriter
     public string GenerateAdapterHopReport(JsonObject analysis, IReadOnlyList<MigrationHop> hops, IReadOnlyList<JsonObject> hopResults, ValidationResult validation)
     {
         var manifest = analysis["manifest"]?.AsObject() ?? new JsonObject();
+        if (!manifest.StringValue("runtime").Equals("angular", StringComparison.OrdinalIgnoreCase))
+        {
+            return GenerateGenericAdapterHopReport(analysis, manifest, hops, hopResults, validation);
+        }
+
         var executed = hopResults.ToDictionary(r => $"{r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}", r => r);
         var changedFiles = hopResults.SelectMany(r => r["files"]?.AsArray()?.Select(n => n?.ToString() ?? "") ?? []).Where(s => s.Length > 0).Distinct().Order().ToArray();
         var lines = new List<string>
@@ -96,10 +101,10 @@ public sealed class MarkdownReportWriter
             $"- angular.json: {manifest["hasAngularJson"]}",
             $"- tsconfig.json: {manifest["hasTsconfig"]}",
             "- Global Angular CLI was not modified.",
-            "- Angular CLI migrate-only runs only for policy-required hops.",
-            "- Command source: project-local npm scripts for validation; PATH ng only for policy-required official migrate-only",
-            "- Angular CLI source: PATH ng for official migrate-only; project-local dependency when validation scripts invoke it",
-            "- Global Angular CLI: used from PATH only for policy-required official migrate-only",
+            "- Angular CLI official update runs only for policy-required hops.",
+            "- Command source: project-local npm scripts for validation and project-local Angular CLI for official Angular updates",
+            "- Angular CLI source: project-local dependency for official updates and validation scripts",
+            "- Global Angular CLI: not used for official Angular updates",
             "- Global install/update: not performed",
             "",
             "## Planned Migration Hops"
@@ -167,7 +172,7 @@ public sealed class MarkdownReportWriter
         lines.AddRange(FormatAgentValidation(hopResults));
         lines.AddRange(["", "## Build Verification"]);
         lines.AddRange(FormatBuildVerification(hopResults));
-        lines.AddRange(["", "## Angular CLI Migrate-only Status"]);
+        lines.AddRange(["", "## Angular CLI Official Update Status"]);
         lines.AddRange(FormatOfficialMigrateOnlyStatus(hopResults));
         lines.AddRange(["", "## Preflight Dependency Compatibility Analysis"]);
         foreach (var hop in hops)
@@ -200,6 +205,48 @@ public sealed class MarkdownReportWriter
         lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: passed={r["validation"]?["passed"]}"));
         lines.AddRange(["", "## Optional Angular Migrations", "- None", "", "## Manual Actions Required", validation.Passed == true ? "- None" : $"- Review failed hop: {validation.FailedHop ?? "unknown"}", "", "## Failures / Manual Actions Required"]);
         lines.Add(validation.Passed == true ? "- None" : $"- Failed hop: {validation.FailedHop ?? "unknown"}");
+        if (validation.SnapshotPath is not null) lines.Add($"- Snapshot available at: {validation.SnapshotPath}");
+        lines.Add($"- Rollback mode: {validation.RollbackMode}");
+        lines.Add($"- Automatic rollback applied: {validation.AutomaticRollbackApplied}");
+        lines.Add("");
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string GenerateGenericAdapterHopReport(JsonObject analysis, JsonObject manifest, IReadOnlyList<MigrationHop> hops, IReadOnlyList<JsonObject> hopResults, ValidationResult validation)
+    {
+        var runtime = manifest.StringValue("runtime", "unknown");
+        var display = runtime.Equals("dotnet", StringComparison.OrdinalIgnoreCase) ? ".NET" : runtime;
+        var executed = hopResults.ToDictionary(r => $"{r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}", r => r);
+        var changedFiles = hopResults.SelectMany(r => r["files"]?.AsArray()?.Select(n => n?.ToString() ?? "") ?? []).Where(s => s.Length > 0).Distinct().Order().ToArray();
+        var commands = hopResults.SelectMany(r => r["commands"]?.AsArray()?.OfType<JsonObject>() ?? []).ToArray();
+        var lines = new List<string>
+        {
+            "# Migration Report",
+            "",
+            "## Detection Summary",
+            $"- Detected runtime: {runtime}",
+            $"- Runtime: {analysis.StringValue("from")} -> {analysis.StringValue("to")}",
+            "",
+            "## Planned Migration Hops"
+        };
+        lines.AddRange(hops.Select(h => $"- {display} {h.FromVersion} -> {h.ToVersion}"));
+        lines.AddRange(["", "## Migration Hops"]);
+        foreach (var hop in hops)
+        {
+            var key = $"{hop.FromVersion} -> {hop.ToVersion}";
+            lines.Add($"- [{(executed.TryGetValue(key, out var result) ? result.StringValue("status", "pending") : "pending")}] {display} {key}");
+        }
+        lines.AddRange(["", "## Validation Summary"]);
+        lines.AddRange(hopResults.Count == 0 ? ["- None"] : hopResults.Select(r => $"- {display} {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: passed={r["validation"]?["passed"]}"));
+        lines.AddRange(["", "## Commands Executed"]);
+        lines.AddRange(commands.Length == 0 ? ["- None"] : commands.Select(c => $"- [{(c.IntValue("returncode") == 0 ? "passed" : "failed")}] {string.Join(" ", c["command"]?.AsArray()?.Select(x => x?.ToString()) ?? [])}"));
+        lines.AddRange(["", "## Command Failure Classification"]);
+        var failures = commands.Where(c => c.IntValue("returncode") != 0).ToArray();
+        lines.AddRange(failures.Length == 0 ? ["- No command failures recorded"] : failures.Select(c => $"- {c.StringValue("failureCategory", "command failed")}: {c.StringValue("failureReason")} Suggestion: {c.StringValue("suggestedNextAction")}"));
+        lines.AddRange(["", "## Structural File Changes"]);
+        lines.AddRange(changedFiles.Length == 0 ? ["- None"] : changedFiles.Select(file => $"- {file}"));
+        lines.AddRange(["", "## Manual Actions Required"]);
+        lines.Add(validation.Passed == true ? "- None" : $"- Review failed hop: {validation.FailedHop ?? "unknown"}");
         if (validation.SnapshotPath is not null) lines.Add($"- Snapshot available at: {validation.SnapshotPath}");
         lines.Add($"- Rollback mode: {validation.RollbackMode}");
         lines.Add($"- Automatic rollback applied: {validation.AutomaticRollbackApplied}");
@@ -246,17 +293,22 @@ public sealed class MarkdownReportWriter
         return hopResults.Select(r =>
         {
             var label = $"Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}";
-            var command = string.Join(" ", r["officialAngularMigrateOnlyCommand"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
-            if (r.BoolValue("officialAngularMigrateOnlyExecuted"))
+            var command = string.Join(" ", (r["officialAngularUpdateCommand"] ?? r["officialAngularMigrateOnlyCommand"])?.AsArray()?.Select(x => x?.ToString()) ?? []);
+            if (r.BoolValue("officialAngularUpdateExecuted", r.BoolValue("officialAngularMigrateOnlyExecuted")))
             {
-                return $"- {label}: Official Angular migrate-only executed for {label} using ng from PATH. Command=`{command}`";
+                var files = string.Join(", ", (r["officialAngularUpdateChangedFiles"] ?? r["officialAngularMigrateOnlyChangedFiles"])?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                var sourceFiles = string.Join(", ", r["officialAngularMigrationBusinessImpactingFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+                var validationNote = r.StringValue("officialAngularMigrationAcceptanceStatus").Contains("validation-failed", StringComparison.OrdinalIgnoreCase) ? "; validation failed after Angular CLI changes, changes retained" : "";
+                return $"- {label}: official update triggered=yes; mode={r.StringValue("officialAngularUpdateMode", "migrate-only")}; reason={r.StringValue("officialAngularUpdateTriggerReason", r.StringValue("officialAngularMigrateOnlyTriggerReason"))}; source={r.StringValue("officialAngularUpdateSource", r.StringValue("officialAngularMigrateOnlySource"))}; command=`{command}`; Angular CLI generated changes={FilesText(files)}; acceptance={r.StringValue("officialAngularMigrationAcceptanceStatus")}; source/template files changed by Angular CLI={FilesText(sourceFiles)}{validationNote}";
             }
 
-            var required = r.BoolValue("officialAngularMigrateOnlyRequired");
-            var reason = r.StringValue("migrateOnlySkippedReason", required ? "required migrate-only did not run" : "not required by Angular hop policy");
-            return $"- {label}: skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
+            var required = r.BoolValue("officialAngularUpdateRequired", r.BoolValue("officialAngularMigrateOnlyRequired"));
+            var reason = r.StringValue("migrateOnlySkippedReason", required ? "required official Angular update did not run" : "not required by Angular hop policy");
+            return $"- {label}: official update triggered={r.BoolValue("officialAngularUpdateTriggered", r.BoolValue("officialAngularMigrateOnlyTriggered"))}; skipped={r.BoolValue("migrateOnlySkipped", true)}; required={required}; reason={reason}";
         });
     }
+
+    private static string FilesText(string files) => string.IsNullOrWhiteSpace(files) ? "none" : files;
 
     private static IEnumerable<string> FormatPeerDependencyConflicts(IReadOnlyList<JsonObject> hopResults)
     {
@@ -300,6 +352,11 @@ public sealed class MarkdownReportWriter
         foreach (var hop in hopResults)
         {
             var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
+            var manualChanged = string.Join(", ", hop["manualReviewChangedFiles"]?.AsArray()?.Select(x => x?.ToString()) ?? []);
+            lines.Add($"- {label}: manual_review auto-accept enabled: {hop.BoolValue("manualReviewAutoAcceptEnabled")}; received={hop.IntValue("manualReviewItemsReceived")}; applied={hop["manualReviewAppliedChanges"]?.AsArray()?.Count ?? 0}; failed={hop["manualReviewFailedChanges"]?.AsArray()?.Count ?? 0}; files changed by auto-accepted manual_review items={FilesText(manualChanged)}");
+            if (hop.BoolValue("manualReviewAutoAcceptEnabled") && hop.IntValue("manualReviewItemsReceived") > 0) lines.Add("- Warning: manual_review changes were auto-applied because intervention UI is not implemented yet.");
+            foreach (var item in hop["manualReviewAppliedChanges"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: manual_review auto-accepted config {item.StringValue("filePath", "unknown")} ({item.StringValue("reason", "manual review")})");
+            foreach (var item in hop["manualReviewFailedChanges"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: manual_review failed config {item.StringValue("filePath", "unknown")} ({item.StringValue("rejectionReason", item.StringValue("reason", "manual review failed"))})");
             foreach (var item in hop["packagesManualReview"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: package {item.StringValue("name", "unknown")} ({item.StringValue("reason", "manual review")})");
             foreach (var item in hop["manualAngularConfigRecommendations"]?.AsArray()?.OfType<JsonObject>() ?? []) lines.Add($"- {label}: config {item.StringValue("filePath", "unknown")} ({item.StringValue("reason", item.ToString())})");
         }
@@ -317,7 +374,7 @@ public sealed class MarkdownReportWriter
                 .ToDictionary(i => i.StringValue("name"), StringComparer.OrdinalIgnoreCase) ?? [];
             foreach (var item in hop["aiPackageVersionRecommendationsAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var action = item.StringValue("action", "upgrade") == "upgrade" ? "accepted" : item.StringValue("action");
+                var action = item.StringValue("action", "upgrade") == "upgrade" ? "recommended" : item.StringValue("action");
                 var packageName = item.StringValue("packageName");
                 var applied = acceptedTargets.GetValueOrDefault(packageName);
                 var final = applied?.StringValue("finalAcceptedVersion", applied.StringValue("toVersion")) ?? item.StringValue("recommendedVersion", item.StringValue("action"));
@@ -332,11 +389,11 @@ public sealed class MarkdownReportWriter
             }
             foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                lines.Add($"- [packageVersionNotFound] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalResolvedVersion", "none")}; fallbackReason={item.StringValue("npmFallbackReason", item.StringValue("failureReason", "none"))}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}; packageJsonUpdated={item.BoolValue("packageJsonUpdated")}");
+                lines.Add($"- [rejected/blocker] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalResolvedVersion", "none")}; fallbackReason={item.StringValue("npmFallbackReason", item.StringValue("failureReason", "none"))}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}; packageJsonUpdated={item.BoolValue("packageJsonUpdated")}");
             }
             foreach (var item in hop["packageTargetValidation"]?["resolved"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var tag = string.IsNullOrWhiteSpace(item.StringValue("npmFallbackReason")) ? "npmVerified" : "resolvedFallback";
+                var tag = string.IsNullOrWhiteSpace(item.StringValue("npmFallbackReason")) ? "accepted" : "fallbackResolved";
                 lines.Add($"- [{tag}] {label}: package={item.StringValue("packageName", "unknown")}; aiRecommended={item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}; npmVerificationCommand=`{item.StringValue("npmVerificationCommand", "unknown")}`; npmVerification={item.StringValue("npmVerificationResult", item.StringValue("npmValidationResult", "unknown"))}; aiReRecommended={item.StringValue("aiReRecommendedVersion", "none")}; finalSelected={item.StringValue("finalAcceptedVersion", "unknown")}; fallbackReason={item.StringValue("npmFallbackReason", "none")}; aiOverriddenByNpm={item.BoolValue("aiRecommendationOverriddenByNpm")}");
             }
         }
@@ -364,7 +421,7 @@ public sealed class MarkdownReportWriter
             }
             foreach (var item in hop["packageTargetValidation"]?["invalid"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                lines.Add($"- {item.StringValue("packageName", "unknown")}");
+                lines.Add($"- [rejected/blocker] {item.StringValue("packageName", "unknown")}");
                 lines.Add($"  - AI recommended: {item.StringValue("originalSuggestedVersion", item.StringValue("requestedTarget", "unknown"))}");
                 lines.Add($"  - verification mode: {item.StringValue("verificationMode", hop["packageTargetValidation"]?.AsObject().StringValue("verificationMode", "install-first") ?? "install-first")}");
                 lines.Add($"  - npm view: {FormatNpmViewStatus(item)}");
@@ -394,7 +451,7 @@ public sealed class MarkdownReportWriter
             var label = $"Angular {hop["hop"]?["fromVersion"]} -> {hop["hop"]?["toVersion"]}";
             foreach (var item in hop["angularCriticalDependencyAlignmentAccepted"]?.AsArray()?.OfType<JsonObject>() ?? [])
             {
-                var action = item.StringValue("action") switch { "align" or "add" => "accepted", "preserve" => "preserved", _ => item.StringValue("action") };
+                var action = item.StringValue("action") switch { "align" or "add" => "recommended", "preserve" => "preserved", _ => item.StringValue("action") };
                 var versionText = item.StringValue("action") == "preserve"
                     ? item.StringValue("currentVersion")
                     : $"{item.StringValue("currentVersion")} -> {item.StringValue("recommendedVersion")}";
@@ -420,7 +477,19 @@ public sealed class MarkdownReportWriter
     private static IEnumerable<string> FormatCleanInstall(IReadOnlyList<JsonObject> hopResults)
     {
         if (hopResults.Count == 0) return ["- None"];
-        return hopResults.Select(r => $"- Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}: node_modules deleted={r.BoolValue("nodeModulesDeleted")}; package-lock.json deleted={r.BoolValue("packageLockDeleted")}; install command=`{r.StringValue("installCommandUsed", "not run")}`; fallback used={r.BoolValue("installFallbackUsed")}");
+        var lines = new List<string>();
+        foreach (var r in hopResults)
+        {
+            var label = $"Angular {r["hop"]?["fromVersion"]} -> {r["hop"]?["toVersion"]}";
+            lines.Add($"- {label}: node_modules deleted={r.BoolValue("nodeModulesDeleted")}; package-lock.json deleted={r.BoolValue("packageLockDeleted")}; install command=`{r.StringValue("installCommandUsed", "not run")}`; fallback used={r.BoolValue("installFallbackUsed")}");
+            foreach (var remediation in r["cleanInstallSummary"]?["thirdPartyPeerConflictRemediations"]?.AsArray()?.OfType<JsonObject>() ?? [])
+            {
+                var runtimePeer = remediation.StringValue("versionRecommendationSource") == "runtime-peer-dependency-remediation";
+                var prefix = runtimePeer ? "root runtime peer package remediated" : "peer conflict package remediated";
+                lines.Add($"- {label}: {prefix}={remediation.StringValue("packageName", "unknown")}; {remediation.StringValue("fromVersion", "unknown")} -> {remediation.StringValue("toVersion", "manual review")}; requiredByPackage={remediation.StringValue("requiredByPackage", remediation.StringValue("requiredBy", "unknown"))}; requiredPeerRange={remediation.StringValue("requiredPeerRange", "unknown")}; source={remediation.StringValue("versionRecommendationSource", "third-party-peer-conflict-remediation")}; npm validation={remediation.StringValue("npmValidationResult", remediation.StringValue("status", "unknown"))}; verification=`{remediation.StringValue("verificationCommand", "not run")}`; reason={remediation.StringValue("angularCompatibilityReason", remediation.StringValue("reason"))}");
+            }
+        }
+        return lines;
     }
 
     private static IEnumerable<string> FormatBuildVerification(IReadOnlyList<JsonObject> hopResults)

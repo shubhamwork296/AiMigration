@@ -13,6 +13,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     public static readonly HashSet<string> SupportedProviders = ["codex", "claude"];
     public static readonly HashSet<string> SupportedModes = ["auto", "cli"];
     public const string RawOutputPath = "codex_raw_output.txt";
+    public const string ParsedCandidatePath = "codex_parsed_candidate.txt";
     private static readonly HashSet<string> RemediationRisks = ["low", "medium", "high"];
     private static readonly HashSet<string> RemediationFailureCategories =
     [
@@ -22,7 +23,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     private static readonly HashSet<string> RemediationChangeTypes =
     [
         "script_update", "package_update", "config_update", "type_shim", "source_update", "style_import_update",
-        "test_config_update", "dependency", "package"
+        "minimal_module_or_import_wiring", "test_config_update", "dependency", "package"
     ];
     private static readonly Dictionary<string, string> CliPackages = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -85,96 +86,112 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
             throw ParseFailure(provider, "empty-output", false, false, false, rawStdout ?? text, rawStderr ?? "");
         }
 
-        var scan = ScanJsonObjects(source);
-        foreach (var candidate in scan.Candidates)
-        {
-            if (IsInsideMarkdownFence(source, candidate.Start)) continue;
-            JsonObject? parsed;
-            try
-            {
-                parsed = JsonNode.Parse(candidate.Text) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
-
-            scan.ParsedAny = true;
-            if (parsed is not null && IsExpectedResponseSchema(parsed))
-            {
-                return parsed;
-            }
-        }
+        var scan = ScanJsonObjects(StripMarkdownCodeFence(source));
+        var parsedResponse = TryParseExpectedResponse(source, scan);
+        if (parsedResponse is not null) return parsedResponse;
 
         WriteRawOutput(rawStdout ?? text, rawStderr ?? "");
-        throw ParseFailure(provider, FailureKind(source, scan), scan.Candidates.Count > 0, scan.ParsedAny, scan.Truncated, rawStdout ?? text, rawStderr ?? "");
+        throw ParseFailure(provider, FailureKind(source, scan), scan.Candidates.Count > 0, scan.ParsedAny, scan.Truncated, rawStdout ?? text, rawStderr ?? "", scan);
     }
 
     public static JsonObject ParseCodexResponse(string stdout, string stderr, IReadOnlyList<string> command, string provider)
     {
-        var parseSource = UsesJsonLines(command)
-            ? ExtractFinalJsonLineMessage(stdout) ?? ""
-            : stdout;
-        return ParseJsonObject(parseSource, provider, stdout, stderr);
+        if (!UsesJsonLines(command)) return ParseJsonObject(stdout, provider, stdout, stderr);
+
+        var eventResponse = ExtractJsonLineAgentMessage(stdout, out var diagnostics);
+        if (eventResponse is not null) return eventResponse;
+
+        if (LooksLikeCodexEventStream(stdout))
+        {
+            WriteRawOutput(stdout, stderr);
+            var reason = diagnostics.AgentMessagesFound == 0 ? "no-agent-message-found" : diagnostics.FailureReason;
+            throw new AiJsonParseException(
+                $"{provider} JSON parse failed ({reason}). candidatesAttempted={diagnostics.CandidatesAttempted}. agentMessagesFound={diagnostics.AgentMessagesFound}. " +
+                $"{diagnostics.Details} rawOutputPath={RawOutputPath}. parsedCandidatePath={diagnostics.CandidatePath ?? "not available"}. " +
+                $"Raw stdout first 500 chars: {Preview(stdout)}. Raw stderr first 500 chars: {Preview(stderr)}.",
+                reason,
+                RawOutputPath,
+                diagnostics.CandidatePath,
+                diagnostics.CandidatesAttempted,
+                diagnostics.RejectedField,
+                diagnostics.RejectedValue,
+                diagnostics.AllowedValues);
+        }
+
+        return ParseJsonObject(stdout, provider, stdout, stderr);
     }
 
     private static JsonObject? ParseJsonLine(string line)
     {
         try
         {
-            return JsonNode.Parse(line) as JsonObject;
+            var parsed = JsonNode.Parse(line) as JsonObject;
+            return parsed is not null && IsJsonObjectUsable(parsed) ? parsed : null;
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
             return null;
         }
     }
 
-    private static string? ExtractFinalJsonLineMessage(string stdout)
+    private static JsonObject? ExtractJsonLineAgentMessage(string stdout, out CodexJsonLineDiagnostics diagnostics)
     {
-        var messages = new List<string>();
+        diagnostics = new CodexJsonLineDiagnostics();
         foreach (var line in stdout.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries))
         {
             var evt = ParseJsonLine(line.Trim());
             if (evt is null) continue;
-            var type = evt.StringValue("type", evt.StringValue("event", evt.StringValue("msg_type")));
-            if (!type.Contains("assistant", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("agent", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("turn", StringComparison.OrdinalIgnoreCase) &&
-                !type.Contains("message", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
 
-            var text = ExtractMessageText(evt);
-            if (!string.IsNullOrWhiteSpace(text)) messages.Add(text);
+            if (!string.Equals(evt.StringValue("type"), "item.completed", StringComparison.OrdinalIgnoreCase)) continue;
+            if (evt["item"] is not JsonObject item) continue;
+            if (!string.Equals(item.StringValue("type"), "agent_message", StringComparison.OrdinalIgnoreCase)) continue;
+            if (item["text"] is not JsonValue textValue || !textValue.TryGetValue<string>(out var text) || string.IsNullOrWhiteSpace(text)) continue;
+            diagnostics.AgentMessagesFound++;
+
+            var candidateSource = StripMarkdownCodeFence(text);
+            var scan = ScanJsonObjects(candidateSource);
+            diagnostics.CandidatesAttempted += Math.Max(scan.Candidates.Count, 1);
+            diagnostics.Truncated |= scan.Truncated;
+            var parsed = TryParseExpectedResponse(candidateSource, scan);
+            if (parsed is not null) return parsed;
+
+            diagnostics.LastCandidate = scan.Candidates.OrderByDescending(c => c.Text.Length).FirstOrDefault()?.Text ?? Preview(candidateSource, 1000);
+            diagnostics.ParsedAny |= scan.ParsedAny;
+            diagnostics.BalancedFound |= scan.Candidates.Count > 0;
         }
-        return messages.LastOrDefault();
+
+        if (diagnostics.AgentMessagesFound == 0) diagnostics.FailureReason = "no-agent-message-found";
+        else if (diagnostics.Truncated || !diagnostics.BalancedFound) diagnostics.FailureReason = "balanced-json-not-found";
+        else if (!diagnostics.ParsedAny) diagnostics.FailureReason = "malformed-json";
+        else diagnostics.FailureReason = "schema-validation-failed";
+
+        if (!string.IsNullOrWhiteSpace(diagnostics.LastCandidate))
+        {
+            File.WriteAllText(ParsedCandidatePath, diagnostics.LastCandidate);
+            diagnostics.CandidatePath = ParsedCandidatePath;
+            var detail = SchemaValidationDetails(diagnostics.LastCandidate);
+            diagnostics.Details = detail;
+            var field = Regex.Match(detail, @"rejectedField=([^,\s]+), rejectedValue=([^,\s]+)(?:, allowedValues=([^\.]+))?");
+            if (field.Success)
+            {
+                diagnostics.RejectedField = field.Groups[1].Value;
+                diagnostics.RejectedValue = field.Groups[2].Value;
+                diagnostics.AllowedValues = field.Groups[3].Value;
+            }
+        }
+
+        return null;
     }
 
-    private static string? ExtractMessageText(JsonNode? node)
+    private static bool LooksLikeCodexEventStream(string stdout)
     {
-        if (node is null) return null;
-        if (node is JsonValue value)
+        foreach (var line in stdout.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries))
         {
-            return value.TryGetValue<string>(out var text) ? text : null;
+            var evt = ParseJsonLine(line.Trim());
+            var type = evt?.StringValue("type");
+            if (type is "thread.started" or "turn.started" or "turn.completed" or "item.completed") return true;
         }
-        if (node is JsonArray array)
-        {
-            var parts = array.Select(ExtractMessageText).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
-            return parts.Length == 0 ? null : string.Join("\n", parts);
-        }
-        if (node is not JsonObject obj) return null;
-
-        foreach (var key in new[] { "message", "content", "text", "output", "response", "final_response" })
-        {
-            if (obj.TryGetPropertyValue(key, out var child))
-            {
-                var text = ExtractMessageText(child);
-                if (!string.IsNullOrWhiteSpace(text)) return text;
-            }
-        }
-        return null;
+        return false;
     }
 
     private static bool UsesJsonLines(IReadOnlyList<string> command) =>
@@ -233,8 +250,66 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         return scan;
     }
 
+    private static JsonObject? TryParseExpectedResponse(string source, JsonObjectScan scan)
+    {
+        foreach (var candidate in scan.Candidates.OrderByDescending(c => c.Text.Length))
+        {
+            JsonObject? parsed;
+            try
+            {
+                parsed = JsonNode.Parse(candidate.Text) as JsonObject;
+            }
+            catch (Exception ex) when (ex is JsonException or ArgumentException)
+            {
+                continue;
+            }
+
+            if (parsed is null || !IsJsonObjectUsable(parsed)) continue;
+
+            scan.ParsedAny = true;
+            if (IsExpectedResponseSchema(parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsJsonObjectUsable(JsonObject obj)
+    {
+        try
+        {
+            foreach (var property in obj)
+            {
+                _ = obj.ContainsKey(property.Key);
+                if (!IsJsonNodeUsable(property.Value)) return false;
+            }
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsJsonNodeUsable(JsonNode? node) =>
+        node switch
+        {
+            null => true,
+            JsonObject obj => IsJsonObjectUsable(obj),
+            JsonArray arr => arr.All(IsJsonNodeUsable),
+            _ => true
+        };
+
     private static bool IsExpectedResponseSchema(JsonObject obj) =>
-        IsRemediationPlanSchema(obj) || IsRecommendationSchema(obj) || IsPackageClassificationSchema(obj) || IsThirdPartyPackageRemediationSchema(obj);
+        IsRemediationPlanSchema(obj) ||
+        IsMigrationAnalysisSchema(obj) ||
+        IsRecommendationSchema(obj) ||
+        IsPackageClassificationSchema(obj) ||
+        IsThirdPartyPackageRemediationSchema(obj) ||
+        IsInstallStrategySchema(obj) ||
+        IsStructuralConfigSchema(obj);
 
     private static bool IsRemediationPlanSchema(JsonObject obj)
     {
@@ -253,8 +328,29 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         return true;
     }
 
-    private static bool IsRecommendationSchema(JsonObject obj) =>
-        obj["recommendations"] is JsonArray && (obj["warnings"] is null or JsonArray);
+    private static bool IsMigrationAnalysisSchema(JsonObject obj)
+    {
+        if (obj["summary"] is null || obj["confidence"] is null || obj["risk"] is null) return false;
+        if (obj["changes"] is not JsonArray || obj["recommendations"] is not JsonArray) return false;
+        if (obj["packageUpdates"] is not null and not JsonArray) return false;
+        if (obj["manualReview"] is not null and not JsonArray) return false;
+        if (obj.StringValue("risk") is not ("low" or "medium" or "high")) return false;
+        return true;
+    }
+
+    private static bool IsRecommendationSchema(JsonObject obj)
+    {
+        if (obj["recommendations"] is not JsonArray recommendations) return false;
+        if (obj["warnings"] is not null && obj["warnings"] is not JsonArray) return false;
+        foreach (var item in recommendations.OfType<JsonObject>())
+        {
+            if (string.IsNullOrWhiteSpace(item.StringValue("packageName", item.StringValue("package")))) return false;
+            var action = item.StringValue("action");
+            if (!string.IsNullOrWhiteSpace(action) && action is not ("align" or "preserve" or "add" or "remove" or "manualReview" or "update" or "upgrade" or "bump" or "update_dependency" or "hold" or "manual_review")) return false;
+        }
+
+        return true;
+    }
 
     private static bool IsPackageClassificationSchema(JsonObject obj)
     {
@@ -290,11 +386,45 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         return false;
     }
 
-    private static bool IsInsideMarkdownFence(string text, int index)
+    private static bool IsInstallStrategySchema(JsonObject obj)
     {
-        var before = text[..index];
-        var fenceCount = Regex.Matches(before, "```").Count;
-        return fenceCount % 2 == 1;
+        if (obj["strategy"] is null || obj["command"] is null || obj["reason"] is null || obj["confidence"] is null || obj["risk"] is null) return false;
+        if (obj["isRetry"] is null || obj["isFallback"] is null || obj["maxRetries"] is null || obj["failureClassification"] is null) return false;
+
+        var strategy = obj.StringValue("strategy");
+        if (strategy is not ("normalInstall" or "legacyPeerDepsInstall" or "retrySameCommand" or "manualReview")) return false;
+        if (obj.StringValue("risk") is not ("low" or "medium" or "high")) return false;
+        if (obj.StringValue("failureClassification") is not ("none" or "peerDependencyConflict" or "transientNetworkFailure" or "registryAuthFailure" or "packageVersionNotFound" or "unknownFailure")) return false;
+        return obj["isRetry"] is JsonValue && obj["isFallback"] is JsonValue && obj["maxRetries"] is JsonValue;
+    }
+
+    private static bool IsStructuralConfigSchema(JsonObject obj)
+    {
+        if (obj["targetAngularHop"] is null || obj["changes"] is not JsonArray changes || obj["manualRecommendations"] is not JsonArray manualRecommendations || obj["safetyDecision"] is not JsonObject safetyDecision) return false;
+        if (safetyDecision["canApplyAutomatically"] is null || safetyDecision["requiresManualReview"] is null || safetyDecision["reason"] is null) return false;
+
+        foreach (var change in changes)
+        {
+            if (change is not JsonObject changeObj) return false;
+            if (string.IsNullOrWhiteSpace(changeObj.StringValue("filePath"))) return false;
+            if (changeObj.StringValue("changeType") is not ("update_builder" or "update_option" or "remove_deprecated_option" or "update_tsconfig" or "update_script" or "manual_review")) return false;
+            if (changeObj["patch"] is not JsonObject patch || patch["before"] is null || patch["after"] is null) return false;
+        }
+
+        foreach (var item in manualRecommendations)
+        {
+            if (item is not JsonObject recommendation) return false;
+            if (recommendation["reason"] is null) return false;
+        }
+
+        return true;
+    }
+
+    private static string StripMarkdownCodeFence(string text)
+    {
+        var trimmed = text.Trim();
+        var match = Regex.Match(trimmed, @"^```(?:json)?\s*(?<body>[\s\S]*?)\s*```$", RegexOptions.IgnoreCase);
+        return match.Success ? match.Groups["body"].Value.Trim() : text;
     }
 
     private static string FailureKind(string source, JsonObjectScan scan)
@@ -309,13 +439,22 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         text.Contains("workdir:", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("model:", StringComparison.OrdinalIgnoreCase);
 
-    private static InvalidOperationException ParseFailure(string provider, string kind, bool balancedFound, bool parsedAny, bool truncated, string stdout, string stderr)
+    private static AiJsonParseException ParseFailure(string provider, string kind, bool balancedFound, bool parsedAny, bool truncated, string stdout, string stderr, JsonObjectScan? scan = null)
     {
         var schemaDetails = kind == "schema-validation-failed" ? SchemaValidationDetails(stdout) : "";
-        return new InvalidOperationException(
+        if (scan?.Candidates.Count > 0)
+        {
+            File.WriteAllText(ParsedCandidatePath, scan.Candidates.OrderByDescending(c => c.Text.Length).First().Text);
+        }
+        return new AiJsonParseException(
             $"{provider} JSON parse failed ({kind}). Balanced JSON object found: {balancedFound}. JSON parsed: {parsedAny}. Truncated JSON detected: {truncated}. " +
             schemaDetails +
-            $"Raw stdout first 500 chars: {Preview(stdout)}. Raw stderr first 500 chars: {Preview(stderr)}. Raw output saved to {RawOutputPath}");
+            $"rawOutputPath={RawOutputPath}. parsedCandidatePath={(scan?.Candidates.Count > 0 ? ParsedCandidatePath : "not available")}. " +
+            $"Raw stdout first 500 chars: {Preview(stdout)}. Raw stderr first 500 chars: {Preview(stderr)}.",
+            kind,
+            RawOutputPath,
+            scan?.Candidates.Count > 0 ? ParsedCandidatePath : null,
+            scan?.Candidates.Count ?? 0);
     }
 
     private static string SchemaValidationDetails(string stdout)
@@ -330,7 +469,25 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
                 })
                 .FirstOrDefault(o => o is not null);
             if (first is null) return "";
-            var expected = new[] { "summary/confidence/risk/changes", "recommendations", "packages", "packageUpdates/manualReview" };
+            if (first["recommendations"] is JsonArray recommendations)
+            {
+                if (IsMigrationAnalysisSchema(first)) return "";
+                if (recommendations.Count == 0) return "parseFailureReason=empty-recommendations. ";
+                foreach (var item in recommendations.OfType<JsonObject>())
+                {
+                    var action = item.StringValue("action");
+                    if (!string.IsNullOrWhiteSpace(action) && action is not ("align" or "preserve" or "add" or "remove" or "manualReview" or "update" or "upgrade" or "bump" or "update_dependency" or "hold" or "manual_review"))
+                    {
+                        return $"parseFailureReason=unsupported-enum-value, rejectedField=action, rejectedValue={action}, allowedValues=align|preserve|add|remove|manualReview. ";
+                    }
+                    if (string.IsNullOrWhiteSpace(item.StringValue("packageName", item.StringValue("package"))))
+                    {
+                        return "parseFailureReason=missing-required-property, rejectedField=packageName. ";
+                    }
+                }
+            }
+
+            var expected = new[] { "summary/confidence/risk/changes", "recommendations", "packages", "packageUpdates/manualReview", "strategy/command", "targetAngularHop/changes/manualRecommendations/safetyDecision" };
             var actual = first.Select(kvp => kvp.Key).ToArray();
             var missing = new[] { "packageUpdates", "manualReview" }.Where(f => !first.ContainsKey(f)).ToArray();
             var unexpected = actual.Where(f => !new[] { "packageUpdates", "manualReview" }.Contains(f)).ToArray();
@@ -343,10 +500,10 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         }
     }
 
-    private static string Preview(string value)
+    private static string Preview(string value, int max = 500)
     {
         var normalized = value.Replace("\r", "\\r", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal);
-        return normalized[..Math.Min(normalized.Length, 500)];
+        return normalized[..Math.Min(normalized.Length, max)];
     }
 
     private static void WriteRawOutput(string stdout, string stderr)
@@ -420,7 +577,7 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
     }
 
     private static IReadOnlyList<string> CliCommandFor(string name, string? path) => name == "codex"
-        ? [path ?? name, "exec", "--skip-git-repo-check"]
+        ? [path ?? name, "exec", "--json", "--skip-git-repo-check"]
         : [path ?? name, "-p"];
 
     private static string? FirstOutputLine(dynamic result)
@@ -458,4 +615,43 @@ public sealed class AiProviderResolver(ICommandRunner commandRunner, IEnumerable
         public bool ParsedAny { get; set; }
         public bool Truncated { get; set; }
     }
+
+    private sealed class CodexJsonLineDiagnostics
+    {
+        public int AgentMessagesFound { get; set; }
+        public int CandidatesAttempted { get; set; }
+        public bool BalancedFound { get; set; }
+        public bool ParsedAny { get; set; }
+        public bool Truncated { get; set; }
+        public string FailureReason { get; set; } = "schema-validation-failed";
+        public string? LastCandidate { get; set; }
+        public string? CandidatePath { get; set; }
+        public string Details { get; set; } = "";
+        public string? RejectedField { get; set; }
+        public string? RejectedValue { get; set; }
+        public string? AllowedValues { get; set; }
+    }
+}
+
+public sealed class AiJsonParseException : InvalidOperationException
+{
+    public AiJsonParseException(string message, string failureReason, string rawOutputPath, string? parsedCandidatePath, int candidatesAttempted, string? rejectedField = null, string? rejectedValue = null, string? allowedValues = null)
+        : base(message)
+    {
+        FailureReason = failureReason;
+        RawOutputPath = rawOutputPath;
+        ParsedCandidatePath = parsedCandidatePath;
+        CandidatesAttempted = candidatesAttempted;
+        RejectedField = rejectedField;
+        RejectedValue = rejectedValue;
+        AllowedValues = allowedValues;
+    }
+
+    public string FailureReason { get; }
+    public string RawOutputPath { get; }
+    public string? ParsedCandidatePath { get; }
+    public int CandidatesAttempted { get; }
+    public string? RejectedField { get; }
+    public string? RejectedValue { get; }
+    public string? AllowedValues { get; }
 }

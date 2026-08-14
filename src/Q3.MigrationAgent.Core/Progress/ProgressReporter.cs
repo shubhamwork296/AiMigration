@@ -9,21 +9,50 @@ public sealed class ProgressReporter(string verbosity = "default") : IProgressRe
 
     public void Stage(string stage, string message)
     {
-        if (!Quiet) Console.WriteLine($"[{stage}] {message}");
+        if (!Quiet) ConsoleFormatter.WriteLine(LabelFor(stage, message), $"[{stage}] {message}");
     }
 
-    public void Error(string stage, string message) => Console.WriteLine($"[{stage}] {message}");
+    public void Error(string stage, string message) => ConsoleFormatter.WriteLine(ConsoleLabel.Error, $"[{stage}] {message}");
 
     public void Detail(string message)
     {
-        if (!Quiet) Console.WriteLine(message);
+        if (!Quiet) ConsoleFormatter.WriteLine(ConsoleLabel.Info, message);
     }
 
-    public void FinalReport(string reportPath) => Console.WriteLine($"[Report] Migration report written to: {reportPath}");
+    public void FinalReport(string reportPath) => ConsoleFormatter.WriteLine(ConsoleLabel.Report, $"[Report] Migration report written to: {reportPath}");
 
     public void LogFile(string logPath)
     {
-        if (!Quiet) Console.WriteLine($"Log file: {logPath}");
+        if (!Quiet) ConsoleFormatter.WriteLine(ConsoleLabel.Info, $"Log file: {logPath}");
+    }
+
+    private static ConsoleLabel LabelFor(string stage, string message)
+    {
+        if (stage.Contains("AI", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("AI ", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("AI-", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConsoleLabel.Ai;
+        }
+
+        if (message.Contains("warning", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConsoleLabel.Warn;
+        }
+
+        if (message.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains(" passed", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConsoleLabel.Success;
+        }
+
+        if (message.StartsWith("Starting ", StringComparison.OrdinalIgnoreCase) ||
+            message.StartsWith("Running ", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains(" still running", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConsoleLabel.Running;
+        }
+
+        return ConsoleLabel.Step;
     }
 }
-

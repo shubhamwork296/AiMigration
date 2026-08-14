@@ -32,15 +32,19 @@ public sealed class MigrationOrchestrator(
     RollbackService rollback,
     MarkdownReportWriter reporter,
     RunLog runLog,
-    IAiCliResolver aiResolver)
+    IAiCliResolver aiResolver,
+    AiUsageTracker aiUsage)
 {
     public async Task<MigrationRunResult> RunMigrationAsync(MigrationConfig config, CancellationToken cancellationToken = default)
     {
         var progress = new ProgressReporter(config.Verbosity);
         var logPath = runLog.CreateRunLogPath(config.OutputPath);
-        progress.LogFile(logPath);
-        runLog.Append(logPath, "Migration run started.");
-        var warnings = new List<string>();
+        aiUsage.Start(logPath);
+        try
+        {
+            progress.LogFile(logPath);
+            runLog.Append(logPath, "Migration run started.");
+            var warnings = new List<string>();
 
         var timing = new TimingRecorder();
         if (ShouldResolveAiCli(config))
@@ -271,13 +275,18 @@ public sealed class MigrationOrchestrator(
         progress.FinalReport(finalReportPath);
         if (validationResult.Passed == false) PrintFailedValidationSummary(progress, "Validation", validationResult, finalReportPath);
         if (config.ShowTimingSummary) timing.Write(config.OutputPath);
-        return new MigrationRunResult { Success = validationResult.Passed != false, ReportPath = finalReportPath, LogPath = logPath, ValidationPassed = validationResult.Passed, Warnings = warnings, Errors = validationResult.Passed == false ? [validationResult.Errors] : [] };
+            return new MigrationRunResult { Success = validationResult.Passed != false, ReportPath = finalReportPath, LogPath = logPath, ValidationPassed = validationResult.Passed, Warnings = warnings, Errors = validationResult.Passed == false ? [validationResult.Errors] : [] };
+        }
+        finally
+        {
+            aiUsage.WriteSummary();
+        }
     }
 
     private async Task<MigrationRunResult> RunAdapterHopMigrationAsync(MigrationConfig config, IMigrationAdapter adapter, IReadOnlyList<MigrationHop> hops, IProgressReporter progress, string logPath, List<string> warnings, TimingRecorder timing, CancellationToken cancellationToken)
     {
         var manifest = await adapter.ParseManifestAsync(config.ProjectPath, cancellationToken);
-        progress.Stage("Analysis", $"Detected Angular {manifest["angularVersion"]?.ToString() ?? "unknown"} project using {manifest["packageManager"]?.ToString() ?? "unknown"}.");
+        progress.Stage("Analysis", DetectionSummary(adapter, manifest));
         var analysis = new System.Text.Json.Nodes.JsonObject
         {
             ["from"] = $"{config.From.Runtime}{config.From.Version}",
@@ -321,12 +330,13 @@ public sealed class MigrationOrchestrator(
         foreach (var hop in hops)
         {
             string snapshot;
-            using (timing.Measure($"rollback snapshot Angular {hop.FromVersion} -> {hop.ToVersion}"))
+            var hopLabel = $"{RuntimeDisplayName(adapter)} {hop.FromVersion} -> {hop.ToVersion}";
+            using (timing.Measure($"rollback snapshot {hopLabel}"))
             {
                 snapshot = rollback.CreateSnapshot(config.OutputPath, config.OutputPath);
             }
             JsonObject result;
-            using (timing.Measure($"Angular hop {hop.FromVersion} -> {hop.ToVersion}"))
+            using (timing.Measure($"{RuntimeDisplayName(adapter)} hop {hop.FromVersion} -> {hop.ToVersion}"))
             {
                 result = await adapter.ExecuteMigrationHopAsync(config.OutputPath, hop, rulesByHop[(hop.FromVersion, hop.ToVersion)], config, progress, logPath, cancellationToken);
             }
@@ -344,11 +354,11 @@ public sealed class MigrationOrchestrator(
                     SnapshotPath = snapshot,
                     OutputPath = config.OutputPath
                 };
-                progress.Error($"Angular {hop.FromVersion} -> {hop.ToVersion}", config.RollbackMode == "manual" ? "Migration failed. Output preserved for manual review." : "Migration failed. Restoring output from snapshot.");
+                progress.Error(hopLabel, config.RollbackMode == "manual" ? "Migration failed. Output preserved for manual review." : "Migration failed. Restoring output from snapshot.");
                 if (config.RollbackMode == "auto")
                 {
                     try { rollback.RestoreSnapshot(snapshot, config.OutputPath); validation.AutomaticRollbackApplied = true; }
-                    catch (Exception ex) { validation.RollbackError = ex.Message; progress.Error($"Angular {hop.FromVersion} -> {hop.ToVersion}", $"Rollback failed: {ex.Message}"); }
+                    catch (Exception ex) { validation.RollbackError = ex.Message; progress.Error(hopLabel, $"Rollback failed: {ex.Message}"); }
                 }
                 else
                 {
@@ -364,13 +374,39 @@ public sealed class MigrationOrchestrator(
         await File.WriteAllTextAsync(finalPath, final, cancellationToken);
         if (config.ShowTimingSummary) timing.Write(config.OutputPath);
         progress.FinalReport(finalPath);
-        if (validation.Passed == false) PrintFailedValidationSummary(progress, $"Angular {validation.FailedHop ?? "validation"}", validation, finalPath);
+        if (validation.Passed == false) PrintFailedValidationSummary(progress, $"{RuntimeDisplayName(adapter)} {validation.FailedHop ?? "validation"}", validation, finalPath);
         return new MigrationRunResult { Success = validation.Passed != false, ReportPath = finalPath, LogPath = logPath, ValidationPassed = validation.Passed, Warnings = warnings, Errors = validation.Passed == false ? [validation.Errors] : [] };
     }
 
+    private static string DetectionSummary(IMigrationAdapter adapter, JsonObject manifest)
+    {
+        if (adapter.RuntimeName.Equals("angular", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Detected Angular {manifest["angularVersion"]?.ToString() ?? "unknown"} project using {manifest["packageManager"]?.ToString() ?? "unknown"}.";
+        }
+        if (adapter.RuntimeName.Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+        {
+            var frameworks = manifest["projects"]?.AsArray()?.OfType<JsonObject>()
+                .SelectMany(p => p["targetFrameworks"]?.AsArray()?.Select(f => f?.ToString() ?? "") ?? [])
+                .Where(f => !string.IsNullOrWhiteSpace(f))
+                .Distinct()
+                .Order()
+                .ToArray() ?? [];
+            return $"Detected .NET project targeting {(frameworks.Length == 0 ? "unknown framework" : string.Join(", ", frameworks))}.";
+        }
+        return $"Detected {adapter.RuntimeName} project.";
+    }
+
+    private static string RuntimeDisplayName(IMigrationAdapter adapter) => adapter.RuntimeName.Equals("dotnet", StringComparison.OrdinalIgnoreCase) ? ".NET" : adapter.RuntimeName.Equals("angular", StringComparison.OrdinalIgnoreCase) ? "Angular" : adapter.RuntimeName;
+
     private static bool ShouldResolveAiCli(MigrationConfig config) => config.Ai.Provider is null && (config.Ai.UseAi || config.Ai.AiCli == "none");
     private static bool Confirm(string prompt) { Console.Write($"{prompt} [y/N] "); var answer = Console.ReadLine()?.Trim().ToLowerInvariant(); return answer is "y" or "yes"; }
-    private static void PrintManualRollbackOptions(string snapshot) { Console.WriteLine("[Rollback] Automatic rollback disabled."); Console.WriteLine($"[Rollback] Snapshot available at: {snapshot}"); Console.WriteLine("[Rollback] Review output manually or run rollback command."); }
+    private static void PrintManualRollbackOptions(string snapshot)
+    {
+        ConsoleFormatter.WriteLine(ConsoleLabel.Warn, "[Rollback] Automatic rollback disabled.");
+        ConsoleFormatter.WriteLine(ConsoleLabel.Info, $"[Rollback] Snapshot available at: {snapshot}");
+        ConsoleFormatter.WriteLine(ConsoleLabel.Info, "[Rollback] Review output manually or run rollback command.");
+    }
     private static void RecordValidationFailure(ValidationResult validation, string runtime, string? hop, int attempt, bool remediationAttempted)
     {
         validation.ValidationFailures.Add(new JsonObject

@@ -24,14 +24,23 @@ public sealed class MigrationPlanner(IAiService ai, IPromptLoader? promptLoader 
             ["rules"] = normalizedRules.DeepClone(),
             ["analysis"] = analysis.DeepClone(),
             ["deterministicPlan"] = JsonSerializer.SerializeToNode(deterministic),
-            ["requiredResponseShape"] = new JsonObject { ["plan"] = new JsonArray(), ["planningSummary"] = "short summary of why these structural changes are needed" }
+            ["requiredResponseShape"] = new JsonObject
+            {
+                ["summary"] = "short summary of why these structural changes are needed",
+                ["confidence"] = "0-100",
+                ["risk"] = "low|medium|high",
+                ["packageUpdates"] = new JsonArray(),
+                ["manualReview"] = new JsonArray(),
+                ["changes"] = new JsonArray(),
+                ["recommendations"] = new JsonArray()
+            }
         }.ToJsonString(JsonHelpers.SerializerOptions), cancellationToken);
         if (aiPlan is null)
         {
             analysis["planningMode"] = "rule-based";
             return deterministic;
         }
-        var validated = ValidateAiPlan(aiPlan["plan"], analysis, normalizedRules);
+        var validated = ValidateAiPlan(ExtractAiPlanItems(aiPlan), analysis, normalizedRules);
         if (validated.Count == 0)
         {
             analysis["planningMode"] = "rule-based";
@@ -117,6 +126,53 @@ public sealed class MigrationPlanner(IAiService ai, IPromptLoader? promptLoader 
             if (result is not null) validated.Add(result);
         }
         return SortPlan(validated);
+    }
+
+    private static JsonArray ExtractAiPlanItems(JsonObject aiPlan)
+    {
+        if (aiPlan["plan"] is JsonArray legacyPlan) return legacyPlan.DeepClone().AsArray();
+
+        var items = new JsonArray();
+        foreach (var item in aiPlan["packageUpdates"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            items.Add(NormalizeAiPackageUpdate(item));
+        }
+        foreach (var item in aiPlan["changes"]?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            items.Add(NormalizeAiStructuralChange(item));
+        }
+        return items;
+    }
+
+    private static JsonObject NormalizeAiPackageUpdate(JsonObject item)
+    {
+        var normalized = item.DeepClone().AsObject();
+        normalized["type"] = "dependency";
+        normalized["name"] ??= normalized.StringValue("packageName", normalized.StringValue("package"));
+        normalized["fromVersion"] ??= normalized.StringValue("currentVersion", normalized.StringValue("from"));
+        normalized["toVersion"] ??= normalized.StringValue("targetVersion", normalized.StringValue("recommendedVersion", normalized.StringValue("version")));
+        normalized["action"] = normalized.StringValue("action") is "remove" or "add" ? normalized.StringValue("action") : "upgrade";
+        if (string.IsNullOrWhiteSpace(normalized.StringValue("evidence")) && IsFrameworkOwnedDependency(normalized.StringValue("name")))
+        {
+            normalized["evidence"] = "target-framework";
+        }
+        return normalized;
+    }
+
+    private static JsonObject NormalizeAiStructuralChange(JsonObject item)
+    {
+        var normalized = item.DeepClone().AsObject();
+        if (!string.IsNullOrWhiteSpace(normalized.StringValue("type"))) return normalized;
+
+        var action = normalized.StringValue("action");
+        var file = normalized.StringValue("file");
+        if (action == "modifyManifest" && file.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized["type"] = "framework";
+            normalized["find"] ??= normalized.StringValue("from", normalized.StringValue("old"));
+            normalized["replace"] ??= normalized.StringValue("to", normalized.StringValue("new", normalized.StringValue("targetVersion")));
+        }
+        return normalized;
     }
 
     public IReadOnlyList<JsonObject> ParseNu1605Downgrades(string output)
@@ -365,6 +421,11 @@ public sealed class MigrationPlanner(IAiService ai, IPromptLoader? promptLoader 
         if (evidence is "manifest" or "target-framework" or "target-runtime") return AlignsWithFrameworkMajorVersion(item.StringValue("fromVersion"), item.StringValue("toVersion"), analysis);
         return false;
     }
+
+    private static bool IsFrameworkOwnedDependency(string name) =>
+        name.StartsWith("Microsoft.Extensions.", StringComparison.OrdinalIgnoreCase) ||
+        name.StartsWith("Microsoft.AspNetCore.", StringComparison.OrdinalIgnoreCase) ||
+        name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase);
 
     private static bool AlignsWithFrameworkMajorVersion(string fromVersion, string toVersion, JsonObject analysis)
     {

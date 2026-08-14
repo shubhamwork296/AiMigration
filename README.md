@@ -56,6 +56,22 @@ Run API:
 dotnet run --project src/Q3.MigrationAgent.Api
 ```
 
+Run Web UI wrapper:
+
+```powershell
+dotnet run --project src/Q3.MigrationAgent.Web
+```
+
+Open the printed local URL in a browser. The Web UI reads `migrate.config.json` from the repository root on load and uses those values as defaults. Blank fields are treated as unchanged; only values entered in the UI are written back before the migration starts. Unknown or custom JSON properties are preserved.
+
+The Web UI starts the existing CLI process instead of calling migration internals:
+
+```powershell
+dotnet run --project src/Q3.MigrationAgent.Cli -- --config migrate.config.json
+```
+
+Only one migration process can run from the Web UI at a time. If another run is active, `POST /api/migration/start` returns a clear conflict response. The UI also exposes cancellation through `POST /api/migration/cancel`, which terminates the running child process tree.
+
 API endpoint:
 
 ```http
@@ -115,4 +131,3 @@ AI support is CLI-based and supports:
 - Angular parity is ported structurally, but the Python adapter's very large remediation surface was condensed into a maintainable .NET implementation and should be expanded with more behavioral tests before production use.
 - Direct API-key AI providers are intentionally not implemented; current behavior is CLI-only.
 - Full solution restore may need NuGet network access for xUnit packages.
-

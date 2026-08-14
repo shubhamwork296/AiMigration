@@ -12,6 +12,12 @@ namespace Q3.MigrationAgent.Adapters.DotNet;
 public sealed class DotNetAdapter(ICommandRunner commandRunner) : IMigrationAdapter
 {
     private static readonly string[] StructuralPatterns = ["*.sln", "*.csproj", "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", "NuGet.config"];
+    private static readonly string[] FrameworkOwnedPackagePrefixes =
+    [
+        "Microsoft.AspNetCore.",
+        "Microsoft.EntityFrameworkCore",
+        "Microsoft.Extensions."
+    ];
     public string RuntimeName => "dotnet";
 
     public Task<bool> DetectAsync(string projectPath, CancellationToken cancellationToken = default)
@@ -77,12 +83,180 @@ public sealed class DotNetAdapter(ICommandRunner commandRunner) : IMigrationAdap
         return Task.FromResult<IReadOnlyDictionary<string, string>>(collected);
     }
 
-    public IReadOnlyList<MigrationHop> ExpandMigrationHops(string fromVersion, string toVersion) => [];
-
-    public Task<JsonObject> ExecuteMigrationHopAsync(string projectPath, MigrationHop hop, JsonObject rules, MigrationConfig config, IProgressReporter? progress, string? logPath, CancellationToken cancellationToken = default)
+    public IReadOnlyList<MigrationHop> ExpandMigrationHops(string fromVersion, string toVersion)
     {
-        throw new NotSupportedException("dotnet does not support adapter-native migration hops.");
+        var start = MajorFromSpec(fromVersion);
+        var end = MajorFromSpec(toVersion);
+        if (start is null || end is null || end <= start) return [];
+        return Enumerable.Range(start.Value, end.Value - start.Value)
+            .Select(v => new MigrationHop(v, v + 1, $".NET {v} to {v + 1}") { Type = "dotnet-hop" })
+            .ToArray();
     }
+
+    public async Task<JsonObject> ExecuteMigrationHopAsync(string projectPath, MigrationHop hop, JsonObject rules, MigrationConfig config, IProgressReporter? progress, string? logPath, CancellationToken cancellationToken = default)
+    {
+        var stage = $".NET {hop.FromVersion} -> {hop.ToVersion}";
+        progress?.Stage(stage, "Applying framework and Microsoft package-family alignment...");
+        var beforeFiles = StructuralFileContents(projectPath);
+        var commands = new JsonArray();
+
+        var changed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in ApplyTargetFrameworkHop(projectPath, hop, rules)) changed.Add(file);
+        foreach (var file in ApplyPackageAlignmentHop(projectPath, hop, rules)) changed.Add(file);
+
+        progress?.Stage(stage, "Running dotnet build validation...");
+        var build = await RunBuildAsync(projectPath, config.CommandTimeoutSeconds, config.CommandIdleTimeoutSeconds, cancellationToken);
+        commands.Add(new JsonObject
+        {
+            ["command"] = new JsonArray("dotnet", "build"),
+            ["returncode"] = build.Success ? 0 : 1,
+            ["stdout"] = build.Success ? build.Output : "",
+            ["stderr"] = build.Success ? "" : build.Output,
+            ["failureCategory"] = build.Success ? null : "build",
+            ["failureReason"] = build.Success ? null : "dotnet build failed after applying this migration hop.",
+            ["suggestedNextAction"] = build.Success ? null : "Review the build output and apply targeted compatibility fixes before continuing."
+        });
+
+        var files = ChangedStructuralFiles(projectPath, beforeFiles).Concat(changed.Select(f => Path.GetRelativePath(projectPath, f))).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray();
+        return new JsonObject
+        {
+            ["hop"] = new JsonObject { ["fromVersion"] = hop.FromVersion, ["toVersion"] = hop.ToVersion, ["runtime"] = RuntimeName },
+            ["status"] = build.Success ? "done" : "failed",
+            ["commands"] = commands,
+            ["files"] = new JsonArray(files.Select(f => (JsonNode?)JsonValue.Create(NormalizeRelativePath(f))).ToArray()),
+            ["preflightDependencyAnalysis"] = new JsonObject { ["warnings"] = new JsonArray(), ["blockers"] = new JsonArray() },
+            ["validation"] = new JsonObject
+            {
+                ["passed"] = build.Success,
+                ["errors"] = build.Success ? "" : build.Output,
+                ["output"] = build.Output,
+                ["buildVerificationAttempted"] = true,
+                ["buildVerificationCommand"] = "dotnet build",
+                ["buildVerificationExecutor"] = "dotnet",
+                ["buildVerificationPassed"] = build.Success,
+                ["buildVerificationSkipped"] = false,
+                ["nextHopStartedOnlyAfterBuildVerificationPassed"] = build.Success
+            },
+            ["dotnetFrameworkAlignment"] = new JsonObject
+            {
+                ["fromTargetFramework"] = $"net{hop.FromVersion}.0",
+                ["toTargetFramework"] = $"net{hop.ToVersion}.0",
+                ["packageFamilyPolicy"] = "Microsoft.AspNetCore.*, Microsoft.EntityFrameworkCore*, and Microsoft.Extensions.* direct references with the source major are aligned to the target major."
+            }
+        };
+    }
+
+    private static IReadOnlyList<string> ApplyTargetFrameworkHop(string projectPath, MigrationHop hop, JsonObject rules)
+    {
+        var from = rules["targetFrameworkChange"]?.AsObject().StringValue("from", $"net{hop.FromVersion}.0") ?? $"net{hop.FromVersion}.0";
+        var to = rules["targetFrameworkChange"]?.AsObject().StringValue("to", $"net{hop.ToVersion}.0") ?? $"net{hop.ToVersion}.0";
+        var touched = new List<string>();
+        foreach (var file in DotNetManifestFiles(projectPath))
+        {
+            var original = File.ReadAllText(file);
+            var updated = original.Replace(from, to, StringComparison.Ordinal);
+            if (updated == original) continue;
+            File.WriteAllText(file, updated);
+            touched.Add(file);
+        }
+        return touched;
+    }
+
+    private static IReadOnlyList<string> ApplyPackageAlignmentHop(string projectPath, MigrationHop hop, JsonObject rules)
+    {
+        var packageTargets = RulePackageTargets(rules, hop).ToDictionary(kvp => kvp.Name, kvp => kvp.TargetVersion, StringComparer.OrdinalIgnoreCase);
+        var touched = new List<string>();
+        foreach (var file in DotNetManifestFiles(projectPath))
+        {
+            var original = File.ReadAllText(file);
+            var updated = original;
+            foreach (var package in PackageVersionReferences(original))
+            {
+                if (packageTargets.TryGetValue(package.Name, out var ruleTarget))
+                {
+                    updated = ReplacePackageVersion(updated, package.Name, NormalizeTargetVersion(ruleTarget));
+                    continue;
+                }
+
+                if (IsFrameworkOwnedPackage(package.Name) && MajorFromSpec(package.Version) == hop.FromVersion)
+                {
+                    updated = ReplacePackageVersion(updated, package.Name, $"{hop.ToVersion}.0.0");
+                }
+            }
+            if (updated == original) continue;
+            File.WriteAllText(file, updated);
+            touched.Add(file);
+        }
+        return touched;
+    }
+
+    private static IEnumerable<(string Name, string TargetVersion)> RulePackageTargets(JsonObject rules, MigrationHop hop)
+    {
+        foreach (var dependency in (rules["dependencyChanges"] ?? rules["packageChanges"])?.AsArray()?.OfType<JsonObject>() ?? [])
+        {
+            var name = dependency.StringValue("name");
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            var fromMajor = MajorFromSpec(dependency.StringValue("fromVersion"));
+            if (fromMajor is not null && fromMajor != hop.FromVersion) continue;
+            var target = dependency.StringValue("toVersion");
+            if (!string.IsNullOrWhiteSpace(target)) yield return (name, target);
+        }
+    }
+
+    private static IEnumerable<(string Name, string Version)> PackageVersionReferences(string content)
+    {
+        foreach (Match match in Regex.Matches(content, @"<(?:PackageReference|PackageVersion)\b(?<attrs>[^>]*)/?>", RegexOptions.IgnoreCase | RegexOptions.Singleline))
+        {
+            var attrs = match.Groups["attrs"].Value;
+            var name = AttributeValue(attrs, "Include") ?? AttributeValue(attrs, "Update");
+            var version = AttributeValue(attrs, "Version");
+            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(version)) yield return (name, version);
+        }
+        foreach (Match match in Regex.Matches(content, @"<(?:PackageReference|PackageVersion)\b(?<attrs>[^>]*)>\s*<Version>(?<version>[^<]+)</Version>", RegexOptions.IgnoreCase | RegexOptions.Singleline))
+        {
+            var attrs = match.Groups["attrs"].Value;
+            var name = AttributeValue(attrs, "Include") ?? AttributeValue(attrs, "Update");
+            var version = match.Groups["version"].Value;
+            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(version)) yield return (name, version);
+        }
+    }
+
+    private static string? AttributeValue(string attrs, string name)
+    {
+        var match = Regex.Match(attrs, $@"\b{Regex.Escape(name)}=[""'](?<value>[^""']+)[""']", RegexOptions.IgnoreCase);
+        return match.Success ? match.Groups["value"].Value : null;
+    }
+
+    private static bool IsFrameworkOwnedPackage(string name) => FrameworkOwnedPackagePrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+    private static IEnumerable<string> DotNetManifestFiles(string projectPath) =>
+        Directory.EnumerateFiles(projectPath, "*.csproj", SearchOption.AllDirectories)
+            .Concat(new[] { "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props" }.Select(file => Path.Combine(projectPath, file)).Where(File.Exists));
+
+    private static Dictionary<string, string> StructuralFileContents(string projectPath)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in DotNetManifestFiles(projectPath).Concat(Directory.EnumerateFiles(projectPath, "*.sln", SearchOption.AllDirectories)))
+        {
+            var relative = NormalizeRelativePath(Path.GetRelativePath(projectPath, file));
+            result[relative] = File.ReadAllText(file);
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<string> ChangedStructuralFiles(string projectPath, IReadOnlyDictionary<string, string> before)
+    {
+        var changed = new List<string>();
+        foreach (var file in DotNetManifestFiles(projectPath).Concat(Directory.EnumerateFiles(projectPath, "*.sln", SearchOption.AllDirectories)))
+        {
+            var relative = NormalizeRelativePath(Path.GetRelativePath(projectPath, file));
+            if (!before.TryGetValue(relative, out var original) || File.ReadAllText(file) != original) changed.Add(relative);
+        }
+        return changed;
+    }
+
+    private static int? MajorFromSpec(string value) => Regex.Match(value ?? "", @"(\d+)") is { Success: true } m ? int.Parse(m.Groups[1].Value) : null;
+    private static string NormalizeRelativePath(string path) => path.Replace('\\', '/');
 
     private static JsonObject ParseCsproj(string csproj, string root)
     {
@@ -121,12 +295,12 @@ public sealed class DotNetAdapter(ICommandRunner commandRunner) : IMigrationAdap
         var include = Regex.Escape(packageName);
         content = Regex.Replace(
             content,
-            $@"(<PackageReference\b[^>]*(?:Include|Update)=[""']{include}[""'][^>]*\bVersion=)[""'][^""']+[""']",
+            $@"(<(?:PackageReference|PackageVersion)\b[^>]*(?:Include|Update)=[""']{include}[""'][^>]*\bVersion=)[""'][^""']+[""']",
             match => $"{match.Groups[1].Value}\"{targetVersion}\"",
             RegexOptions.IgnoreCase);
         return Regex.Replace(
             content,
-            $@"(<PackageReference\b[^>]*(?:Include|Update)=[""']{include}[""'][^>]*>\s*<Version>)[^<]+(</Version>)",
+            $@"(<(?:PackageReference|PackageVersion)\b[^>]*(?:Include|Update)=[""']{include}[""'][^>]*>\s*<Version>)[^<]+(</Version>)",
             match => $"{match.Groups[1].Value}{targetVersion}{match.Groups[2].Value}",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
     }

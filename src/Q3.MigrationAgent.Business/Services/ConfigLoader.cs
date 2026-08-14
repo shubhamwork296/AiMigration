@@ -53,6 +53,7 @@ public sealed class ConfigLoader : IConfigLoader
             AllowBusinessLogicChanges = raw.BoolValue("allowBusinessLogicChanges"),
             SourceCompatibilityRemediation = raw.BoolValue("sourceCompatibilityRemediation"),
             PreferNgUpdate = raw.BoolValue("preferNgUpdate", true),
+            ManualReviewAutoAccept = raw.BoolValue("manualReviewAutoAccept", true),
             AvoidFullVersionScans = raw.BoolValue("avoidFullVersionScans", true),
             DirectDependenciesOnlyPreflight = raw.BoolValue("directDependenciesOnlyPreflight", true),
             PackageVersionVerificationMode = raw.StringValue("packageVersionVerificationMode", "install-first"),
@@ -87,11 +88,13 @@ public sealed class ConfigLoader : IConfigLoader
         var useAi = raw["useAi"] is not null ? raw.BoolValue("useAi") : aiSection.BoolValue("useAi", aiCli != "none");
         var provider = raw.StringValue("aiProvider", aiSection.StringValue("provider"));
         var mode = raw.StringValue("aiMode", aiSection.StringValue("mode", "cli")).ToLowerInvariant();
+        var timeoutSeconds = raw.IntValue("aiTimeoutSeconds", aiSection.IntValue("timeoutSeconds", 300));
+        var idleTimeoutSeconds = raw.IntValue("aiIdleTimeoutSeconds", aiSection.IntValue("idleTimeoutSeconds", 120));
         IReadOnlyList<string>? command = null;
         var commandNode = raw["aiCliCommand"] ?? aiSection["cliCommand"];
         if (commandNode is JsonArray array) command = array.Select(x => x?.ToString() ?? "").Where(s => s.Length > 0).ToArray();
         else if (commandNode is not null) command = commandNode.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return new AiConfig { UseAi = useAi, Provider = string.IsNullOrWhiteSpace(provider) ? null : provider.ToLowerInvariant(), Mode = mode, CliCommand = command, AiCli = aiCli };
+        return new AiConfig { UseAi = useAi, Provider = string.IsNullOrWhiteSpace(provider) ? null : provider.ToLowerInvariant(), Mode = mode, CliCommand = command, AiCli = aiCli, TimeoutSeconds = timeoutSeconds, IdleTimeoutSeconds = idleTimeoutSeconds };
     }
 
     private static string ParseVerbosity(JsonObject raw)
@@ -123,6 +126,8 @@ public sealed class ConfigLoader : IConfigLoader
         if (config.NpmLookupIdleTimeoutSeconds < 0) throw new InvalidOperationException("npmLookupIdleTimeoutSeconds must be zero or greater.");
         if (config.NpmLookupTimeoutSeconds < 0) throw new InvalidOperationException("npmLookupTimeoutSeconds must be zero or greater.");
         if (config.Ai.AiCli is not ("auto" or "codex" or "claude" or "none")) throw new InvalidOperationException("aiCli must be one of: auto, codex, claude, none.");
+        if (config.Ai.TimeoutSeconds < 0) throw new InvalidOperationException("aiTimeoutSeconds must be zero or greater.");
+        if (config.Ai.IdleTimeoutSeconds < 0) throw new InvalidOperationException("aiIdleTimeoutSeconds must be zero or greater.");
         if (config.Ai.UseAi)
         {
             if (config.Ai.Provider is not null && !SupportedProviders.Contains(config.Ai.Provider)) throw new InvalidOperationException($"aiProvider must be one of: {string.Join(", ", SupportedProviders.Order())}.");

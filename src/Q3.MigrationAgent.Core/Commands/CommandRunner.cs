@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Q3.MigrationAgent.Core.Abstractions;
 using Q3.MigrationAgent.Core.Logging;
 using Q3.MigrationAgent.Shared.DTO;
@@ -30,17 +31,22 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
         }
 
         var started = Stopwatch.StartNew();
+        var (environment, executableCommand) = ExtractLeadingEnvironmentAssignments(command);
+        if (executableCommand.Count == 0)
+        {
+            return new CommandResult { ReturnCode = 127, Stderr = "No command specified after environment assignments.", ResolvedCommand = command.ToArray(), DurationSeconds = started.Elapsed.TotalSeconds };
+        }
         IReadOnlyList<string> resolved;
         try
         {
-            resolved = ResolveCommand(command, workingDirectory);
+            resolved = ResolveCommand(executableCommand, workingDirectory);
         }
         catch (FileNotFoundException ex)
         {
             started.Stop();
             _runLog.Append(logPath, $"ERROR: {ex.Message}\nelapsed: {FormatElapsed(started.Elapsed.TotalSeconds)}");
             progress?.Error(stage ?? "Command", $"{description ?? "command"} failed. Full log: {logPath}");
-            return new CommandResult { ReturnCode = 127, Stderr = ex.Message, ResolvedCommand = command.ToArray(), DurationSeconds = started.Elapsed.TotalSeconds };
+            return new CommandResult { ReturnCode = 127, Stderr = ex.Message, ResolvedCommand = executableCommand.ToArray(), DurationSeconds = started.Elapsed.TotalSeconds };
         }
         var commandText = string.Join(" ", command);
         var resolvedText = string.Join(" ", resolved);
@@ -52,7 +58,7 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
 
         try
         {
-            return await RunProcessAsync(resolved, workingDirectory, input, timeoutSeconds, progress, stage, description, logPath, heartbeatIntervalSeconds, idleTimeoutSeconds, started, cancellationToken);
+            return await RunProcessAsync(resolved, environment, workingDirectory, input, timeoutSeconds, progress, stage, description, logPath, heartbeatIntervalSeconds, idleTimeoutSeconds, started, cancellationToken);
         }
         catch (FileNotFoundException ex)
         {
@@ -89,6 +95,32 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
         return [executable, .. command.Skip(1)];
     }
 
+    private static (IReadOnlyDictionary<string, string> Environment, IReadOnlyList<string> Command) ExtractLeadingEnvironmentAssignments(IReadOnlyList<string> command)
+    {
+        var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var index = 0;
+        while (index < command.Count && TryParseEnvironmentAssignment(command[index], out var name, out var value))
+        {
+            environment[name] = value;
+            index++;
+        }
+
+        return (environment, command.Skip(index).ToArray());
+    }
+
+    private static bool TryParseEnvironmentAssignment(string token, out string name, out string value)
+    {
+        name = "";
+        value = "";
+        var equals = token.IndexOf('=');
+        if (equals <= 0) return false;
+        var candidate = token[..equals];
+        if (!Regex.IsMatch(candidate, "^[A-Za-z_][A-Za-z0-9_]*$")) return false;
+        name = candidate;
+        value = token[(equals + 1)..];
+        return true;
+    }
+
     public static string? ResolveExecutable(string name)
     {
         if (!OperatingSystem.IsWindows())
@@ -105,6 +137,7 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
 
     private async Task<CommandResult> RunProcessAsync(
         IReadOnlyList<string> command,
+        IReadOnlyDictionary<string, string> environment,
         string? workingDirectory,
         string? input,
         int? timeoutSeconds,
@@ -125,6 +158,10 @@ public sealed class CommandRunner(RunLog? runLog = null) : ICommandRunner
             RedirectStandardInput = input is not null,
             UseShellExecute = false
         };
+        foreach (var item in environment)
+        {
+            psi.Environment[item.Key] = item.Value;
+        }
         if (IsCmdWrapper(command))
         {
             psi.Arguments = string.Join(" ", command.Skip(1));

@@ -2,6 +2,7 @@ namespace Q3.MigrationAgent.Core.Logging;
 
 public sealed class RunLog
 {
+    private readonly object _sync = new();
     public string CreateRunLogPath(string outputPath)
     {
         Directory.CreateDirectory(outputPath);
@@ -12,8 +13,23 @@ public sealed class RunLog
     public void Append(string? logPath, string text)
     {
         if (string.IsNullOrWhiteSpace(logPath)) return;
-        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-        File.AppendAllText(logPath, text.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? text : text + Environment.NewLine);
+
+        var content = text.EndsWith(Environment.NewLine, StringComparison.Ordinal)
+            ? text
+            : text + Environment.NewLine;
+
+        lock (_sync)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+
+            using var stream = new FileStream(
+                logPath,
+                FileMode.Append,
+                FileAccess.Write,
+                FileShare.ReadWrite);
+
+            using var writer = new StreamWriter(stream);
+            writer.Write(content);
+        }
     }
 }
-
