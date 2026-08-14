@@ -13,3 +13,4 @@ output/
 tests/output/
 migrate.config.json
 *.log
+/.vs/Q3.MigrationAgent
